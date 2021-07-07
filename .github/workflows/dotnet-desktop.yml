@@ -76,6 +76,11 @@ jobs:
           7z a -tzip $_.Parent.Name $_.FullName`
          }
          
+    - name: list files in directory
+      shell: powershell
+      working-directory: ${{ matrix.solution }}
+      run: ls
+         
     - name: Collect all zip files
       shell: powershell
       working-directory: ${{ matrix.solution }}
