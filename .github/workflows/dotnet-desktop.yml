@@ -81,6 +81,10 @@ jobs:
       working-directory: ${{ matrix.solution }}
       run: dir . -filter "*.zip" -name | Compress-Archive -DestinationPath ${{ matrix.solution }}.zip
       
-        
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.solution }}
+        path: ${{ matrix.solution }}/${{ matrix.solution }}.zip
+        retention-days: 1
 
 
