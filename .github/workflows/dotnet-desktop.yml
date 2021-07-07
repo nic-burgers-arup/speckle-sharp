@@ -66,10 +66,21 @@ jobs:
     - name: Restore the application
       working-directory: ${{ matrix.solution }}
       run: msbuild ${{ matrix.solution }}.sln /t:Restore /p:Configuration=Release /p:WarningLevel=0 /p:IsDesktopBuild=false
+      
+    - name: Add binaries to a zip file
+      shell: powershell
+      working-directory: ${{ matrix.solution }}
+      run:  |
+        (Get-ChildItem -Path . -Filter "*bin*" -Recurse -Directory) | `
+         Foreach-Object { `
+          7z a -tzip $_.Parent.Name $_.FullName`
+         }
+         
+    - name: Collect all zip files
+      shell: powershell
+      working-directory: ${{ matrix.solution }}
+      run: dir . -filter "*.zip" -name | Compress-Archive -DestinationPath ${{ matrix.solution }}.zip
+      
+        
 
-    # Upload the MSIX package: https://github.com/marketplace/actions/upload-artifact
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: ${{ matrix.solution }} artefacts
-        path: ${{ env.Wap_Project_Directory }}\AppPackages
+
