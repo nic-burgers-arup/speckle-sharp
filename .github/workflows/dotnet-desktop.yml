@@ -70,11 +70,7 @@ jobs:
     - name: Add binaries to a zip file
       shell: powershell
       working-directory: ${{ matrix.solution }}
-      run:  |
-        (Get-ChildItem -Path . -Filter "*bin*" -Recurse -Directory) | `
-         Foreach-Object { `
-          7z a -tzip $_.Parent.Name $_.FullName`
-         }
+      run: (Get-ChildItem -Path . -Filter "*bin*" -Recurse -Directory) | Foreach-Object { 7z a -tzip $_.Parent.Name $_.FullName }
          
     - name: list files in directory
       shell: powershell
