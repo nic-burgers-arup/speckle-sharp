@@ -70,8 +70,9 @@ Name: "full"; Description: "Full installation"
 Name: "custom"; Description: "Custom installation"; Flags: iscustom
 
 [Dirs]
-Name: "{app}"; Permissions: everyone-full 
+Name: "{app}"; Permissions: everyone-full
 
+[Files]
 ;rhino                                                                                                                                    
 Source: "ConnectorRhino\ConnectorRhino\bin\Release\*"; DestDir: "{userappdata}\McNeel\Rhinoceros\6.0\Plug-ins\SpeckleRhino2 (8dd5f30b-a13d-4a24-abdc-3e05c8c87143)\"; Flags: ignoreversion recursesubdirs; Components: rhino
 Source: "ConnectorRhino\ConnectorRhino\bin\Release\*"; DestDir: "{userappdata}\McNeel\Rhinoceros\7.0\Plug-ins\SpeckleRhino2 (8dd5f30b-a13d-4a24-abdc-3e05c8c87143)\"; Flags: ignoreversion recursesubdirs; Components: rhino
