@@ -1,31 +1,32 @@
 ;defining variables
 #define AppName      "Spec-v2"
-#define Autocad2021Version  GetFileVersion("ConnectorAutocadCivil\ConnectorAutocad2021\bin\Release\SpeckleConnectorAutocad.dll")
-#define Autocad2022Version  GetFileVersion("ConnectorAutocadCivil\ConnectorAutocad2022\bin\Release\SpeckleConnectorAutocad.dll")
-#define Civil2021Version  GetFileVersion("ConnectorAutocadCivil\ConnectorAutocadCivil2021\bin\Release\SpeckleConnectorCivil.dll")
-#define Civil2022Version  GetFileVersion("ConnectorAutocadCivil\ConnectorAutocadCivil2022\bin\Release\SpeckleConnectorCivil.dll")
+#define Autocad2021Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorAutocad2021\bin\Release\SpeckleConnectorAutocad.dll")
+#define Autocad2022Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorAutocad2022\bin\Release\SpeckleConnectorAutocad.dll")
+#define Civil2021Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorAutocadCivil2021\bin\Release\SpeckleConnectorCivil.dll")
+#define Civil2022Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorAutocadCivil2022\bin\Release\SpeckleConnectorCivil.dll")
 
-#define DynamoVersion  GetFileVersion("ConnectorDynamo\ConnectorDynamo\bin\Release\SpeckleConnectorDynamo.dll")
-#define DynamoExtensionVersion  GetFileVersion("ConnectorDynamo\ConnectorDynamoExtension\bin\Release\SpeckleConnectorDynamoExtension.dll")
-#define DynamoFunctionsVersion  GetFileVersion("ConnectorDynamo\ConnectorDynamoFunctions\bin\Release\SpeckleConnectorDynamoFunctions.dll")
+#define DynamoVersion  GetVersionNumbersString("ConnectorDynamo\ConnectorDynamo\bin\Release\SpeckleConnectorDynamo.dll")
+#define DynamoExtensionVersion  GetVersionNumbersString("ConnectorDynamo\ConnectorDynamoExtension\bin\Release\SpeckleConnectorDynamoExtension.dll")
+#define DynamoFunctionsVersion  GetVersionNumbersString("ConnectorDynamo\ConnectorDynamoFunctions\bin\Release\SpeckleConnectorDynamoFunctions.dll")
 
-#define GrasshopperVersion  GetFileVersion("ConnectorGrasshopper\ConnectorGrasshopper\bin\SpeckleConnectorGrasshopper.dll")
+#define GrasshopperVersion  GetVersionNumbersString("ConnectorGrasshopper\ConnectorGrasshopper\bin\SpeckleConnectorGrasshopper.dll")
 
-#define Revit2019Version  GetFileVersion("ConnectorRevit\ConnectorRevit2019\bin\Release\SpeckleConnectorRevit.dll")
-#define Revit2020Version  GetFileVersion("ConnectorRevit\ConnectorRevit2020\bin\Release\SpeckleConnectorRevit.dll")
-#define Revit2021Version  GetFileVersion("ConnectorRevit\ConnectorRevit2021\bin\Release\SpeckleConnectorRevit.dll")
-#define Revit2022Version  GetFileVersion("ConnectorRevit\ConnectorRevit2022\bin\Release\SpeckleConnectorRevit.dll")
+#define Revit2019Version  GetVersionNumbersString("ConnectorRevit\ConnectorRevit2019\bin\Release\SpeckleConnectorRevit.dll")
+#define Revit2020Version  GetVersionNumbersString("ConnectorRevit\ConnectorRevit2020\bin\Release\SpeckleConnectorRevit.dll")
+#define Revit2021Version  GetVersionNumbersString("ConnectorRevit\ConnectorRevit2021\bin\Release\SpeckleConnectorRevit.dll")
+#define Revit2022Version  GetVersionNumbersString("ConnectorRevit\ConnectorRevit2022\bin\Release\SpeckleConnectorRevit.dll")
 
 #define RhinoVersion  GetFileVersion("ConnectorRhino\ConnectorRhino\bin\Release\SpeckleConnectorRhino.dll")
 
 #define AppPublisher "Spec-cx"
 #define AppURL       "https://docs.speckle.arup.com"
 #define SpeckleFolder "{localappdata}\Speckle"
+#define AppVersion "1.0.0.0"
 
 [Setup]
 AppId={{BA3A01AA-F70D-4747-AA0E-E93F38C793C8}
 AppName={#AppName}
-AppVersion=v1.0.0.0
+AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
