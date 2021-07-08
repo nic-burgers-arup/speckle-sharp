@@ -46,46 +46,25 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        solution: [ConnectorAutocadCivil, ConnectorDynamo, ConnectorGrasshopper, ConnectorRevit, ConnectorRhino]
-
     runs-on: windows-latest  # For a list of available runner types, refer to
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
     steps:
     - name: Checkout
       uses: actions/checkout@v2
       with:
-        fetch-depth: 0
+        fetch-depth: 2
 
     # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v1.0.2
 
     # Restore the application to populate the obj folder with RuntimeIdentifiers
-    - name: Restore the application
-      working-directory: ${{ matrix.solution }}
-      run: msbuild ${{ matrix.solution }}.sln /t:Restore /p:Configuration=Release /p:WarningLevel=0 /p:IsDesktopBuild=false
-      
-    - name: Add binaries to a zip file
-      shell: powershell
-      working-directory: ${{ matrix.solution }}
-      run: (Get-ChildItem -Path . -Filter "*bin*" -Recurse -Directory) | Foreach-Object { 7z a -tzip $_.Parent.Name $_.FullName }
-         
-    - name: list files in directory
-      shell: powershell
-      working-directory: ${{ matrix.solution }}
-      run: ls
-         
-    - name: Collect all zip files
-      shell: powershell
-      working-directory: ${{ matrix.solution }}
-      run: dir . -filter "*.zip" -name | Compress-Archive -DestinationPath ${{ matrix.solution }}.zip
-      
-    - uses: actions/upload-artifact@v2
-      with:
-        name: ${{ matrix.solution }}
-        path: ${{ matrix.solution }}/${{ matrix.solution }}.zip
-        retention-days: 1
+    - name: Restore all the applications
+      run: |
+        for %%x in (ConnectorAutocadCivil, ConnectorDynamo, ConnectorGrasshopper, ConnectorRevit, ConnectorRhino) do
+          cd %%x
+          msbuild %%x.sln /t:Restore /p:Configuration=Release /p:WarningLevel=0 /p:IsDesktopBuild=false
+          cd ../
+        end
 
 
