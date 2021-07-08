@@ -157,7 +157,7 @@ function IsDotNetDetected(version: string; service: cardinal): boolean;
 var
     key: string;
     install, release, serviceCount: cardinal;
-    check45, success: boolean;
+    check47, success: boolean;
 begin
     // .NET 4.5 installs as update to .NET 4.0 Full
     if version = 'v4.7' then begin
@@ -184,7 +184,7 @@ begin
     end;
 
     // .NET 4.5 uses additional value Release
-    if check45 then begin
+    if check47 then begin
         success := success and RegQueryDWordValue(HKLM, key, 'Release', release);
         success := success and (release >= 378389);
     end;
