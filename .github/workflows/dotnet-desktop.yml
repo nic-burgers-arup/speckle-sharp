@@ -73,5 +73,8 @@ jobs:
         for %%x in (ConnectorAutocadCivil, ConnectorDynamo, ConnectorGrasshopper, ConnectorRevit, ConnectorRhino) do (
           cd %%x && msbuild %%x.sln /p:Configuration=Release /p:WarningLevel=0 /p:IsDesktopBuild=false && cd ../ 
         )
+        
+    - name: create Installer
+      run: iscc speckle-v2-installer.iss
 
 
