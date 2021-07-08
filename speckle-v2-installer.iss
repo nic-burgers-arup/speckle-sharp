@@ -2,8 +2,8 @@
 #define AppName      "Spec-v2"
 #define Autocad2021Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorAutocad2021\bin\Release\SpeckleConnectorAutocad.dll")
 #define Autocad2022Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorAutocad2022\bin\Release\SpeckleConnectorAutocad.dll")
-#define Civil2021Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorAutocadCivil2021\bin\Release\SpeckleConnectorCivil.dll")
-#define Civil2022Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorAutocadCivil2022\bin\Release\SpeckleConnectorCivil.dll")
+#define Civil2021Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorCivil2021\bin\Release\SpeckleConnectorCivil.dll")
+#define Civil2022Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorCivil2022\bin\Release\SpeckleConnectorCivil.dll")
 
 #define DynamoVersion  GetVersionNumbersString("ConnectorDynamo\ConnectorDynamo\bin\Release\SpeckleConnectorDynamo.dll")
 #define DynamoExtensionVersion  GetVersionNumbersString("ConnectorDynamo\ConnectorDynamoExtension\bin\Release\SpeckleConnectorDynamoExtension.dll")
@@ -99,10 +99,10 @@ Source: "ConnectorAutocadCivil\ConnectorAutocad2021\bin\Release\*"; DestDir: "{u
 Source: "ConnectorAutocadCivil\ConnectorAutocad2022\bin\Release\*"; DestDir: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2AutoCAD2022\"; Flags: ignoreversion recursesubdirs; Components: autocad21
 
 ;civil21
-Source: "ConnectorAutocadCivil\ConnectorAutocadCivil2021\bin\Release\*"; DestDir: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2Civil3D2021\"; Flags: ignoreversion recursesubdirs; Components: civil21
+Source: "ConnectorAutocadCivil\ConnectorCivil2021\bin\Release\*"; DestDir: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2Civil3D2021\"; Flags: ignoreversion recursesubdirs; Components: civil21
 
 ;civil22
-Source: "ConnectorAutocadCivil\ConnectorAutocadCivil2022\bin\Release\*"; DestDir: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2Civil3D2022\"; Flags: ignoreversion recursesubdirs; Components: civil22
+Source: "ConnectorAutocadCivil\ConnectorCivil2022\bin\Release\*"; DestDir: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2Civil3D2022\"; Flags: ignoreversion recursesubdirs; Components: civil22
 
 
 [InstallDelete]
