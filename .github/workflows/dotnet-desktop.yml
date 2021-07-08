@@ -60,6 +60,7 @@ jobs:
 
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore all the applications
+      shell: cmd
       run: |
         for %x in (ConnectorAutocadCivil, ConnectorDynamo, ConnectorGrasshopper, ConnectorRevit, ConnectorRhino) do (
           cd %x && msbuild %x.sln /t:Restore /p:Configuration=Release /p:WarningLevel=0 /p:IsDesktopBuild=false && cd ../ 
