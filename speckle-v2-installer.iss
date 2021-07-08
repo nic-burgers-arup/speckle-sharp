@@ -5,26 +5,27 @@
 #define Civil2021Version  GetFileVersion("ConnectorAutocadCivil\ConnectorAutocadCivil2021\bin\Release\SpeckleConnectorCivil.dll")
 #define Civil2022Version  GetFileVersion("ConnectorAutocadCivil\ConnectorAutocadCivil2022\bin\Release\SpeckleConnectorCivil.dll")
 
-#define DynamoVersion  GetFileVersion("ConnectorDynamo\ConnectorDynamo\bin\Release\ConnectorDynamo.dll")
-#define DynamoExtensionVersion  GetFileVersion("ConnectorDynamo\ConnectorDynamoExtension\bin\Release\ConnectorDynamoExtension.dll")
-#define DynamoFunctionsVersion  GetFileVersion("ConnectorDynamo\ConnectorDynamoFunctions\bin\Release\ConnectorDynamoFunctions.dll")
+#define DynamoVersion  GetFileVersion("ConnectorDynamo\ConnectorDynamo\bin\Release\SpeckleConnectorDynamo.dll")
+#define DynamoExtensionVersion  GetFileVersion("ConnectorDynamo\ConnectorDynamoExtension\bin\Release\SpeckleConnectorDynamoExtension.dll")
+#define DynamoFunctionsVersion  GetFileVersion("ConnectorDynamo\ConnectorDynamoFunctions\bin\Release\SpeckleConnectorDynamoFunctions.dll")
 
-#define RevitVersion  GetFileVersion("SpeckleRevit2021\SpeckleRevit\SpeckleRevit.dll")
-#define CoreGeometryVersion  GetFileVersion("SpeckleCoreGeometry\SpeckleCoreGeometry.dll")
-#define SpeckleElementsVersion  GetFileVersion("SpeckleElements\SpeckleElements.dll")
-#define SpeckleStructuralVersion  GetFileVersion("SpeckleStructural\SpeckleStructural.dll")
-#define SpeckleGSAVersion  GetFileVersion("SpeckleGSA\SpeckleGSA.dll")
-#define AppPublisher "Speckle-cx"
-#define AppURL       "https://speckle.works"
-#define SpeckleFolder "{localappdata}\Speckle" 
-#define AnalyticsFolder "{localappdata}\SpeckleAnalytics"      
-#define UpdaterFilename       "SpeckleUpdater.exe"
-#define AnalyticsFilename       "analytics.exe"
+#define GrasshopperVersion  GetFileVersion("ConnectorGrasshopper\ConnectorGrasshopper\bin\SpeckleConnectorGrasshopper.dll")
+
+#define Revit2019Version  GetFileVersion("ConnectorRevit\ConnectorRevit2019\bin\Release\SpeckleConnectorRevit.dll")
+#define Revit2020Version  GetFileVersion("ConnectorRevit\ConnectorRevit2020\bin\Release\SpeckleConnectorRevit.dll")
+#define Revit2021Version  GetFileVersion("ConnectorRevit\ConnectorRevit2021\bin\Release\SpeckleConnectorRevit.dll")
+#define Revit2022Version  GetFileVersion("ConnectorRevit\ConnectorRevit2022\bin\Release\SpeckleConnectorRevit.dll")
+
+#define RhinoVersion  GetFileVersion("ConnectorRhino\ConnectorRhino\bin\Release\SpeckleConnectorRhino.dll")
+
+#define AppPublisher "Spec-cx"
+#define AppURL       "https://docs.speckle.arup.com"
+#define SpeckleFolder "{localappdata}\Speckle"
 
 [Setup]
 AppId={{BA3A01AA-F70D-4747-AA0E-E93F38C793C8}
 AppName={#AppName}
-AppVersion={#AppVersion}
+AppVersion=v1.0.0.0
 AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
@@ -37,10 +38,9 @@ DisableProgramGroupPage=yes
 DisableWelcomePage=no
 OutputDir="."
 OutputBaseFilename=Speckle-cx-{#AppVersion}
-SetupIconFile=Assets\speckle.ico
+SetupIconFile=DesktopUI\DesktopUI\Resources\s2block.ico
 Compression=lzma
 SolidCompression=yes
-WizardImageFile=Assets\installer.bmp
 ChangesAssociations=yes
 PrivilegesRequired=lowest
 VersionInfoVersion={#AppVersion}
@@ -49,119 +49,91 @@ VersionInfoVersion={#AppVersion}
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Components]
-Name: updater; Description: Speckle Updater - v{#AppVersion}; Types: full custom; Flags: fixed
-Name: coregeometry; Description: Basic Geometry Object Model - v{#CoreGeometryVersion};  Types: full custom; Flags: fixed
-Name: elements; Description: A Higher Level Object Model - v{#SpeckleElementsVersion};  Types: full custom; Flags: fixed  
-Name: structural; Description: Structural Object Model - v{#SpeckleStructuralVersion};  Types: full custom; Flags: fixed
 Name: dynamo; Description: Speckle for Dynamo 2.1+ - v{#DynamoVersion}; Types: full
-Name: gh; Description: Speckle for Rhino 6, Rhino 7 & Grasshopper - v{#RhinoVersion};  Types: full
-Name: gsa; Description: Speckle for GSA - v{#SpeckleGSAVersion};  Types: full
-Name: revit19; Description: Speckle for Revit 2019 ALPHA - v{#RevitVersion};  Types: full
-Name: revit20; Description: Speckle for Revit 2020 ALPHA - v{#RevitVersion};  Types: full
-Name: revit21; Description: Speckle for Revit 2021 ALPHA - v{#RevitVersion};  Types: full
+Name: dynamoext; Description: Speckle for Dynamo Extensions - v{#DynamoExtensionVersion}; Types: full
+Name: dynamofunc; Description: Speckle for Dynamo Functions - v{#DynamoFunctionsVersion}; Types: full
+Name: rhino; Description: Speckle for Rhino 6, Rhino 7 - v{#RhinoVersion};  Types: full
+Name: gh; Description: Speckle for Grasshopper - v{#GrasshopperVersion};  Types: full
+Name: revit19; Description: Speckle for Revit 2019 ALPHA - v{#Revit2019Version};  Types: full
+Name: revit20; Description: Speckle for Revit 2020 ALPHA - v{#Revit2020Version};  Types: full
+Name: revit21; Description: Speckle for Revit 2021 ALPHA - v{#Revit2021Version};  Types: full
+Name: revit22; Description: Speckle for Revit 2022 ALPHA - v{#Revit2021Version};  Types: full
+Name: autocad21; Description: Speckle for AutoCAD 2021 ALPHA - v{#Autocad2021Version};  Types: full
+Name: autocad22; Description: Speckle for AutoCAD 2022 ALPHA - v{#Autocad2022Version};  Types: full
+Name: civil21; Description: Speckle for AutoCADCivil 2021 ALPHA - v{#Civil2021Version};  Types: full
+Name: civil22; Description: Speckle for AutoCADCivil 2022 ALPHA - v{#Civil2022Version};  Types: full
 
-;Name: excel; Description: Speckle for Revit;  Types: full
 
 [Types]
 Name: "full"; Description: "Full installation"
 Name: "custom"; Description: "Custom installation"; Flags: iscustom
 
-[Tasks]
-Name: updates; Description: "Auto update, make sure I always have the best Speckle!";
-
 [Dirs]
 Name: "{app}"; Permissions: everyone-full 
 
-[Files]
-;updater
-Source: "SpeckleUpdater\bin\Release\*"; DestDir: "{#SpeckleFolder}"; Flags: ignoreversion recursesubdirs;
+;rhino                                                                                                                                    
+Source: "ConnectorRhino\ConnectorRhino\bin\Release\*"; DestDir: "{userappdata}\McNeel\Rhinoceros\6.0\Plug-ins\SpeckleRhino2 (8dd5f30b-a13d-4a24-abdc-3e05c8c87143)\"; Flags: ignoreversion recursesubdirs; Components: rhino
+Source: "ConnectorRhino\ConnectorRhino\bin\Release\*"; DestDir: "{userappdata}\McNeel\Rhinoceros\7.0\Plug-ins\SpeckleRhino2 (8dd5f30b-a13d-4a24-abdc-3e05c8c87143)\"; Flags: ignoreversion recursesubdirs; Components: rhino
 
-;analytics
-Source: "Analytics\bin\Release\net461\win-x64\*"; DestDir: "{#AnalyticsFolder}"; Flags: ignoreversion recursesubdirs;
+;gh
+Source: "ConnectorGrasshopper\ConnectorGrasshopper\bin\*"; DestDir: "{userappdata}\Grasshopper\Libraries\SpeckleGrasshopper2\"; Flags: ignoreversion recursesubdirs; Components: gh
 
-;rhino+gh                                                                                                                                      
-Source: "SpeckleRhino\*"; DestDir: "{userappdata}\McNeel\Rhinoceros\6.0\Plug-ins\Speckle Rhino (512d9705-6f92-49ca-a606-d6d5c1ac6aa2)\{#RhinoVersion}"; Flags: ignoreversion recursesubdirs; Components: gh
-Source: "SpeckleRhino\*"; DestDir: "{userappdata}\McNeel\Rhinoceros\7.0\Plug-ins\Speckle Rhino (512d9705-6f92-49ca-a606-d6d5c1ac6aa2)\{#RhinoVersion}"; Flags: ignoreversion recursesubdirs; Components: gh    
+;revit19
+Source: "ConnectorRevit\ConnectorRevit2019\bin\Release\*"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2019\"; Flags: ignoreversion recursesubdirs; Components: revit19
 
-;dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Dynamo\Dynamo Revit\2.1\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Dynamo\Dynamo Core\2.1\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Dynamo\Dynamo Revit\2.2\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Dynamo\Dynamo Core\2.2\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Dynamo\Dynamo Revit\2.3\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Dynamo\Dynamo Core\2.3\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Dynamo\Dynamo Revit\2.4\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Dynamo\Dynamo Core\2.4\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Dynamo\Dynamo Revit\2.5\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Dynamo\Dynamo Core\2.5\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Dynamo\Dynamo Revit\2.6\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Dynamo\Dynamo Core\2.6\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
+;revit20
+Source: "ConnectorRevit\ConnectorRevit2020\bin\Release\*"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2020\"; Flags: ignoreversion recursesubdirs; Components: revit20
 
-;dynamo for civil 3d
-;Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Autodesk\C3D 2020\Dynamo\2.0\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Autodesk\C3D 2020\Dynamo\2.1\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Autodesk\C3D 2020\Dynamo\2.4\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Autodesk\C3D 2021\Dynamo\2.5\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "SpeckleDynamo\*"; DestDir: "{userappdata}\Autodesk\C3D 2021\Dynamo\2.6\packages\Speckle for Dynamo\"; Flags: ignoreversion recursesubdirs; Components: dynamo
+;revit21
+Source: "ConnectorRevit\ConnectorRevit2021\bin\Release\*"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2021\"; Flags: ignoreversion recursesubdirs; Components: revit21
 
-;revit
-Source: "SpeckleRevit2019\*"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2019\"; Flags: ignoreversion recursesubdirs; Components: revit19
-Source: "SpeckleRevit2020\*"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2020\"; Flags: ignoreversion recursesubdirs; Components: revit20
-Source: "SpeckleRevit2021\*"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2021\"; Flags: ignoreversion recursesubdirs; Components: revit21
+;revit22
+Source: "ConnectorRevit\ConnectorRevit2022\bin\Release\*"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2022\"; Flags: ignoreversion recursesubdirs; Components: revit22
 
-;coregeometry
-Source: "SpeckleCoreGeometry\*"; DestDir: "{localappdata}\SpeckleKits\SpeckleCoreGeometry"; Flags: ignoreversion recursesubdirs; Components: coregeometry  
+;autocad21
+Source: "ConnectorAutocadCivil\ConnectorAutocad2021\bin\Release\*"; DestDir: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2AutoCAD2021\"; Flags: ignoreversion recursesubdirs; Components: autocad21
 
-;elements
-Source: "SpeckleElements\*"; DestDir: "{localappdata}\SpeckleKits\SpeckleElements"; Flags: ignoreversion recursesubdirs; Components: elements  
+;autocad22
+Source: "ConnectorAutocadCivil\ConnectorAutocad2022\bin\Release\*"; DestDir: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2AutoCAD2022\"; Flags: ignoreversion recursesubdirs; Components: autocad21
 
-;structural
-Source: "SpeckleStructural\*"; DestDir: "{localappdata}\SpeckleKits\SpeckleStructural"; Flags: ignoreversion recursesubdirs; Components: elements  
+;civil21
+Source: "ConnectorAutocadCivil\ConnectorAutocadCivil2021\bin\Release\*"; DestDir: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2Civil3D2021\"; Flags: ignoreversion recursesubdirs; Components: civil21
 
-;gsa
-Source: "SpeckleGSA\*"; DestDir: "{localappdata}\SpeckleGSA"; Flags: ignoreversion recursesubdirs; Components: gsa  
+;civil22
+Source: "ConnectorAutocadCivil\ConnectorAutocadCivil2022\bin\Release\*"; DestDir: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2Civil3D2022\"; Flags: ignoreversion recursesubdirs; Components: civil22
 
-;excel                                                                                                                                    
-;Source: "{#Repository}\Arup.Compute.Excel\bin\Release\Arup.Compute.Excel-AddIn-packed.xll"; DestDir: "{userappdata}\Microsoft\AddIns\"; Flags: ignoreversion; Components: excel  
-
-;revit
-;TODO
-
-;tekla
-;42
 
 [InstallDelete]
-Type: filesandordirs; Name: "{userappdata}\McNeel\Rhinoceros\6.0\Plug-ins\Speckle Rhino Plugin (512d9705-6f92-49ca-a606-d6d5c1ac6aa2)\*"
-Type: filesandordirs; Name: "{cf}\McNeel\Rhinoceros\6.0\Plug-ins\Speckle Rhino Plugin (512d9705-6f92-49ca-a606-d6d5c1ac6aa2)\*"
-Type: filesandordirs; Name: "{userappdata}\McNeel\Rhinoceros\6.0\Plug-ins\Speckle Rhino (512d9705-6f92-49ca-a606-d6d5c1ac6aa2)\*"
-Type: filesandordirs; Name: "{cf}\McNeel\Rhinoceros\6.0\Plug-ins\Speckle Rhino (512d9705-6f92-49ca-a606-d6d5c1ac6aa2)\*"
-Type: filesandordirs; Name: "{userappdata}\McNeel\Rhinoceros\7.0\Plug-ins\Speckle Rhino (512d9705-6f92-49ca-a606-d6d5c1ac6aa2)\*"
-Type: filesandordirs; Name: "{cf}\McNeel\Rhinoceros\7.0\Plug-ins\Speckle Rhino (512d9705-6f92-49ca-a606-d6d5c1ac6aa2)\*"
+Type: filesandordirs; Name: "{userappdata}\McNeel\Rhinoceros\6.0\Plug-ins\SpeckleRhino2 (8dd5f30b-a13d-4a24-abdc-3e05c8c87143)\*"
+Type: filesandordirs; Name: "{userappdata}\McNeel\Rhinoceros\7.0\Plug-ins\SpeckleRhino2 (8dd5f30b-a13d-4a24-abdc-3e05c8c87143)\*"
+Type: filesandordirs; Name: "{userappdata}\Grasshopper\Libraries\SpeckleGrasshopper2\*"
+Type: filesandordirs; Name: "{userappdata}\Autodesk\Revit\Addins\2019\*"
+Type: filesandordirs; Name: "{userappdata}\Autodesk\Revit\Addins\2020\*"
+Type: filesandordirs; Name: "{userappdata}\Autodesk\Revit\Addins\2021\*"
+Type: filesandordirs; Name: "{userappdata}\Autodesk\Revit\Addins\2022\*"
+Type: filesandordirs; Name: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2AutoCAD2021\*"
+Type: filesandordirs; Name: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2AutoCAD2022\*"
+Type: filesandordirs; Name: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2Civil3D2021\*"
+Type: filesandordirs; Name: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2Civil3D2022\*"
 
-Type: filesandordirs; Name: "{localappdata}\SpeckleKits\SpeckleCoreGeometry\*"        
-Type: filesandordirs; Name: "{localappdata}\SpeckleKits\SpeckleElements\*"        
-Type: filesandordirs; Name: "{localappdata}\SpeckleKits\SpeckleStructural\*"
-Type: filesandordirs; Name: "{localappdata}\SpeckleGSA\*"
-Type: filesandordirs; Name: "{localappdata}\Speckle\*"
-Type: filesandordirs; Name: "{localappdata}\SpeckleAnalytics\*"
 
 [Registry]
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2"; ValueType: string; ValueName: "Name"; ValueData: "Speckle";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2"; ValueType: string; ValueName: "RegPath"; ValueData: "\\HKEY_CURRENT_USER\Software\McNeel\Rhinoceros\6.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2"; ValueType: dword; ValueName: "DirectoryInstall"; ValueData: "0";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2"; ValueType: dword; ValueName: "IsDotNETPlugIn"; ValueData: "1";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2"; ValueType: dword; ValueName: "LoadMode"; ValueData: "2";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2"; ValueType: dword; ValueName: "Type"; ValueData: "16";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2\CommandList"; ValueType: string; ValueName: "SpecklePanel"; ValueData: "2;SpecklePanel";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2\PlugIn"; ValueType: string; ValueName: "FileName"; ValueData: "{userappdata}\McNeel\Rhinoceros\6.0\Plug-ins\Speckle Rhino (512d9705-6f92-49ca-a606-d6d5c1ac6aa2)\{#RhinoVersion}\SpeckleWinR6.rhp";  
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2"; ValueType: string; ValueName: "Name"; ValueData: "Speckle";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2"; ValueType: string; ValueName: "RegPath"; ValueData: "\\HKEY_CURRENT_USER\Software\McNeel\Rhinoceros\7.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2"; ValueType: dword; ValueName: "DirectoryInstall"; ValueData: "0";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2"; ValueType: dword; ValueName: "IsDotNETPlugIn"; ValueData: "1";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2"; ValueType: dword; ValueName: "LoadMode"; ValueData: "2";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2"; ValueType: dword; ValueName: "Type"; ValueData: "16";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2\CommandList"; ValueType: string; ValueName: "SpecklePanel"; ValueData: "2;SpecklePanel";
-Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\512d9705-6f92-49ca-a606-d6d5c1ac6aa2\PlugIn"; ValueType: string; ValueName: "FileName"; ValueData: "{userappdata}\McNeel\Rhinoceros\7.0\Plug-ins\Speckle Rhino (512d9705-6f92-49ca-a606-d6d5c1ac6aa2)\{#RhinoVersion}\SpeckleWinR6.rhp";  
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143"; ValueType: string; ValueName: "Name"; ValueData: "Speckle";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143"; ValueType: string; ValueName: "RegPath"; ValueData: "\\HKEY_CURRENT_USER\Software\McNeel\Rhinoceros\6.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143"; ValueType: dword; ValueName: "DirectoryInstall"; ValueData: "0";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143"; ValueType: dword; ValueName: "IsDotNETPlugIn"; ValueData: "1";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143"; ValueType: dword; ValueName: "LoadMode"; ValueData: "2";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143"; ValueType: dword; ValueName: "Type"; ValueData: "16";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143\CommandList"; ValueType: string; ValueName: "SpecklePanel"; ValueData: "2;SpecklePanel";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143\PlugIn"; ValueType: string; ValueName: "FileName"; ValueData: "{userappdata}\McNeel\Rhinoceros\6.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143\SpeckleWinR6.rhp";  
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143"; ValueType: string; ValueName: "Name"; ValueData: "Speckle";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143"; ValueType: string; ValueName: "RegPath"; ValueData: "\\HKEY_CURRENT_USER\Software\McNeel\Rhinoceros\7.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143"; ValueType: dword; ValueName: "DirectoryInstall"; ValueData: "0";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143"; ValueType: dword; ValueName: "IsDotNETPlugIn"; ValueData: "1";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143"; ValueType: dword; ValueName: "LoadMode"; ValueData: "2";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143"; ValueType: dword; ValueName: "Type"; ValueData: "16";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143\CommandList"; ValueType: string; ValueName: "SpecklePanel"; ValueData: "2;SpecklePanel";
+Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143\PlugIn"; ValueType: string; ValueName: "FileName"; ValueData: "{userappdata}\McNeel\Rhinoceros\7.0\Plug-ins\SpeckleRhino2 (8dd5f30b-a13d-4a24-abdc-3e05c8c87143)\SpeckleWinR6.rhp";  
 
 [Icons]
 Name: "{group}\Check for updates"; Filename: "{#SpeckleFolder}\{#UpdaterFilename}"; Parameters: "-showprogress"
@@ -169,9 +141,6 @@ Name: "{userappdata}\Microsoft\Windows\Start Menu\Programs\Startup\Speckle"; Fil
 Name: "{userappdata}\Microsoft\Windows\Start Menu\Programs\Oasys\SpeckleGSA"; Filename: "{localappdata}\SpeckleGSA\SpeckleGSAUI.exe";
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
 ;Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-
-[Run]
-Filename: "{#AnalyticsFolder}\analytics.exe"; Parameters: "{#AppVersion} {#GetEnv('ENABLE_TELEMETRY_DOMAIN')}"; Description: "Send anonymous analytics to Arup. No project data or personally identifiable information will be sent."
 
 ;checks if minimun requirements are met
 [Code]
@@ -185,7 +154,7 @@ function IsDotNetDetected(version: string; service: cardinal): boolean;
 //    'v3.5'          .NET Framework 3.5
 //    'v4\Client'     .NET Framework 4.0 Client Profile
 //    'v4\Full'       .NET Framework 4.0 Full Installation
-//    'v4.5'          .NET Framework 4.5
+//    'v4.7'          .NET Framework 4.5
 //
 // service -- Specify any non-negative integer for the required service pack level:
 //    0               No service packs required
@@ -196,11 +165,11 @@ var
     check45, success: boolean;
 begin
     // .NET 4.5 installs as update to .NET 4.0 Full
-    if version = 'v4.5' then begin
+    if version = 'v4.7' then begin
         version := 'v4\Full';
-        check45 := true;
+        check47 := true;
     end else
-        check45 := false;
+        check47 := false;
 
     // installation key group for all .NET versions
     key := 'SOFTWARE\Microsoft\NET Framework Setup\NDP\' + version;
@@ -226,23 +195,4 @@ begin
     end;
 
     result := success and (install = 1) and (serviceCount >= service);
-end;
-
-//Revit 2017/18 need 4.6, should update?
-function InitializeSetup(): Boolean;
-var
-  ErrCode: integer;
-begin
-    if not IsDotNetDetected('v4.5', 0) then begin
-      if  MsgBox('{#AppName} requires Microsoft .NET Framework 4.5.'#13#13
-            'Do you want me to open http://www.microsoft.com/net'#13
-            'so you can download it?',  mbConfirmation, MB_YESNO) = IDYES
-            then begin
-              ShellExec('open', 'http://www.microsoft.com/net',
-                '', '', SW_SHOW, ewNoWait, ErrCode);
-      end;
-  
-         result := false;
-    end else
-        result := true;
 end;
