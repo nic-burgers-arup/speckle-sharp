@@ -136,13 +136,6 @@ Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\8dd5f30b-a13d-4a24-
 Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143\CommandList"; ValueType: string; ValueName: "SpecklePanel"; ValueData: "2;SpecklePanel";
 Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\7.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143\PlugIn"; ValueType: string; ValueName: "FileName"; ValueData: "{userappdata}\McNeel\Rhinoceros\7.0\Plug-ins\SpeckleRhino2 (8dd5f30b-a13d-4a24-abdc-3e05c8c87143)\SpeckleWinR6.rhp";  
 
-[Icons]
-Name: "{group}\Check for updates"; Filename: "{#SpeckleFolder}\{#UpdaterFilename}"; Parameters: "-showprogress"
-Name: "{userappdata}\Microsoft\Windows\Start Menu\Programs\Startup\Speckle"; Filename: "{#SpeckleFolder}\{#UpdaterFilename}"; Tasks: updates
-Name: "{userappdata}\Microsoft\Windows\Start Menu\Programs\Oasys\SpeckleGSA"; Filename: "{localappdata}\SpeckleGSA\SpeckleGSAUI.exe";
-Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
-;Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-
 ;checks if minimun requirements are met
 [Code]
 function IsDotNetDetected(version: string; service: cardinal): boolean;
