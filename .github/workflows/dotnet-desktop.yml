@@ -36,13 +36,14 @@
 # For a complete CI/CD sample to get started with GitHub Action workflows for Desktop Applications,
 # refer to https://github.com/microsoft/github-actions-for-desktop-apps
 
-name: .NET Core Desktop
+name: Create Installer
 
 on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version of the installer to make'     
+        required: true
 
 jobs:
   build:
@@ -75,6 +76,6 @@ jobs:
         )
         
     - name: create Installer
-      run: iscc speckle-v2-installer.iss
+      run: iscc /dAppVersion="${{ github.event.inputs.version }}.$($env:GITHUB_RUN_ID%65536)" speckle-v2-installer.iss
 
 
