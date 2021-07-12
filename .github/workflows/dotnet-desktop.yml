@@ -99,10 +99,10 @@ jobs:
           ${{ github.workspace }}\${{ steps.installer.outputs.filename }}
 
     - name: Upload a Build Artifact      
-        uses: actions/upload-artifact@v2
-        with:
-          name: Installer
-          path: ${{ steps.installer.outputs.filename }}
-          retention-days: 1
+      uses: actions/upload-artifact@v2
+      with:
+        name: Installer
+        path: ${{ steps.installer.outputs.filename }}
+        retention-days: 1
 
 
