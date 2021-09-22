@@ -15,7 +15,7 @@ using AutoMapper;
 using Objects.Structural.Properties.Profiles;
 using Speckle.GSA.API.GwaSchema;
 using Restraint = Objects.Structural.Geometry.Restraint;
-using MemberType = Objects.Structural.Geometry.MemberType;
+//using MemberType = Objects.Structural.Geometry.MemberType;
 
 namespace ConverterGSATests
 {
@@ -297,7 +297,7 @@ namespace ConverterGSATests
           cost = null,
           poolRef = null,
           colour = "NO_RGB",
-          memberType = MemberType.Beam,
+          memberType = MemberType1D.Beam,
           material = SpeckleSteelExamples(1, "steel 1").First(),
           profile = SpeckleProfileExamples(1, "profile 1").First(),
           referencePoint = BaseReferencePoint.Centroid,
@@ -312,7 +312,7 @@ namespace ConverterGSATests
           cost = null,
           poolRef = null,
           colour = "NO_RGB",
-          memberType = MemberType.Beam,
+          memberType = MemberType1D.Beam,
           material = SpeckleSteelExamples(1, "steel 1").First(),
           profile = SpeckleProfileExamples(1, "profile 1").First(),
           referencePoint = BaseReferencePoint.Centroid,

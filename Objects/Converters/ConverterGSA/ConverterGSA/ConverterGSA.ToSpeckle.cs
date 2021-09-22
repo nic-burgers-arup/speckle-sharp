@@ -435,7 +435,7 @@ namespace ConverterGSA
       {
         //-- App agnostic --
         name = gsaMemb.Name,
-        type = GetMember2dType(gsaMemb.Type),
+        //type = GetMember2dType(gsaMemb.Type),
         parent = new Base(), //TO DO: add parent
         displayMesh = new Mesh(), //TO DO: add display mesh
         baseMesh = new Mesh(), //TO DO: add base mesh
@@ -904,7 +904,7 @@ namespace ConverterGSA
       {
         //-- App agnostic --
         name = gsaSection.Name,
-        memberType = Objects.Structural.Geometry.MemberType.Generic1D,
+        memberType = Objects.Structural.Geometry.MemberType1D.Generic1D,
         referencePoint = GetReferencePoint(gsaSection.ReferencePoint),
 
         //-- GSA specific --
@@ -958,7 +958,7 @@ namespace ConverterGSA
       if (gsaProp2d.Index.IsIndex()) speckleProperty2d.applicationId = Instance.GsaModel.GetApplicationId<GsaProp2d>(gsaProp2d.Index.Value);
       if (gsaProp2d.Thickness.IsPositive()) speckleProperty2d.thickness = gsaProp2d.Thickness.Value;
       if (gsaProp2d.GradeIndex.IsIndex()) speckleProperty2d.material = GetMaterialFromIndex(gsaProp2d.GradeIndex.Value, gsaProp2d.MatType);
-      if (gsaProp2d.Type != Property2dType.NotSet) speckleProperty2d.type = (PropertyType2D)Enum.Parse(typeof(PropertyType2D), gsaProp2d.Type.ToString());
+      //if (gsaProp2d.Type != Property2dType.NotSet) speckleProperty2d.type = (PropertyType2D)Enum.Parse(typeof(PropertyType2D), gsaProp2d.Type.ToString());
       if (gsaProp2d.InPlaneStiffnessPercentage.HasValue) speckleProperty2d.modifierInPlane = gsaProp2d.InPlaneStiffnessPercentage.Value;  //Only supporting Percentage modifiers
       if (gsaProp2d.BendingStiffnessPercentage.HasValue) speckleProperty2d.modifierBending = gsaProp2d.BendingStiffnessPercentage.Value;
       if (gsaProp2d.ShearStiffnessPercentage.HasValue) speckleProperty2d.modifierShear = gsaProp2d.ShearStiffnessPercentage.Value;

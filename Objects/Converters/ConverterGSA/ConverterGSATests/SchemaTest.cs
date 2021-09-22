@@ -20,7 +20,7 @@ using Objects.Structural.GSA.Materials;
 using Objects.Structural.GSA.Other;
 using Speckle.ConnectorGSA.Proxy.GwaParsers;
 using GwaMemberType = Speckle.GSA.API.GwaSchema.MemberType;
-using MemberType = Objects.Structural.Geometry.MemberType;
+//using MemberType = Objects.Structural.Geometry.MemberType;
 using GwaAxisDirection6 = Speckle.GSA.API.GwaSchema.AxisDirection6;
 using AxisDirection6 = Objects.Structural.GSA.Other.AxisDirection6;
 using Xunit.Sdk;
