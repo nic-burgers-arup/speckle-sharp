@@ -224,8 +224,11 @@ namespace Objects.Converter.Revit
       if (rp == null || !rp.HasValue)
         return default;
 
-      return (T)ParameterToSpeckle(rp).value;
-
+      var value = ParameterToSpeckle(rp).value;
+      if (typeof(T) == typeof(int) && value.GetType() == typeof(bool))
+        return (T)Convert.ChangeType(value, typeof(int));
+      else
+        return (T)ParameterToSpeckle(rp).value;
     }
 
     //rp must HaveValue
@@ -400,6 +403,16 @@ namespace Objects.Converter.Revit
       if (param != null && value != null && !param.IsReadOnly)
       {
         param.Set(value.Id);
+      }
+    }
+
+    private void TrySetParam(DB.Element elem, BuiltInParameter bip, bool value)
+    {
+      var param = elem.get_Parameter(bip);
+      if (param != null && !param.IsReadOnly)
+      {
+        param.Set(value ? 1 : 0);
+
       }
     }
 
