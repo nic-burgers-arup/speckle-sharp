@@ -29,6 +29,7 @@ using Surface = Objects.Geometry.Surface;
 using Point = Objects.Geometry.Point;
 using Polycurve = Objects.Geometry.Polycurve;
 using Polyline = Objects.Geometry.Polyline;
+using Text = Objects.Other.Text;
 using Speckle.Core.Models;
 using Speckle.Core.Kits;
 using Autodesk.AutoCAD.Windows.Data;
@@ -195,14 +196,14 @@ namespace Objects.Converter.AutocadCivil
     }
 
     // Polycurves
-    public Polyline PolylineToSpeckle(AcadDB.Polyline polyline) // AC polylines can have arc segments, this treats all segments as lines
+    public Polyline PolylineToSpeckle(AcadDB.Polyline polyline) 
     {
       List<Point3d> vertices = new List<Point3d>();
       for (int i = 0; i < polyline.NumberOfVertices; i++)
         vertices.Add(polyline.GetPoint3dAt(i));
 
       var _polyline = new Polyline(PointsToFlatArray(vertices), ModelUnits);
-      _polyline.closed = polyline.Closed;
+      _polyline.closed = polyline.Closed || polyline.StartPoint.Equals(polyline.EndPoint) ? true : false; // hatch boundary polylines are not closed, cannot rely on .Closed prop
       _polyline.length = polyline.Length;
       _polyline.bbox = BoxToSpeckle(polyline.GeometricExtents, true);
 
@@ -250,7 +251,7 @@ namespace Objects.Converter.AutocadCivil
       }
 
       var _polyline = new Polyline(PointsToFlatArray(vertices), ModelUnits);
-      _polyline.closed = polyline.Closed;
+      _polyline.closed = polyline.Closed || polyline.StartPoint.Equals(polyline.EndPoint) ? true : false;
       _polyline.length = polyline.Length;
       _polyline.bbox = BoxToSpeckle(polyline.GeometricExtents, true);
 
@@ -274,13 +275,13 @@ namespace Objects.Converter.AutocadCivil
       Point3d previousPoint = new Point3d();
       for (int i = 0; i < exploded.Count; i++)
       {
-        var segment = (exploded[i] as AcadDB.Curve).GetGeCurve();
+        var segment = exploded[i] as AcadDB.Curve;
 
         if (i == 0 && exploded.Count > 1)
         {
           // get the connection point to the next segment - this is necessary since imported polycurves might have segments in different directions
           var connectionPoint = new Point3d();
-          var nextSegment = (exploded[i+1] as AcadDB.Curve).GetGeCurve();
+          var nextSegment = exploded[i+1] as AcadDB.Curve;
           if (nextSegment.StartPoint.IsEqualTo(segment.StartPoint) || nextSegment.StartPoint.IsEqualTo(segment.EndPoint))
             connectionPoint = nextSegment.StartPoint;
           else
@@ -353,7 +354,7 @@ namespace Objects.Converter.AutocadCivil
       }
     }
 
-    private Curve3d GetCorrectSegmentDirection (Curve3d segment, Point3d connectionPoint, bool isFirstSegment, out Point3d nextPoint) // note sometimes curve3d may not have endpoints
+    private AcadDB.Curve GetCorrectSegmentDirection (AcadDB.Curve segment, Point3d connectionPoint, bool isFirstSegment, out Point3d nextPoint) // note sometimes curve3d may not have endpoints
     {
       nextPoint = segment.EndPoint;
 
@@ -371,19 +372,39 @@ namespace Objects.Converter.AutocadCivil
         reverseDirection = (segment.StartPoint.IsEqualTo(connectionPoint)) ? false : true;
         if (reverseDirection) nextPoint = segment.StartPoint;
       }
-        
+
+      if (reverseDirection) segment.ReverseCurve();
+      return segment;
+    }
+    private Curve3d GetCorrectSegmentDirection(Curve3d segment, Point3d connectionPoint, bool isFirstSegment, out Point3d nextPoint) // note sometimes curve3d may not have endpoints
+    {
+      nextPoint = segment.EndPoint;
+
+      if (connectionPoint == null)
+        return segment;
+
+      bool reverseDirection = false;
+      if (isFirstSegment)
+      {
+        reverseDirection = (segment.StartPoint.IsEqualTo(connectionPoint)) ? true : false;
+        if (reverseDirection) nextPoint = segment.StartPoint;
+      }
+      else
+      {
+        reverseDirection = (segment.StartPoint.IsEqualTo(connectionPoint)) ? false : true;
+        if (reverseDirection) nextPoint = segment.StartPoint;
+      }
+
       return (reverseDirection) ? segment.GetReverseParameterCurve() : segment;
     }
 
     // polylines can only support curve segments of type circular arc
     // currently, this will collapse 3d polycurves into 2d since there is no polycurve class that can contain 3d polylines with nonlinear segments
-    // TODO: to preserve 3d polycurves, will have to convert segments individually, append to the document, and join. This will convert to spline if 3d with curved segments.
-    // TODO: figure out how to handle polycurves with spline segments
     public AcadDB.Polyline PolycurveToNativeDB(Polycurve polycurve) 
     {
       AcadDB.Polyline polyline = new AcadDB.Polyline() { Closed = polycurve.closed };
       var plane = new Autodesk.AutoCAD.Geometry.Plane(Point3d.Origin, Vector3d.ZAxis.TransformBy(Doc.Editor.CurrentUserCoordinateSystem)); // TODO: check this 
-
+      
       // add all vertices
       for (int i = 0; i < polycurve.segments.Count; i++)
       {
@@ -408,6 +429,23 @@ namespace Objects.Converter.AutocadCivil
 
       return polyline;
     }
+    // handles polycurves with spline segments: bakes segments individually and then joins
+    // TODO: can use this for 3d polycurves with arc segments (needs an IsPlanar property)
+    public AcadDB.Spline PolycurveSplineToNativeDB(Polycurve polycurve)
+    {
+      AcadDB.Curve firstSegment = CurveToNativeDB(polycurve.segments[0]);
+      List<AcadDB.Curve> otherSegments = new List<AcadDB.Curve>();
+      for (int i = 1; i < polycurve.segments.Count; i++)
+      {
+        var converted = CurveToNativeDB(polycurve.segments[i]);
+        if (converted == null)
+          return null;
+        otherSegments.Add(converted);
+      }
+      firstSegment.JoinEntities(otherSegments.ToArray());
+      return firstSegment.Spline;
+    }
+
     // calculates bulge direction: (-) clockwise, (+) counterclockwise
     int BulgeDirection(Point start, Point mid, Point end)
     {
@@ -620,59 +658,56 @@ namespace Objects.Converter.AutocadCivil
     }
     public AcadDB.Hatch HatchToNativeDB(Hatch hatch)
     {
-      var _hatch = new AcadDB.Hatch();
-      using (Transaction tr = Doc.TransactionManager.StartTransaction())
+      BlockTableRecord modelSpaceRecord = Doc.Database.GetModelSpace();
+
+      // convert curves
+      var curveIds = new ObjectIdCollection();
+      var curves = new List<DBObject>();
+      foreach (var curve in hatch.curves)
       {
-        BlockTable blckTbl = tr.GetObject(Doc.Database.BlockTableId, OpenMode.ForRead) as BlockTable;
-        BlockTableRecord modelSpaceRecord = (BlockTableRecord)tr.GetObject(blckTbl[BlockTableRecord.ModelSpace], AcadDB.OpenMode.ForWrite);
-
-        // convert curves
-        var curveIds = new ObjectIdCollection();
-        foreach (var curve in hatch.curves)
+        var converted = CurveToNativeDB(curve);
+        if (converted == null || !converted.Closed)
+          return null;
+        if (converted.IsNewObject)
         {
-          var converted = CurveToNativeDB(curve);
-          if (converted == null || !converted.Closed)
+          var curveId = modelSpaceRecord.Append(converted);
+          if (curveId.IsValid)
           {
-            tr.Commit();
-            return null;
-          }
-          if (converted.IsNewObject)
-          {
-            var curveId = modelSpaceRecord.AppendEntity(converted);
-            tr.AddNewlyCreatedDBObject(converted, true);
-            if (curveId.IsValid)
-              curveIds.Add(curveId);
+            curveIds.Add(curveId);
+            curves.Add(converted);
           }
         }
-
-        // add hatch to modelspace
-        modelSpaceRecord.AppendEntity(_hatch);
-        tr.AddNewlyCreatedDBObject(_hatch, true);
-
-        _hatch.SetDatabaseDefaults();
-        // try get hatch pattern
-        switch (HatchPatterns.ValidPatternName(hatch.pattern))
-        {
-          case PatPatternCategory.kCustomdef:
-            _hatch.SetHatchPattern(HatchPatternType.CustomDefined, hatch.pattern);
-            break;
-          case PatPatternCategory.kPredef:
-            _hatch.SetHatchPattern(HatchPatternType.PreDefined, hatch.pattern);
-            break;
-          case PatPatternCategory.kUserdef:
-            _hatch.SetHatchPattern(HatchPatternType.UserDefined, hatch.pattern);
-            break;
-          default:
-            _hatch.SetHatchPattern(HatchPatternType.PreDefined, "SOLID");
-            break;
-        }
-        _hatch.PatternAngle = hatch.rotation;
-        _hatch.PatternScale = hatch.scale;
-        _hatch.AppendLoop(HatchLoopTypes.Default, curveIds);
-        _hatch.EvaluateHatch(true);
-
-        tr.Commit();
       }
+
+      // add hatch to modelspace
+      var _hatch = new AcadDB.Hatch();
+      modelSpaceRecord.Append(_hatch);
+
+      _hatch.SetDatabaseDefaults();
+      // try get hatch pattern
+      switch (HatchPatterns.ValidPatternName(hatch.pattern))
+      {
+        case PatPatternCategory.kCustomdef:
+          _hatch.SetHatchPattern(HatchPatternType.CustomDefined, hatch.pattern);
+          break;
+        case PatPatternCategory.kPredef:
+          _hatch.SetHatchPattern(HatchPatternType.PreDefined, hatch.pattern);
+          break;
+        case PatPatternCategory.kUserdef:
+          _hatch.SetHatchPattern(HatchPatternType.UserDefined, hatch.pattern);
+          break;
+        default:
+          _hatch.SetHatchPattern(HatchPatternType.PreDefined, "SOLID");
+          break;
+      }
+      _hatch.PatternAngle = hatch.rotation;
+      _hatch.PatternScale = hatch.scale;
+      _hatch.AppendLoop(HatchLoopTypes.Default, curveIds);
+      _hatch.EvaluateHatch(true);
+
+      // delete created hatch curves
+      foreach (DBObject curve in curves)
+        curve.Erase();
 
       return _hatch;
     }
@@ -884,19 +919,23 @@ namespace Objects.Converter.AutocadCivil
         tr.AddNewlyCreatedDBObject(_mesh, true);
 
         // add polyfacemesh vertices
-        
         for (int i = 0; i < vertices.Count; i++)
         {
           var vertex = new PolyFaceMeshVertex(points[i]);
-          try
+          if (mesh.colors.Count > 0)
           {
-            Color color = Color.FromArgb(mesh.colors[i]);
-            vertex.Color = Autodesk.AutoCAD.Colors.Color.FromRgb(color.R, color.G, color.B);
+            try
+            {
+              Color color = Color.FromArgb(mesh.colors[i]);
+              vertex.Color = Autodesk.AutoCAD.Colors.Color.FromRgb(color.R, color.G, color.B);
+            }
+            catch { }
           }
-          catch { }
-          _mesh.AppendVertex(vertex);
-          tr.AddNewlyCreatedDBObject(vertex, true);
-          vertex.Dispose();
+          if (vertex.IsNewObject)
+          {
+            _mesh.AppendVertex(vertex);
+            tr.AddNewlyCreatedDBObject(vertex, true);
+          }
         }
 
         // add polyfacemesh faces. vertex index starts at 1 sigh
@@ -916,16 +955,17 @@ namespace Objects.Converter.AutocadCivil
           }
           if (face != null)
           {
-            _mesh.AppendFaceRecord(face);
-            tr.AddNewlyCreatedDBObject(face, true);
+            if (face.IsNewObject)
+            {
+              _mesh.AppendFaceRecord(face);
+              tr.AddNewlyCreatedDBObject(face, true);
+            }
           }
-          face.Dispose();
         }
 
         tr.Commit();
       }
-      
-      
+     
       return _mesh;
     }
 
@@ -1144,6 +1184,8 @@ namespace Objects.Converter.AutocadCivil
       }
     }
 
+    // blocks
+
     public BlockInstance BlockReferenceToSpeckle(AcadDB.BlockReference reference)
     {
       // skip if dynamic block
@@ -1152,12 +1194,20 @@ namespace Objects.Converter.AutocadCivil
 
       // get record
       BlockDefinition definition = null;
+      var attributes = new Dictionary<string, string>();
       using (Transaction tr = Doc.TransactionManager.StartTransaction())
       {
         BlockTableRecord btr = (BlockTableRecord)tr.GetObject(reference.BlockTableRecord, OpenMode.ForRead);
         definition = BlockRecordToSpeckle(btr);
+        foreach (ObjectId id in reference.AttributeCollection)
+        {
+          AttributeReference attRef = (AttributeReference)tr.GetObject(id, OpenMode.ForRead);
+          attributes.Add(attRef.Tag, attRef.TextString);
+        }
+
         tr.Commit();
       }
+      
       if (definition == null)
         return null;
 
@@ -1168,6 +1218,10 @@ namespace Objects.Converter.AutocadCivil
         blockDefinition = definition,
         units = ModelUnits
       };
+      
+      // add attributes
+      foreach (var attribute in attributes)
+        instance[attribute.Key] = attribute.Value;
 
       return instance;
     }
@@ -1190,25 +1244,18 @@ namespace Objects.Converter.AutocadCivil
         transform[i] = ScaleToNative(transform[i], instance.units);
       Matrix3d convertedTransform = new Matrix3d(transform);
 
-      
-      using (Transaction tr = Doc.TransactionManager.StartTransaction())
-      {
-        BlockTable blckTbl = tr.GetObject(Doc.Database.BlockTableId, OpenMode.ForRead) as BlockTable;
-        BlockTableRecord modelSpaceRecord = (BlockTableRecord)tr.GetObject(blckTbl[BlockTableRecord.ModelSpace], AcadDB.OpenMode.ForWrite);
+      // add block reference
+      BlockTableRecord modelSpaceRecord = Doc.Database.GetModelSpace();
+      BlockReference br = new BlockReference(insertionPoint, definitionId);
+      br.BlockTransform = convertedTransform;
+      ObjectId id = ObjectId.Null;
+      if (AppendToModelSpace)
+        id = modelSpaceRecord.Append(br);
 
-        BlockReference br = new BlockReference(insertionPoint, definitionId);
-        br.BlockTransform = convertedTransform;
-        if (AppendToModelSpace)
-        {
-          modelSpaceRecord.AppendEntity(br);
-          tr.AddNewlyCreatedDBObject(br, true);
-        }
-        
-        result = "success";
+      // return
+      result = "success";
+      if ((id.IsValid && !id.IsNull) || !AppendToModelSpace)
         reference = br;
-
-        tr.Commit();
-      }
 
       return result;
     }
@@ -1235,8 +1282,9 @@ namespace Objects.Converter.AutocadCivil
               converted["Layer"] = objEntity.Layer;
               geometry.Add(converted);
             }
-          }  
+          }
         }
+
         tr.Commit();
       }
 
@@ -1257,6 +1305,7 @@ namespace Objects.Converter.AutocadCivil
       var blockName = $"{Doc.UserData["commit"]} - {RemoveInvalidChars(definition.name)}";
 
       ObjectId blockId = ObjectId.Null;
+
       using (Transaction tr = Doc.TransactionManager.StartTransaction())
       {
         // see if block record already exists and return if so
@@ -1277,6 +1326,7 @@ namespace Objects.Converter.AutocadCivil
 
           // add geometry
           blckTbl.UpgradeOpen();
+          var bakedGeometry = new ObjectIdCollection(); // this is to contain block def geometry that is already added to doc space during conversion
           foreach (var geo in definition.geometry)
           {
             if (CanConvertToNative(geo))
@@ -1292,20 +1342,148 @@ namespace Objects.Converter.AutocadCivil
                   converted = ConvertToNative(geo) as Entity;
                   break;
               }
-              
+
               if (converted == null)
                 continue;
-              btr.AppendEntity(converted);
+              else if (!converted.IsNewObject && !(converted is BlockReference))
+                bakedGeometry.Add(converted.Id);
+              else
+                btr.AppendEntity(converted);
             }
           }
           blockId = blckTbl.Add(btr);
+          btr.AssumeOwnershipOf(bakedGeometry); // add in baked geo
           tr.AddNewlyCreatedDBObject(btr, true);
           blckTbl.Dispose();
         }
+
         tr.Commit();
       }
 
       return blockId;
+    }
+
+    // Text
+    public Text TextToSpeckle(AcadDB.DBText text)
+    {
+      var _text = new Text();
+
+      // not realistically feasible to extract outline curves for displayvalue currently
+      _text.height = text.Height;
+      var center = GetTextCenter(text);
+      _text.plane = PlaneToSpeckle( new Plane(center, text.Normal));
+      _text.rotation = text.Rotation;
+      _text.value = text.TextString;
+      _text.units = ModelUnits;
+
+      // autocad specific props
+      _text["horizontalAlignment"] = text.HorizontalMode.ToString();
+      _text["verticalAlignment"] = text.VerticalMode.ToString();
+      _text["position"] = PointToSpeckle(text.Position);
+      _text["widthFactor"] = text.WidthFactor;
+      _text["isMText"] = false;
+
+      return _text;
+    }
+    public Text TextToSpeckle(AcadDB.MText text)
+    {
+      var _text = new Text();
+
+      // not realistically feasible to extract outline curves for displayvalue currently
+      _text.height = text.Height;
+      var center = (text.Bounds != null) ? GetTextCenter(text.Bounds.Value) : text.Location;
+      _text.plane = PlaneToSpeckle( new Plane(center, text.Normal));
+      _text.rotation = text.Rotation;    
+      _text.value = text.Contents;
+      _text.richText = text.ContentsRTF;
+      _text.units = ModelUnits;
+
+      // autocad specific props
+      _text["position"] = PointToSpeckle(text.Location);
+      _text["isMText"] = true;
+
+      return _text;
+    }
+    public MText MTextToNative(Text text)
+    {
+      var _text = new MText();
+
+      if (string.IsNullOrEmpty(text.richText))
+        _text.Contents = text.value;
+      else
+        _text.ContentsRTF = text.richText;
+      _text.TextHeight = ScaleToNative(text.height, text.units);
+      _text.Location = (text["position"] != null) ? PointToNative(text["position"] as Point) : PointToNative(text.plane.origin);
+      _text.Rotation = text.rotation;
+      _text.Normal = VectorToNative(text.plane.normal);
+
+      return _text;
+    }
+    public DBText DBTextToNative(Text text)
+    {
+      var _text = new DBText();
+      _text.TextString = text.value;
+      _text.Height = ScaleToNative(text.height, text.units);
+      _text.Position = (text["position"] != null) ? PointToNative(text["position"] as Point) : PointToNative(text.plane.origin);
+      _text.Rotation = text.rotation;
+      _text.Normal = VectorToNative(text.plane.normal);
+      double widthFactor = text["widthFactor"] as double? ?? 1;
+      _text.WidthFactor = widthFactor;
+
+      return _text;
+    }
+    private Point3d GetTextCenter(Extents3d extents)
+    {
+      var x = (extents.MaxPoint.X + extents.MinPoint.X) / 2.0;
+      var y = (extents.MaxPoint.Y + extents.MinPoint.Y) / 2.0;
+      var z = (extents.MaxPoint.Z + extents.MinPoint.Z) / 2.0;
+
+      return new Point3d(x, y, z);
+    }
+    private Point3d GetTextCenter(DBText text)
+    {
+      var position = text.Position;
+      double x = position.X; double y = position.Y; double z = position.Z;
+
+      if (text.Bounds != null)
+      {
+        var extents = text.Bounds.Value;
+        x = (extents.MaxPoint.X + extents.MinPoint.X) / 2.0;
+        y = (extents.MaxPoint.Y + extents.MinPoint.Y) / 2.0;
+        z = (extents.MaxPoint.Z + extents.MinPoint.Z) / 2.0;
+
+        return new Point3d(x, y, z);
+      }
+
+      var alignment = text.AlignmentPoint;
+      var height = text.Height;
+      switch (text.Justify)
+      {
+        case AttachmentPoint.BottomMid:
+        case AttachmentPoint.BottomCenter:
+          x = alignment.X;  y = alignment.Y + (height / 2);
+          break;
+        case AttachmentPoint.TopCenter:
+        case AttachmentPoint.TopMid:
+          x = alignment.X;  y = alignment.Y - (height / 2);
+          break;
+        case AttachmentPoint.MiddleRight:
+          x = alignment.X - ((alignment.X - position.X) / 2); y = alignment.Y;
+          break;
+        case AttachmentPoint.BottomRight:
+          x = alignment.X - ((alignment.X - position.X) / 2); y = alignment.Y + (height / 2);
+          break;
+        case AttachmentPoint.TopRight:
+          x = alignment.X - ((alignment.X - position.X) / 2); y = alignment.Y - (height / 2);
+          break;
+        case AttachmentPoint.MiddleCenter:
+        case AttachmentPoint.MiddleMid:
+          x = alignment.X; y = alignment.Y;
+          break;
+        default:
+          break;
+      }
+      return new Point3d(x, y, z);
     }
   }
 }
