@@ -941,6 +941,9 @@ namespace ConverterGSA
       }
     }
 
+    public static double? IsPositiveOrNull(this double v) => v > 0 ? (double?)v : null;
+    public static int? IsPositiveOrNull(this int v) => v > 0 ? (int?)v : null;
+
     #region ResolveIndices
     public static List<int> GetIndicies<T>(this List<Base> speckleObject)
     {
