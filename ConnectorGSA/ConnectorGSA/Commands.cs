@@ -306,7 +306,7 @@ namespace ConnectorGSA
           streamId = state.Stream.id,
           objectId = commitObjId,
           branchName = "main",
-          message = "Pushed it real good",
+          message = "Pushed data from GSA",
           sourceApplication = Applications.GSA
         };
 
@@ -517,10 +517,11 @@ namespace ConnectorGSA
       {
         var receivedObjects = FlattenCommitObject(commitObject, IsSingleObjectFn);
 
-        return (Instance.GsaModel.Cache.Upsert(receivedObjects.ToDictionary(
-            ro => string.IsNullOrEmpty(ro.applicationId) ? ro.id : ro.applicationId, 
+        var task = (Instance.GsaModel.Cache.Upsert(receivedObjects.ToDictionary(
+            ro => string.IsNullOrEmpty(ro.applicationId) ? ro.id : ro.applicationId,
             ro => (object)ro))
           && receivedObjects != null && receivedObjects.Any() && state.Errors.Count == 0);
+        return task;
       }
       return false;
     }

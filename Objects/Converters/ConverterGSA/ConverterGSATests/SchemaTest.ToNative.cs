@@ -132,6 +132,17 @@ namespace ConverterGSATests
     }
 
     [Fact]
+    public void Element1dBaseLineToNative()
+    {
+      var speckleElement = new GSAElement1D()
+      {
+        type = ElementType1D.Beam,
+        baseLine = new Line(new List<double>() { 20, 21, 22, 50, 51, 52 }),
+      };
+      var gsaConvertedRecords = converter.ConvertToNative(new List<Base>() { speckleElement });
+    }
+
+    [Fact]
     public void Element1dToNative()
     {
       //Create native objects
@@ -170,7 +181,18 @@ namespace ConverterGSATests
     }
 
     [Fact]
-    public void MembToNative()
+    public void GSAMember1dBaseLineToNative()
+    {
+      var speckleMember1d = new GSAMember1D()
+      {
+        type = ElementType1D.Beam,
+        baseLine = new Line(new List<double>() { 20, 21, 22, 50, 51, 52 }),
+      };
+      var gsaConvertedRecords = converter.ConvertToNative(new List<Base>() { speckleMember1d });
+    }
+
+    [Fact]
+    public void GSAMemberToNative()
     {
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
@@ -708,7 +730,7 @@ namespace ConverterGSATests
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
       gsaRecords.Add(GsaLoadCaseExamples(1, "load case 1").First());
-      gsaRecords.Add(GsaNodeExamples(1, "node 1").First());
+      gsaRecords.AddRange(GsaNodeExamples(2, "node 1", "node 2"));
       var gsaLoadNodes = GsaLoadNodeExamples(2, "load node 1", "load node 2");
       gsaRecords.AddRange(gsaLoadNodes);
       Instance.GsaModel.Cache.Upsert(gsaRecords);
@@ -736,9 +758,10 @@ namespace ConverterGSATests
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
       gsaRecords.Add(GsaLoadCaseExamples(1, "load case 1").First());
-      gsaRecords.Add(GsaNodeExamples(1, "node 1").First());
+      gsaRecords.AddRange(GsaNodeExamples(2, "node 1", "node 2"));
       var gsaLoadNodes = GsaLoadNodeExamples(2, "load node 1", "load node 2");
       gsaRecords.AddRange(gsaLoadNodes);
+      
       Instance.GsaModel.Cache.Upsert(gsaRecords);
 
       //Convert

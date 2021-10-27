@@ -938,7 +938,7 @@ namespace ConverterGSA
       if (gsaLoadNode.NodeIndices.HasValues())
       {
         speckleNodeLoad.nodes = gsaLoadNode.NodeIndices.Select(i => GetNodeFromIndex(i)).ToList();
-        AddToMeaningfulNodeIndices(speckleNodeLoad.nodes.Select(n => n.applicationId));
+        AddToMeaningfulNodeIndices(speckleNodeLoad.nodes.Where(n => n != null && !string.IsNullOrEmpty(n.applicationId)).Select(n => n.applicationId));
       }
       if (gsaLoadNode.LoadCaseIndex.IsIndex()) speckleNodeLoad.loadCase = GetLoadCaseFromIndex(gsaLoadNode.LoadCaseIndex.Value);
       if (gsaLoadNode.GlobalAxis) speckleNodeLoad.loadAxis = GlobalAxis();
