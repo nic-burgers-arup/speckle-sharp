@@ -168,7 +168,7 @@ namespace ConverterGSA
         gsaNode.NodeRestraint = gsaNodeRestraint;
         gsaNode.Restraints = gsaRestraint;
       }
-      if (GetAxis(speckleNode.constraintAxis, out var gsaAxisRefType, out var gsaAxisIndex))
+      if (GetAxis(speckleNode.constraintAxis, out NodeAxisRefType gsaAxisRefType, out var gsaAxisIndex))
       {
         gsaNode.AxisRefType = gsaAxisRefType;
         gsaNode.AxisIndex = gsaAxisIndex;
@@ -1945,7 +1945,6 @@ namespace ConverterGSA
       return true;
     }
 
-
     private List<GsaRecord> GsaProperty2dToNative(Base speckleObject)
     {
       var retList = new List<GsaRecord>();
@@ -1977,7 +1976,6 @@ namespace ConverterGSA
           else
           {
             //Not supported yet
-
             gsaProp2d.MatType = Property2dMaterialType.Generic;
           }
 
@@ -2028,8 +2026,6 @@ namespace ConverterGSA
         }
         else
         {
-        if (!IsGlobalAxis(speckleProperty.orientationAxis))
-        {
           var axisIndex = IndexByConversionOrLookup<GsaAxis>(speckleProperty.orientationAxis, ref retList);
           if (axisIndex.IsIndex())
           {
@@ -2037,7 +2033,6 @@ namespace ConverterGSA
             gsaProp2d.AxisRefType = AxisRefType.Reference;
           }
           else
-      }
           {
             gsaProp2d.AxisRefType = AxisRefType.Local;
           }
@@ -2273,10 +2268,10 @@ namespace ConverterGSA
       };
       if (GetAxis(speckleInfNode.axis, out AxisRefType gsaRefType, out var axisIndex))
       {
-        gsaInfBeam.AxisRefType = gsaRefType;
-        gsaInfBeam.AxisIndex = axisIndex;
+        gsaInfNode.AxisRefType = gsaRefType;
+        gsaInfNode.AxisIndex = axisIndex;
       }
-      return new List<GsaRecord>() { gsaInfBeam };
+      return new List<GsaRecord>() { gsaInfNode };
     }
     
     private List<GsaRecord> PathToNative(Base speckleObject)

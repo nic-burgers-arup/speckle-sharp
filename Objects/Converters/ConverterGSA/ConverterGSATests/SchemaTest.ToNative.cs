@@ -806,12 +806,10 @@ namespace ConverterGSATests
       //Checks
       var gsaConvertedLoadGravity = gsaConvertedRecords.FindAll(r => r is GsaLoadGravity).Select(r => (GsaLoadGravity)r).First();
       var compareLogic = new CompareLogic();
-      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaLoadGravity x) => x.MemberIndices));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaLoadGravity x) => x.X));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaLoadGravity x) => x.Y));
       var result = compareLogic.Compare(gsaLoadGravity, gsaConvertedLoadGravity);
       Assert.Empty(result.Differences);
-      Assert.Null(gsaConvertedLoadGravity.MemberIndices);
       Assert.Null(gsaConvertedLoadGravity.X);
       Assert.Null(gsaConvertedLoadGravity.Y);
     }
@@ -843,13 +841,11 @@ namespace ConverterGSATests
       //Checks
       var gsaConvertedLoadGravity = gsaConvertedRecords.FindAll(r => r is GsaLoadGravity).Select(r => (GsaLoadGravity)r).First();
       var compareLogic = new CompareLogic();
-      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaLoadGravity x) => x.MemberIndices));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaLoadGravity x) => x.X));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaLoadGravity x) => x.Y));
       //Ignore app specific data - currently no app specific members
       var result = compareLogic.Compare(gsaLoadGravity, gsaConvertedLoadGravity);
       Assert.Empty(result.Differences);
-      Assert.Null(gsaConvertedLoadGravity.MemberIndices);
       Assert.Null(gsaConvertedLoadGravity.X);
       Assert.Null(gsaConvertedLoadGravity.Y);
     }

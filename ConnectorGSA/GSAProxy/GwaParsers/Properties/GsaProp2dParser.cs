@@ -58,12 +58,6 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
     }
 
     #region to_gwa_fns
-    private string AddThickness()
-    {
-      //TO DO - use a new thickness member in the schema class which stores units for this
-      return (record.Thickness ?? 0) + "(mm)";
-    }
-
     private string AddPercentageOrValue(double? percentage, double? value)
     {
       if (percentage.HasValue)
