@@ -9,7 +9,7 @@ namespace Speckle.GSA.API.GwaSchema
     public int? GridPlaneIndex;
     public int NumDim;
     public List<double> Values;
-    public string Units;
+    public string Units = "";
 
     public GsaPolyline() : base()
     {

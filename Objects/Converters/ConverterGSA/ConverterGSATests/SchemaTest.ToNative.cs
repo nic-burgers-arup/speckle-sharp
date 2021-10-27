@@ -148,6 +148,7 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
+      Instance.GsaModel.CoincidentNodeAllowance = 1e-2;
       var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList());
       var speckleObjects = ((Model)speckleModels.Last()).elements.FindAll(o => o is GSAElement1D).ToList();
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);

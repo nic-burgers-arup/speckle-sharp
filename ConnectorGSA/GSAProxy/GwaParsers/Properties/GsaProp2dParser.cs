@@ -47,9 +47,9 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
         return false;
       }
 
-      //PROP_2D.7 | num | name | colour | type | axis | mat | mat_type | grade | design | profile | ref_pt | ref_z | mass | flex | shear | inplane | weight |
+      //PROP_2D.8 | num | name | colour | type | axis | mat | mat_type | grade | design | profile | ref_pt | ref_z | mass | flex | shear | inplane | weight |
       AddItems(ref items, record.Name, "NO_RGB", record.Type.ToString().ToUpper(), AddAxis(), record.AnalysisMaterialIndex ?? 0, record.MatType.ToString().ToUpper(),
-        record.GradeIndex ?? 0, record.DesignIndex ?? 0, record.Thickness ?? 0, record.RefPt.GetStringValue(), record.RefZ, record.Mass,
+        record.GradeIndex ?? 0, record.DesignIndex ?? 0, AddThickness(), record.RefPt.GetStringValue(), record.RefZ, record.Mass,
         AddPercentageOrValue(record.BendingStiffnessPercentage, record.Bending), AddPercentageOrValue(record.ShearStiffnessPercentage, record.Shear),
         AddPercentageOrValue(record.InPlaneStiffnessPercentage, record.InPlane), AddPercentageOrValue(record.VolumePercentage, record.Volume));
 
@@ -79,6 +79,22 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       }
       return record.AxisRefType.ToString().ToUpperInvariant();
     }
+
+    private string AddThickness()
+    {
+      var v = (record.Thickness ?? 0).ToString();
+
+      //Add units
+      if (!string.IsNullOrEmpty(record.Units))
+      {
+        v += "(" + record.Units + ")";
+      }
+      else
+      {
+        v += "(m)"; //TO DO: assume m? or something else? or error?
+      }
+      return v;
+    }
     #endregion
 
     #region from_gwa_fns
@@ -90,10 +106,12 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
 
     private bool AddThickness(string v)
     {
-      if (double.TryParse(v, out double thickness))
+      var pieces = v.Split('(', ')');
+      if (double.TryParse(pieces[0], out double thickness))
       {
         record.Thickness = thickness;
       }
+      if (pieces.Count() > 1) record.Units = pieces[1];
       return true;
     }
 

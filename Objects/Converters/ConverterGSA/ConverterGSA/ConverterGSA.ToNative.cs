@@ -1234,6 +1234,8 @@ namespace ConverterGSA
           .Select(n => Instance.GsaModel.Proxy.NodeAt(n.basePoint.x, n.basePoint.y, n.basePoint.z, Instance.GsaModel.CoincidentNodeAllowance)).ToList();
       }
 
+      if (speckleLoad.gravityFactors != null)
+      { 
         if (speckleLoad.gravityFactors.x != 0) gsaLoad.X = speckleLoad.gravityFactors.x;
         if (speckleLoad.gravityFactors.y != 0) gsaLoad.Y = speckleLoad.gravityFactors.y;
         if (speckleLoad.gravityFactors.z != 0) gsaLoad.Z = speckleLoad.gravityFactors.z;
@@ -1429,12 +1431,12 @@ namespace ConverterGSA
             GammaF = 1,
             GammaE = 1,
           },
-          Cost = speckleSteel.cost,
+          Cost = speckleSteel.cost.IsPositiveOrNull(),
           Type = MatType.STEEL,
         },
         Fy = speckleSteel.yieldStrength.IsPositiveOrNull(),
         Fu = speckleSteel.ultimateStrength.IsPositiveOrNull(),
-        EpsP = 0,
+        EpsP = null,
         Eh = speckleSteel.strainHardeningModulus.IsPositiveOrNull(),
       };
 
@@ -1472,8 +1474,8 @@ namespace ConverterGSA
       gsaConcrete.EpsAx = speckleConcrete.GetDynamicValue<double>("EpsAx").IsPositiveOrNull();
       gsaConcrete.EpsTran = speckleConcrete.GetDynamicValue<double>("EpsTran").IsPositiveOrNull();
       gsaConcrete.EpsAxs = speckleConcrete.GetDynamicValue<double>("EpsAxs").IsPositiveOrNull();
-      gsaConcrete.XdMin = speckleConcrete.GetDynamicValue<double>("XdMin").IsPositiveOrNull();
-      gsaConcrete.XdMax = speckleConcrete.GetDynamicValue<double>("XdMax").IsPositiveOrNull();
+      gsaConcrete.XdMin = speckleConcrete.GetDynamicValue<double>("XdMin");
+      gsaConcrete.XdMax = speckleConcrete.GetDynamicValue<double>("XdMax");
       gsaConcrete.Beta = speckleConcrete.GetDynamicValue<double>("Beta").IsPositiveOrNull();
       gsaConcrete.Shrink = speckleConcrete.GetDynamicValue<double>("Shrink").IsPositiveOrNull();
       gsaConcrete.Confine = speckleConcrete.GetDynamicValue<double>("Confine").IsPositiveOrNull();
@@ -1529,14 +1531,14 @@ namespace ConverterGSA
           AbsST = Dimension.NotSet,
           OrdST = Dimension.NotSet,
           PtsST = null,
-          Eps = 0,
+          Eps = null,
           Uls = new GsaMatCurveParam()
           {
             Model = new List<MatCurveParamType>() { MatCurveParamType.RECTANGLE, MatCurveParamType.NO_TENSION },
             StrainElasticCompression = eps,
-            StrainElasticTension = 0,
+            StrainElasticTension = null,
             StrainPlasticCompression = eps,
-            StrainPlasticTension = 0,
+            StrainPlasticTension = null,
             StrainFailureCompression = 0.003,
             StrainFailureTension = 1,
             GammaF = 1,
@@ -1546,15 +1548,15 @@ namespace ConverterGSA
           {
             Model = new List<MatCurveParamType>() { MatCurveParamType.LINEAR, MatCurveParamType.INTERPOLATED },
             StrainElasticCompression = 0.003,
-            StrainElasticTension = 0,
+            StrainElasticTension = null,
             StrainPlasticCompression = 0.003,
-            StrainPlasticTension = 0,
+            StrainPlasticTension = null,
             StrainFailureCompression = 0.003,
             StrainFailureTension = speckleConcrete.maxTensileStrain.IsPositiveOrNull(),
             GammaF = 1,
             GammaE = 1,
           },
-          Cost = speckleConcrete.cost,
+          Cost = speckleConcrete.cost.IsPositiveOrNull(),
           Type = MatType.CONCRETE,
         },
         Type = MatConcreteType.CYLINDER, //strength type
@@ -1887,18 +1889,29 @@ namespace ConverterGSA
         VolumePercentage = speckleProperty.modifierVolume == 0 ? null : (double?)speckleProperty.modifierVolume
       };
 
-      if (speckleProperty.orientationAxis != null)
+      if (speckleProperty.orientationAxis == null)
       {
-        var axisIndex = IndexByConversionOrLookup<GsaAxis>(speckleProperty.orientationAxis, ref retList);
-        if (axisIndex.IsIndex())
-        {
-          gsaProp2d.AxisIndex = axisIndex;
-          gsaProp2d.AxisRefType = AxisRefType.Reference;
-        }
+        gsaProp2d.AxisRefType = AxisRefType.Local;
       }
-      if (!gsaProp2d.AxisIndex.IsIndex())
+      else
       {
-        gsaProp2d.AxisRefType = AxisRefType.Global;
+        if (speckleProperty.orientationAxis.definition != null && speckleProperty.orientationAxis.definition.IsGlobal())
+        {
+          gsaProp2d.AxisRefType = AxisRefType.Global;
+        }
+        else
+        {
+          var axisIndex = IndexByConversionOrLookup<GsaAxis>(speckleProperty.orientationAxis, ref retList);
+          if (axisIndex.IsIndex())
+          {
+            gsaProp2d.AxisIndex = axisIndex;
+            gsaProp2d.AxisRefType = AxisRefType.Reference;
+          }
+          else
+          {
+            gsaProp2d.AxisRefType = AxisRefType.Local;
+          }
+        }
       }
       retList.Add(gsaProp2d);
       return retList;
@@ -2724,9 +2737,9 @@ namespace ConverterGSA
 
       var gsaMatAnal = new GsaMatAnal();
       gsaMatAnal.Name = speckleObject.GetDynamicValue<string>("Name");
-        var index = speckleObject.GetDynamicValue<long?>("Index");
-        if(index == null) index = speckleObject.GetDynamicValue<int?>("Index");
-        gsaMatAnal.Index = (int)index;
+      var index = speckleObject.GetDynamicValue<long?>("Index");
+      if(index == null) index = speckleObject.GetDynamicValue<int?>("Index");
+      gsaMatAnal.Index = (int?)index;
       gsaMatAnal.Colour = speckleObject.GetDynamicEnum<Colour>("Colour");
       gsaMatAnal.Type = speckleObject.GetDynamicEnum<MatAnalType>("Type");
       gsaMatAnal.NumParams = speckleObject.GetDynamicValue<int>("NumParams");

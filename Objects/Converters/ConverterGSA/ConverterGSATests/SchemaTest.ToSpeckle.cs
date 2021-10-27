@@ -3455,6 +3455,7 @@ namespace ConverterGSATests
           Index = 1,
           Name = "1",
           ElementIndices = new List<int>(){ 1 },
+          MemberIndices = new List<int>(),
           LoadCaseIndex = 1,
           AxisRefType = AxisRefType.Global,
           Type = Load2dFaceType.Uniform,
@@ -3467,6 +3468,7 @@ namespace ConverterGSATests
           Index = 2,
           Name  = "2",
           ElementIndices = new List<int>(){ 2 },
+          MemberIndices = new List<int>(),
           LoadCaseIndex = 1,
           AxisRefType = AxisRefType.Reference,
           AxisIndex = 1,
@@ -3482,6 +3484,7 @@ namespace ConverterGSATests
           Index = 3,
           Name  = "3",
           ElementIndices = new List<int>(){ 3 },
+          MemberIndices = new List<int>(),
           LoadCaseIndex = 1,
           AxisRefType = AxisRefType.Local,
           Type = Load2dFaceType.General,
@@ -3756,6 +3759,7 @@ namespace ConverterGSATests
           Index = 1,
           Name = "1",
           ElementIndices = new List<int>(){ 1 },
+          MemberIndices = new List<int>(),
           LoadCaseIndex = 1,
           Type = Load2dThermalType.Uniform,
           Values = new List<double>(){ 1 },
@@ -3765,6 +3769,7 @@ namespace ConverterGSATests
           Index = 2,
           Name = "2",
           ElementIndices = new List<int>(){ 1 },
+          MemberIndices = new List<int>(),
           LoadCaseIndex = 2,
           Type = Load2dThermalType.Gradient,
           Values = new List<double>(){ 1, 2 },
@@ -3804,7 +3809,7 @@ namespace ConverterGSATests
             Rho = 2400,
             Alpha = 1e-5,
             G = 1.381364543e+10,
-            Damp = 0
+            Damp = null, //0
           },
           NumUC = 0,
           AbsUC = Dimension.NotSet,
@@ -3822,14 +3827,14 @@ namespace ConverterGSATests
           AbsST = Dimension.NotSet,
           OrdST = Dimension.NotSet,
           PtsST = null, //new double[0],
-          Eps = 0,
+          Eps = null, //0,
           Uls = new GsaMatCurveParam()
           {
             Model = new List<MatCurveParamType>() { MatCurveParamType.RECTANGLE, MatCurveParamType.NO_TENSION },
             StrainElasticCompression = 0.00039,
-            StrainElasticTension = 0,
+            StrainElasticTension = null, //0,
             StrainPlasticCompression = 0.00039,
-            StrainPlasticTension = 0,
+            StrainPlasticTension = null, //0,
             StrainFailureCompression = 0.003,
             StrainFailureTension = 1,
             GammaF = 1,
@@ -3839,15 +3844,15 @@ namespace ConverterGSATests
           {
             Model = new List<MatCurveParamType>() { MatCurveParamType.LINEAR, MatCurveParamType.INTERPOLATED },
             StrainElasticCompression = 0.003,
-            StrainElasticTension = 0,
+            StrainElasticTension = null, //0,
             StrainPlasticCompression = 0.003,
-            StrainPlasticTension = 0,
+            StrainPlasticTension = null, //0,
             StrainFailureCompression = 0.003,
             StrainFailureTension = 0.0001144620975,
             GammaF = 1,
             GammaE = 1
           },
-          Cost = 0,
+          Cost = null, //0,
           Type = MatType.CONCRETE
         },
         Type = MatConcreteType.CYLINDER,
@@ -3904,7 +3909,7 @@ namespace ConverterGSATests
             Rho = 7850,
             Alpha = 1.2e-5,
             G = 7.692307692e+10,
-            Damp = 0
+            Damp = null, //0
           },
           NumUC = 0,
           AbsUC = Dimension.NotSet,
@@ -3947,13 +3952,13 @@ namespace ConverterGSATests
             GammaF = 1,
             GammaE = 1
           },
-          Cost = 0,
+          Cost = null, //0,
           Type = MatType.STEEL
         },
         Fy = 360000000,
         Fu = 450000000,
-        EpsP = 0,
-        Eh = 0,
+        EpsP = null, //0,
+        Eh = null, //0,
       };
     }
     #endregion
