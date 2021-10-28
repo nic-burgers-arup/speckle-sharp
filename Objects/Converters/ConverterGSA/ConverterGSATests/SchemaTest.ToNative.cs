@@ -26,6 +26,7 @@ using Objects.Structural.GSA.Loading;
 using Objects.Structural.Properties;
 using AutoMapper;
 using Objects.Structural.Materials;
+using Speckle.Core.Kits;
 
 namespace ConverterGSATests
 {
@@ -92,6 +93,44 @@ namespace ConverterGSATests
       var compareLogic = new CompareLogic();
       var result = compareLogic.Compare(gsaNodes, gsaConvertedNodes);
       Assert.Empty(result.Differences);
+    }
+
+    [Fact]
+    public void NodeDifferentUnitToNative()
+    {
+      //Create native objects
+      var gsaRecords = new List<GsaRecord>();
+      var gsaUnit = new GsaUnitData() { Option = UnitDimension.Length, Name = "m" };
+      gsaRecords.Add(gsaUnit);
+      gsaRecords.Add(GsaPropMassExample("property mass 1"));
+      gsaRecords.Add(GsaPropSprExample("property spring 1"));
+      var gsaNodes = GsaNodeExamples(1, "node 1");
+      gsaRecords.AddRange(gsaNodes);
+      Instance.GsaModel.Cache.Upsert(gsaRecords);
+
+      //Convert
+      Instance.GsaModel.StreamLayer = GSALayer.Both;
+      Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).Select(o => (Model)o).ToList();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleModels.First().nodes.FindAll(o => o is GSANode).ToList());
+      var speckleUnits = speckleModels.First().specs.settings.modelUnits;
+      speckleUnits.length = "mm"; //change the units
+      speckleObjects.Add(speckleUnits);
+      var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
+
+      //Checks
+      var gsaConvertedNodes = gsaConvertedRecords.FindAll(r => r is GsaNode).Select(r => (GsaNode)r).ToList();
+      var compareLogic = new CompareLogic();
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaNode x) => x.X));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaNode x) => x.Y));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaNode x) => x.Z));
+      var result = compareLogic.Compare(gsaNodes, gsaConvertedNodes);
+      Assert.Empty(result.Differences);
+      var factor = Units.GetConversionFactor(speckleUnits.length, gsaUnit.Name);
+      Assert.Equal(factor * gsaNodes[0].X, gsaConvertedNodes[0].X);
+      Assert.Equal(factor * gsaNodes[0].Y, gsaConvertedNodes[0].Y);
+      Assert.Equal(factor * gsaNodes[0].Z, gsaConvertedNodes[0].Z);
     }
 
     [Fact]

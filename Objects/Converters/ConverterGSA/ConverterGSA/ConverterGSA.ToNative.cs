@@ -25,6 +25,7 @@ using Objects.Structural.Materials;
 using Objects;
 using Objects.Structural.Properties.Profiles;
 using Objects.BuiltElements;
+using Objects.Structural.Analysis;
 
 namespace ConverterGSA
 {
@@ -191,22 +192,13 @@ namespace ConverterGSA
     {
       var retList = new List<GsaRecord>();
       var speckleNode = (Node)speckleObject;
-      var nodeIndex = Instance.GsaModel.Proxy.NodeAt(speckleNode.basePoint.x, speckleNode.basePoint.y, speckleNode.basePoint.z,
-        Instance.GsaModel.CoincidentNodeAllowance);
       var gsaNode = new GsaNode()
       {
         ApplicationId = speckleNode.applicationId,
-        Index = nodeIndex,
         Name = speckleNode.name,
         SpringPropertyIndex = IndexByConversionOrLookup<GsaPropSpr>(speckleNode.springProperty, ref retList),
         MassPropertyIndex = IndexByConversionOrLookup<GsaPropMass>(speckleNode.massProperty, ref retList),
       };
-      if (speckleNode.basePoint != null)
-      {
-        gsaNode.X = speckleNode.basePoint.x;
-        gsaNode.Y = speckleNode.basePoint.y;
-        gsaNode.Z = speckleNode.basePoint.z;
-      }
       if (GetRestraint(speckleNode.restraint, out var gsaNodeRestraint, out var gsaRestraint))
       {
         gsaNode.NodeRestraint = gsaNodeRestraint;
@@ -216,6 +208,19 @@ namespace ConverterGSA
       {
         gsaNode.AxisRefType = gsaAxisRefType;
         gsaNode.AxisIndex = gsaAxisIndex;
+      }
+
+      //Unit conversions
+      if (speckleNode.basePoint != null)
+      {
+        var factor = string.IsNullOrEmpty(speckleNode.units) ? conversionFactors.length : conversionFactors.GetConversionFactor(UnitDimension.Length, speckleNode.units);
+        var x = speckleNode.basePoint.x * factor;
+        var y = speckleNode.basePoint.y * factor;
+        var z = speckleNode.basePoint.z * factor;
+        gsaNode.X = x;
+        gsaNode.Y = y;
+        gsaNode.Z = z;
+        gsaNode.Index = Instance.GsaModel.Proxy.NodeAt(x, y, z, Instance.GsaModel.CoincidentNodeAllowance);
       }
 
       retList.Add(gsaNode);

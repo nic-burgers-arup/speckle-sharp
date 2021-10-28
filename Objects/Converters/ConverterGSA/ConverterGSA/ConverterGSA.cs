@@ -36,6 +36,8 @@ namespace ConverterGSA
     public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
     #endregion ISpeckleConverter props
 
+    private UnitConversion conversionFactors;
+
     public List<ApplicationPlaceholderObject> ContextObjects { get; set; } = new List<ApplicationPlaceholderObject>();
     
     public List<string> ConvertedObjectsList { get; set; } = new List<string>();
@@ -116,6 +118,7 @@ namespace ConverterGSA
     public List<object> ConvertToNative(List<Base> objects)
     {
       var retList = new List<object>();
+      conversionFactors =  new UnitConversion(objects.FirstOrDefault(o => o is ModelUnits) as ModelUnits);
       foreach (var obj in objects)
       {
         var natives = ConvertToNative(obj);

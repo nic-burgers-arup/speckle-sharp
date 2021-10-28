@@ -18,10 +18,10 @@ namespace ConverterGSA
     public const string Pound = "lb";
     public const string Ton = "ton"; //2240lb
     public const string Slug = "sl";
-    public const string KilopoundForceSecondSquarePerInch = "kip.s2/in";
-    public const string KilopoundForceSecondSquarePerFoot = "kip.s2/ft";
-    public const string PoundForceSecondSquarePerInch = "lbf.s2/in";
-    public const string PoundForceSecondSquarePerFoot = "lbf.s2/ft"; // 1 slug
+    public const string KilopoundForceSecondSquarePerInch = "kip.s²/in";
+    public const string KilopoundForceSecondSquarePerFoot = "kip.s²/ft";
+    public const string PoundForceSecondSquarePerInch = "lbf.s²/in";
+    public const string PoundForceSecondSquarePerFoot = "lbf.s²/ft"; // 1 slug
     public const string Kilopound = "kip";
     public const string None = "none";
 
@@ -61,48 +61,56 @@ namespace ConverterGSA
         case "kg":
         case "kilogram":
         case "kilograms":
-          return MassUnits.Kilogram;
+          return Kilogram;
         case "t":
         case "tonne":
         case "tonnes":
-          return MassUnits.Tonne;
+          return Tonne;
         case "kt":
         case "kilotonne":
         case "kilotonnes":
-          return MassUnits.Kilotonne;
+          return Kilotonne;
         case "g":
         case "gram":
         case "grams":
-          return MassUnits.Gram;
+          return Gram;
         case "lb":
         case "lbs":
         case "pound":
         case "pounds":
-          return MassUnits.Pound;
+          return Pound;
         case "ton":
-          return MassUnits.Ton;
+          return Ton;
         case "sl":
         case "slug":
         case "slugs":
-          return MassUnits.Slug;
+          return Slug;
         case "kip.s2/in":
+        case "kip.s²/in":
         case "kips2/in":
-          return MassUnits.KilopoundForceSecondSquarePerInch;
+        case "kips²/in":
+          return KilopoundForceSecondSquarePerInch;
         case "kip.s2/ft":
+        case "kip.s²/ft":
         case "kips2/ft":
-          return MassUnits.KilopoundForceSecondSquarePerFoot;
+        case "kips²/ft":
+          return KilopoundForceSecondSquarePerFoot;
         case "lbf.s2/in":
+        case "lbf.s²/in":
         case "lbfs2/in":
-          return MassUnits.KilopoundForceSecondSquarePerInch;
+        case "lbfs²/in":
+          return KilopoundForceSecondSquarePerInch;
         case "lbf.s2/ft":
+        case "lbf.s²/ft":
         case "lbfs2/ft":
-          return MassUnits.KilopoundForceSecondSquarePerFoot;
+        case "lbfs²/ft":
+          return KilopoundForceSecondSquarePerFoot;
         case "kip":
         case "kilopound":
         case "kilopounds":
-          return MassUnits.Kilopound;
+          return Kilopound;
         case "none":
-          return MassUnits.None;
+          return None;
       }
 
       throw new Exception($"Cannot understand what unit {unit} is.");
@@ -246,9 +254,9 @@ namespace ConverterGSA
 
   public static class TemperatureUnits
   {
-    public const string Celcius = "C";
+    public const string Celcius = "°C";
     public const string Kelvin = "K";
-    public const string Fahrenheit = "F";
+    public const string Fahrenheit = "°F";
     public const string None = "none";
 
     public static double Convert(double v, string from, string to)
@@ -288,6 +296,7 @@ namespace ConverterGSA
       {
         case "c":
         case "oc":
+        case "°c":
         case "celcius":
           return Celcius;
         case "k":
@@ -295,6 +304,7 @@ namespace ConverterGSA
           return Kelvin;
         case "f":
         case "of":
+        case "°f":
         case "fahrenheit":
           return Fahrenheit;
         case "none":
@@ -477,7 +487,9 @@ namespace ConverterGSA
       {
         case "pa":
         case "kg/m/s2":
+        case "kg/m/s²":
         case "n/m2":
+        case "n/m²":
         case "pascal":
         case "pascals":
           return Pascal;
@@ -488,28 +500,35 @@ namespace ConverterGSA
           return Kilopascal;
         case "mpa":
         case "mn/m2":
+        case "mn/m²":
         case "n/mm2":
+        case "n/mm²":
         case "megapascal":
         case "megapascals":
           return Megapascal;
         case "gpa":
         case "gn/m2":
+        case "gn/m²":
         case "kn/mm2":
+        case "kn/mm²":
         case "gigapascal":
         case "gigapascals":
           return Gigapascal;
         case "psi":
         case "lb/in2":
+        case "lb/in²":
         case "poundpersquareinch":
         case "poundspersquareinch":
           return PoundPerSquareInch;
         case "psf":
         case "lb/ft2":
+        case "lb/ft²":
         case "poundpersquarefoot":
         case "poundspersquarefoot":
           return PoundPerSquareFoot;
         case "ksi":
         case "kip/in2":
+        case "kip/in²":
         case "kilopoundpersquareinch":
         case "kilopoundspersquareinch":
           return KilopoundPerSquareInch;
@@ -735,11 +754,11 @@ namespace ConverterGSA
 
   public static class AccelerationUnits
   {
-    public const string MetersPerSquareSecond = "m/s2";
-    public const string CentimetersPerSquareSecond = "cm/s2"; //a.k.a Gal
-    public const string MillimetersPerSquareSecond = "mm/s2";
-    public const string FeetPerSquareSecond = "ft/s2";
-    public const string InchPerSquareSecond = "in/s2";
+    public const string MetersPerSquareSecond = "m/s²";
+    public const string CentimetersPerSquareSecond = "cm/s²"; //a.k.a Gal
+    public const string MillimetersPerSquareSecond = "mm/s²";
+    public const string FeetPerSquareSecond = "ft/s²";
+    public const string InchPerSquareSecond = "in/s²";
     public const string Gravity = "g";
     public const string PercentGravity = "%g";
     public const string Milligravity = "mg";
@@ -775,16 +794,21 @@ namespace ConverterGSA
       switch (unit.ToLower())
       {
         case "m/s2":
+        case "m/s²":
           return MetersPerSquareSecond;
         case "cm/s2":
+        case "cm/s²":
         case "gal":
         case "galileo":
           return CentimetersPerSquareSecond;
         case "mm/s2":
+        case "mm/s²":
           return MillimetersPerSquareSecond;
         case "ft/s2":
+        case "ft/s²":
           return FeetPerSquareSecond;
         case "in/s2":
+        case "in/s²":
           return InchPerSquareSecond;
         case "g":
         case "gravity":
@@ -954,6 +978,88 @@ namespace ConverterGSA
         case 7: return FootPoundForce;
         case 8: return Calorie;
         case 9: return BritishThermalUnit;
+      }
+
+      return None;
+    }
+  }
+
+  public static class AngleUnits
+  {
+    public const string Radian = "rad";
+    public const string Degree = "deg";
+    public const string Gradian = "grad";
+    public const string None = "none";
+
+    public static double GetConversionFactor(string from, string to)
+    {
+      from = GetUnitsFromString(from);
+      to = GetUnitsFromString(to);
+
+      return GetConversionFactorToSI(from) / GetConversionFactorToSI(to);
+    }
+
+    private static double GetConversionFactorToSI(string from)
+    {
+      switch (from)
+      {
+        case Degree: return Math.PI / 180;
+        case Gradian: return Math.PI / 200;
+        case None: return 1;
+      }
+      return 1;
+    }
+
+    public static string GetUnitsFromString(string unit)
+    {
+      if (unit == null) return null;
+      switch (unit.ToLower())
+      {
+        case "r":
+        case "rad":
+        case "radian":
+        case "radians":
+          return Radian;
+        case "°":
+        case "o":
+        case "deg":
+        case "degree":
+        case "degrees":
+          return Degree;
+        case "g":
+        case "ᵍ":
+        case "grad":
+        case "gradian":
+        case "gradians":
+        case "grade":
+        case "gon":
+          return Gradian;
+        case "none":
+          return None;
+      }
+
+      throw new Exception($"Cannot understand what unit {unit} is.");
+    }
+
+    public static int GetEncodingFromUnit(string unit)
+    {
+      switch (unit)
+      {
+        case Radian: return 1;
+        case Degree: return 2;
+        case Gradian: return 3;
+      }
+
+      return 0;
+    }
+
+    public static string GetUnitFromEncoding(double unit)
+    {
+      switch (unit)
+      {
+        case 1: return Radian;
+        case 2: return Degree;
+        case 3: return Gradian;
       }
 
       return None;
