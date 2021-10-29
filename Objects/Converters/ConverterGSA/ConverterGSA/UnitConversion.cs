@@ -47,50 +47,53 @@ namespace ConverterGSA
         var gsaUnits = gsaRecords.FindAll(r => r is GsaUnitData).Select(r => (GsaUnitData)r).ToList();
         foreach (var unit in gsaUnits)
         {
-          switch (unit.Option)
+          if (!string.IsNullOrEmpty(unit.Name))
           {
-            case UnitDimension.Length:
-              this.nativeModelUnits.length = Units.GetUnitsFromString(unit.Name);
-              break;
-            case UnitDimension.Sections:
-              this.nativeModelUnits.sections = Units.GetUnitsFromString(unit.Name);
-              break;
-            case UnitDimension.Displacements:
-              this.nativeModelUnits.displacements = Units.GetUnitsFromString(unit.Name);
-              break;
-            case UnitDimension.Stress:
-              this.nativeModelUnits.stress = StressUnits.GetUnitsFromString(unit.Name);
-              break;
-            case UnitDimension.Force:
-              this.nativeModelUnits.force = ForceUnits.GetUnitsFromString(unit.Name);
-              break;
-            case UnitDimension.Mass:
-              this.nativeModelUnits.mass = MassUnits.GetUnitsFromString(unit.Name);
-              break;
-            case UnitDimension.Time:
-              this.nativeModelUnits.time = TimeUnits.GetUnitsFromString(unit.Name);
-              break;
-            case UnitDimension.Temperature:
-              this.nativeModelUnits.temperature = TemperatureUnits.GetUnitsFromString(unit.Name);
-              break;
-            case UnitDimension.Velocity:
-              this.nativeModelUnits.velocity = VelocityUnits.GetUnitsFromString(unit.Name);
-              break;
-            case UnitDimension.Acceleration:
-              this.nativeModelUnits.acceleration = AccelerationUnits.GetUnitsFromString(unit.Name);
-              break;
-            case UnitDimension.Energy:
-              this.nativeModelUnits.energy = EnergyUnits.GetUnitsFromString(unit.Name);
-              break;
-            case UnitDimension.Angle:
-              this.nativeModelUnits.angle = AngleUnits.GetUnitsFromString(unit.Name);
-              break;
-            case UnitDimension.Strain:
-              this.nativeModelUnits.strain = StrainUnits.GetUnitsFromString(unit.Name);
-              break;
-            default:
-              //do nothing
-              break;
+            switch (unit.Option)
+            {
+              case UnitDimension.Length:
+                this.nativeModelUnits.length = Units.GetUnitsFromString(unit.Name);
+                break;
+              case UnitDimension.Sections:
+                this.nativeModelUnits.sections = Units.GetUnitsFromString(unit.Name);
+                break;
+              case UnitDimension.Displacements:
+                this.nativeModelUnits.displacements = Units.GetUnitsFromString(unit.Name);
+                break;
+              case UnitDimension.Stress:
+                this.nativeModelUnits.stress = StressUnits.GetUnitsFromString(unit.Name);
+                break;
+              case UnitDimension.Force:
+                this.nativeModelUnits.force = ForceUnits.GetUnitsFromString(unit.Name);
+                break;
+              case UnitDimension.Mass:
+                this.nativeModelUnits.mass = MassUnits.GetUnitsFromString(unit.Name);
+                break;
+              case UnitDimension.Time:
+                this.nativeModelUnits.time = TimeUnits.GetUnitsFromString(unit.Name);
+                break;
+              case UnitDimension.Temperature:
+                this.nativeModelUnits.temperature = TemperatureUnits.GetUnitsFromString(unit.Name);
+                break;
+              case UnitDimension.Velocity:
+                this.nativeModelUnits.velocity = VelocityUnits.GetUnitsFromString(unit.Name);
+                break;
+              case UnitDimension.Acceleration:
+                this.nativeModelUnits.acceleration = AccelerationUnits.GetUnitsFromString(unit.Name);
+                break;
+              case UnitDimension.Energy:
+                this.nativeModelUnits.energy = EnergyUnits.GetUnitsFromString(unit.Name);
+                break;
+              case UnitDimension.Angle:
+                this.nativeModelUnits.angle = AngleUnits.GetUnitsFromString(unit.Name);
+                break;
+              case UnitDimension.Strain:
+                this.nativeModelUnits.strain = StrainUnits.GetUnitsFromString(unit.Name);
+                break;
+              default:
+                //do nothing
+                break;
+            }
           }
         }
       }
@@ -266,10 +269,12 @@ namespace ConverterGSA
         }
       }
       return true;
-    }
+    } 
 
-    public double GetConversionFactor(UnitDimension dimension, string speckleUnit)
+    public double ConversionFactorToNative(UnitDimension dimension, string speckleUnit)
     {
+      if (string.IsNullOrEmpty(speckleUnit)) return 1;
+
       switch (dimension)
       {
         case UnitDimension.Length:        
@@ -301,28 +306,20 @@ namespace ConverterGSA
       }
     }
 
-    public double GetTemperature(double speckleValue)
-    {
-      if (string.IsNullOrEmpty(this.nativeModelUnits.temperature) || string.IsNullOrEmpty(this.speckleModelUnits.temperature))
-      {
-        return 1;
-      }
-      else
-      {
-        return TemperatureUnits.Convert(speckleValue, this.speckleModelUnits.temperature, this.nativeModelUnits.temperature);
-      }
-    }
+    public double ConversionFactorToDegrees() => string.IsNullOrEmpty(this.speckleModelUnits.angle) ? 1 : AngleUnits.GetConversionFactor(this.speckleModelUnits.angle, AngleUnits.Degree);
 
-    public double GetTemperature(double speckleValue, string speckleUnit)
+    public double? TemperatureToNative(double? speckleValue) => TemperatureToNative(speckleValue, this.speckleModelUnits.temperature);
+
+    public double? TemperatureToNative(double? speckleValue, string speckleUnit)
     {
-      if (string.IsNullOrEmpty(this.nativeModelUnits.temperature) || string.IsNullOrEmpty(speckleUnit))
+      if (speckleValue == null || string.IsNullOrEmpty(this.nativeModelUnits.temperature) || string.IsNullOrEmpty(speckleUnit))
       {
-        return 1;
+        return speckleValue;
       }
       else
       {
-        return TemperatureUnits.Convert(speckleValue, speckleUnit, this.nativeModelUnits.temperature);
+        return TemperatureUnits.Convert(speckleValue.Value, speckleUnit, this.nativeModelUnits.temperature);
       }
-    }
+    } 
   }
 }

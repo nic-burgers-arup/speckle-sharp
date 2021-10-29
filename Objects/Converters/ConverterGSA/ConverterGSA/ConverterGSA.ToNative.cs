@@ -149,17 +149,12 @@ namespace ConverterGSA
       var retList = new List<GsaRecord>();
 
       var speckleNode = new Node(basePoint, null, null, null);
-      var nodeIndex = Instance.GsaModel.Proxy.NodeAt(basePoint.x, basePoint.y, basePoint.z, Instance.GsaModel.CoincidentNodeAllowance);
 
       var gsaNode = new GsaNode()
       {
         ApplicationId = speckleObject.id, // should be identical if xyz coordinates the same
-        Index = nodeIndex,
+        Index = basePoint.NodeAt(conversionFactors),
         Name = speckleNode.name,
-
-        X = speckleNode.basePoint.x,
-        Y = speckleNode.basePoint.y,
-        Z = speckleNode.basePoint.z,
         SpringPropertyIndex = IndexByConversionOrLookup<GsaPropSpr>(speckleNode.springProperty, ref retList),
         MassPropertyIndex = IndexByConversionOrLookup<GsaPropMass>(speckleNode.massProperty, ref retList),
       };
@@ -173,6 +168,15 @@ namespace ConverterGSA
       {
         gsaNode.AxisRefType = gsaAxisRefType;
         gsaNode.AxisIndex = gsaAxisIndex;
+      }
+
+      //Unit conversions
+      if (basePoint != null)
+      {
+        var factor = basePoint.GetScaleFactor(conversionFactors);
+        gsaNode.X = basePoint.x * factor;
+        gsaNode.Y = basePoint.y * factor;
+        gsaNode.Z = basePoint.z * factor;
       }
 
       retList.Add(gsaNode);
@@ -195,6 +199,7 @@ namespace ConverterGSA
       var gsaNode = new GsaNode()
       {
         ApplicationId = speckleNode.applicationId,
+        Index = speckleNode.NodeAt(conversionFactors),
         Name = speckleNode.name,
         SpringPropertyIndex = IndexByConversionOrLookup<GsaPropSpr>(speckleNode.springProperty, ref retList),
         MassPropertyIndex = IndexByConversionOrLookup<GsaPropMass>(speckleNode.massProperty, ref retList),
@@ -213,14 +218,10 @@ namespace ConverterGSA
       //Unit conversions
       if (speckleNode.basePoint != null)
       {
-        var factor = string.IsNullOrEmpty(speckleNode.units) ? conversionFactors.length : conversionFactors.GetConversionFactor(UnitDimension.Length, speckleNode.units);
-        var x = speckleNode.basePoint.x * factor;
-        var y = speckleNode.basePoint.y * factor;
-        var z = speckleNode.basePoint.z * factor;
-        gsaNode.X = x;
-        gsaNode.Y = y;
-        gsaNode.Z = z;
-        gsaNode.Index = Instance.GsaModel.Proxy.NodeAt(x, y, z, Instance.GsaModel.CoincidentNodeAllowance);
+        var factor = speckleNode.GetScaleFactor(conversionFactors);
+        gsaNode.X = speckleNode.basePoint.x * factor;
+        gsaNode.Y = speckleNode.basePoint.y * factor;
+        gsaNode.Z = speckleNode.basePoint.z * factor;
       }
 
       retList.Add(gsaNode);
@@ -252,30 +253,21 @@ namespace ConverterGSA
         Index = speckleElement.GetIndex<GsaEl>(),
         Name = speckleElement.name,
         Type = speckleElement.type.ToNative(),
+        OrientationNodeIndex = speckleElement.orientationNode.NodeAt(conversionFactors),
         //TaperOffsetPercentageEnd1 - currently not supported
         //TaperOffsetPercentageEnd2 - currently not supported
         PropertyIndex = IndexByConversionOrLookup<GsaSection>(speckleElement.property, ref retList),
         ParentIndex = IndexByConversionOrLookup<GsaMemb>(speckleElement.parent, ref retList)
       };
 
-      if (speckleElement.orientationNode != null)
-      {
-        gsaElement.OrientationNodeIndex = Instance.GsaModel.Proxy.NodeAt(speckleElement.orientationNode.basePoint.x, speckleElement.orientationNode.basePoint.y,
-          speckleElement.orientationNode.basePoint.z, Instance.GsaModel.CoincidentNodeAllowance);
-      }
       if (speckleElement.topology != null && speckleElement.topology.Count > 0)
       {
-        gsaElement.NodeIndices = speckleElement.topology.Select(n => Instance.GsaModel.Proxy.NodeAt(n.basePoint.x, n.basePoint.y, n.basePoint.z,
-          Instance.GsaModel.CoincidentNodeAllowance)).ToList();
+        gsaElement.NodeIndices = speckleElement.topology.NodeAt(conversionFactors);
       }
       else if (speckleElement.baseLine != null && speckleElement.baseLine.start != null && speckleElement.baseLine.end != null)
       {
-        var line = (Line)speckleElement.baseLine;
-        gsaElement.NodeIndices = new List<int>
-        {
-          Instance.GsaModel.Proxy.NodeAt(line.start.x, line.start.y, line.start.z, Instance.GsaModel.CoincidentNodeAllowance),
-          Instance.GsaModel.Proxy.NodeAt(line.end.x, line.end.y, line.end.z, Instance.GsaModel.CoincidentNodeAllowance)
-        };
+        var specklePoints = new List<Point>() { speckleElement.baseLine.start, speckleElement.baseLine.end };
+        gsaElement.NodeIndices = specklePoints.NodeAt(conversionFactors);
       }
 
       if (speckleElement.end1Releases != null && GetReleases(speckleElement.end1Releases, out var gsaRelease1, out var gsaStiffnesses1, out var gsaReleaseInclusion1))
@@ -292,21 +284,21 @@ namespace ConverterGSA
       }
       if (speckleElement.end1Offset != null && speckleElement.end1Offset.x != 0)
       {
-        gsaElement.End1OffsetX = speckleElement.end1Offset.x;
+        gsaElement.End1OffsetX = conversionFactors.length * speckleElement.end1Offset.x;
       }
       if (speckleElement.end2Offset != null && speckleElement.end2Offset.x != 0)
       {
-        gsaElement.End2OffsetX = speckleElement.end2Offset.x;
+        gsaElement.End2OffsetX = conversionFactors.length * speckleElement.end2Offset.x;
       }
       if (speckleElement.end1Offset != null && speckleElement.end2Offset != null)
       {
         if (speckleElement.end1Offset.y == speckleElement.end2Offset.y)
         {
-          if (speckleElement.end1Offset.y != 0) gsaElement.OffsetY = speckleElement.end1Offset.y;
+          if (speckleElement.end1Offset.y != 0) gsaElement.OffsetY = conversionFactors.length * speckleElement.end1Offset.y;
         }
         else
         {
-          gsaElement.OffsetY = speckleElement.end1Offset.y;
+          gsaElement.OffsetY = conversionFactors.length * speckleElement.end1Offset.y;
           ConversionErrors.Add(new Exception("Element1dToNative: "
             + "Error converting element1d with application id (" + speckleElement.applicationId + "). "
             + "Different y offsets were assigned at either end."
@@ -314,18 +306,18 @@ namespace ConverterGSA
         }
         if (speckleElement.end1Offset.z == speckleElement.end2Offset.z)
         {
-          if (speckleElement.end1Offset.z != 0) gsaElement.OffsetZ = speckleElement.end1Offset.z;
+          if (speckleElement.end1Offset.z != 0) gsaElement.OffsetZ = conversionFactors.length * speckleElement.end1Offset.z;
         }
         else
         {
-          gsaElement.OffsetZ = speckleElement.end1Offset.z;
+          gsaElement.OffsetZ = conversionFactors.length * speckleElement.end1Offset.z;
           ConversionErrors.Add(new Exception("Element1dToNative: "
             + "Error converting element1d with application id (" + speckleElement.applicationId + "). "
             + "Different z offsets were assigned at either end."
             + "end 1 z offset of " + gsaElement.OffsetY.ToString() + " has been applied"));
         }
       }
-      if (speckleElement.orientationAngle != 0)   gsaElement.Angle = speckleElement.orientationAngle;
+      if (speckleElement.orientationAngle != 0)   gsaElement.Angle = conversionFactors.ConversionFactorToDegrees() * speckleElement.orientationAngle;
 
       retList.Add(gsaElement);
       return retList;
@@ -358,12 +350,11 @@ namespace ConverterGSA
       };
       if (speckleElement.topology != null && speckleElement.topology.Count > 0)
       {
-        gsaElement.NodeIndices = speckleElement.topology.Select(n => Instance.GsaModel.Proxy.NodeAt(n.basePoint.x, n.basePoint.y, n.basePoint.z,
-          Instance.GsaModel.CoincidentNodeAllowance)).ToList();
+        gsaElement.NodeIndices = speckleElement.topology.NodeAt(conversionFactors);
       }
 
-      if (speckleElement.orientationAngle != 0) gsaElement.Angle = speckleElement.orientationAngle;
-      if (speckleElement.offset != 0) gsaElement.OffsetZ = speckleElement.offset;
+      if (speckleElement.orientationAngle != 0) gsaElement.Angle = conversionFactors.ConversionFactorToDegrees() * speckleElement.orientationAngle;
+      if (speckleElement.offset != 0) gsaElement.OffsetZ = conversionFactors.length * speckleElement.offset;
 
       retList.Add(gsaElement);
       return retList;
@@ -415,34 +406,26 @@ namespace ConverterGSA
       var gsaMember = new GsaMemb()
       {
         ApplicationId = speckleMember.applicationId,
-        Index = Instance.GsaModel.Cache.ResolveIndex<GsaMemb>(speckleMember.applicationId),
+        Index = speckleMember.GetIndex<GsaMemb>(),
         Name = speckleMember.name,
         Type = speckleMember.type.ToNativeMember(),
         Colour = speckleMember.colour?.ColourToNative() ?? Colour.NotSet,
         Dummy = speckleMember.isDummy,
         IsIntersector = speckleMember.intersectsWithOthers,
+        OrientationNodeIndex = speckleMember.orientationNode.NodeAt(conversionFactors),
         //TaperOffsetPercentageEnd1 - currently not supported
         //TaperOffsetPercentageEnd2 - currently not supported
         PropertyIndex = IndexByConversionOrLookup<GsaSection>(speckleMember.property, ref retList),
       };
-      if (speckleMember.orientationNode != null)
-      {
-        gsaMember.OrientationNodeIndex = Instance.GsaModel.Proxy.NodeAt(speckleMember.orientationNode.basePoint.x, speckleMember.orientationNode.basePoint.y,
-          speckleMember.orientationNode.basePoint.z, Instance.GsaModel.CoincidentNodeAllowance);
-      }
+
       if (speckleMember.topology != null && speckleMember.topology.Count > 0)
       {
-        gsaMember.NodeIndices = speckleMember.topology.Select(n => Instance.GsaModel.Proxy.NodeAt(n.basePoint.x, n.basePoint.y, n.basePoint.z,
-          Instance.GsaModel.CoincidentNodeAllowance)).ToList();
+        gsaMember.NodeIndices = speckleMember.topology.NodeAt(conversionFactors);
       }
       else if (speckleMember.baseLine != null && speckleMember.baseLine.start != null && speckleMember.baseLine.end != null)
       {
-        var line = (Line)speckleMember.baseLine;
-        gsaMember.NodeIndices = new List<int>
-        {
-          Instance.GsaModel.Proxy.NodeAt(line.start.x, line.start.y, line.start.z, Instance.GsaModel.CoincidentNodeAllowance),
-          Instance.GsaModel.Proxy.NodeAt(line.end.x, line.end.y, line.end.z, Instance.GsaModel.CoincidentNodeAllowance)
-        };
+        var specklePoints = new List<Point>() { speckleMember.baseLine.start, speckleMember.baseLine.end };
+        gsaMember.NodeIndices = specklePoints.NodeAt(conversionFactors);
       }
 
       //Dynamic properties
@@ -460,13 +443,13 @@ namespace ConverterGSA
       gsaMember.MemberHasOffsets = speckleMember.GetDynamicValue<bool>("MemberHasOffsets");
       gsaMember.End1AutomaticOffset = speckleMember.GetDynamicValue<bool>("End1AutomaticOffset");
       gsaMember.End2AutomaticOffset = speckleMember.GetDynamicValue<bool>("End2AutomaticOffset");
-      gsaMember.LimitingTemperature = speckleMember.GetDynamicValue<double?>("LimitingTemperature");
-      gsaMember.LoadHeight = speckleMember.GetDynamicValue<double?>("LoadHeight");
-      gsaMember.EffectiveLengthYY = speckleMember.GetDynamicValue<double>("EffectiveLengthYY").IsPositiveOrNull();
+      gsaMember.LimitingTemperature = conversionFactors.TemperatureToNative(speckleMember.GetDynamicValue<double?>("LimitingTemperature"));
+      gsaMember.LoadHeight = conversionFactors.length * speckleMember.GetDynamicValue<double?>("LoadHeight");
+      gsaMember.EffectiveLengthYY = conversionFactors.length * speckleMember.GetDynamicValue<double>("EffectiveLengthYY").IsPositiveOrNull();
       gsaMember.PercentageYY = speckleMember.GetDynamicValue<double>("PercentageYY").IsPositiveOrNull();
-      gsaMember.EffectiveLengthZZ = speckleMember.GetDynamicValue<double>("EffectiveLengthZZ").IsPositiveOrNull();
+      gsaMember.EffectiveLengthZZ = conversionFactors.length * speckleMember.GetDynamicValue<double>("EffectiveLengthZZ").IsPositiveOrNull();
       gsaMember.PercentageZZ = speckleMember.GetDynamicValue<double>("PercentageZZ").IsPositiveOrNull();
-      gsaMember.EffectiveLengthLateralTorsional = speckleMember.GetDynamicValue<double>("EffectiveLengthLateralTorsional").IsPositiveOrNull();
+      gsaMember.EffectiveLengthLateralTorsional = conversionFactors.length * speckleMember.GetDynamicValue<double>("EffectiveLengthLateralTorsional").IsPositiveOrNull();
       gsaMember.FractionLateralTorsional = speckleMember.GetDynamicValue<double>("FractionLateralTorsional").IsPositiveOrNull();
 
       if (speckleMember.end1Releases != null && GetReleases(speckleMember.end1Releases, out var gsaRelease1, out var gsaStiffnesses1))
@@ -479,17 +462,17 @@ namespace ConverterGSA
         gsaMember.Releases2 = gsaRelease2;
         gsaMember.Stiffnesses2 = gsaStiffnesses2;
       }
-      if (speckleMember.end1Offset != null && speckleMember.end1Offset.x != 0) gsaMember.End1OffsetX = speckleMember.end1Offset.x;
-      if (speckleMember.end2Offset != null && speckleMember.end2Offset.x != 0) gsaMember.End2OffsetX = speckleMember.end2Offset.x;
+      if (speckleMember.end1Offset != null && speckleMember.end1Offset.x != 0) gsaMember.End1OffsetX = conversionFactors.length * speckleMember.end1Offset.x;
+      if (speckleMember.end2Offset != null && speckleMember.end2Offset.x != 0) gsaMember.End2OffsetX = conversionFactors.length * speckleMember.end2Offset.x;
       if (speckleMember.end1Offset != null && speckleMember.end2Offset != null)
       {
         if (speckleMember.end1Offset.y == speckleMember.end2Offset.y)
         {
-          if (speckleMember.end1Offset.y != 0) gsaMember.OffsetY = speckleMember.end1Offset.y;
+          if (speckleMember.end1Offset.y != 0) gsaMember.OffsetY = conversionFactors.length * speckleMember.end1Offset.y;
         }
         else
         {
-          gsaMember.OffsetY = speckleMember.end1Offset.y;
+          gsaMember.OffsetY = conversionFactors.length * speckleMember.end1Offset.y;
           ConversionErrors.Add(new Exception("GSAMember1dToNative: "
             + "Error converting element1d with application id (" + speckleMember.applicationId + "). "
             + "Different y offsets were assigned at either end."
@@ -497,11 +480,11 @@ namespace ConverterGSA
         }
         if (speckleMember.end1Offset.z == speckleMember.end2Offset.z)
         {
-          if (speckleMember.end1Offset.z != 0) gsaMember.OffsetZ = speckleMember.end1Offset.z;
+          if (speckleMember.end1Offset.z != 0) gsaMember.OffsetZ = conversionFactors.length * speckleMember.end1Offset.z;
         }
         else
         {
-          gsaMember.OffsetZ = speckleMember.end1Offset.z;
+          gsaMember.OffsetZ = conversionFactors.length * speckleMember.end1Offset.z;
           ConversionErrors.Add(new Exception("GSAMember1dToNative: "
             + "Error converting element1d with application id (" + speckleMember.applicationId + "). "
             + "Different z offsets were assigned at either end."
@@ -509,31 +492,31 @@ namespace ConverterGSA
         }
       }
       
-      if (speckleMember.orientationAngle != 0) gsaMember.Angle = speckleMember.orientationAngle;
+      if (speckleMember.orientationAngle != 0) gsaMember.Angle = conversionFactors.ConversionFactorToDegrees() * speckleMember.orientationAngle;
       if (speckleMember.group > 0) gsaMember.Group = speckleMember.group;
-      if (speckleMember.targetMeshSize > 0) gsaMember.MeshSize = speckleMember.targetMeshSize;
+      if (speckleMember.targetMeshSize > 0) gsaMember.MeshSize = conversionFactors.length * speckleMember.targetMeshSize;
 
       //Dynamic properties
       var members = speckleMember.GetMembers();
       if (members.ContainsKey("Voids") && speckleMember["Voids"] is List<List<Node>>)
       {
         var speckleVoids = speckleObject["Voids"] as List<List<Node>>;
-        gsaMember.Voids = speckleVoids.Select(v => v.GetIndicies()).ToList();
+        gsaMember.Voids = speckleVoids.Select(v => v.NodeAt(conversionFactors)).ToList();
       }
       if (members.ContainsKey("Points") && speckleMember["Points"] is List<Node>)
       {
         var specklePoints = speckleObject["Points"] as List<Node>;
-        gsaMember.PointNodeIndices = specklePoints.GetIndicies();
+        gsaMember.PointNodeIndices = specklePoints.NodeAt(conversionFactors);
       }
       if (members.ContainsKey("Lines") && speckleMember["Lines"] is List<List<Node>>)
       {
         var speckleLines = speckleObject["Lines"] as List<List<Node>>;
-        gsaMember.Polylines = speckleLines.Select(v => v.GetIndicies()).ToList();
+        gsaMember.Polylines = speckleLines.Select(v => v.NodeAt(conversionFactors)).ToList();
       }
       if (members.ContainsKey("Areas") && speckleMember["Areas"] is List<List<Node>>)
       {
         var speckleAreas = speckleObject["Areas"] as List<List<Node>>;
-        gsaMember.AdditionalAreas = speckleAreas.Select(v => v.GetIndicies()).ToList();
+        gsaMember.AdditionalAreas = speckleAreas.Select(v => v.NodeAt(conversionFactors)).ToList();
       }
       if (members.ContainsKey("SpanRestraints") && speckleMember["SpanRestraints"] is List<RestraintDefinition>)
       {
@@ -573,7 +556,7 @@ namespace ConverterGSA
         AgeAtLoadingDays = speckleMember.GetDynamicValue<int>("AgeAtLoadingDays"),
         RemovedAtDays = speckleMember.GetDynamicValue<int>("RemovedAtDays"),
         OffsetAutomaticInternal = speckleMember.GetDynamicValue<bool>("OffsetAutomaticInternal"),
-        LimitingTemperature = speckleMember.GetDynamicValue<double?>("LimitingTemperature"),
+        LimitingTemperature = conversionFactors.TemperatureToNative(speckleMember.GetDynamicValue<double?>("LimitingTemperature")),
       };
 
       if (speckleMember.property != null)
@@ -582,36 +565,35 @@ namespace ConverterGSA
       }
       if (speckleMember.topology != null && speckleMember.topology.Count > 0)
       {
-        gsaMember.NodeIndices = speckleMember.topology.Select(n => Instance.GsaModel.Proxy.NodeAt(n.basePoint.x, n.basePoint.y, n.basePoint.z,
-          Instance.GsaModel.CoincidentNodeAllowance)).ToList();
+        gsaMember.NodeIndices = speckleMember.topology.NodeAt(conversionFactors);
       }
 
-      if (speckleMember.orientationAngle != 0) gsaMember.Angle = speckleMember.orientationAngle;
-      if (speckleMember.offset != 0) gsaMember.Offset2dZ = speckleMember.offset;
+      if (speckleMember.orientationAngle != 0) gsaMember.Angle = conversionFactors.ConversionFactorToDegrees() * speckleMember.orientationAngle;
+      if (speckleMember.offset != 0) gsaMember.Offset2dZ = conversionFactors.length * speckleMember.offset;
       if (speckleMember.group > 0) gsaMember.Group = speckleMember.group;
-      if (speckleMember.targetMeshSize > 0) gsaMember.MeshSize = speckleMember.targetMeshSize;
+      if (speckleMember.targetMeshSize > 0) gsaMember.MeshSize = conversionFactors.length * speckleMember.targetMeshSize;
 
       //Dynamic properties
       var members = speckleMember.GetMembers();
       if (members.ContainsKey("Voids") && speckleMember["Voids"] is List<List<Node>>)
       {
         var speckleVoids = speckleObject["Voids"] as List<List<Node>>;
-        gsaMember.Voids = speckleVoids.Select(v => v.GetIndicies()).ToList();
+        gsaMember.Voids = speckleVoids.Select(v => v.NodeAt(conversionFactors)).ToList();
       }
       if (members.ContainsKey("Points") && speckleMember["Points"] is List<Node>)
       {
         var specklePoints = speckleObject["Points"] as List<Node>;
-        gsaMember.PointNodeIndices = specklePoints.GetIndicies();
+        gsaMember.PointNodeIndices = specklePoints.NodeAt(conversionFactors);
       }
       if (members.ContainsKey("Lines") && speckleMember["Lines"] is List<List<Node>>)
       {
         var speckleLines = speckleObject["Lines"] as List<List<Node>>;
-        gsaMember.Polylines = speckleLines.Select(v => v.GetIndicies()).ToList();
+        gsaMember.Polylines = speckleLines.Select(v => v.NodeAt(conversionFactors)).ToList();
       }
       if (members.ContainsKey("Areas") && speckleMember["Areas"] is List<List<Node>>)
       {
         var speckleAreas = speckleObject["Areas"] as List<List<Node>>;
-        gsaMember.AdditionalAreas = speckleAreas.Select(v => v.GetIndicies()).ToList();
+        gsaMember.AdditionalAreas = speckleAreas.Select(v => v.NodeAt(conversionFactors)).ToList();
       }
       retList.Add(gsaMember);
       return retList;
@@ -625,13 +607,13 @@ namespace ConverterGSA
         ApplicationId = speckleAssembly.applicationId,
         Index = speckleAssembly.GetIndex<GsaAssembly>(),
         Name = speckleAssembly.name,
-        SizeY = speckleAssembly.sizeY,
-        SizeZ = speckleAssembly.sizeZ,
+        SizeY = conversionFactors.length * speckleAssembly.sizeY,
+        SizeZ = conversionFactors.length * speckleAssembly.sizeZ,
         CurveType = Enum.TryParse(speckleAssembly.curveType, true, out CurveType ct) ? ct : CurveType.NotSet,
         PointDefn = Enum.TryParse(speckleAssembly.pointDefinition, true, out PointDefinition pd) ? pd : PointDefinition.NotSet,   
-        Topo1 = speckleAssembly.end1Node.GetIndex<GsaNode>(),
-        Topo2 = speckleAssembly.end2Node.GetIndex<GsaNode>(),
-        OrientNode = speckleAssembly.orientationNode.GetIndex<GsaNode>(),
+        Topo1 = speckleAssembly.end1Node.NodeAt(conversionFactors),
+        Topo2 = speckleAssembly.end2Node.NodeAt(conversionFactors),
+        OrientNode = speckleAssembly.orientationNode.NodeAt(conversionFactors),
         StoreyIndices = new List<int>(),
         ExplicitPositions = new List<double>(),
       };
@@ -645,19 +627,20 @@ namespace ConverterGSA
             gsaAssembly.NumberOfPoints = (int)speckleAssembly.points[0];
             break;
           case PointDefinition.Spacing:
-            gsaAssembly.Spacing = speckleAssembly.points[0];
+            gsaAssembly.Spacing = conversionFactors.length * speckleAssembly.points[0];
             break;
           case PointDefinition.Storey:
             gsaAssembly.StoreyIndices = speckleAssembly.points.Select(i => (int)i).ToList();
             break;
           case PointDefinition.Explicit:
-            gsaAssembly.ExplicitPositions = speckleAssembly.points;
+            gsaAssembly.ExplicitPositions = speckleAssembly.points.Select(p => conversionFactors.length * p).ToList();
             break;
         }
       }
       if (speckleAssembly.entities != null)
       {
-        gsaAssembly.IntTopo = speckleAssembly.entities.FindAll(e => e is Node)?.GetIndicies<GsaNode>() ?? new List<int>();
+        var speckleNodes = speckleAssembly.entities.FindAll(e => e is Node).Select(e => (Node)e).ToList();
+        gsaAssembly.IntTopo = speckleNodes.NodeAt(conversionFactors) ?? new List<int>();
         gsaAssembly.ElementIndices = new List<int>();
         gsaAssembly.ElementIndices.AddRange(speckleAssembly.entities.FindAll(e => e is Element1D).GetIndicies<GsaEl>() ?? new List<int>());
         gsaAssembly.ElementIndices.AddRange(speckleAssembly.entities.FindAll(e => e is Element2D).GetIndicies<GsaEl>() ?? new List<int>());
@@ -677,7 +660,7 @@ namespace ConverterGSA
 
       var gsaGridLine = new GsaGridLine()
       {
-        Index = Instance.GsaModel.Cache.ResolveIndex<GsaGridLine>(speckleObject.applicationId),
+        Index = speckleGridLine.GetIndex<GsaGridLine>(),
         Name = speckleGridLine.label,
         ApplicationId = speckleGridLine.applicationId
       };
@@ -685,9 +668,14 @@ namespace ConverterGSA
       {
         gsaGridLine.Type = GridLineType.Arc;
         var speckleArc = (Arc)speckleGridLine.baseLine;
-        gsaGridLine.Length = speckleArc.radius;
-        gsaGridLine.XCoordinate = speckleArc.plane.origin.x;
-        gsaGridLine.YCoordinate = speckleArc.plane.origin.y;
+        if (speckleArc.radius != null) gsaGridLine.Length = conversionFactors.length * speckleArc.radius;
+        if (speckleArc.plane != null && speckleArc.plane.origin != null)
+        {
+          var factor = speckleArc.plane.origin.GetScaleFactor(conversionFactors);
+          gsaGridLine.XCoordinate = factor * speckleArc.plane.origin.x;
+          gsaGridLine.YCoordinate = factor * speckleArc.plane.origin.y;
+        }
+        
         if (speckleArc.startAngle != null)
         {
           gsaGridLine.Theta1 = speckleArc.startAngle.Value.Degrees();
@@ -701,15 +689,21 @@ namespace ConverterGSA
       {
         gsaGridLine.Type = GridLineType.Line;
         var speckleLine = (Line)speckleGridLine.baseLine;
-        gsaGridLine.XCoordinate = speckleLine.start.x;
-        gsaGridLine.YCoordinate = speckleLine.start.y;
+        if (speckleLine.start != null && speckleLine.end != null)
+        {
+          var factor = conversionFactors.length;
+          if (speckleLine.start.units == speckleLine.end.units) factor = speckleLine.start.GetScaleFactor(conversionFactors); //ensure both points have the same units, otherwise scale based on model units
+          gsaGridLine.XCoordinate = factor * speckleLine.start.x;
+          gsaGridLine.YCoordinate = factor * speckleLine.start.y;
 
-        var a = (speckleLine.end.x - speckleLine.start.x);
-        var o = (speckleLine.end.y - speckleLine.start.y);
-        var h = Hypotenuse(a, o);
+          var a = (speckleLine.end.x - speckleLine.start.x);
+          var o = (speckleLine.end.y - speckleLine.start.y);
+          var h = Hypotenuse(a, o);
 
-        gsaGridLine.Length = h;
-        gsaGridLine.Theta1 = Math.Acos(a / h);
+          gsaGridLine.Length = factor * h;
+          gsaGridLine.Theta1 = Math.Acos(a / h).Degrees();
+        }
+        
       }
 
       return new List<GsaRecord>() { gsaGridLine };
@@ -721,10 +715,10 @@ namespace ConverterGSA
 
       var gsaGridLine = new GsaGridPlane()
       {
-        Index = Instance.GsaModel.Cache.ResolveIndex<GsaGridPlane>(speckleStorey.applicationId),
+        Index = speckleStorey.GetIndex<GsaGridPlane>(),
         Name = speckleStorey.name,
         ApplicationId = speckleStorey.applicationId,
-        Elevation = speckleStorey.elevation
+        Elevation = conversionFactors.length * speckleStorey.elevation,
       };
       return new List<GsaRecord>() { gsaGridLine };
     }
@@ -749,7 +743,7 @@ namespace ConverterGSA
         }
         else
         {
-          gsaGridPlane.StoreyToleranceAbove = speckleGridPlane.toleranceAbove;
+          gsaGridPlane.StoreyToleranceAbove = conversionFactors.length * speckleGridPlane.toleranceAbove;
         }
         if (speckleGridPlane.toleranceBelow == null)
         {
@@ -757,7 +751,7 @@ namespace ConverterGSA
         }
         else
         {
-          gsaGridPlane.StoreyToleranceBelow = speckleGridPlane.toleranceBelow;
+          gsaGridPlane.StoreyToleranceBelow = conversionFactors.length * speckleGridPlane.toleranceBelow;
         }
       }
       else
@@ -765,44 +759,29 @@ namespace ConverterGSA
         gsaGridPlane.Type = GridPlaneType.General;
       }
 
-      if (speckleGridPlane.axis != null)
+      if (speckleGridPlane.axis == null)
       {
-        if (IsGlobalAxis(speckleGridPlane.axis))
+        gsaGridPlane.AxisRefType = GridPlaneAxisRefType.NotSet;
+      }
+      else if (IsGlobalAxis(speckleGridPlane.axis))
+      {
+        gsaGridPlane.AxisRefType = GridPlaneAxisRefType.Global;
+      }
+      else if (IsXElevationAxis(speckleGridPlane.axis))
+      {
+        gsaGridPlane.AxisRefType = GridPlaneAxisRefType.XElevation;
+      }
+      else if (IsYElevationAxis(speckleGridPlane.axis))
+      {
+        gsaGridPlane.AxisRefType = GridPlaneAxisRefType.YElevation;
+      }
+      else
+      {
+        var axisIndex = IndexByConversionOrLookup<GsaAxis>(speckleGridPlane.axis, ref retList);
+        if (axisIndex.IsIndex())
         {
-          gsaGridPlane.AxisRefType = GridPlaneAxisRefType.Global;
-        }
-        else if (!string.IsNullOrEmpty(speckleGridPlane.axis.applicationId))
-        {
-          var axisIndex = Instance.GsaModel.Cache.LookupIndex<GsaAxis>(speckleGridPlane.axis.applicationId);
-          if (axisIndex.IsIndex())
-          {
-            gsaGridPlane.AxisIndex = axisIndex;
-          }
-          else
-          {
-            var axisGsaRecords = AxisToNative(speckleGridPlane.axis);
-            var gsaAxis = axisGsaRecords.FirstOrDefault(r => r is GsaAxis);
-            if (gsaAxis != null)
-            {
-              gsaGridPlane.AxisIndex = gsaAxis.Index;
-              retList.Add(gsaAxis); 
-            }
-          }
-          if (gsaGridPlane.AxisIndex.IsIndex())
-          {
-            gsaGridPlane.AxisRefType = GridPlaneAxisRefType.Reference;
-          }
-        }
-        else
-        {
-          if (IsXElevationAxis(speckleGridPlane.axis))
-          {
-            gsaGridPlane.AxisRefType = GridPlaneAxisRefType.XElevation;
-          }
-          else if (IsYElevationAxis(speckleGridPlane.axis))
-          {
-            gsaGridPlane.AxisRefType = GridPlaneAxisRefType.YElevation;
-          }
+          gsaGridPlane.AxisIndex = axisIndex;
+          gsaGridPlane.AxisRefType = GridPlaneAxisRefType.Reference;
         }
       }
 
@@ -818,11 +797,11 @@ namespace ConverterGSA
 
       var gsaGridSurface = new GsaGridSurface()
       {
-        Index = Instance.GsaModel.Cache.ResolveIndex<GsaGridSurface>(speckleGridSurface.applicationId),
+        Index = speckleGridSurface.GetIndex<GsaGridSurface>(),
         ApplicationId = speckleGridSurface.applicationId,
         Name = speckleGridSurface.name,
-        Tolerance = speckleGridSurface.tolerance,
-        Angle = speckleGridSurface.spanDirection,
+        Tolerance = conversionFactors.length * speckleGridSurface.tolerance,
+        Angle = conversionFactors.ConversionFactorToDegrees() * speckleGridSurface.spanDirection,
         Expansion = speckleGridSurface.loadExpansion.ToNative(),
         Span = speckleGridSurface.span.ToNative()
       };
@@ -999,7 +978,6 @@ namespace ConverterGSA
 
     private List<GsaRecord> GSAPolylineToNative(Base speckleObject)
     {
-      //TODO:
       var specklePolyline = (GSAPolyline)speckleObject;
       var gsaPolyline = new GsaPolyline()
       {
@@ -1008,7 +986,7 @@ namespace ConverterGSA
         Name = specklePolyline.name,
         GridPlaneIndex = specklePolyline.gridPlane.GetIndex<GsaGridPlane>(),
         NumDim = specklePolyline.Is3d() ? 3 : 2,
-        Values = specklePolyline.GetValues(),
+        Values = specklePolyline.GetValues().ToList(), //As gsaPolyline has units, no need to scale values
         Units = specklePolyline.units,
         Colour = specklePolyline.colour.ColourToNative(),
       };
@@ -2183,7 +2161,7 @@ namespace ConverterGSA
         ApplicationId = speckleGenRest.applicationId,
         Index = speckleGenRest.GetIndex<GsaGenRest>(),
         Name = speckleGenRest.name,
-        NodeIndices = speckleGenRest.nodes.GetIndicies(),
+        NodeIndices = speckleGenRest.nodes.NodeAt(conversionFactors),
         StageIndices = speckleGenRest.stages.Select(s=>(Base)s).ToList().GetIndicies<GsaAnalStage>(),
       };
       if (speckleGenRest.restraint != null && speckleGenRest.restraint.code.Length >= 6)
@@ -2208,8 +2186,8 @@ namespace ConverterGSA
         Name = speckleRigid.name,
         Type = speckleRigid.type.ToNative(),
         Link = GetRigidConstraint(speckleRigid.constraintCondition),
-        PrimaryNode = speckleRigid.primaryNode.GetIndex<GsaNode>(),
-        ConstrainedNodes = speckleRigid.constrainedNodes.GetIndicies(),
+        PrimaryNode = speckleRigid.primaryNode.NodeAt(conversionFactors),
+        ConstrainedNodes = speckleRigid.constrainedNodes.NodeAt(conversionFactors),
         Stage = speckleRigid.stages.Select(s => (Base)s).ToList().GetIndicies<GsaAnalStage>(),
         ParentMember = speckleRigid.parentMember.GetIndex<GsaMemb>(),
       };
@@ -2505,12 +2483,12 @@ namespace ConverterGSA
         gsaReleaseInclusion = ReleaseInclusion.Stiff;
         gsaRelease = speckleRelease.code.ReleasesToNative();
         gsaStiffnesses = new List<double>();
-        if (speckleRelease.stiffnessX > 0) gsaStiffnesses.Add(speckleRelease.stiffnessX);
-        if (speckleRelease.stiffnessY > 0) gsaStiffnesses.Add(speckleRelease.stiffnessY);
-        if (speckleRelease.stiffnessZ > 0) gsaStiffnesses.Add(speckleRelease.stiffnessZ);
-        if (speckleRelease.stiffnessXX > 0) gsaStiffnesses.Add(speckleRelease.stiffnessXX);
-        if (speckleRelease.stiffnessYY > 0) gsaStiffnesses.Add(speckleRelease.stiffnessYY);
-        if (speckleRelease.stiffnessZZ > 0) gsaStiffnesses.Add(speckleRelease.stiffnessZZ);
+        if (speckleRelease.stiffnessX > 0) gsaStiffnesses.Add(conversionFactors.force / conversionFactors.length * speckleRelease.stiffnessX);
+        if (speckleRelease.stiffnessY > 0) gsaStiffnesses.Add(conversionFactors.force / conversionFactors.length * speckleRelease.stiffnessY);
+        if (speckleRelease.stiffnessZ > 0) gsaStiffnesses.Add(conversionFactors.force / conversionFactors.length * speckleRelease.stiffnessZ);
+        if (speckleRelease.stiffnessXX > 0) gsaStiffnesses.Add(conversionFactors.force * conversionFactors.length * speckleRelease.stiffnessXX);
+        if (speckleRelease.stiffnessYY > 0) gsaStiffnesses.Add(conversionFactors.force * conversionFactors.length * speckleRelease.stiffnessYY);
+        if (speckleRelease.stiffnessZZ > 0) gsaStiffnesses.Add(conversionFactors.force * conversionFactors.length * speckleRelease.stiffnessZZ);
       }
       else
       {
@@ -2527,12 +2505,12 @@ namespace ConverterGSA
       {
         gsaRelease = speckleRelease.code.ReleasesToNative();
         gsaStiffnesses = new List<double>();
-        if (speckleRelease.stiffnessX > 0) gsaStiffnesses.Add(speckleRelease.stiffnessX);
-        if (speckleRelease.stiffnessY > 0) gsaStiffnesses.Add(speckleRelease.stiffnessY);
-        if (speckleRelease.stiffnessZ > 0) gsaStiffnesses.Add(speckleRelease.stiffnessZ);
-        if (speckleRelease.stiffnessXX > 0) gsaStiffnesses.Add(speckleRelease.stiffnessXX);
-        if (speckleRelease.stiffnessYY > 0) gsaStiffnesses.Add(speckleRelease.stiffnessYY);
-        if (speckleRelease.stiffnessZZ > 0) gsaStiffnesses.Add(speckleRelease.stiffnessZZ);
+        if (speckleRelease.stiffnessX > 0) gsaStiffnesses.Add(conversionFactors.force / conversionFactors.length * speckleRelease.stiffnessX);
+        if (speckleRelease.stiffnessY > 0) gsaStiffnesses.Add(conversionFactors.force / conversionFactors.length * speckleRelease.stiffnessY);
+        if (speckleRelease.stiffnessZ > 0) gsaStiffnesses.Add(conversionFactors.force / conversionFactors.length * speckleRelease.stiffnessZ);
+        if (speckleRelease.stiffnessXX > 0) gsaStiffnesses.Add(conversionFactors.force * conversionFactors.length * speckleRelease.stiffnessXX);
+        if (speckleRelease.stiffnessYY > 0) gsaStiffnesses.Add(conversionFactors.force * conversionFactors.length * speckleRelease.stiffnessYY);
+        if (speckleRelease.stiffnessZZ > 0) gsaStiffnesses.Add(conversionFactors.force * conversionFactors.length * speckleRelease.stiffnessZZ);
       }
       else
       {
