@@ -37,6 +37,7 @@ namespace Speckle.GSA.API.GwaSchema
     public abstract string ToDesc();
     public abstract bool FromDesc(string desc);
     public Section1dProfileGroup Group;
+    public string Units = "";
 
     protected List<string> Split(string v)
     {
@@ -146,7 +147,18 @@ namespace Speckle.GSA.API.GwaSchema
       Actions = new List<string>();
       Y = new List<double?>();
       Z = new List<double?>();
-      Type = items[1];
+
+      //Set type and units (if they exist)
+      var str = items[1].Split('(', ')');
+      if (str.Count() > 1)
+      {
+        Type = str[0];
+        Units = str[1];
+      }
+      else
+      {
+        Type = items[1];
+      }
 
       for (var i = 2; i < items.Count(); i++)
       {
@@ -169,6 +181,10 @@ namespace Speckle.GSA.API.GwaSchema
     public override string ToDesc()
     {
       var v = "GEO " + Type;
+      if (Units != "")
+      {
+        v += "(" + Units + ")";
+      }
       
       for (var i = 0; i < Actions.Count(); i++)
       {
@@ -245,7 +261,14 @@ namespace Speckle.GSA.API.GwaSchema
     {
       var items = Split(desc);
 
-      //Assume first is the STD string and second is the type
+      //Assume first is the STD string and second is the type. The second might also contain units within brackets
+      var str = items[1].Split('(', ')');
+      if (str.Count() > 1)
+      {
+        items[1] = str[0];
+        Units = str[1];
+      }
+
       if (!items[1].TryParseStringValue(out ProfileType))
       {
         return false;
@@ -261,6 +284,7 @@ namespace Speckle.GSA.API.GwaSchema
     public override string ToDesc()
     {
       var strItems = new List<string>() { Group.GetStringValue(), ProfileType.GetStringValue() };
+      if (Units != "") strItems[1] += strItems[1] + "(" + Units + ")";
       strItems.AddRange(values.Select(v => (v.HasValue ? v : 0).ToString()));
       return string.Join(" ", strItems);
     }

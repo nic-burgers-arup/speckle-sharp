@@ -46,7 +46,7 @@ namespace ConnectorGSATests
       Assert.True(proxy.GetGwaData(Instance.GsaModel.StreamLayer, new Progress<string>(), out var records));
       proxy.Close();
       Assert.Empty(errors);
-      Assert.Equal(197, records.Count());
+      Assert.Equal(201, records.Count());
     }
 
     [Fact]

@@ -26,6 +26,7 @@ using Objects.Structural.GSA.Loading;
 using Objects.Structural.Properties;
 using AutoMapper;
 using Objects.Structural.Materials;
+using Speckle.Core.Kits;
 
 namespace ConverterGSATests
 {
@@ -69,11 +70,19 @@ namespace ConverterGSATests
       Assert.Equal(gsaAxis.XYDirZ.Value, gsaConvertedAxis.XYDirZ.Value, 6);
     }
 
-    [Fact]
-    public void NodeToNative()
+    [Theory]
+    [InlineData("m","mm")]
+    [InlineData("mm","mm")]
+    [InlineData("mm", "m")]
+    [InlineData("","m")]
+    [InlineData("m", "")]
+    [InlineData(null, null)]
+    public void NodeToNative(string gsaLengthUnit, string speckleLengthUnit)
     {
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      var gsaUnit = new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit };
+      gsaRecords.Add(gsaUnit);
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
       var gsaNodes = GsaNodeExamples(1, "node 1");
@@ -83,22 +92,41 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList());
-      var speckleObjects = ((Model)speckleModels.First()).nodes.FindAll(o => o is GSANode).ToList();
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).Select(o => (Model)o).ToList();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleModels.First().nodes.FindAll(o => o is GSANode).ToList());
+      var speckleUnits = speckleModels.First().specs.settings.modelUnits;
+      speckleUnits.length = speckleLengthUnit; //change the units
+      speckleObjects.Add(speckleUnits);
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
       var gsaConvertedNodes = gsaConvertedRecords.FindAll(r => r is GsaNode).Select(r => (GsaNode)r).ToList();
       var compareLogic = new CompareLogic();
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaNode x) => x.X));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaNode x) => x.Y));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaNode x) => x.Z));
       var result = compareLogic.Compare(gsaNodes, gsaConvertedNodes);
       Assert.Empty(result.Differences);
+      var factor = (string.IsNullOrEmpty(speckleLengthUnit) || string.IsNullOrEmpty(gsaLengthUnit)) ? 1 : Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
+      Assert.Equal(factor * gsaNodes[0].X, gsaConvertedNodes[0].X);
+      Assert.Equal(factor * gsaNodes[0].Y, gsaConvertedNodes[0].Y);
+      Assert.Equal(factor * gsaNodes[0].Z, gsaConvertedNodes[0].Z);
     }
 
-    [Fact]
-    public void Element2dToNative()
+    [Theory]
+    [InlineData("m", "mm")]
+    [InlineData("mm", "mm")]
+    [InlineData("mm", "m")]
+    [InlineData("", "m")]
+    [InlineData("m", "")]
+    [InlineData(null, null)]
+    public void Element2dToNative(string gsaLengthUnit, string speckleLengthUnit)
     {
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      var gsaUnit = new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit };
+      gsaRecords.Add(gsaUnit);
       gsaRecords.Add(GsaMatSteelExample("steel material 1"));
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
@@ -111,8 +139,12 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList());
-      var speckleObjects = ((Model)speckleModels.Last()).elements.FindAll(o => o is GSAElement2D).ToList();
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).Select(o => (Model)o).ToList();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleModels.Last().elements.FindAll(o => o is GSAElement2D).ToList());
+      var speckleUnits = speckleModels.First().specs.settings.modelUnits;
+      speckleUnits.length = speckleLengthUnit; //change the units
+      speckleObjects.Add(speckleUnits);
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
@@ -123,11 +155,12 @@ namespace ConverterGSATests
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaEl x) => x.ParentIndex));
       var result = compareLogic.Compare(gsaEls, gsaConvertedEls);
       Assert.Empty(result.Differences);
+      var factor = (string.IsNullOrEmpty(speckleLengthUnit) || string.IsNullOrEmpty(gsaLengthUnit)) ? 1 : Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
       Assert.Null(gsaConvertedEls[0].Angle);
       Assert.Null(gsaConvertedEls[0].OffsetZ);
       Assert.Null(gsaConvertedEls[0].ParentIndex);
-      Assert.Null(gsaConvertedEls[1].Angle);
-      Assert.Null(gsaConvertedEls[1].OffsetZ);
+      Assert.Equal(gsaEls[1].Angle, gsaConvertedEls[1].Angle); // always degrees (so no conversion)
+      Assert.Equal(factor * gsaEls[1].OffsetZ, gsaConvertedEls[1].OffsetZ);
       Assert.Null(gsaConvertedEls[1].ParentIndex);
     }
 
@@ -142,11 +175,19 @@ namespace ConverterGSATests
       var gsaConvertedRecords = converter.ConvertToNative(new List<Base>() { speckleElement });
     }
 
-    [Fact]
-    public void Element1dToNative()
+    [Theory]
+    [InlineData("m", "mm")]
+    [InlineData("mm", "mm")]
+    [InlineData("mm", "m")]
+    [InlineData("", "m")]
+    [InlineData("m", "")]
+    [InlineData(null, null)]
+    public void Element1dToNative(string gsaLengthUnit, string speckleLengthUnit)
     {
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      var gsaUnit = new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit };
+      gsaRecords.Add(gsaUnit);
       gsaRecords.Add(GsaMatSteelExample("steel material 1"));
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
@@ -159,8 +200,12 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList());
-      var speckleObjects = ((Model)speckleModels.Last()).elements.FindAll(o => o is GSAElement1D).ToList();
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).Select(o => (Model)o).ToList();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleModels.Last().elements.FindAll(o => o is GSAElement1D).ToList());
+      var speckleUnits = speckleModels.First().specs.settings.modelUnits;
+      speckleUnits.length = speckleLengthUnit; //change the units
+      speckleObjects.Add(speckleUnits);
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
@@ -170,12 +215,13 @@ namespace ConverterGSATests
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaEl x) => x.OffsetZ));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaEl x) => x.ParentIndex));
       var result = compareLogic.Compare(gsaEls, gsaConvertedEls);
+      var factor = (string.IsNullOrEmpty(speckleLengthUnit) || string.IsNullOrEmpty(gsaLengthUnit)) ? 1 : Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
       Assert.Empty(result.Differences);
       Assert.Null(gsaConvertedEls[0].OffsetY);
       Assert.Null(gsaConvertedEls[0].OffsetZ);
       Assert.Null(gsaConvertedEls[0].ParentIndex);
-      Assert.Null(gsaConvertedEls[1].OffsetY);
-      Assert.Null(gsaConvertedEls[1].OffsetZ);
+      Assert.Equal(factor * gsaEls[1].OffsetY, gsaConvertedEls[1].OffsetY);
+      Assert.Equal(factor * gsaEls[1].OffsetZ, gsaConvertedEls[1].OffsetZ);
       Assert.Null(gsaConvertedEls[1].ParentIndex);
     }
 
@@ -190,11 +236,19 @@ namespace ConverterGSATests
       var gsaConvertedRecords = converter.ConvertToNative(new List<Base>() { speckleMember1d });
     }
 
-    [Fact]
-    public void GSAMemberToNative()
+    [Theory]
+    [InlineData("m", "mm")]
+    [InlineData("mm", "mm")]
+    [InlineData("mm", "m")]
+    [InlineData("", "m")]
+    [InlineData("m", "")]
+    [InlineData(null, null)]
+    public void GSAMemberToNative(string gsaLengthUnit, string speckleLengthUnit)
     {
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      var gsaUnit = new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit };
+      gsaRecords.Add(gsaUnit);
       gsaRecords.Add(GsaMatSteelExample("steel material 1"));
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
@@ -208,30 +262,37 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList());
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).Select(o => (Model)o).ToList();
       var speckleObjects = new List<Base>();
-      speckleObjects.Add(((Model)speckleModels.First()).elements.FindAll(o => o is GSAMember1D).First());
-      speckleObjects.Add(((Model)speckleModels.First()).elements.FindAll(o => o is GSAMember2D).First());
+      speckleObjects.Add(speckleModels.First().elements.FindAll(o => o is GSAMember1D).First());
+      speckleObjects.Add(speckleModels.First().elements.FindAll(o => o is GSAMember2D).First());
+      var speckleUnits = speckleModels.First().specs.settings.modelUnits;
+      speckleUnits.length = speckleLengthUnit; //change the units
+      speckleObjects.Add(speckleUnits);
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
       var gsaConvertedMembers = gsaConvertedRecords.FindAll(r => r is GsaMemb).Select(r => (GsaMemb)r).ToList();
       var compareLogic = new CompareLogic();
-      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMemb x) => x.Angle)); //example has 0 which is converted to null
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMemb x) => x.Angle));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMemb x) => x.End1OffsetX));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMemb x) => x.End2OffsetX));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMemb x) => x.OffsetY));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMemb x) => x.OffsetZ));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMemb x) => x.Offset2dZ));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMemb x) => x.MeshSize));
       var result = compareLogic.Compare(gsaMembers, gsaConvertedMembers);
+      var factor = (string.IsNullOrEmpty(speckleLengthUnit) || string.IsNullOrEmpty(gsaLengthUnit)) ? 1 : Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
       Assert.Empty(result.Differences);
-      Assert.Null(gsaConvertedMembers[0].Angle);
-      Assert.Null(gsaConvertedMembers[0].End1OffsetX);
+      Assert.Equal(gsaMembers[0].Angle, gsaConvertedMembers[0].Angle); //angle always in degrees
+      Assert.Equal(factor * gsaMembers[0].End1OffsetX, gsaConvertedMembers[0].End1OffsetX);
       Assert.Null(gsaConvertedMembers[0].End2OffsetX);
-      Assert.Null(gsaConvertedMembers[0].OffsetY);
-      Assert.Null(gsaConvertedMembers[0].OffsetZ);
-      Assert.Null(gsaConvertedMembers[1].Angle);
-      Assert.Null(gsaConvertedMembers[1].Offset2dZ);
+      Assert.Equal(factor * gsaMembers[0].OffsetY, gsaConvertedMembers[0].OffsetY);
+      Assert.Equal(factor * gsaMembers[0].OffsetZ, gsaConvertedMembers[0].OffsetZ);
+      Assert.Equal(factor * gsaMembers[0].MeshSize, gsaConvertedMembers[0].MeshSize);
+      Assert.Equal(gsaMembers[1].Angle, gsaConvertedMembers[1].Angle); //angle always in degrees
+      Assert.Equal(factor * gsaMembers[1].Offset2dZ, gsaConvertedMembers[1].Offset2dZ);
+      Assert.Equal(factor * gsaMembers[1].MeshSize, gsaConvertedMembers[1].MeshSize);
     }
 
     [Fact]
@@ -805,12 +866,10 @@ namespace ConverterGSATests
       //Checks
       var gsaConvertedLoadGravity = gsaConvertedRecords.FindAll(r => r is GsaLoadGravity).Select(r => (GsaLoadGravity)r).First();
       var compareLogic = new CompareLogic();
-      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaLoadGravity x) => x.MemberIndices));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaLoadGravity x) => x.X));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaLoadGravity x) => x.Y));
       var result = compareLogic.Compare(gsaLoadGravity, gsaConvertedLoadGravity);
       Assert.Empty(result.Differences);
-      Assert.Null(gsaConvertedLoadGravity.MemberIndices);
       Assert.Null(gsaConvertedLoadGravity.X);
       Assert.Null(gsaConvertedLoadGravity.Y);
     }
@@ -842,13 +901,11 @@ namespace ConverterGSATests
       //Checks
       var gsaConvertedLoadGravity = gsaConvertedRecords.FindAll(r => r is GsaLoadGravity).Select(r => (GsaLoadGravity)r).First();
       var compareLogic = new CompareLogic();
-      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaLoadGravity x) => x.MemberIndices));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaLoadGravity x) => x.X));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaLoadGravity x) => x.Y));
       //Ignore app specific data - currently no app specific members
       var result = compareLogic.Compare(gsaLoadGravity, gsaConvertedLoadGravity);
       Assert.Empty(result.Differences);
-      Assert.Null(gsaConvertedLoadGravity.MemberIndices);
       Assert.Null(gsaConvertedLoadGravity.X);
       Assert.Null(gsaConvertedLoadGravity.Y);
     }

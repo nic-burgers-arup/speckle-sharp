@@ -1363,8 +1363,8 @@ namespace ConverterGSA
       if (gsaConcrete.EpsAx.HasValue) speckleConcrete["EpsAx"] = gsaConcrete.EpsAx.Value;
       if (gsaConcrete.EpsTran.HasValue) speckleConcrete["EpsTran"] = gsaConcrete.EpsTran.Value;
       if (gsaConcrete.EpsAxs.HasValue) speckleConcrete["EpsAxs"] = gsaConcrete.EpsAxs.Value;
-      if (gsaConcrete.XdMin.HasValue) speckleConcrete["XdMin"] = gsaConcrete.XdMin.Value;
-      if (gsaConcrete.XdMax.HasValue) speckleConcrete["XdMax"] = gsaConcrete.XdMax.Value;
+      speckleConcrete["XdMin"] = gsaConcrete.XdMin;
+      speckleConcrete["XdMax"] = gsaConcrete.XdMax;
       if (gsaConcrete.Beta.HasValue) speckleConcrete["Beta"] = gsaConcrete.Beta.Value;
       if (gsaConcrete.Shrink.HasValue) speckleConcrete["Shrink"] = gsaConcrete.Shrink.Value;
       if (gsaConcrete.Confine.HasValue) speckleConcrete["Confine"] = gsaConcrete.Confine.Value;
@@ -3754,13 +3754,11 @@ namespace ConverterGSA
     private Axis GetOrientationAxis(AxisRefType gsaAxisRefType, int? gsaAxisIndex )
     {
       //Cartesian coordinate system is the only one supported.
-      Axis orientationAxis = null;
+      Axis orientationAxis;
 
       if (gsaAxisRefType == AxisRefType.Local)
       {
-        //TODO: handle local reference axis case
-        //Local would be a different coordinate system for each element that gsaProp2d was assigned to
-        ConversionErrors.Add(new Exception("GetOrientationAxis: Not yet implemented for local reference axis"));
+        return null;
       }
       else if (gsaAxisRefType == AxisRefType.Reference && gsaAxisIndex.IsIndex())
       {

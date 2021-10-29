@@ -29,8 +29,8 @@
     public double? EpsAxs;
     public bool Light;
     public double? Agg;
-    public double? XdMin;
-    public double? XdMax;
+    public double XdMin;
+    public double XdMax;
     public double? Beta;
     public double? Shrink;
     public double? Confine;
