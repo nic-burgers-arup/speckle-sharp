@@ -712,7 +712,7 @@ namespace ConverterGSA
         nativeId = gsaPolyline.Index ?? 0,
         name = gsaPolyline.Name,
         colour = gsaPolyline.Colour.ToString(),
-        units = gsaPolyline.Units,
+        //units = gsaPolyline.Units, //TO DO: remove units from interim schema?
       };
       if (gsaPolyline.Index.IsIndex()) specklePolyline.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaPolyline>(gsaPolyline.Index.Value);
       if (gsaPolyline.GridPlaneIndex.IsIndex()) specklePolyline.gridPlane = GetGridPlaneFromIndex(gsaPolyline.GridPlaneIndex.Value);
@@ -2015,7 +2015,7 @@ namespace ConverterGSA
         factor = gsaInfBeam.Factor ?? 0,
       };
       if (gsaInfBeam.Index.IsIndex()) speckleInfBeam.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaInfBeam>(gsaInfBeam.Index.Value);
-      if (gsaInfBeam.Position.Value >= 0 && gsaInfBeam.Position.Value <= 1) speckleInfBeam.position = gsaInfBeam.Position.Value;
+      if (gsaInfBeam.Position.HasValue) speckleInfBeam.position = gsaInfBeam.Position.Value;
       if (gsaInfBeam.Element.IsIndex()) speckleInfBeam.element = GetElement1DFromIndex(gsaInfBeam.Element.Value);
 
       return new ToSpeckleResult(speckleInfBeam);

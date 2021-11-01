@@ -741,7 +741,7 @@ namespace ConverterGSATests
       Assert.Equal(gsaPolylines[0].Index.Value, specklePolylines[0].nativeId);
       Assert.Equal(gsaPolylines[0].Colour.ToString(), specklePolylines[0].colour);
       Assert.Null(specklePolylines[0].gridPlane);
-      Assert.Equal(gsaPolylines[0].Units, specklePolylines[0].units);
+      Assert.Null(specklePolylines[0].units);
       Assert.Equal(new List<double>() { 1, 2, 0, 3, 4, 0, 5, 6, 0, 7, 8, 0 }, specklePolylines[0].value);
 
       //Checks - polyline 2
@@ -750,7 +750,7 @@ namespace ConverterGSATests
       Assert.Equal(gsaPolylines[1].Index.Value, specklePolylines[1].nativeId);
       Assert.Equal(gsaPolylines[1].Colour.ToString(), specklePolylines[1].colour);
       Assert.Equal("grid plane 1", specklePolylines[1].gridPlane.applicationId);
-      Assert.Equal(gsaPolylines[1].Units, specklePolylines[1].units);
+      Assert.Null(specklePolylines[1].units);
       Assert.Equal(gsaPolylines[1].Values, specklePolylines[1].value);
     }
     #endregion
@@ -1171,7 +1171,7 @@ namespace ConverterGSATests
       Assert.Single(speckleNodeLoads[1].nodes);
       Assert.Equal("node 2", speckleNodeLoads[1].nodes[0].applicationId); //assume conversion of node is tested elsewhere
       Assert.Equal("axis 1", speckleNodeLoads[1].loadAxis.applicationId); //assume conversion of axis is tested elsewhere
-      Assert.Equal(LoadDirection.X, speckleNodeLoads[1].direction);
+      Assert.Equal(LoadDirection.XX, speckleNodeLoads[1].direction);
       Assert.Equal(gsaLoadNodes[1].Value, speckleNodeLoads[1].value);
       Assert.Equal(gsaLoadNodes[1].Index.Value, speckleNodeLoads[1].nativeId);
     }
@@ -3364,7 +3364,7 @@ namespace ConverterGSATests
           GridPlaneIndex = null,
           NumDim = 2,
           Values = new List<double>() { 1, 2, 3, 4, 5, 6, 7, 8 },
-          Units = "m",
+          //Units = "m",
         },
         new GsaPolyline()
         {
@@ -3374,7 +3374,7 @@ namespace ConverterGSATests
           GridPlaneIndex = 1,
           NumDim = 3,
           Values = new List<double>() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 },
-          Units = "m",
+          //Units = "m",
         }
       };
       for (int i = 0; i < appIds.Count(); i++)
@@ -3571,7 +3571,7 @@ namespace ConverterGSATests
           NodeIndices = new List<int>() { 2 },
           GlobalAxis = false,
           AxisIndex = 1,
-          LoadDirection = GwaAxisDirection6.X,
+          LoadDirection = GwaAxisDirection6.XX,
           Value = 1,
         }
       };

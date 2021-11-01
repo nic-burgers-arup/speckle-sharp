@@ -110,6 +110,7 @@ namespace ConverterGSA
         if (!string.IsNullOrEmpty(speckleUnits.force))         this.speckleModelUnits.force = ForceUnits.GetUnitsFromString(speckleUnits.force);
         if (!string.IsNullOrEmpty(speckleUnits.mass))          this.speckleModelUnits.mass = MassUnits.GetUnitsFromString(speckleUnits.mass);
         if (!string.IsNullOrEmpty(speckleUnits.time))          this.speckleModelUnits.time = TimeUnits.GetUnitsFromString(speckleUnits.time);
+        if (!string.IsNullOrEmpty(speckleUnits.temperature))   this.speckleModelUnits.temperature = TemperatureUnits.GetUnitsFromString(speckleUnits.temperature);
         if (!string.IsNullOrEmpty(speckleUnits.velocity))      this.speckleModelUnits.velocity = VelocityUnits.GetUnitsFromString(speckleUnits.velocity);
         if (!string.IsNullOrEmpty(speckleUnits.acceleration))  this.speckleModelUnits.acceleration = AccelerationUnits.GetUnitsFromString(speckleUnits.acceleration);
         if (!string.IsNullOrEmpty(speckleUnits.angle))         this.speckleModelUnits.angle = AngleUnits.GetUnitsFromString(speckleUnits.angle);
