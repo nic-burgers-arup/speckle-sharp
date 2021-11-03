@@ -66,7 +66,7 @@ namespace ConnectorGSA
     }
 
     //TEMP: Not sure where to put this yet 
-    public List<List<Type>> SpeckleDependencyTree()
+    public override List<List<Type>> SpeckleDependencyTree()
     {
       var kit = KitManager.GetDefaultKit();
 

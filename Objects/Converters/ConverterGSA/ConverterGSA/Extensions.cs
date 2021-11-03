@@ -611,6 +611,7 @@ namespace ConverterGSA
       switch (speckleType)
       {
         case ElementType1D.Beam:
+        case ElementType1D.Column:
         case ElementType1D.Bar:
         case ElementType1D.Cable:
         case ElementType1D.Damper:
@@ -941,31 +942,76 @@ namespace ConverterGSA
       }
     }
 
+    public static double? IsPositiveOrNull(this double v) => v > 0 ? (double?)v : null;
+    public static int? IsPositiveOrNull(this int v) => v > 0 ? (int?)v : null;
+
     #region ResolveIndices
-    public static List<int> GetIndicies<T>(this List<Base> speckleObject)
+    public static List<int> GetIndicies<T>(this List<Base> speckleObjects)
     {
-      if (speckleObject == null) return null;
+      if (speckleObjects == null) return null;
       var gsaIndices = new List<int>();
-      foreach (var o in speckleObject)
+      foreach (var o in speckleObjects)
       {
         var index = Instance.GsaModel.Cache.LookupIndex<T>(o.applicationId);
         if (index.HasValue) gsaIndices.Add(index.Value);
       }
       return (gsaIndices.Count() > 0) ? gsaIndices : null;
     }
-    public static List<int> GetIndicies(this List<Node> speckleObject)
+
+    public static int? GetIndex<T>(this Base speckleObject) => (speckleObject == null) ? null : (int?)Instance.GsaModel.Cache.ResolveIndex<T>(speckleObject.applicationId);
+
+    public static List<int> NodeAt(this List<Node> speckleNodes, UnitConversion factors)
     {
-      if (speckleObject == null) return null;
+      if (speckleNodes == null) return null;
       var gsaIndices = new List<int>();
-      foreach (var o in speckleObject)
+      foreach (var n in speckleNodes)
       {
-        var index = Instance.GsaModel.Cache.LookupIndex<GsaNode>(o.applicationId);
+        var index = n.NodeAt(factors);
         if (index.HasValue) gsaIndices.Add(index.Value);
       }
       return (gsaIndices.Count() > 0) ? gsaIndices : null;
     }
 
-    public static int? GetIndex<T>(this Base speckleObject) => (speckleObject == null) ? null : (int?)Instance.GsaModel.Cache.ResolveIndex<T>(speckleObject.applicationId);
+    public static List<int> NodeAt(this List<Point> specklePoints, UnitConversion factors)
+    {
+      if (specklePoints == null) return null;
+      var gsaIndices = new List<int>();
+      foreach (var p in specklePoints)
+      {
+        var index = p.NodeAt(factors);
+        if (index.HasValue) gsaIndices.Add(index.Value);
+      }
+      return (gsaIndices.Count() > 0) ? gsaIndices : null;
+    }
+
+    public static int? NodeAt(this Node speckleNode, UnitConversion factors)
+    {
+      if (speckleNode != null && speckleNode.basePoint != null)
+      {
+        if (string.IsNullOrEmpty(speckleNode.basePoint.units)) speckleNode.basePoint.units = speckleNode.units;
+        return speckleNode.basePoint.NodeAt(factors);
+      }
+      return null;
+    }
+
+    public static int? NodeAt(this Point specklePoint, UnitConversion factors)
+    {
+      if (specklePoint == null) return null;
+      var sf = specklePoint.GetScaleFactor(factors);
+      var index = Instance.GsaModel.Proxy.NodeAt(sf * specklePoint.x, sf * specklePoint.y, sf * specklePoint.z, sf * Instance.GsaModel.CoincidentNodeAllowance);
+      return index > 0 ? (int?)index : null;
+    }
+
+    public static double GetScaleFactor(this Node speckleNode, UnitConversion factors)
+    {
+      if (string.IsNullOrEmpty(speckleNode.basePoint.units)) speckleNode.basePoint.units = speckleNode.units;
+      return speckleNode.basePoint.GetScaleFactor(factors);
+    }
+
+    public static double GetScaleFactor(this Point specklePoint, UnitConversion factors)
+    {
+      return string.IsNullOrEmpty(specklePoint.units) ? factors.length : factors.ConversionFactorToNative(UnitDimension.Length, specklePoint.units);
+    }
     #endregion
 
     public static T GetDynamicValue<T>(this Base speckleObject, string member)
@@ -1017,6 +1063,22 @@ namespace ConverterGSA
       return output;
     }
 
+    public static bool ValidateCoordinates(List<double> coords, out List<int> nodeIndices)
+    {
+      nodeIndices = new List<int>();
+      for (var i = 0; i < coords.Count(); i += 3)
+      {
+        var nodeIndex = Instance.GsaModel.Proxy.NodeAt(coords[i], coords[i + 1], coords[i + 2], Instance.GsaModel.CoincidentNodeAllowance);
+        if (nodeIndices.Contains(nodeIndex))
+        {
+          //Two nodes resolve to the same node
+          return false;
+        }
+        nodeIndices.Add(nodeIndex);
+      }
+      return true;
+    }
+
     public static Colour ColourToNative(this string speckleColour)
     {
       return Enum.TryParse(speckleColour, true, out Colour gsaColour) ? gsaColour : Colour.NO_RGB;
@@ -1063,6 +1125,14 @@ namespace ConverterGSA
         throw new ArgumentNullException(nameof(source));
       foreach (var element in source)
         target.Add(element);
+    }
+
+    public static void AddRangeIfNotNull<T>(this ICollection<T> target, IEnumerable<T> source)
+    {
+      if (target != null && source != null && source.Count() > 0)
+      {
+        target.AddRange(source);
+      }
     }
 
     public static void UpsertDictionary<T, U>(this Dictionary<T, List<U>> d, T key, U value)

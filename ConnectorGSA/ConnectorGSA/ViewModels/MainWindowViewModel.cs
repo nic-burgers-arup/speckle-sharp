@@ -26,7 +26,7 @@ namespace ConnectorGSA.ViewModels
     public TabCoordinator Coordinator { get; } = new TabCoordinator();
     public StateMachine StateMachine { get; } = new StateMachine();
 
-    public string Title { get => "SpeckleGSA - " + Coordinator.RunningVersion; }
+    public string Title { get => "SpeckleGSAV2 - " + Coordinator.RunningVersion; }
 
     public SpeckleAccountForUI Account { get => Coordinator.Account; }
 
@@ -445,7 +445,7 @@ namespace ConnectorGSA.ViewModels
           var newStreamName = o.ToString();
           var streamId = Coordinator.SenderTab.StreamList.SeletedStreamListItem.StreamId;
           var result = await Task.Run(() => Commands.RenameStream(Coordinator, streamId, newStreamName, loggingProgress));
-          await Coordinator.SenderTab.RefreshStream(streamId, newStreamName);
+          await Coordinator.SenderTab.RefreshStream(streamId, loggingProgress);
           Coordinator.SenderTab.StreamStatesToStreamList();
           Refresh(() => StateMachine.StoppedRenamingStream());
         },

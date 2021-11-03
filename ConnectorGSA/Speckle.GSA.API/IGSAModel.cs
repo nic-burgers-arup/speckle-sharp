@@ -31,7 +31,7 @@ namespace Speckle.GSA.API
     //IGSAMessenger Messenger { get; set; }
     IProgress<bool> ConversionProgress { get; set; }
 
-    //List<List<Type>> SpeckleDependencyTree();
+    List<List<Type>> SpeckleDependencyTree();
   }
 
   

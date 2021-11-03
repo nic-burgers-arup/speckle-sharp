@@ -773,12 +773,13 @@ namespace ConnectorGSATests
       }
     }
 
-    [Fact (Skip = "Bugs identified in keyword definition documentation")]
+    [Fact]
     public void GsaMatConcreteSimple()
     {
       var matConcreteGwas = new List<string>()
       {
-        "MAT_CONCRETE.17\t1\tMAT.10\t40 MPa\t3.315274903e+10\t40000000\t0.2\t1.381364543e+10\t2400\t1e-05\tMAT_ANAL.1\tConcrete\t-268435456\tMAT_ELAS_ISO\t6\t3.315274903e+10\t0.2\t2400\t1e-05\t1.381364543e+10\t0\t0\t0\t0\t0\t0\t0\t0\tMAT_CURVE_PARAM.3\t\tRECTANGLE+NO_TENSION\t0.00068931\t0\t0.00069069\t0\t0.003\t1\t1\t1\tMAT_CURVE_PARAM.3\t\tLINEAR+INTERPOLATED\t0.003\t0\t0.003\t0\t0.003\t0.0001144620975\t1\t1\t0\tConcrete\tCYLINDER\tN\t40000000\t34000000\t16000000\t3794733.192\t2276839.915\t0\t1\t2\t0.003\t0.003\t0.00069\t0.003\t0.0025\t0.002\t0.0025\tNO\t0.02\t0\t1\t0.77\t0\t0\t0\t0\t0"
+        //"MAT_CONCRETE.17\t1\tMAT.11\t40 MPa\t3.315274903e+10\t40000000\t0.2\t1.381364543e+10\t2400\t1e-05\tMAT_ANAL.1\tConcrete\t-268435456\tMAT_ELAS_ISO\t6\t3.315274903e+10\t0.2\t2400\t1e-05\t1.381364543e+10\t0\t0\t0\t0\t0\t0\t0\t0\tMAT_CURVE_PARAM.3\t\tRECTANGLE+NO_TENSION\t0.00068931\t0\t0.00069069\t0\t0.003\t1\t1\t1\tMAT_CURVE_PARAM.3\t\tLINEAR+INTERPOLATED\t0.003\t0\t0.003\t0\t0.003\t0.0001144620975\t1\t1\t0\tConcrete\tNO\tCYLINDER\tN\t40000000\t34000000\t16000000\t3794733.192\t2276839.915\t0\t1\t2\t0.003\t0.003\t0.00069\t0.003\t0.0025\t0.002\t0.0025\tNO\t0.02\t0\t1\t0.77\t0\t0\t0\t0\t0"
+        "MAT_CONCRETE.17\t1\tMAT.11\t35 MPa\t26423.06328\t35\t0.2\t11009.6097\t2.3\t1e-05\tMAT_ANAL.1\tConcrete\t-268435456\tMAT_ELAS_ISO\t6\t26423.06328\t0.2\t2.3\t1e-05\t11009.6097\t0\t0\t0\t0\t0\t0\t0\t0\tMAT_CURVE_PARAM.3\t\tRECTANGLE+NO_TENSION\t0.00041083875\t0\t0.00041166125\t0\t0.0035\t1\t1.538461538\t1\tMAT_CURVE_PARAM.3\t\tPOPOVICS+INTERPOLATED\t0\t0\t0.00203720187\t0\t0.0035\t0.0001343389989\t1\t1\t0\tConcrete\tNO\tCYLINDER\tN\t35\t27.9125\t14\t3.54964787\t2.18894952\t0\t1\t2\t0.00203720187\t0.0035\t0.00041125\t0.0035\t0.0035\t0.002\t0.0035\tNO\t0.02\t0\t1\t0.8825\t0\t0\t0\t0\t0"
       };
       var matConcretes = new List<GsaMatConcrete>();
       foreach (var g in matConcreteGwas)
@@ -787,19 +788,19 @@ namespace ConnectorGSATests
         Assert.True(l.FromGwa(g));
         matConcretes.Add((GsaMatConcrete)l.Record);
       }
-      Assert.Equal(2e11, matConcretes[0].Mat.E);
-      Assert.Equal(360000000, matConcretes[0].Mat.F);
-      Assert.Equal(0.3, matConcretes[0].Mat.Nu);
-      Assert.Equal(7.692307692e+10, matConcretes[0].Mat.G);
-      Assert.Equal(7850, matConcretes[0].Mat.Rho);
-      Assert.Equal(1.2e-05, matConcretes[0].Mat.Alpha);
+      Assert.Equal(26423.06328, matConcretes[0].Mat.E);
+      Assert.Equal(35, matConcretes[0].Mat.F);
+      Assert.Equal(0.2, matConcretes[0].Mat.Nu);
+      Assert.Equal(11009.6097, matConcretes[0].Mat.G);
+      Assert.Equal(2.3, matConcretes[0].Mat.Rho);
+      Assert.Equal(1e-05, matConcretes[0].Mat.Alpha);
       Assert.Equal(MatAnalType.MAT_ELAS_ISO, matConcretes[0].Mat.Prop.Type);
       Assert.Equal(6, matConcretes[0].Mat.Prop.NumParams);
-      Assert.Equal(2e11, matConcretes[0].Mat.Prop.E);
-      Assert.Equal(0.3, matConcretes[0].Mat.Prop.Nu);
-      Assert.Equal(7850, matConcretes[0].Mat.Prop.Rho);
-      Assert.Equal(1.2e-5, matConcretes[0].Mat.Prop.Alpha);
-      Assert.Equal(7.692307692e+10, matConcretes[0].Mat.Prop.G);
+      Assert.Equal(26423.06328, matConcretes[0].Mat.Prop.E);
+      Assert.Equal(0.2, matConcretes[0].Mat.Prop.Nu);
+      Assert.Equal(2.3, matConcretes[0].Mat.Prop.Rho);
+      Assert.Equal(1e-5, matConcretes[0].Mat.Prop.Alpha);
+      Assert.Equal(11009.6097, matConcretes[0].Mat.Prop.G);
       Assert.Equal(0, matConcretes[0].Mat.Prop.Damp);
       Assert.Equal(0, matConcretes[0].Mat.NumUC);
       Assert.Equal(Dimension.NotSet, matConcretes[0].Mat.AbsUC);
@@ -817,46 +818,49 @@ namespace ConnectorGSATests
       Assert.Equal(Dimension.NotSet, matConcretes[0].Mat.AbsST);
       Assert.Equal(Dimension.NotSet, matConcretes[0].Mat.OrdST);
       Assert.Equal(new double[0], matConcretes[0].Mat.PtsST);
-      Assert.Equal(0.05, matConcretes[0].Mat.Eps);
-      Assert.Equal(new List<MatCurveParamType>() { MatCurveParamType.UNDEF }, matConcretes[0].Mat.Uls.Model);
-      Assert.Equal(0.0018, matConcretes[0].Mat.Uls.StrainElasticCompression);
-      Assert.Equal(0.0018, matConcretes[0].Mat.Uls.StrainElasticTension);
-      Assert.Equal(0.0018, matConcretes[0].Mat.Uls.StrainPlasticCompression);
-      Assert.Equal(0.0018, matConcretes[0].Mat.Uls.StrainPlasticTension);
-      Assert.Equal(0.05, matConcretes[0].Mat.Uls.StrainFailureCompression);
-      Assert.Equal(0.05, matConcretes[0].Mat.Uls.StrainFailureTension);
-      Assert.Equal(1, matConcretes[0].Mat.Uls.GammaF);
+      Assert.Equal(0, matConcretes[0].Mat.Eps);
+      Assert.Equal(new List<MatCurveParamType>() { MatCurveParamType.RECTANGLE, MatCurveParamType.NO_TENSION }, matConcretes[0].Mat.Uls.Model);
+      Assert.Equal(0.00041083875, matConcretes[0].Mat.Uls.StrainElasticCompression);
+      Assert.Equal(0, matConcretes[0].Mat.Uls.StrainElasticTension);
+      Assert.Equal(0.00041166125, matConcretes[0].Mat.Uls.StrainPlasticCompression);
+      Assert.Equal(0, matConcretes[0].Mat.Uls.StrainPlasticTension);
+      Assert.Equal(0.0035, matConcretes[0].Mat.Uls.StrainFailureCompression);
+      Assert.Equal(1, matConcretes[0].Mat.Uls.StrainFailureTension);
+      Assert.Equal(1.538461538, matConcretes[0].Mat.Uls.GammaF);
       Assert.Equal(1, matConcretes[0].Mat.Uls.GammaE);
-      Assert.Equal(new List<MatCurveParamType>() { MatCurveParamType.ELAS_PLAS }, matConcretes[0].Mat.Sls.Model);
-      Assert.Equal(0.0018, matConcretes[0].Mat.Sls.StrainElasticCompression);
-      Assert.Equal(0.0018, matConcretes[0].Mat.Sls.StrainElasticTension);
-      Assert.Equal(0.0018, matConcretes[0].Mat.Sls.StrainPlasticCompression);
-      Assert.Equal(0.0018, matConcretes[0].Mat.Sls.StrainPlasticTension);
-      Assert.Equal(0.05, matConcretes[0].Mat.Sls.StrainFailureCompression);
-      Assert.Equal(0.05, matConcretes[0].Mat.Sls.StrainFailureTension);
+      Assert.Equal(new List<MatCurveParamType>() { MatCurveParamType.POPOVICS, MatCurveParamType.INTERPOLATED }, matConcretes[0].Mat.Sls.Model);
+      Assert.Equal(0, matConcretes[0].Mat.Sls.StrainElasticCompression);
+      Assert.Equal(0, matConcretes[0].Mat.Sls.StrainElasticTension);
+      Assert.Equal(0.00203720187, matConcretes[0].Mat.Sls.StrainPlasticCompression);
+      Assert.Equal(0, matConcretes[0].Mat.Sls.StrainPlasticTension);
+      Assert.Equal(0.0035, matConcretes[0].Mat.Sls.StrainFailureCompression);
+      Assert.Equal(0.0001343389989, matConcretes[0].Mat.Sls.StrainFailureTension);
       Assert.Equal(1, matConcretes[0].Mat.Sls.GammaF);
       Assert.Equal(1, matConcretes[0].Mat.Sls.GammaE);
       Assert.Equal(0, matConcretes[0].Mat.Cost);
-      Assert.Equal(MatType.STEEL, matConcretes[0].Mat.Type);
-      Assert.Equal(0, matConcretes[0].Fc);
-      Assert.Equal(0, matConcretes[0].Fcd);
-      Assert.Equal(0, matConcretes[0].Fcdc);
-      Assert.Equal(0, matConcretes[0].Fcdt);
-      Assert.Equal(0, matConcretes[0].Fcfib);
+      Assert.Equal(MatType.CONCRETE, matConcretes[0].Mat.Type);
+      Assert.Equal(MatConcreteType.CYLINDER, matConcretes[0].Type);
+      Assert.Equal(MatConcreteCement.N, matConcretes[0].Cement);
+      Assert.Equal(35, matConcretes[0].Fc);
+      Assert.Equal(27.9125, matConcretes[0].Fcd);
+      Assert.Equal(14, matConcretes[0].Fcdc);
+      Assert.Equal(3.54964787, matConcretes[0].Fcdt);
+      Assert.Equal(2.18894952, matConcretes[0].Fcfib);
       Assert.Equal(0, matConcretes[0].EmEs);
-      Assert.Equal(0, matConcretes[0].N);
-      Assert.Equal(0, matConcretes[0].Emod);
-      Assert.Equal(0, matConcretes[0].EpsPeak);
-      Assert.Equal(0, matConcretes[0].EpsMax);
-      Assert.Equal(0, matConcretes[0].EpsU);
-      Assert.Equal(0, matConcretes[0].EpsAx);
-      Assert.Equal(0, matConcretes[0].EpsTran);
-      Assert.Equal(0, matConcretes[0].EpsAxs);
+      Assert.Equal(1, matConcretes[0].Emod);
+      Assert.Equal(2, matConcretes[0].N);
+      Assert.Equal(0.00203720187, matConcretes[0].Eps);
+      Assert.Equal(0.0035, matConcretes[0].EpsPeak);
+      Assert.Equal(0.00041125, matConcretes[0].EpsMax);
+      Assert.Equal(0.0035, matConcretes[0].EpsU);
+      Assert.Equal(0.0035, matConcretes[0].EpsAx);
+      Assert.Equal(0.002, matConcretes[0].EpsTran);
+      Assert.Equal(0.0035, matConcretes[0].EpsAxs);
       Assert.False(matConcretes[0].Light);
-      Assert.Equal(0, matConcretes[0].Agg);
+      Assert.Equal(0.02, matConcretes[0].Agg);
       Assert.Equal(0, matConcretes[0].XdMin);
-      Assert.Equal(0, matConcretes[0].XdMax);
-      Assert.Equal(0, matConcretes[0].Beta);
+      Assert.Equal(1, matConcretes[0].XdMax);
+      Assert.Equal(0.8825, matConcretes[0].Beta);
       Assert.Equal(0, matConcretes[0].Shrink);
       Assert.Equal(0, matConcretes[0].Confine);
       Assert.Equal(0, matConcretes[0].Fcc);
@@ -869,8 +873,6 @@ namespace ConnectorGSATests
 
         //replace with scientific notation 
         //gwa can be read directly into GSA without any problems. This is just to simplify the comparison
-        gwa[0] = gwa[0].Replace("33152749030", "3.315274903e+10");
-        gwa[0] = gwa[0].Replace("13813645430", "1.381364543e+10");
         gwa[0] = gwa[0].Replace("1E-05", "1e-05");
         gwa[0] = gwa[0].Replace("\tCONCRETE", "\tConcrete");
 
@@ -1403,11 +1405,37 @@ namespace ConnectorGSATests
       }
     }
 
-    [Fact (Skip = "WIP")]
+    [Fact]
+    public void GsaPolyline()
+    {
+      var polylineGwas = new List<string>()
+      {
+        "POLYLINE.1\t1\tPolyline 1\tNO_RGB\t0\t2\t\"(0, 0) (1, 0) (1, 1) (0, 1)\""
+        //"POLYLINE.1\t1\tPolyline 1\tNO_RGB\t0\t2\t\"(0, 0) (1, 0) (1, 1) (0, 1)(m)\""
+      };
+      var polylines = new List<GsaPolyline>();
+      foreach (var g in polylineGwas)
+      {
+        var l = new GsaPolylineParser();
+        Assert.True(l.FromGwa(g));
+        polylines.Add((GsaPolyline)l.Record);
+      }
+      Assert.Equal(1, polylines[0].Version);
+      Assert.Equal(1, polylines[0].Index);
+      Assert.Equal("Polyline 1", polylines[0].Name);
+      Assert.Equal(Colour.NO_RGB, polylines[0].Colour);
+      Assert.Equal(0, polylines[0].GridPlaneIndex);
+      Assert.Equal(2, polylines[0].NumDim);
+      Assert.Equal(new List<double>() { 0, 0, 1, 0, 1, 1, 0, 1 }, polylines[0].Values);
+      Assert.Equal("", polylines[0].Units);
+    }
+
+    [Fact]
     public void GsaProp2dSimple()
     {
-      var supportedProp2dGwa = "PROP_2D.7\t1\tSlab property\tNO_RGB\tSHELL\tGLOBAL\t0\tCONCRETE\t1\t0\t0.3\tCENTROID\t0\t0\t100%\t100%\t100%\t100%";
-      var unsupportedProp2dGwa = "PROP_2D.7\t1\tSlab property\tNO_RGB\tCURVED\tGLOBAL\t0\tCONCRETE\t1\t0\t0.3(m) D 0 CAT RLD Ribdeck AL (0.9)\tCENTROID\t0\t0\t100%\t100%\t100%\t100%";
+      //var supportedProp2dGwa = "PROP_2D.7\t1\tSlab property\tNO_RGB\tSHELL\tGLOBAL\t0\tCONCRETE\t1\t0\t0.3\tCENTROID\t0\t0\t100%\t100%\t100%\t100%";
+      var supportedProp2dGwa = "PROP_2D.8\t1\tSlab property\tNO_RGB\tSHELL\tGLOBAL\t0\tCONCRETE\t2\t0\t0.3(m)\tCENTROID\t0\t0\t100%\t100%\t100%\t100%";
+      var unsupportedProp2dGwa = "PROP_2D.8\t1\tSlab property\tNO_RGB\tCURVED\tGLOBAL\t0\tCONCRETE\t1\t0\t0.3(m) D 0 CAT RLD Ribdeck AL (0.9)\tCENTROID\t0\t0\t100%\t100%\t100%\t100%";
 
       var p1 = new GsaProp2dParser();
       Assert.True(p1.FromGwa(supportedProp2dGwa));
@@ -1415,6 +1443,7 @@ namespace ConnectorGSATests
       Assert.True(p2.FromGwa(unsupportedProp2dGwa));
 
       Assert.Equal(0.3, ((GsaProp2d)p1.Record).Thickness);
+      Assert.Equal("m", ((GsaProp2d)p1.Record).Units);
       Assert.Equal(Property2dRefSurface.Centroid, ((GsaProp2d)p1.Record).RefPt);
 
       Assert.True(p1.Gwa(out var gwa));
@@ -1575,7 +1604,8 @@ namespace ConnectorGSATests
         "SECTION.7\t2\tNO_RGB\tPerimeter Section\t1D_GENERIC\t0\tCENTROID\t0\t0\t0\t1\t0\t0\t0\t0\t1\tSECTION_COMP.4\t\t0\tSTEEL\t1\tGEO P M(-50|-50) L(50|-50) L(50|50) L(-50|50) M(-40|-40) L(40|-40) L(40|40) L(-40|40)\t0\t0\t0\tNONE\t0\tNONE\t0\tSECTION_STEEL.2\t0\t1\t1\t1\t0.4\tNO_LOCK\tUNDEF\tUNDEF\t0\t0\tNO_ENVIRON",
         "SECTION.7\t3\tNO_RGB\tLine Segment Section\t1D_GENERIC\t0\tCENTROID\t0\t0\t0\t1\t0\t0\t0\t0\t1\tSECTION_COMP.4\t\t0\tSTEEL\t1\tGEO L(mm) T(10) M(-45|-45) L(45|-45) L(45|45) L(-45|45) L(-45|-45)\t0\t0\t0\tNONE\t0\tNONE\t0\tSECTION_STEEL.2\t0\t1\t1\t1\t0.4\tNO_LOCK\tUNDEF\tUNDEF\t0\t0\tNO_ENVIRON",
         //Standard
-        "SECTION.7\t4\tNO_RGB\tSolid Rectange\t1D_GENERIC\t0\tCENTROID\t0\t0\t0\t1\t0\t0\t0\t0\t1\tSECTION_COMP.4\t\t0\tSTEEL\t1\tSTD R 100 50\t0\t0\t0\tNONE\t0\tNONE\t0\tSECTION_STEEL.2\t0\t1\t1\t1\t0.4\tNO_LOCK\tUNDEF\tUNDEF\t0\t0\tNO_ENVIRON",
+        "SECTION.7\t4\tNO_RGB\tSolid Rectange\t1D_GENERIC\t0\tCENTROID\t0\t0\t0\t1\t0\t0\t0\t0\t1\tSECTION_COMP.4\t\t0\tSTEEL\t1\tSTD R(m) 0.1 0.05\t0\t0\t0\tNONE\t0\tNONE\t0\tSECTION_STEEL.2\t0\t1\t1\t1\t0.4\tNO_LOCK\tUNDEF\tUNDEF\t0\t0\tNO_ENVIRON",
+        //"SECTION.7\t4\tNO_RGB\tSolid Rectange\t1D_GENERIC\t0\tCENTROID\t0\t0\t0\t1\t0\t0\t0\t0\t1\tSECTION_COMP.4\t\t0\tSTEEL\t1\tSTD R 100 50\t0\t0\t0\tNONE\t0\tNONE\t0\tSECTION_STEEL.2\t0\t1\t1\t1\t0.4\tNO_LOCK\tUNDEF\tUNDEF\t0\t0\tNO_ENVIRON",
         "SECTION.7\t5\tNO_RGB\tHollow Rectangle\t1D_GENERIC\t0\tCENTROID\t0\t0\t0\t1\t0\t0\t0\t0\t1\tSECTION_COMP.4\t\t0\tSTEEL\t1\tSTD RHS 100 50 5 10\t0\t0\t0\tNONE\t0\tNONE\t0\tSECTION_STEEL.2\t0\t1\t1\t1\t0.4\tNO_LOCK\tUNDEF\tUNDEF\t0\t0\tNO_ENVIRON",
         "SECTION.7\t6\tNO_RGB\tSolid Circle\t1D_GENERIC\t0\tCENTROID\t0\t0\t0\t1\t0\t0\t0\t0\t1\tSECTION_COMP.4\t\t0\tSTEEL\t1\tSTD C 100\t0\t0\t0\tNONE\t0\tNONE\t0\tSECTION_STEEL.2\t0\t1\t1\t1\t0.4\tNO_LOCK\tUNDEF\tUNDEF\t0\t0\tNO_ENVIRON",
         "SECTION.7\t7\tNO_RGB\tHollow Circle\t1D_GENERIC\t0\tCENTROID\t0\t0\t0\t1\t0\t0\t0\t0\t1\tSECTION_COMP.4\t\t0\tSTEEL\t1\tSTD CHS 100 5\t0\t0\t0\tNONE\t0\tNONE\t0\tSECTION_STEEL.2\t0\t1\t1\t1\t0.4\tNO_LOCK\tUNDEF\tUNDEF\t0\t0\tNO_ENVIRON",
@@ -1646,6 +1676,7 @@ namespace ConnectorGSATests
       var gsaCatalogue = (ProfileDetailsCatalogue)gsaSectionComp.ProfileDetails;
       Assert.Equal(Section1dProfileGroup.Catalogue, gsaCatalogue.Group);
       Assert.Equal("CAT A-UB 610UB125 19981201", gsaCatalogue.Profile);
+      Assert.Equal("", gsaCatalogue.Units);
 
       //SECTION_STEEL
       var gsaSectionSteel = (SectionSteel)sections[0].Components[1];
@@ -1696,6 +1727,7 @@ namespace ConnectorGSATests
       Assert.Equal(new List<string>() { "M", "L", "L", "L", "M", "L", "L", "L" }, gsaPerimeter.Actions);
       Assert.Equal(new List<double?>() { -50, 50, 50, -50, -40, 40, 40, -40 }, gsaPerimeter.Y);
       Assert.Equal(new List<double?>() { -50, -50, 50, 50, -40, -40, 40, 40}, gsaPerimeter.Z);
+      Assert.Equal("", gsaPerimeter.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[1].Components[1];
@@ -1741,10 +1773,11 @@ namespace ConnectorGSATests
       //Profile
       var gsaLineSgement = (ProfileDetailsPerimeter)gsaSectionComp.ProfileDetails;
       Assert.Equal(Section1dProfileGroup.Perimeter, gsaLineSgement.Group);
-      Assert.Equal("L(mm)", gsaLineSgement.Type);
+      Assert.Equal("L", gsaLineSgement.Type);
       Assert.Equal(new List<string>() { "T", "M", "L", "L", "L", "L" }, gsaLineSgement.Actions);
       Assert.Equal(new List<double?>() { 10, -45, 45, 45, -45, -45 }, gsaLineSgement.Y);
       Assert.Equal(new List<double?>() { null, -45, -45, 45, 45, -45 }, gsaLineSgement.Z);
+      Assert.Equal("mm", gsaLineSgement.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[2].Components[1];
@@ -1774,6 +1807,7 @@ namespace ConnectorGSATests
       Assert.Equal(0, sections[3].Left);
       Assert.Equal(0, sections[3].Right);
       Assert.Equal(0, sections[3].Slab);
+      
 
       //SECTION_COMP.4
       gsaSectionComp = (SectionComp)sections[3].Components[0];
@@ -1792,8 +1826,9 @@ namespace ConnectorGSATests
       //Profile
       var gsaRectanglular = (ProfileDetailsRectangular)gsaSectionComp.ProfileDetails;
       Assert.Equal(Section1dProfileGroup.Standard, gsaRectanglular.Group);
-      Assert.Equal(50, gsaRectanglular.b);
-      Assert.Equal(100, gsaRectanglular.d);
+      Assert.Equal(0.05, gsaRectanglular.b);
+      Assert.Equal(0.1, gsaRectanglular.d);
+      Assert.Equal("m", gsaRectanglular.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[3].Components[1];
@@ -1843,6 +1878,7 @@ namespace ConnectorGSATests
       Assert.Equal(100, gsaRectangularHollow.d);
       Assert.Equal(10, gsaRectangularHollow.tf);
       Assert.Equal(5, gsaRectangularHollow.tw);
+      Assert.Equal("", gsaRectangularHollow.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[4].Components[1];
@@ -1889,6 +1925,7 @@ namespace ConnectorGSATests
       var gsaCircular = (ProfileDetailsCircular)gsaSectionComp.ProfileDetails;
       Assert.Equal(Section1dProfileGroup.Standard, gsaCircular.Group);
       Assert.Equal(100, gsaCircular.d);
+      Assert.Equal("", gsaCircular.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[5].Components[1];
@@ -1936,6 +1973,7 @@ namespace ConnectorGSATests
       Assert.Equal(Section1dProfileGroup.Standard, gsaCircularHollow.Group);
       Assert.Equal(100, gsaCircularHollow.d);
       Assert.Equal(5, gsaCircularHollow.t);
+      Assert.Equal("", gsaCircularHollow.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[6].Components[1];
@@ -1985,6 +2023,7 @@ namespace ConnectorGSATests
       Assert.Equal(50, gsaISection.b);
       Assert.Equal(5, gsaISection.tw);
       Assert.Equal(10, gsaISection.tf);
+      Assert.Equal("", gsaISection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[7].Components[1];
@@ -2034,6 +2073,7 @@ namespace ConnectorGSATests
       Assert.Equal(50, gsaTSection.b);
       Assert.Equal(5, gsaTSection.tw);
       Assert.Equal(10, gsaTSection.tf);
+      Assert.Equal("", gsaTSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[8].Components[1];
@@ -2083,6 +2123,7 @@ namespace ConnectorGSATests
       Assert.Equal(50, gsaChannelSection.b);
       Assert.Equal(5, gsaChannelSection.tw);
       Assert.Equal(10, gsaChannelSection.tf);
+      Assert.Equal("", gsaChannelSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[9].Components[1];
@@ -2132,6 +2173,7 @@ namespace ConnectorGSATests
       Assert.Equal(50, gsaAngleSection.b);
       Assert.Equal(5, gsaAngleSection.tw);
       Assert.Equal(10, gsaAngleSection.tf);
+      Assert.Equal("", gsaAngleSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[10].Components[1];
@@ -2180,6 +2222,7 @@ namespace ConnectorGSATests
       Assert.Equal(100, gsaTaperSection.d);
       Assert.Equal(50, gsaTaperSection.bt);
       Assert.Equal(20, gsaTaperSection.bb);
+      Assert.Equal("", gsaTaperSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[11].Components[1];
@@ -2228,6 +2271,7 @@ namespace ConnectorGSATests
       Assert.Equal(100, gsaEllipseSection.d);
       Assert.Equal(50, gsaEllipseSection.b);
       Assert.Equal(2, gsaEllipseSection.k);
+      Assert.Equal("", gsaEllipseSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[12].Components[1];
@@ -2276,6 +2320,7 @@ namespace ConnectorGSATests
       Assert.Equal(100, gsaOvalSection.d);
       Assert.Equal(50, gsaOvalSection.b);
       Assert.Equal(5, gsaOvalSection.t);
+      Assert.Equal("", gsaOvalSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[13].Components[1];
@@ -2325,6 +2370,7 @@ namespace ConnectorGSATests
       Assert.Equal(50, gsaCruciformSection.b);
       Assert.Equal(5, gsaCruciformSection.tw);
       Assert.Equal(10, gsaCruciformSection.tf);
+      Assert.Equal("", gsaCruciformSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[14].Components[1];
@@ -2376,6 +2422,7 @@ namespace ConnectorGSATests
       Assert.Equal(10, gsaGeneralISection.tft);
       Assert.Equal(5, gsaGeneralISection.tfb);
       Assert.Equal(2, gsaGeneralISection.tw);
+      Assert.Equal("", gsaGeneralISection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[15].Components[1];
@@ -2427,6 +2474,7 @@ namespace ConnectorGSATests
       Assert.Equal(10, gsaGeneralZSection.dt);
       Assert.Equal(5, gsaGeneralZSection.db);
       Assert.Equal(2, gsaGeneralZSection.t);
+      Assert.Equal("", gsaGeneralZSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[16].Components[1];
@@ -2476,6 +2524,7 @@ namespace ConnectorGSATests
       Assert.Equal(50, gsaGeneralChannelSection.b);
       Assert.Equal(20, gsaGeneralChannelSection.tw);
       Assert.Equal(5, gsaGeneralChannelSection.tf);
+      Assert.Equal("", gsaGeneralChannelSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[17].Components[1];
@@ -2526,6 +2575,7 @@ namespace ConnectorGSATests
       Assert.Equal(10, gsaTaperTSection.tf);
       Assert.Equal(20, gsaTaperTSection.twt);
       Assert.Equal(5, gsaTaperTSection.twb);
+      Assert.Equal("", gsaTaperTSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[18].Components[1];
@@ -2576,6 +2626,7 @@ namespace ConnectorGSATests
       Assert.Equal(10, gsaTaperAngleSection.tf);
       Assert.Equal(5, gsaTaperAngleSection.twt);
       Assert.Equal(20, gsaTaperAngleSection.twb);
+      Assert.Equal("", gsaTaperAngleSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[19].Components[1];
@@ -2628,6 +2679,7 @@ namespace ConnectorGSATests
       Assert.Equal(5, gsaTaperISection.tfb);
       Assert.Equal(4, gsaTaperISection.twt);
       Assert.Equal(2, gsaTaperISection.twb);
+      Assert.Equal("", gsaTaperISection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[20].Components[1];
@@ -2675,6 +2727,7 @@ namespace ConnectorGSATests
       Assert.Equal(Section1dProfileGroup.Standard, gsaRectoCircularSection.Group);
       Assert.Equal(100, gsaRectoCircularSection.d);
       Assert.Equal(50, gsaRectoCircularSection.b);
+      Assert.Equal("", gsaRectoCircularSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[21].Components[1];
@@ -2725,6 +2778,7 @@ namespace ConnectorGSATests
       Assert.Equal(80, gsaRectoEllipseSection.df);
       Assert.Equal(30, gsaRectoEllipseSection.bf);
       Assert.Equal(2, gsaRectoEllipseSection.k);
+      Assert.Equal("", gsaRectoEllipseSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[22].Components[1];
@@ -2773,6 +2827,7 @@ namespace ConnectorGSATests
       Assert.Equal(100, gsaSecantPileSection.d);
       Assert.Equal(50, gsaSecantPileSection.c);
       Assert.Equal(2, gsaSecantPileSection.n);
+      Assert.Equal("", gsaSecantPileSection.Units);
 
       //SECTION_CONC.6
       var gsaSectionConc = (SectionConc)sections[23].Components[1];
@@ -2830,6 +2885,7 @@ namespace ConnectorGSATests
       Assert.Equal(10, gsaCastellatedSection.tf);
       Assert.Equal(60, gsaCastellatedSection.ds);
       Assert.Equal(200, gsaCastellatedSection.p);
+      Assert.Equal("", gsaCastellatedSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[24].Components[1];
@@ -2885,6 +2941,7 @@ namespace ConnectorGSATests
       Assert.Equal(8, gsaAsymmetricCellularSection.tfb);
       Assert.Equal(200, gsaAsymmetricCellularSection.p);
       Assert.Equal(60, gsaAsymmetricCellularSection.ds);
+      Assert.Equal("", gsaAsymmetricCellularSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[25].Components[1];
@@ -2936,6 +2993,7 @@ namespace ConnectorGSATests
       Assert.Equal(50, gsaSheetPileSection.bb);
       Assert.Equal(10, gsaSheetPileSection.tf);
       Assert.Equal(5, gsaSheetPileSection.tw);
+      Assert.Equal("", gsaSheetPileSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[26].Components[1];
@@ -2988,6 +3046,7 @@ namespace ConnectorGSATests
       Assert.Equal(13, gsaExplicitSection.J);
       Assert.Equal(14, gsaExplicitSection.Ky);
       Assert.Equal(15, gsaExplicitSection.Kz);
+      Assert.Equal("", gsaExplicitSection.Units);
 
       //SECTION_STEEL
       gsaSectionSteel = (SectionSteel)sections[27].Components[1];

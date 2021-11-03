@@ -82,42 +82,42 @@ namespace ConnectorGSATests
       var parser = new GsaMembParser();
       //MEMB.8:{speckle_app_id:Slab0}\t6\tSlab 0\tNO_RGB\tSLAB\tALL\t1\t6\t36 37 38 39 40 41 42\t0\t0\t5\tYES\tLINEAR\t0\t0\t0\t0\t0\t0\tACTIVE\t0\tNO\tREBAR_2D.1\t0.03\t0.03\t0
       //Assert.True(parser.FromGwa("MEMB.8:{speckle_app_id:Slab0}\t1\tSlab 0\tNO_RGB\tSLAB\t1\t6\t36 37 38 39 40 41 42\t0\t0\t5\tMESH\tLINEAR\t0\t0\t0\t0\t0\tACTIVE\tNO\t0\tALL"));
-      Assert.True(parser.FromGwa("MEMB.8:{speckle_app_id:Slab0}\t6\tSlab 0\tNO_RGB\tSLAB\tALL\t1\t6\t36 37 38 39 40 41 42\t0\t0\t5\tYES\tLINEAR\t0\t0\t0\t0\t0\t0\tACTIVE\t0\tNO\tREBAR_2D.1\t0.03\t0.03\t0"));
+      Assert.True(parser.FromGwa("MEMB.8:{speckle_app_id:Slab1}\t6\tSlab 1\tNO_RGB\tSLAB\tALL\t1\t6\t36 37 38 39 40 41 42\t0\t0\t5\tYES\tLINEAR\t0\t0\t0\t0\t0\t0\tACTIVE\t0\tNO\tREBAR_2D.1\t0.03\t0.03\t0"));
       parser.Record.StreamId = "abcdefgh";
       cache.Upsert(parser.Record);
 
       var newIndices = new List<int>
       {
-        cache.ResolveIndex<GsaMemb>("Slab1"),
         cache.ResolveIndex<GsaMemb>("Slab2"),
-        cache.ResolveIndex<GsaMemb>("Slab3")
+        cache.ResolveIndex<GsaMemb>("Slab3"),
+        cache.ResolveIndex<GsaMemb>("Slab4")
       };
 
-      Assert.Single(cache.LookupIndices<GsaMemb>());
-      Assert.Single(cache.LookupIndices<GsaMemb>( new[] { "Slab0", "Slab1", "Slab2", "Slab3", "Slab4" }).Where(i => i.HasValue).Select(i => i.Value));
+      Assert.True(cache.LookupIndices<GsaMemb>().SequenceEqual(new[] { 1, 2, 3, 6 }));
+      Assert.True(cache.LookupIndices<GsaMemb>( new[] { "Slab1", "Slab2", "Slab3", "Slab4", "Slab5" }).SequenceEqual(new[] { 1, 2, 3, 6 }));
 
       //Try upserting a latest record before converting a provisional to latest
 
       parser = new GsaMembParser();
-      Assert.True(parser.FromGwa("MEMB.8:{speckle_app_id:Slab4}\t5\tSlab 4\tNO_RGB\tSLAB\tALL\t1\t10\t64 65 66 67 68 69 70\t0\t0\t5\tYES\tLINEAR\t0\t0\t0\t0\t0\t0\tACTIVE\t0\tNO\tREBAR_2D.1\t0.03\t0.03\t0"));
+      Assert.True(parser.FromGwa("MEMB.8:{speckle_app_id:Slab5}\t5\tSlab 5\tNO_RGB\tSLAB\tALL\t1\t10\t64 65 66 67 68 69 70\t0\t0\t5\tYES\tLINEAR\t0\t0\t0\t0\t0\t0\tACTIVE\t0\tNO\tREBAR_2D.1\t0.03\t0.03\t0"));
       parser.Record.StreamId = "abcdefgh";
       Assert.True(cache.Upsert(parser.Record));
-      Assert.Equal(2, cache.LookupIndices<GsaMemb>().Count());
-      Assert.Equal(2, cache.LookupIndices<GsaMemb>(new[] { "Slab0", "Slab1", "Slab2", "Slab3", "Slab4" }).Where(i => i.HasValue).Select(i => i.Value).Count());
+      Assert.Equal(5, cache.LookupIndices<GsaMemb>().Count());
+      Assert.Equal(5, cache.LookupIndices<GsaMemb>(new[] { "Slab1", "Slab2", "Slab3", "Slab4", "Slab5" }).Count());
 
       parser = new GsaMembParser();
       //Now convert a provisional to latest and check that the number of records hasn't increased
-      Assert.True(parser.FromGwa("MEMB.8:{speckle_app_id:Slab1}\t2\tSlab 1\tNO_RGB\tSLAB\tALL\t1\t7\t43 44 45 46 47 48 49\t0\t0\t5\tYES\tLINEAR\t0\t0\t0\t0\t0\t0\tACTIVE\t0\tNO\tREBAR_2D.1\t0.03\t0.03\t0"));
+      Assert.True(parser.FromGwa("MEMB.8:{speckle_app_id:Slab2}\t2\tSlab 2\tNO_RGB\tSLAB\tALL\t1\t7\t43 44 45 46 47 48 49\t0\t0\t5\tYES\tLINEAR\t0\t0\t0\t0\t0\t0\tACTIVE\t0\tNO\tREBAR_2D.1\t0.03\t0.03\t0"));
       //Note: the index here (2) will class with what should have been provisionally created for slab2.  So the cache should let this new upsert record
       //claim index 2, and what was provisionally created at that index should be moved to the first free index, which now would be 1
       parser.Record.StreamId = "abcdefgh";
       Assert.True(cache.Upsert(parser.Record));
 
-      Assert.Equal(3, cache.LookupIndices<GsaMemb>().Count());
-      Assert.Equal(3, cache.LookupIndices<GsaMemb>( new[] { "Slab0", "Slab1", "Slab2", "Slab3", "Slab4" }).Where(i => i.HasValue).Select(i => i.Value).Count());
+      Assert.Equal(5, cache.LookupIndices<GsaMemb>().Count());
+      Assert.Equal(5, cache.LookupIndices<GsaMemb>( new[] { "Slab1", "Slab2", "Slab3", "Slab4", "Slab5" }).Count());
 
       //Check that asking to resolve a previously-created provisional index returns that same one
-      Assert.Equal(1, cache.ResolveIndex<GsaMemb>("Slab2"));
+      Assert.Equal(1, cache.ResolveIndex<GsaMemb>("Slab3"));
 
       //Check that the next index recognises (and doesn't re-use) the current provisional indices
       Assert.Equal(4, cache.ResolveIndex<GsaMemb>());
@@ -141,7 +141,7 @@ namespace ConnectorGSATests
       parser.Record.Index = 4;
       parser.Record.StreamId = "abcdefgh";
       Assert.True(cache.Upsert(parser.Record));
-      Assert.Equal(2, cache.LookupIndices<GsaLoad2dThermal>().Count());
+      Assert.Equal(4, cache.LookupIndices<GsaLoad2dThermal>().Count());
 
       //Now convert a provisional to latest and check that the number of records hasn't increased
       parser = new GsaLoad2dThermalParser();
@@ -149,7 +149,7 @@ namespace ConnectorGSATests
       parser.Record.Index = 3;
       parser.Record.StreamId = "abcdefgh";
       Assert.True(cache.Upsert(parser.Record));
-      Assert.Equal(3, cache.LookupIndices<GsaLoad2dThermal>().Count());
+      Assert.Equal(4, cache.LookupIndices<GsaLoad2dThermal>().Count());
 
       //Check that the next index recognises (and doesn't re-use) the current provisional indices
       Assert.Equal(5, cache.ResolveIndex<GsaLoad2dThermal>());

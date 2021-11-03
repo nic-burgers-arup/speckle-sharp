@@ -3,6 +3,7 @@ using Speckle.GSA.API.GwaSchema;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Speckle.ConnectorGSA.Proxy.GwaParsers
 {
@@ -54,7 +55,10 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
         point += ")";
         desc.Add(point); 
       }
-      desc.Add("(" + record.Units + ")");
+      if (!string.IsNullOrEmpty(record.Units))
+      {
+        desc.Add("(" + record.Units + ")");
+      }
       return string.Join(" ", desc.ToArray());
     }
     #endregion
@@ -69,18 +73,67 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
     {
       //coordinates
       var coords = new List<double>();
-      foreach (var item in v.Split(' '))
+      v = RemoveWhitespace(v);
+      Regex regex = new Regex(@"(?<=\().+?(?=\))"); //finds the contents in between ( and ) but removes the brackets
+      foreach (Match match in regex.Matches(v))
       {
-        var point = item.Split('(', ')')[1].Split(',').Select(c => c.ToDouble()).ToList();
-        coords.AddRange(point);
+        if (match.Value.Contains(','))
+        {
+          var point = match.Value.Split(',').Select(c => c.ToDouble()).ToList();
+          coords.AddRange(point);
+        }
+        else
+        {
+          record.Units = match.Value;
+        }
       }
       record.Values = coords;
-
-      //units
-      record.Units = v.Split(' ').Last().Split('(', ')').Last();
-
       return true;
     }
     #endregion
+
+    private string RemoveWhitespace(string input)
+    {
+      var len = input.Length;
+      var src = input.ToCharArray();
+      int dstIdx = 0;
+      for (int i = 0; i < len; i++)
+      {
+        var ch = src[i];
+        switch (ch)
+        {
+          case '\u0020':
+          case '\u00A0':
+          case '\u1680':
+          case '\u2000':
+          case '\u2001':
+          case '\u2002':
+          case '\u2003':
+          case '\u2004':
+          case '\u2005':
+          case '\u2006':
+          case '\u2007':
+          case '\u2008':
+          case '\u2009':
+          case '\u200A':
+          case '\u202F':
+          case '\u205F':
+          case '\u3000':
+          case '\u2028':
+          case '\u2029':
+          case '\u0009':
+          case '\u000A':
+          case '\u000B':
+          case '\u000C':
+          case '\u000D':
+          case '\u0085':
+            continue;
+          default:
+            src[dstIdx++] = ch;
+            break;
+        }
+      }
+      return new string(src, 0, dstIdx);
+    }
   }
 }

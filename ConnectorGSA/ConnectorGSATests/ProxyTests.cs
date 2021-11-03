@@ -46,7 +46,7 @@ namespace ConnectorGSATests
       Assert.True(proxy.GetGwaData(Instance.GsaModel.StreamLayer, new Progress<string>(), out var records));
       proxy.Close();
       Assert.Empty(errors);
-      Assert.Equal(197, records.Count());
+      Assert.Equal(201, records.Count());
     }
 
     [Fact]
@@ -88,7 +88,7 @@ namespace ConnectorGSATests
 
       try
       {
-        loaded = Commands.LoadDataFromFile(loggingProgress, resultTypesByGroup.Keys, resultTypesByGroup.Keys.SelectMany(g => resultTypesByGroup[g]));
+        loaded = Commands.LoadDataFromFile(null, resultTypesByGroup.Keys, resultTypesByGroup.Keys.SelectMany(g => resultTypesByGroup[g]));
       }
       catch (Exception ex)
       {

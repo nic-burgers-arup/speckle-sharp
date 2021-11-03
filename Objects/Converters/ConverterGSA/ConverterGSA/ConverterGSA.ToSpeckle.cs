@@ -938,7 +938,7 @@ namespace ConverterGSA
       if (gsaLoadNode.NodeIndices.HasValues())
       {
         speckleNodeLoad.nodes = gsaLoadNode.NodeIndices.Select(i => GetNodeFromIndex(i)).ToList();
-        AddToMeaningfulNodeIndices(speckleNodeLoad.nodes.Select(n => n.applicationId));
+        AddToMeaningfulNodeIndices(speckleNodeLoad.nodes.Where(n => n != null && !string.IsNullOrEmpty(n.applicationId)).Select(n => n.applicationId));
       }
       if (gsaLoadNode.LoadCaseIndex.IsIndex()) speckleNodeLoad.loadCase = GetLoadCaseFromIndex(gsaLoadNode.LoadCaseIndex.Value);
       if (gsaLoadNode.GlobalAxis) speckleNodeLoad.loadAxis = GlobalAxis();
@@ -1293,7 +1293,7 @@ namespace ConverterGSA
         nativeId = gsaSteel.Index ?? 0,
         name = gsaSteel.Name,
         grade = "",                                 //grade can be determined from gsaMatSteel.Mat.Name (assuming the user doesn't change the default value): e.g. "350(AS3678)"
-        type = MaterialType.Steel,
+        materialType = MaterialType.Steel,
         designCode = "",                            //designCode can be determined from SPEC_STEEL_DESIGN gwa keyword
         codeYear = "",                              //codeYear can be determined from SPEC_STEEL_DESIGN gwa keyword
       };
@@ -1325,7 +1325,7 @@ namespace ConverterGSA
         nativeId = gsaConcrete.Index ?? 0,
         name = gsaConcrete.Name,
         grade = "",                                 //grade can be determined from gsaMatConcrete.Mat.Name (assuming the user doesn't change the default value): e.g. "32 MPa"
-        type = MaterialType.Concrete,
+        materialType = MaterialType.Concrete,
         designCode = "",                            //designCode can be determined from SPEC_CONCRETE_DESIGN gwa keyword: e.g. "AS3600_18" -> "AS3600"
         codeYear = "",                              //codeYear can be determined from SPEC_CONCRETE_DESIGN gwa keyword: e.g. "AS3600_18" - "2018"
         flexuralStrength = 0, //TODO: don't think this is part of the GSA definition
@@ -1357,13 +1357,14 @@ namespace ConverterGSA
       if (gsaConcrete.EmEs.HasValue) speckleConcrete["EmEs"] = gsaConcrete.EmEs.Value;
       if (gsaConcrete.N.HasValue) speckleConcrete["N"] = gsaConcrete.N.Value;
       if (gsaConcrete.Emod.HasValue) speckleConcrete["Emod"] = gsaConcrete.Emod.Value;
+      if (gsaConcrete.Eps.HasValue) speckleConcrete["Eps"] = gsaConcrete.Eps.Value;
       if (gsaConcrete.EpsPeak.HasValue) speckleConcrete["EpsPeak"] = gsaConcrete.EpsPeak.Value;
       if (gsaConcrete.EpsMax.HasValue) speckleConcrete["EpsMax"] = gsaConcrete.EpsMax.Value;
       if (gsaConcrete.EpsAx.HasValue) speckleConcrete["EpsAx"] = gsaConcrete.EpsAx.Value;
       if (gsaConcrete.EpsTran.HasValue) speckleConcrete["EpsTran"] = gsaConcrete.EpsTran.Value;
       if (gsaConcrete.EpsAxs.HasValue) speckleConcrete["EpsAxs"] = gsaConcrete.EpsAxs.Value;
-      if (gsaConcrete.XdMin.HasValue) speckleConcrete["XdMin"] = gsaConcrete.XdMin.Value;
-      if (gsaConcrete.XdMax.HasValue) speckleConcrete["XdMax"] = gsaConcrete.XdMax.Value;
+      speckleConcrete["XdMin"] = gsaConcrete.XdMin;
+      speckleConcrete["XdMax"] = gsaConcrete.XdMax;
       if (gsaConcrete.Beta.HasValue) speckleConcrete["Beta"] = gsaConcrete.Beta.Value;
       if (gsaConcrete.Shrink.HasValue) speckleConcrete["Shrink"] = gsaConcrete.Shrink.Value;
       if (gsaConcrete.Confine.HasValue) speckleConcrete["Confine"] = gsaConcrete.Confine.Value;
@@ -3312,6 +3313,7 @@ namespace ConverterGSA
 
       var speckleMatAnal = new Base();
       if (gsaMatAnal.Name != null) speckleMatAnal["Name"] = gsaMatAnal.Name;
+      speckleMatAnal["Index"] = gsaMatAnal.Index;
       speckleMatAnal["Colour"] = gsaMatAnal.Colour.ToString();
       speckleMatAnal["Type"] = gsaMatAnal.Type.ToString();
       if (gsaMatAnal.NumParams.HasValue) speckleMatAnal["NumParams"] = gsaMatAnal.NumParams.Value;
@@ -3752,13 +3754,11 @@ namespace ConverterGSA
     private Axis GetOrientationAxis(AxisRefType gsaAxisRefType, int? gsaAxisIndex )
     {
       //Cartesian coordinate system is the only one supported.
-      Axis orientationAxis = null;
+      Axis orientationAxis;
 
       if (gsaAxisRefType == AxisRefType.Local)
       {
-        //TODO: handle local reference axis case
-        //Local would be a different coordinate system for each element that gsaProp2d was assigned to
-        ConversionErrors.Add(new Exception("GetOrientationAxis: Not yet implemented for local reference axis"));
+        return null;
       }
       else if (gsaAxisRefType == AxisRefType.Reference && gsaAxisIndex.IsIndex())
       {

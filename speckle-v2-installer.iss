@@ -1,27 +1,31 @@
 ;defining variables
-#define AppName      "Spec-v2"
-#define Autocad2021Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorAutocad2021\bin\Release\SpeckleConnectorAutocad.dll")
-#define Autocad2022Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorAutocad2022\bin\Release\SpeckleConnectorAutocad.dll")
-#define Civil2021Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorCivil2021\bin\Release\SpeckleConnectorCivil.dll")
-#define Civil2022Version  GetVersionNumbersString("ConnectorAutocadCivil\ConnectorCivil2022\bin\Release\SpeckleConnectorCivil.dll")
+#define AppName      "Speckle@Arup v2 Bundle"
+#define Autocad2021Version  GetFileVersion("ConnectorAutocadCivil\ConnectorAutocad2021\bin\Release\SpeckleConnectorAutocad.dll")
+#define Autocad2022Version  GetFileVersion("ConnectorAutocadCivil\ConnectorAutocad2022\bin\Release\SpeckleConnectorAutocad.dll")
+#define Civil2021Version  GetFileVersion("ConnectorAutocadCivil\ConnectorCivil2021\bin\Release\SpeckleConnectorCivil.dll")
+#define Civil2022Version  GetFileVersion("ConnectorAutocadCivil\ConnectorCivil2022\bin\Release\SpeckleConnectorCivil.dll")
 
-#define DynamoVersion  GetVersionNumbersString("ConnectorDynamo\ConnectorDynamo\bin\Release\SpeckleConnectorDynamo.dll")
-#define DynamoExtensionVersion  GetVersionNumbersString("ConnectorDynamo\ConnectorDynamoExtension\bin\Release\SpeckleConnectorDynamoExtension.dll")
-#define DynamoFunctionsVersion  GetVersionNumbersString("ConnectorDynamo\ConnectorDynamoFunctions\bin\Release\SpeckleConnectorDynamoFunctions.dll")
+#define DynamoVersion  GetFileVersion("ConnectorDynamo\ConnectorDynamo\bin\Release\SpeckleConnectorDynamo.dll")
+#define DynamoExtensionVersion  GetFileVersion("ConnectorDynamo\ConnectorDynamoExtension\bin\Release\SpeckleConnectorDynamoExtension.dll")
+#define DynamoFunctionsVersion  GetFileVersion("ConnectorDynamo\ConnectorDynamoFunctions\bin\Release\SpeckleConnectorDynamoFunctions.dll")
 
-#define GrasshopperVersion  GetVersionNumbersString("ConnectorGrasshopper\ConnectorGrasshopper\bin\SpeckleConnectorGrasshopper.dll")
+#define GrasshopperVersion  GetFileVersion("ConnectorGrasshopper\ConnectorGrasshopper\bin\SpeckleConnectorGrasshopper.dll")
 
-#define Revit2019Version  GetVersionNumbersString("ConnectorRevit\ConnectorRevit2019\bin\Release\SpeckleConnectorRevit.dll")
-#define Revit2020Version  GetVersionNumbersString("ConnectorRevit\ConnectorRevit2020\bin\Release\SpeckleConnectorRevit.dll")
-#define Revit2021Version  GetVersionNumbersString("ConnectorRevit\ConnectorRevit2021\bin\Release\SpeckleConnectorRevit.dll")
-#define Revit2022Version  GetVersionNumbersString("ConnectorRevit\ConnectorRevit2022\bin\Release\SpeckleConnectorRevit.dll")
+#define Revit2019Version  GetFileVersion("ConnectorRevit\ConnectorRevit2019\bin\Release\SpeckleConnectorRevit.dll")
+#define Revit2020Version  GetFileVersion("ConnectorRevit\ConnectorRevit2020\bin\Release\SpeckleConnectorRevit.dll")
+#define Revit2021Version  GetFileVersion("ConnectorRevit\ConnectorRevit2021\bin\Release\SpeckleConnectorRevit.dll")
+#define Revit2022Version  GetFileVersion("ConnectorRevit\ConnectorRevit2022\bin\Release\SpeckleConnectorRevit.dll")
 
-#define Rhino6Version  GetVersionNumbersString("ConnectorRhino\ConnectorRhino6\bin\Release\SpeckleConnectorRhino.rhp")
-#define Rhino7Version  GetVersionNumbersString("ConnectorRhino\ConnectorRhino7\bin\Release\SpeckleConnectorRhino.rhp")
+#define Rhino6Version  GetFileVersion("ConnectorRhino\ConnectorRhino6\bin\Release\SpeckleConnectorRhino.rhp")
+#define Rhino7Version  GetFileVersion("ConnectorRhino\ConnectorRhino7\bin\Release\SpeckleConnectorRhino.rhp")
 
-#define AppPublisher "Spec-cx"
-#define AppURL       "https://docs.speckle.arup.com"
+#define GSAVersion  GetFileVersion("ConnectorGSA\ConnectorGSA\bin\Release\ConnectorGSA.exe")
+
+#define AppPublisher "Speckle@Arup"
+#define AppURL       "https://speckle.arup.com"
 #define SpeckleFolder "{localappdata}\Speckle"
+#define AnalyticsFolder "{localappdata}\SpeckleAnalytics"      
+#define AnalyticsFilename       "analytics.exe"
 
 [Setup]
 AppId={{BA3A01AA-F70D-4747-AA0E-E93F38C793C8}
@@ -38,8 +42,8 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 DisableWelcomePage=no
 OutputDir="."
-OutputBaseFilename=Speckle-cx-{#AppVersion}
-SetupIconFile=DesktopUI\DesktopUI\Resources\s2block.ico
+OutputBaseFilename=Speckle@ArupInstaller-v{#AppVersion}
+SetupIconFile=ConnectionManager\SpeckleConnectionManagerUI\Assets\favicon.ico
 Compression=lzma
 SolidCompression=yes
 ChangesAssociations=yes
@@ -47,7 +51,10 @@ PrivilegesRequired=lowest
 VersionInfoVersion={#AppVersion}
 
 [Languages]
-Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl" 
+
+[Messages]
+WelcomeLabel2=This will install [name/ver] on your computer.%n%nIt is recommended that you close all other applications before continuing.%n%nThis installer is intended for Arup staff only, and will replace the Speckle Systems / AEC Systems Ltd Speckle Manager with Arup's own account manager.
 
 [Components]
 Name: dynamo; Description: Speckle for Dynamo 2.1+ - v{#DynamoVersion}; Types: full
@@ -56,16 +63,17 @@ Name: dynamofunc; Description: Speckle for Dynamo Functions - v{#DynamoFunctions
 Name: rhino6; Description: Speckle for Rhino 6 - v{#Rhino6Version};  Types: full
 Name: rhino7; Description: Speckle for Rhino 7 - v{#Rhino7Version};  Types: full
 Name: gh; Description: Speckle for Grasshopper - v{#GrasshopperVersion};  Types: full
-Name: revit19; Description: Speckle for Revit 2019 ALPHA - v{#Revit2019Version};  Types: full
-Name: revit20; Description: Speckle for Revit 2020 ALPHA - v{#Revit2020Version};  Types: full
-Name: revit21; Description: Speckle for Revit 2021 ALPHA - v{#Revit2021Version};  Types: full
-Name: revit22; Description: Speckle for Revit 2022 ALPHA - v{#Revit2021Version};  Types: full
-Name: autocad21; Description: Speckle for AutoCAD 2021 ALPHA - v{#Autocad2021Version};  Types: full
-Name: autocad22; Description: Speckle for AutoCAD 2022 ALPHA - v{#Autocad2022Version};  Types: full
-Name: civil21; Description: Speckle for AutoCADCivil 2021 ALPHA - v{#Civil2021Version};  Types: full
-Name: civil22; Description: Speckle for AutoCADCivil 2022 ALPHA - v{#Civil2022Version};  Types: full
-Name: connectionmanager; Description: Connection Manager - v{#AppVersion};  Types: full; Flags: fixed
-Name: kits; Description: Speckle Kits - v{#AppVersion};  Types: full; Flags: fixed
+Name: revit19; Description: Speckle for Revit 2019 - v{#Revit2019Version};  Types: full
+Name: revit20; Description: Speckle for Revit 2020 - v{#Revit2020Version};  Types: full
+Name: revit21; Description: Speckle for Revit 2021 - v{#Revit2021Version};  Types: full
+Name: revit22; Description: Speckle for Revit 2022 - v{#Revit2021Version};  Types: full
+Name: autocad21; Description: Speckle for AutoCAD 2021 - v{#Autocad2021Version};  Types: full
+Name: autocad22; Description: Speckle for AutoCAD 2022 - v{#Autocad2022Version};  Types: full
+Name: civil21; Description: Speckle for AutoCADCivil 2021 - v{#Civil2021Version};  Types: full
+Name: civil22; Description: Speckle for AutoCADCivil 2022 - v{#Civil2022Version};  Types: full
+Name: gsa; Description: Speckle for Oasys GSA - v{#GSAVersion};  Types: full
+Name: connectionmanager; Description: Speckle@Arup ConnectionManager - v{#AppVersion};  Types: full custom; Flags: fixed
+Name: kits; Description: Speckle Kits - v{#AppVersion};  Types: full custom; Flags: fixed
 
 [Types]
 Name: "full"; Description: "Full installation"
@@ -83,45 +91,44 @@ Source: "ConnectorRhino\ConnectorRhino7\bin\Release\*"; DestDir: "{userappdata}\
 
 ;gh
 Source: "ConnectorGrasshopper\ConnectorGrasshopper\bin\*"; DestDir: "{userappdata}\Grasshopper\Libraries\SpeckleGrasshopper2\"; Flags: ignoreversion recursesubdirs; Components: gh
-Source: "Objects\Converters\ConverterRhinoGh\ConverterRhino6\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: gh
-Source: "Objects\Converters\ConverterRhinoGh\ConverterRhino7\bin\Release\net48\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: gh
+Source: "Objects\Converters\ConverterRhinoGh\ConverterRhino6\bin\Release\netstandard2.0\Objects.Converter.Rhino6.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: rhino6 gh
+Source: "Objects\Converters\ConverterRhinoGh\ConverterRhino7\bin\Release\net48\Objects.Converter.Rhino7.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: rhino7 gh
 
 ;revit19
 Source: "ConnectorRevit\ConnectorRevit2019\bin\Release\*"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2019\SpeckleRevit2\"; Flags: ignoreversion recursesubdirs; Components: revit19
 Source: "ConnectorRevit\ConnectorRevit2019\bin\Release\SpeckleRevit2.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2019\"; Flags: ignoreversion recursesubdirs; Components: revit19
-Source: "Objects\Converters\ConverterRevit\ConverterRevit2019\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: revit19
+Source: "Objects\Converters\ConverterRevit\ConverterRevit2019\bin\Release\netstandard2.0\Objects.Converter.Revit2019.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: revit19
 
 ;revit20
 Source: "ConnectorRevit\ConnectorRevit2020\bin\Release\*"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2020\SpeckleRevit2\"; Flags: ignoreversion recursesubdirs; Components: revit20
 Source: "ConnectorRevit\ConnectorRevit2020\bin\Release\SpeckleRevit2.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2020\"; Flags: ignoreversion recursesubdirs; Components: revit20
-Source: "Objects\Converters\ConverterRevit\ConverterRevit2020\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: revit20
+Source: "Objects\Converters\ConverterRevit\ConverterRevit2020\bin\Release\netstandard2.0\Objects.Converter.Revit2020.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: revit20
 
 ;revit21
 Source: "ConnectorRevit\ConnectorRevit2021\bin\Release\*"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2021\SpeckleRevit2\"; Flags: ignoreversion recursesubdirs; Components: revit21
 Source: "ConnectorRevit\ConnectorRevit2021\bin\Release\SpeckleRevit2.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2021\"; Flags: ignoreversion recursesubdirs; Components: revit21
-Source: "Objects\Converters\ConverterRevit\ConverterRevit2021\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: revit21
+Source: "Objects\Converters\ConverterRevit\ConverterRevit2021\bin\Release\netstandard2.0\Objects.Converter.Revit2021.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: revit21
 
 ;revit22
 Source: "ConnectorRevit\ConnectorRevit2022\bin\Release\*"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2022\SpeckleRevit2\"; Flags: ignoreversion recursesubdirs; Components: revit22
 Source: "ConnectorRevit\ConnectorRevit2022\bin\Release\SpeckleRevit2.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2022\"; Flags: ignoreversion recursesubdirs; Components: revit22
-Source: "Objects\Converters\ConverterRevit\ConverterRevit2022\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: revit22
+Source: "Objects\Converters\ConverterRevit\ConverterRevit2022\bin\Release\netstandard2.0\Objects.Converter.Revit2022.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: revit22
 
 ;autocad21
 Source: "ConnectorAutocadCivil\ConnectorAutocad2021\bin\Release\*"; DestDir: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2AutoCAD2021\"; Flags: ignoreversion recursesubdirs; Components: autocad21
-Source: "Objects\Converters\ConverterAutocadCivil\ConverterAutocad2021\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: autocad21
-
+Source: "Objects\Converters\ConverterAutocadCivil\ConverterAutocad2021\bin\Release\netstandard2.0\Objects.Converter.Autocad2021.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: autocad21
 
 ;autocad22
 Source: "ConnectorAutocadCivil\ConnectorAutocad2022\bin\Release\*"; DestDir: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2AutoCAD2022\"; Flags: ignoreversion recursesubdirs; Components: autocad22
-Source: "Objects\Converters\ConverterAutocadCivil\ConverterAutocad2022\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: autocad22
+Source: "Objects\Converters\ConverterAutocadCivil\ConverterAutocad2022\bin\Release\netstandard2.0\Objects.Converter.Autocad2022.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: autocad22
 
 ;civil21
 Source: "ConnectorAutocadCivil\ConnectorCivil2021\bin\Release\*"; DestDir: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2Civil3D2021\"; Flags: ignoreversion recursesubdirs; Components: civil21
-Source: "Objects\Converters\ConverterAutocadCivil\ConverterCivil2021\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: civil21
+Source: "Objects\Converters\ConverterAutocadCivil\ConverterCivil2021\bin\Release\netstandard2.0\Objects.Converter.Civil2021.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: civil21
 
 ;civil22
 Source: "ConnectorAutocadCivil\ConnectorCivil2022\bin\Release\*"; DestDir: "{userappdata}\Autodesk\ApplicationPlugins\Speckle2Civil3D2022\"; Flags: ignoreversion recursesubdirs; Components: civil22
-Source: "Objects\Converters\ConverterAutocadCivil\ConverterCivil2022\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: civil22
+Source: "Objects\Converters\ConverterAutocadCivil\ConverterCivil2022\bin\Release\netstandard2.0\Objects.Converter.Civil2022.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: civil22
 
 ;dynamo
 Source: "ConnectorDynamo\ConnectorDynamo\bin\Release\*"; DestDir: "{userappdata}\Dynamo\Dynamo Core\2.11\packages\SpeckleDynamo2\bin\"; Flags: ignoreversion recursesubdirs; Components: dynamo
@@ -136,10 +143,10 @@ Source: "ConnectorDynamo\ConnectorDynamo\bin\Release\*"; DestDir: "{userappdata}
 Source: "ConnectorDynamo\ConnectorDynamo\pkg.json"; DestDir: "{userappdata}\Dynamo\Dynamo Revit\2.6\packages\SpeckleDynamo2\"; Flags: ignoreversion recursesubdirs; Components: dynamo
 Source: "ConnectorDynamo\ConnectorDynamo\bin\Release\*"; DestDir: "{userappdata}\Dynamo\Dynamo Revit\2.10\packages\SpeckleDynamo2\bin\"; Flags: ignoreversion recursesubdirs; Components: dynamo
 Source: "ConnectorDynamo\ConnectorDynamo\pkg.json"; DestDir: "{userappdata}\Dynamo\Dynamo Revit\2.10\packages\SpeckleDynamo2\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "Objects\Converters\ConverterDynamo\converterDynamoRevit\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "Objects\Converters\ConverterDynamo\converterDynamoRevit2021\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "Objects\Converters\ConverterDynamo\converterDynamoRevit2022\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: dynamo
-Source: "Objects\Converters\ConverterDynamo\converterDynamoSandbox\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: dynamo
+Source: "Objects\Converters\ConverterDynamo\ConverterDynamoRevit\bin\Release\netstandard2.0\Objects.Converter.DynamoRevit.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: dynamo
+Source: "Objects\Converters\ConverterDynamo\ConverterDynamoRevit2021\bin\Release\netstandard2.0\Objects.Converter.DynamoRevit2021.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: dynamo
+Source: "Objects\Converters\ConverterDynamo\ConverterDynamoRevit2022\bin\Release\netstandard2.0\Objects.Converter.DynamoRevit2022.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: dynamo
+Source: "Objects\Converters\ConverterDynamo\ConverterDynamoSandbox\bin\Release\netstandard2.0\Objects.Converter.DynamoSandbox.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: dynamo
 
 ;dynamoext
 Source: "ConnectorDynamo\ConnectorDynamoExtension\bin\Release\*"; DestDir: "{userappdata}\Dynamo\Dynamo Core\2.11\packages\SpeckleDynamo2\bin\"; Flags: ignoreversion recursesubdirs; Components: dynamoext
@@ -163,11 +170,19 @@ Source: "ConnectorDynamo\ConnectorDynamoFunctions\bin\Release\*"; DestDir: "{use
 Source: "ConnectorDynamo\ConnectorDynamoFunctions\bin\Release\*"; DestDir: "{userappdata}\Dynamo\Dynamo Revit\2.6\packages\SpeckleDynamo2\bin\"; Flags: ignoreversion recursesubdirs; Components: dynamofunc
 Source: "ConnectorDynamo\ConnectorDynamoFunctions\bin\Release\*"; DestDir: "{userappdata}\Dynamo\Dynamo Revit\2.10\packages\SpeckleDynamo2\bin\"; Flags: ignoreversion recursesubdirs; Components: dynamofunc
 
+;gsa
+Source: "ConnectorGSA\ConnectorGSA\bin\Release\*"; DestDir: "{userappdata}\Oasys\SpeckleGSA\"; Flags: ignoreversion recursesubdirs; Components: gsa
+Source: "Objects\Converters\ConverterGSA\ConverterGSA\bin\Release\Objects.Converter.GSA.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: gsa
+
 ;connectionmanager
-Source: "SpeckleConnectionManager\bin\Release\net5.0\win10-x64\publish\*"; DestDir: "{userappdata}\speckle-connection-manager\"; Flags: ignoreversion recursesubdirs; Components: connectionmanager
+Source: "ConnectionManager\SpeckleConnectionManager\bin\Release\net5.0\win10-x64\publish\*"; DestDir: "{userappdata}\speckle-connection-manager\"; Flags: ignoreversion recursesubdirs; Components: connectionmanager
+Source: "ConnectionManager\SpeckleConnectionManagerUI\bin\Release\net5.0\win10-x64\publish\*"; DestDir: "{userappdata}\speckle-connection-manager-ui\"; Flags: ignoreversion recursesubdirs; Components: connectionmanager
 
 ;kits
-Source: "Objects\Objects\bin\Release\netstandard2.0\*"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: kits
+Source: "Objects\Objects\bin\Release\netstandard2.0\Objects.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: kits
+
+;analytics
+Source: "Analytics\bin\Release\net461\win-x64\*"; DestDir: "{#AnalyticsFolder}"; Flags: ignoreversion recursesubdirs;
 
 [InstallDelete]
 Type: filesandordirs; Name: "{userappdata}\McNeel\Rhinoceros\6.0\Plug-ins\SpeckleRhino2 (8dd5f30b-a13d-4a24-abdc-3e05c8c87143)\*"
@@ -187,7 +202,9 @@ Type: filesandordirs; Name: "{userappdata}\Dynamo\Dynamo Revit\2.1\packages\Spec
 Type: filesandordirs; Name: "{userappdata}\Dynamo\Dynamo Revit\2.5\packages\SpeckleDynamo2\*"
 Type: filesandordirs; Name: "{userappdata}\Dynamo\Dynamo Revit\2.6\packages\SpeckleDynamo2\*"
 Type: filesandordirs; Name: "{userappdata}\Dynamo\*"
-Type: filesandordirs; Name: "{userappdata}\Speckle\*"
+Type: filesandordirs; Name: "{userappdata}\Oasys\SpeckleGSA\*"
+Type: filesandordirs; Name: "{userappdata}\Speckle\Kits\Objects\*"
+Type: filesandordirs; Name: "{localappdata}\SpeckleAnalytics\*"
 
 [Registry]
 Root: HKCU; Subkey: "SOFTWARE\McNeel\Rhinoceros\6.0\Plug-ins\8dd5f30b-a13d-4a24-abdc-3e05c8c87143"; ValueType: string; ValueName: "Name"; ValueData: "Speckle";
@@ -215,10 +232,12 @@ Root: HKCU; Subkey: "Software\Classes\speckle\shell\open\command"; ValueType: "s
 
 [Icons]
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
-
+Name: "{userappdata}\Microsoft\Windows\Start Menu\Programs\Oasys\SpeckleGSAV2"; Filename: "{userappdata}\Oasys\SpeckleGSA\ConnectorGSA.exe";
+Name: "{group}\Speckle@Arup AccountManager"; Filename: "{userappdata}\speckle-connection-manager-ui\SpeckleConnectionManagerUI.exe";
 
 [Run]
-Filename: "{userappdata}\speckle-connection-manager\SpeckleConnectionManager.exe"; Description: "Authenticate with the Speckle Server"
+Filename: "{userappdata}\speckle-connection-manager-ui\SpeckleConnectionManagerUI.exe"; Description: "Authenticate with the Speckle Server"; Flags: nowait postinstall skipifsilent
+Filename: "{#AnalyticsFolder}\analytics.exe"; Parameters: "{#AppVersion} {#GetEnv('ENABLE_TELEMETRY_DOMAIN')}"; Description: "Send anonymous analytics to Arup. No project data or personally identifiable information will be sent."
 
 ;checks if minimun requirements are met
 [Code]
@@ -273,4 +292,11 @@ begin
     end;
 
     result := success and (install = 1) and (serviceCount >= service);
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+begin
+  Exec(ExpandConstant('{localappdata}\Programs\speckle-manager\Uninstall SpeckleManager.exe'), '/currentuser /S', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
 end;

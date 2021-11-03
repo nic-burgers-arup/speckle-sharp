@@ -208,10 +208,10 @@ namespace ConnectorGSA
       return ((GsaProxy)Instance.GsaModel.Proxy).Clear();
     }
 
-    public static bool LoadDataFromFile(IProgress<MessageEventArgs> loggingProgress, IEnumerable<ResultGroup> resultGroups = null, IEnumerable<ResultType> resultTypes = null)
+    public static bool LoadDataFromFile(IProgress<string> gwaLoggingProgress = null, IEnumerable<ResultGroup> resultGroups = null, IEnumerable<ResultType> resultTypes = null)
     {
       ((GsaProxy)Instance.GsaModel.Proxy).Clear();
-      var loadedCache = UpdateCache(loggingProgress);
+      var loadedCache = UpdateCache(gwaLoggingProgress);
       int cumulativeErrorRows = 0;
 
       if (resultGroups != null && resultGroups.Any() && resultTypes != null && resultTypes.Any())
@@ -233,42 +233,22 @@ namespace ConnectorGSA
       return (loadedCache && (cumulativeErrorRows == 0));
     }
 
-    public static bool ConvertToNative(ISpeckleConverter converter, IProgress<MessageEventArgs> loggingProgress) //Includes writing to Cache
+    public static bool ConvertToNative(List<Base> TopLevelObjects, ISpeckleConverter converter, IProgress<MessageEventArgs> loggingProgress) //Includes writing to Cache
     {
-      var speckleDependencyTree = ((GsaModel)Instance.GsaModel).SpeckleDependencyTree();
-
-      //With the attached objects in speckle objects, there is no type dependency needed on the receive side, so just convert each object
-
-      if (Instance.GsaModel.Cache.GetSpeckleObjects(out var speckleObjects))
+      foreach (var tlo in TopLevelObjects)
       {
-        var objectsByType = speckleObjects.GroupBy(t => t.GetType()).ToDictionary(g => g.Key, g => g.ToList());
-
-        foreach (var gen in speckleDependencyTree)
+        try
         {
-          foreach (var t in gen)
+          if (converter.CanConvertToNative(tlo))
           {
-            if (objectsByType.ContainsKey(t))
-            {
-              foreach (Base so in objectsByType[t])
-              {
-                string appId = "";
-                try
-                {
-                  if (converter.CanConvertToNative(so))
-                  {
-                    var nativeObjects = converter.ConvertToNative(new List<Base> { so }).Cast<GsaRecord>().ToList();
-                    appId = string.IsNullOrEmpty(so.applicationId) ? so.id : so.applicationId;
-                    Instance.GsaModel.Cache.SetNatives(so.GetType(), appId, nativeObjects);
-                  }
-                }
-                catch (Exception ex)
-                {
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "Unable to convert " + t.Name + " " + appId + " - refer to logs for more information"));
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ex, "Unable to load file"));
-                }
-              }
-            }
+            var nativeObjects = converter.ConvertToNative(new List<Base> { tlo }).Cast<GsaRecord>().ToList();
+            Instance.GsaModel.Cache.Upsert(nativeObjects);
           }
+        }
+        catch (Exception ex)
+        {
+          loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "Unable to convert one or more received objects.  Refer to logs for more information"));
+          loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ex, "Converion error"));
         }
       }
 
@@ -306,7 +286,7 @@ namespace ConnectorGSA
           streamId = state.Stream.id,
           objectId = commitObjId,
           branchName = "main",
-          message = "Pushed it real good",
+          message = "Pushed data from GSA",
           sourceApplication = Applications.GSA
         };
 
@@ -339,8 +319,15 @@ namespace ConnectorGSA
 
       Instance.GsaModel.StreamLayer = coordinator.ReceiverTab.TargetLayer;
       Instance.GsaModel.Units = UnitEnumToString(coordinator.ReceiverTab.CoincidentNodeUnits);
-      Instance.GsaModel.CoincidentNodeAllowance = coordinator.ReceiverTab.CoincidentNodeAllowance;
       Instance.GsaModel.LoggingMinimumLevel = (int)coordinator.LoggingMinimumLevel;
+
+      //A simplified one just for use by the proxy class
+      var proxyLoggingProgress = new Progress<string>();
+      proxyLoggingProgress.ProgressChanged += (object o, string e) =>
+      {
+        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, e));
+        loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, e));
+      };
 
       var perecentageProgressLock = new object();
 
@@ -351,7 +338,20 @@ namespace ConnectorGSA
 
       statusProgress.Report("Reading GSA data into cache");
       //Load data to cause merging
-      Commands.LoadDataFromFile(loggingProgress);
+      Commands.LoadDataFromFile(proxyLoggingProgress);
+
+      double factor = 1;
+      if (Instance.GsaModel.Cache.GetNatives(typeof(GsaUnitData), out var gsaUnitDataRecords))
+      {
+        var lengthUnitData = (GsaUnitData)gsaUnitDataRecords.FirstOrDefault(r => ((GsaUnitData)r).Option == UnitDimension.Length);
+        if (lengthUnitData != null)
+        {
+          var fromStr = coordinator.ReceiverTab.CoincidentNodeUnits.GetStringValue();
+          var toStr = lengthUnitData.Name;
+          factor = (lengthUnitData == null) ? 1 : Units.GetConversionFactor(fromStr, toStr);
+        }
+      }
+      Instance.GsaModel.CoincidentNodeAllowance = coordinator.ReceiverTab.CoincidentNodeAllowance * factor;
 
       percentage = 10;
       percentageProgress.Report(percentage);
@@ -369,6 +369,9 @@ namespace ConnectorGSA
       statusProgress.Report("Accessing streams");
       var streamIds = coordinator.ReceiverTab.StreamList.StreamListItems.Select(i => i.StreamId).ToList();
       var receiveTasks = new List<Task>();
+      
+      var topLevelObjects = new List<Base>();
+
       foreach (var streamId in streamIds)
       {
         var streamState = new StreamState(account.userInfo.id, account.serverInfo.url)
@@ -378,7 +381,7 @@ namespace ConnectorGSA
         };
         var transport = new ServerTransport(streamState.Client.Account, streamState.Stream.id);
 
-        receiveTasks.Add(streamState.RefreshStream()
+        receiveTasks.Add(streamState.RefreshStream(loggingProgress)
           .ContinueWith(async (refreshed) =>
             {
               if (refreshed.Result)
@@ -393,11 +396,15 @@ namespace ConnectorGSA
                 }
                 var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
 
+                
+                var received = await Commands.Receive(commitId, streamState, transport, topLevelObjects);
+                /*
                 var received = await Commands.Receive(commitId, streamState, transport, converter.CanConvertToNative);
                 if (received)
                 {
                   loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Received data from " + streamId + " stream"));
                 }
+                */
 
                 if (streamState.Errors != null && streamState.Errors.Count > 0)
                 {
@@ -425,7 +432,8 @@ namespace ConnectorGSA
       startTime = DateTime.Now;
 
       statusProgress.Report("Converting");
-      var numToConvert = ((GsaCache)Instance.GsaModel.Cache).NumSpeckleObjects;
+      //var numToConvert = ((GsaCache)Instance.GsaModel.Cache).NumSpeckleObjects;
+      var numToConvert = topLevelObjects.Count();
       int numConverted = 0;
       int totalConversionPercentage = 90 - percentage;
       Instance.GsaModel.ConversionProgress = new Progress<bool>((bool success) =>
@@ -437,7 +445,8 @@ namespace ConnectorGSA
         percentageProgress.Report(percentage + Math.Round(((double)numConverted / (double)numToConvert) * totalConversionPercentage, 0));
       });
 
-      Commands.ConvertToNative(converter, loggingProgress);
+
+      Commands.ConvertToNative(topLevelObjects, converter, loggingProgress);
 
       if (converter.ConversionErrors != null && converter.ConversionErrors.Count > 0)
       {
@@ -461,7 +470,7 @@ namespace ConnectorGSA
       //The cache is filled with natives
       if (Instance.GsaModel.Cache.GetNatives(out var gsaRecords))
       {
-        ((GsaProxy)Instance.GsaModel.Proxy).WriteModel(gsaRecords);
+        ((GsaProxy)Instance.GsaModel.Proxy).WriteModel(gsaRecords, proxyLoggingProgress);
       }
 
       percentageProgress.Report(100);
@@ -481,7 +490,7 @@ namespace ConnectorGSA
       return true;
     }
 
-    public static async Task<bool> Receive(string commitId, StreamState state, ITransport transport, Func<Base, bool> IsSingleObjectFn)
+    public static async Task<bool> Receive(string commitId, StreamState state, ITransport transport, List<Base> topLevelObjects)
     {
       var commitObject = await Operations.Receive(
           commitId,
@@ -495,26 +504,18 @@ namespace ConnectorGSA
 
       if (commitObject != null)
       {
-        var receivedObjects = FlattenCommitObject(commitObject, IsSingleObjectFn);
-
-        return (Instance.GsaModel.Cache.Upsert(receivedObjects.ToDictionary(
-            ro => string.IsNullOrEmpty(ro.applicationId) ? ro.id : ro.applicationId, 
-            ro => (object)ro))
-          && receivedObjects != null && receivedObjects.Any() && state.Errors.Count == 0);
+        foreach (var prop in commitObject.GetDynamicMembers().Where(m => commitObject[m] is Base))
+        {
+          topLevelObjects.Add((Base)commitObject[prop]);
+        }
+        return true;
       }
       return false;
     }
 
-    private static bool UpdateCache(IProgress<MessageEventArgs> loggingProgress, bool onlyNodesWithApplicationIds = true)
+    private static bool UpdateCache(IProgress<string> gwaLoggingProgress = null, bool onlyNodesWithApplicationIds = true)
     {
       var errored = new Dictionary<int, GsaRecord>();
-
-      var gwaLoggingProgress = new Progress<string>();
-      gwaLoggingProgress.ProgressChanged += (object o, string e) =>
-      {
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, e));
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, e));
-      };
 
       try
       {
@@ -554,10 +555,10 @@ namespace ConnectorGSA
         if (IsSingleObjectFn(@base))
         {
           var t = obj.GetType();
-          var id = @base.GetId();
+          var id = (string.IsNullOrEmpty(@base.id)) ? @base.GetId() : @base.id;
           if (!uniques.ContainsKey(t))
           {
-            uniques.Add(t, new HashSet<string>() { @base.GetId() });
+            uniques.Add(t, new HashSet<string>() { id });
             objects.Add(@base);
           }
           if (!uniques[t].Contains(id))
@@ -649,7 +650,7 @@ namespace ConnectorGSA
             //Since the buckets are stored in the SID tags, but not the stream names, get the stream names
             foreach (var r in coordinator.ReceiverTab.ReceiverStreamStates)
             {
-              if (!(await r.RefreshStream()))
+              if (!(await r.RefreshStream(loggingProgress)))
               {
                 invalidStreamStates.Add(r);
               }
@@ -671,7 +672,7 @@ namespace ConnectorGSA
             //Since the buckets are stored in the SID tags, but not the stream names, get the stream names
             foreach (var r in coordinator.SenderTab.SenderStreamStates)
             {
-              if (!(await r.RefreshStream()))
+              if (!(await r.RefreshStream(loggingProgress)))
               {
                 invalidStreamStates.Add(r);
               }
@@ -754,10 +755,18 @@ namespace ConnectorGSA
       var percentage = 0;
       var perecentageProgressLock = new object();
 
+      //A simplified one just for use by the proxy class
+      var proxyLoggingProgress = new Progress<string>();
+      proxyLoggingProgress.ProgressChanged += (object o, string e) =>
+      {
+        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, e));
+        loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, e));
+      };
+
       var startTime = DateTime.Now;
 
       statusProgress.Report("Preparing cache");
-      Commands.LoadDataFromFile(loggingProgress); //Ensure all nodes
+      Commands.LoadDataFromFile(proxyLoggingProgress); //Ensure all nodes
       loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Loaded data from file into cache"));
 
       percentage += 20;

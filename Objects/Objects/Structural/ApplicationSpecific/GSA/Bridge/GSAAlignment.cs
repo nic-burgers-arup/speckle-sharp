@@ -28,7 +28,7 @@ namespace Objects.Structural.GSA.Bridge
 
         public int GetNumAlignmentPoints()
         {
-            return chainage.Count + curvature.Count;
+            return chainage.Count;
         }
         
     }

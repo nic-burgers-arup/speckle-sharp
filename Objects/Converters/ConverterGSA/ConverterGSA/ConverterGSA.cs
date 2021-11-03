@@ -36,7 +36,11 @@ namespace ConverterGSA
     public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
     #endregion ISpeckleConverter props
 
+    private UnitConversion conversionFactors = new UnitConversion();  //Default
+
     public List<ApplicationPlaceholderObject> ContextObjects { get; set; } = new List<ApplicationPlaceholderObject>();
+    
+    public List<string> ConvertedObjectsList { get; set; } = new List<string>();
 
     private delegate ToSpeckleResult ToSpeckleMethodDelegate(GsaRecord gsaRecord, GSALayer layer = GSALayer.Both);
 
@@ -114,15 +118,26 @@ namespace ConverterGSA
     public List<object> ConvertToNative(List<Base> objects)
     {
       var retList = new List<object>();
+      var modelUnits = objects.FirstOrDefault(o => o is ModelUnits) as ModelUnits;
+      if (modelUnits != null)
+      {
+        conversionFactors = new UnitConversion(modelUnits);
+      }
+      
       foreach (var obj in objects)
       {
-        var natives = ConvertToNative(obj);
+        var t = obj.GetType();
+        var natives = (ToNativeFns.ContainsKey(t)) ? ToNativeFns[t](obj) : null;
         if (natives != null)
         {
           if (natives is List<GsaRecord>)
           {
-            retList.AddRange(((List<GsaRecord>)natives).Cast<object>());
+            retList.AddRange(natives.Cast<object>());
           }
+        }
+        if (Instance.GsaModel.ConversionProgress != null)
+        {
+          Instance.GsaModel.ConversionProgress.Report(natives != null);
         }
       }
 
@@ -170,18 +185,14 @@ namespace ConverterGSA
       }
 
       var allGsaRecords = objects.Cast<GsaRecord>();
-      var modelSettingsNativeTypes = new List<Type> { typeof(GsaUnitData), typeof(GsaTol) };
+      var modelSettingsNativeTypes = new List<Type> { typeof(GsaUnitData), typeof(GsaTol), typeof(GsaSpecSteelDesign), typeof(GsaSpecConcDesign) };
       var modelSettingsRecords = allGsaRecords.Where(r => modelSettingsNativeTypes.Any(msnt => msnt == r.GetType()));
       var gsaRecords = allGsaRecords.Except(modelSettingsRecords);
 
       //TO DO - fill in this more
       var modelInfo = new ModelInfo()
       {
-        application = "GSA",
-        settings = new ModelSettings()
-        {
-          coincidenceTolerance = 0.01
-        }
+        application = "GSA"
       };
       if (ConvertToSpeckle(modelSettingsRecords, out ModelSettings ms))
       {
@@ -199,8 +210,46 @@ namespace ConverterGSA
 
     private bool ConvertToSpeckle(IEnumerable<GsaRecord> modelSettingsRecords, out ModelSettings ms)
     {
-      //TO DO
-      ms = new ModelSettings() { coincidenceTolerance = 0.01 };
+      ms = new ModelSettings() { modelUnits = new ModelUnits() };
+
+      var unitDataRecords = modelSettingsRecords.Where(r => r is GsaUnitData).Cast<GsaUnitData>().ToList();
+
+      foreach (var ud in unitDataRecords)
+      {
+        switch(ud.Option)
+        {
+          case UnitDimension.Length: ms.modelUnits.length = ud.Name; break;
+          case UnitDimension.Sections: ms.modelUnits.sections = ud.Name; break;
+          case UnitDimension.Displacements: ms.modelUnits.displacements = ud.Name; break;
+          case UnitDimension.Stress: ms.modelUnits.stress = ud.Name; break;
+          case UnitDimension.Force: ms.modelUnits.force = ud.Name; break;
+          case UnitDimension.Mass: ms.modelUnits.mass = ud.Name; break;
+          case UnitDimension.Time: ms.modelUnits.time = ud.Name; break;
+          case UnitDimension.Temperature: ms.modelUnits.temperature = ud.Name; break;
+          case UnitDimension.Velocity: ms.modelUnits.velocity = ud.Name; break;
+          case UnitDimension.Acceleration: ms.modelUnits.acceleration = ud.Name; break;
+          case UnitDimension.Energy: ms.modelUnits.energy = ud.Name; break;
+          case UnitDimension.Angle: ms.modelUnits.angle = ud.Name; break;
+          case UnitDimension.Strain: ms.modelUnits.strain = ud.Name; break;
+        }
+      }
+
+      var tol = modelSettingsRecords.FirstOrDefault(r => r is GsaTol);
+      if (tol != null)
+      {
+        ms.coincidenceTolerance = ((GsaTol)tol).Node;
+      }
+      var specConc = modelSettingsRecords.FirstOrDefault(r => r is GsaSpecConcDesign);
+      if (specConc != null)
+      {
+        ms.concreteCode = ((GsaSpecConcDesign)specConc).Code;
+      }
+      var specSteel = modelSettingsRecords.FirstOrDefault(r => r is GsaSpecConcDesign);
+      if (specSteel != null)
+      {
+        ms.steelCode = ((GsaSpecConcDesign)specSteel).Code;
+      }
+
       return true;
     }
 

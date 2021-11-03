@@ -1,4 +1,5 @@
 ﻿using Speckle.ConnectorGSA.Proxy.GwaParsers;
+using Speckle.GSA.API;
 using Speckle.GSA.API.GwaSchema;
 using System;
 using System.Collections.Generic;
@@ -39,7 +40,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
         remainingItems = remainingItems.Skip(1).ToList();
       }
 
-      //MAT.10 | num | name | E | f | nu | G | rho | alpha | <prop> | num_uc (| abs | ord | pts[] |) num_sc (| abs | ord | pts[] |) num_ut (| abs | ord | pts[] |) num_st (| abs | ord | pts[] |) eps | <uls> | <sls> | cost | type
+      //MAT.11 | num | name | E | f | nu | G | rho | alpha | <prop> | num_uc (| abs | ord | pts[] |) num_sc (| abs | ord | pts[] |) num_ut (| abs | ord | pts[] |) num_st (| abs | ord | pts[] |) eps | <uls> | <sls> | cost | type | env  | env_param
       if (!FromGwaByFuncs(remainingItems, out remainingItems, AddName, (v) => AddNullableDoubleValue(v, out record.E), (v) => AddNullableDoubleValue(v, out record.F),
         (v) => AddNullableDoubleValue(v, out record.Nu), (v) => AddNullableDoubleValue(v, out record.G), (v) => AddNullableDoubleValue(v, out record.Rho),
         (v) => AddNullableDoubleValue(v, out record.Alpha)))
@@ -62,8 +63,23 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       if (!AddMatCurveParam(remainingItems, out remainingItems, out record.Uls)) return false;
       if (!AddMatCurveParam(remainingItems, out remainingItems, out record.Sls)) return false;
 
+      if (!FromGwaByFuncs(remainingItems, out remainingItems, (v) => AddNullableDoubleValue(v, out record.Cost), (v) => Enum.TryParse<MatType>(v, true, out record.Type))) return false;
+
+      //TODO: process environmental variables
+      if (remainingItems[0].ToUpper() == "NO") remainingItems = remainingItems.Skip(1).ToList();
+      else
+      {
+        var concreteTypes = Enum.GetValues(typeof(MatConcreteType)).OfType<MatConcreteType>().Select(v => v.GetStringValue());
+        var nextMatConcreteArg = remainingItems.FirstOrDefault(v => concreteTypes.Any(ct => v.Equals(ct, StringComparison.InvariantCultureIgnoreCase)));
+        if (string.IsNullOrEmpty(nextMatConcreteArg))
+        {
+          return false;
+        }
+        remainingItems = remainingItems.Skip(remainingItems.IndexOf(nextMatConcreteArg)).ToList();
+      }
+
       //Process final items
-      return FromGwaByFuncs(remainingItems, out remainingItems, (v) => AddNullableDoubleValue(v, out record.Cost), (v) => Enum.TryParse<MatType>(v, true, out record.Type));
+      return true;
     }
 
     public override bool Gwa(out List<string> gwa, bool includeSet = false)
@@ -77,14 +93,14 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       {
         items.RemoveAt(items.Count - 1);
       }
-      //MAT.10 | num | name | E | f | nu | G | rho | alpha | <prop> | num_uc (| abs | ord | pts[] |) num_sc (| abs | ord | pts[] |) num_ut (| abs | ord | pts[] |) num_st (| abs | ord | pts[] |) eps | <uls> | <sls> | cost | type
+      //MAT.11 | num | name | E | f | nu | G | rho | alpha | <prop> | num_uc (| abs | ord | pts[] |) num_sc (| abs | ord | pts[] |) num_ut (| abs | ord | pts[] |) num_st (| abs | ord | pts[] |) eps | <uls> | <sls> | cost | type | env | env_param
       AddItems(ref items, record.Name, record.E, record.F, record.Nu, record.G, record.Rho, record.Alpha); //Add items up until <prop>
       AddObject(ref items, record.Prop); //Add GsaMatAnal object
       AddExplicitCurves(ref items); //Add items associated with the explicit curves
       AddItems(ref items, record.Eps);
       AddObject(ref items, record.Uls); //Add GsaMatCurveParam object
       AddObject(ref items, record.Sls); //Add GsaMatCurveParam object
-      AddItems(ref items, record.Cost, record.Type);
+      AddItems(ref items, record.Cost, record.Type, "NO"); //TODO: handle environmental variables
 
       gwa = Join(items, out var gwaLine) ? new List<string>() { gwaLine } : new List<string>();
       return (gwa.Count() > 0);
@@ -169,7 +185,6 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
 
     private bool AddMatAnal(List<string> items, out List<string> remainingItems)
     {
-      record.Prop = new GsaMatAnal();
       Join(items, out var matAnalGwa);
       var gsaMatAnalParser = new GsaMatAnalParser();
       if (!gsaMatAnalParser.FromGwa(matAnalGwa, out remainingItems))
