@@ -1442,11 +1442,45 @@ namespace ConverterGSATests
     #endregion
 
     #region Materials
-    [Fact]
-    public void GSASteelToNative()
+    [Theory]
+    [InlineData("m", "kg", "oC", "Pa", "ε", "mm", "t", "oF", "MPa", "%ε")]
+    [InlineData("m", null, null, null, null, "mm", null, null, null, null)]
+    [InlineData(null, null, null, null, null, null, null, null, null, null)]
+    public void GSASteelToNative(string gsaLengthUnit, string gsaMassUnit, string gsaTemperatureUnit, string gsaStressUnit, string gsaStrainUnit, 
+      string speckleLengthUnit, string speckleMassUnit, string speckleTemperatureUnit, string speckleStressUnit, string speckleStrainUnit)
     {
+      # region unit conversion factors
+      double lengthFactor = 1, massFactor = 1, thermalFactor = 1, stressFactor = 1, strainFactor = 1;
+      if (!string.IsNullOrEmpty(speckleLengthUnit) && !string.IsNullOrEmpty(gsaLengthUnit))
+      {
+        lengthFactor = Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
+      }
+      if (!string.IsNullOrEmpty(speckleMassUnit) && !string.IsNullOrEmpty(gsaMassUnit))
+      {
+        massFactor = MassUnits.GetConversionFactor(speckleMassUnit, gsaMassUnit);
+      }
+      var densityFactor = massFactor / Math.Pow(lengthFactor, 3);
+      if (!string.IsNullOrEmpty(speckleTemperatureUnit) && !string.IsNullOrEmpty(gsaTemperatureUnit))
+      {
+        thermalFactor = 1 / TemperatureUnits.GetTemperatureChangeConversionFactor(speckleTemperatureUnit, gsaTemperatureUnit);
+      }
+      if (!string.IsNullOrEmpty(speckleStressUnit) && !string.IsNullOrEmpty(gsaStressUnit))
+      {
+        stressFactor = StressUnits.GetConversionFactor(speckleStressUnit, gsaStressUnit);
+      }
+      if (!string.IsNullOrEmpty(speckleStrainUnit) && !string.IsNullOrEmpty(gsaStrainUnit))
+      {
+        strainFactor = StrainUnits.GetConversionFactor(speckleStrainUnit, gsaStrainUnit);
+      }
+      #endregion
+
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Mass, Name = gsaMassUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Temperature, Name = gsaTemperatureUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Stress, Name = gsaStressUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Strain, Name = gsaStrainUnit });
       var gsaMatSteel = GsaMatSteelExample("steel 1");
       gsaRecords.Add(gsaMatSteel);
       Instance.GsaModel.Cache.Upsert(gsaRecords);
@@ -1454,21 +1488,109 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-      var speckleObjects = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList());
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
+      var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
+      var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleDesignModel.materials.FindAll(o => o is GSASteel).ToList());
+      speckleDesignModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.mass = speckleMassUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.temperature = speckleTemperatureUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.stress = speckleStressUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.strain = speckleStrainUnit; //change the units
+      speckleObjects.Add(speckleDesignModel.specs.settings.modelUnits);
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
       var gsaConvertedSteel = gsaConvertedRecords.FindAll(r => r is GsaMatSteel).Select(r => (GsaMatSteel)r).First();
       var compareLogic = new CompareLogic();
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMat x) => x.E));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMat x) => x.F));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMat x) => x.G));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMat x) => x.Rho));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMat x) => x.Alpha));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMat x) => x.Eps));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatAnal x) => x.E));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatAnal x) => x.G));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatAnal x) => x.Rho));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatAnal x) => x.Alpha));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainElasticCompression));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainElasticTension));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainPlasticCompression));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainPlasticTension));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainFailureCompression));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainFailureTension));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatSteel x) => x.Fy));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatSteel x) => x.Fu));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatSteel x) => x.Eh));
       var result = compareLogic.Compare(gsaMatSteel, gsaConvertedSteel);
       Assert.Empty(result.Differences);
+      Assert.Equal(stressFactor * gsaMatSteel.Mat.E, gsaConvertedSteel.Mat.E);
+      Assert.Equal(stressFactor * gsaMatSteel.Mat.F, gsaConvertedSteel.Mat.F);
+      Assert.Equal(stressFactor * gsaMatSteel.Mat.G, gsaConvertedSteel.Mat.G);
+      Assert.Equal(densityFactor * gsaMatSteel.Mat.Rho, gsaConvertedSteel.Mat.Rho);
+      Assert.Equal(thermalFactor * gsaMatSteel.Mat.Alpha, gsaConvertedSteel.Mat.Alpha);
+      Assert.Equal(strainFactor * gsaMatSteel.Mat.Eps, gsaConvertedSteel.Mat.Eps);
+      Assert.Equal(stressFactor * gsaMatSteel.Mat.Prop.E, gsaConvertedSteel.Mat.Prop.E);
+      Assert.Equal(stressFactor * gsaMatSteel.Mat.Prop.G, gsaConvertedSteel.Mat.Prop.G);
+      Assert.Equal(densityFactor * gsaMatSteel.Mat.Prop.Rho, gsaConvertedSteel.Mat.Prop.Rho);
+      Assert.Equal(thermalFactor * gsaMatSteel.Mat.Prop.Alpha, gsaConvertedSteel.Mat.Prop.Alpha);
+      Assert.Equal(strainFactor * gsaMatSteel.Mat.Uls.StrainElasticCompression, gsaConvertedSteel.Mat.Uls.StrainElasticCompression);
+      Assert.Equal(strainFactor * gsaMatSteel.Mat.Uls.StrainElasticTension, gsaConvertedSteel.Mat.Uls.StrainElasticTension);
+      Assert.Equal(strainFactor * gsaMatSteel.Mat.Uls.StrainPlasticCompression, gsaConvertedSteel.Mat.Uls.StrainPlasticCompression);
+      Assert.Equal(strainFactor * gsaMatSteel.Mat.Uls.StrainPlasticTension, gsaConvertedSteel.Mat.Uls.StrainPlasticTension);
+      Assert.Equal(strainFactor * gsaMatSteel.Mat.Uls.StrainFailureCompression, gsaConvertedSteel.Mat.Uls.StrainFailureCompression);
+      Assert.Equal(strainFactor * gsaMatSteel.Mat.Uls.StrainFailureTension, gsaConvertedSteel.Mat.Uls.StrainFailureTension);
+      Assert.Equal(strainFactor * gsaMatSteel.Mat.Sls.StrainElasticCompression, gsaConvertedSteel.Mat.Sls.StrainElasticCompression);
+      Assert.Equal(strainFactor * gsaMatSteel.Mat.Sls.StrainElasticTension, gsaConvertedSteel.Mat.Sls.StrainElasticTension);
+      Assert.Equal(strainFactor * gsaMatSteel.Mat.Sls.StrainPlasticCompression, gsaConvertedSteel.Mat.Sls.StrainPlasticCompression);
+      Assert.Equal(strainFactor * gsaMatSteel.Mat.Sls.StrainPlasticTension, gsaConvertedSteel.Mat.Sls.StrainPlasticTension);
+      Assert.Equal(strainFactor * gsaMatSteel.Mat.Sls.StrainFailureCompression, gsaConvertedSteel.Mat.Sls.StrainFailureCompression);
+      Assert.Equal(strainFactor * gsaMatSteel.Mat.Sls.StrainFailureTension, gsaConvertedSteel.Mat.Sls.StrainFailureTension);
+      Assert.Equal(stressFactor * gsaMatSteel.Fy, gsaConvertedSteel.Fy);
+      Assert.Equal(stressFactor * gsaMatSteel.Fu, gsaConvertedSteel.Fu);
+      Assert.Equal(stressFactor * gsaMatSteel.Eh, gsaConvertedSteel.Eh);
     }
 
-    [Fact]
-    public void SteelToNative()
+    [Theory]
+    [InlineData("m", "kg", "oC", "Pa", "ε", "mm", "t", "oF", "MPa", "%ε")]
+    [InlineData("m", null, null, null, null, "mm", null, null, null, null)]
+    [InlineData(null, null, null, null, null, null, null, null, null, null)]
+    public void SteelToNative(string gsaLengthUnit, string gsaMassUnit, string gsaTemperatureUnit, string gsaStressUnit, string gsaStrainUnit,
+      string speckleLengthUnit, string speckleMassUnit, string speckleTemperatureUnit, string speckleStressUnit, string speckleStrainUnit)
     {
+      # region unit conversion factors
+      double lengthFactor = 1, massFactor = 1, thermalFactor = 1, stressFactor = 1, strainFactor = 1;
+      if (!string.IsNullOrEmpty(speckleLengthUnit) && !string.IsNullOrEmpty(gsaLengthUnit))
+      {
+        lengthFactor = Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
+      }
+      if (!string.IsNullOrEmpty(speckleMassUnit) && !string.IsNullOrEmpty(gsaMassUnit))
+      {
+        massFactor = MassUnits.GetConversionFactor(speckleMassUnit, gsaMassUnit);
+      }
+      var densityFactor = massFactor / Math.Pow(lengthFactor, 3);
+      if (!string.IsNullOrEmpty(speckleTemperatureUnit) && !string.IsNullOrEmpty(gsaTemperatureUnit))
+      {
+        thermalFactor = 1 / TemperatureUnits.GetTemperatureChangeConversionFactor(speckleTemperatureUnit, gsaTemperatureUnit);
+      }
+      if (!string.IsNullOrEmpty(speckleStressUnit) && !string.IsNullOrEmpty(gsaStressUnit))
+      {
+        stressFactor = StressUnits.GetConversionFactor(speckleStressUnit, gsaStressUnit);
+      }
+      if (!string.IsNullOrEmpty(speckleStrainUnit) && !string.IsNullOrEmpty(gsaStrainUnit))
+      {
+        strainFactor = StrainUnits.GetConversionFactor(speckleStrainUnit, gsaStrainUnit);
+      }
+      #endregion
+
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Mass, Name = gsaMassUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Temperature, Name = gsaTemperatureUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Stress, Name = gsaStressUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Strain, Name = gsaStrainUnit });
       var gsaMatSteel = GsaMatSteelExample("steel 1");
       gsaRecords.Add(gsaMatSteel);
       Instance.GsaModel.Cache.Upsert(gsaRecords);
@@ -1476,9 +1598,28 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-      var speckleAppSpecificObjects = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList());
-      Map<GSASteel, Steel>(speckleAppSpecificObjects.Select(o=>(GSASteel)o).ToList(), out var speckleAppAgnosticObjects);
-      var gsaConvertedRecords = converter.ConvertToNative(speckleAppAgnosticObjects.Select(o => (Base)o).ToList());
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
+      var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
+      var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
+      var speckleAppSpecificObjects = speckleDesignModel.materials.Select(o => (GSASteel)o).ToList();
+      speckleAppSpecificObjects[0].yieldStrength /= stressFactor;
+      speckleAppSpecificObjects[0].ultimateStrength /= stressFactor;
+      speckleAppSpecificObjects[0].density /= densityFactor;
+      speckleAppSpecificObjects[0].elasticModulus /= stressFactor;
+      speckleAppSpecificObjects[0].shearModulus /= stressFactor;
+      speckleAppSpecificObjects[0].thermalExpansivity /= thermalFactor;
+      speckleAppSpecificObjects[0].strainHardeningModulus /= stressFactor;
+      speckleAppSpecificObjects[0].maxStrain /= strainFactor;
+      Map<GSASteel, Steel>(speckleAppSpecificObjects, out var speckleAppAgnosticObjects);
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleAppAgnosticObjects);
+      speckleDesignModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.mass = speckleMassUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.temperature = speckleTemperatureUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.stress = speckleStressUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.strain = speckleStrainUnit; //change the units
+      speckleObjects.Add(speckleDesignModel.specs.settings.modelUnits);
+      var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
       var gsaConvertedSteel = gsaConvertedRecords.FindAll(r => r is GsaMatSteel).Select(r => (GsaMatSteel)r).First();
@@ -1488,11 +1629,45 @@ namespace ConverterGSATests
       Assert.Empty(result.Differences);
     }
 
-    [Fact]
-    public void GSAConcreteToNative()
+    [Theory]
+    [InlineData("m", "kg", "oC", "Pa", "ε", "mm", "t", "oF", "MPa", "%ε")]
+    [InlineData("m", null, null, null, null, "mm", null, null, null, null)]
+    [InlineData(null, null, null, null, null, null, null, null, null, null)]
+    public void GSAConcreteToNative(string gsaLengthUnit, string gsaMassUnit, string gsaTemperatureUnit, string gsaStressUnit, string gsaStrainUnit,
+      string speckleLengthUnit, string speckleMassUnit, string speckleTemperatureUnit, string speckleStressUnit, string speckleStrainUnit)
     {
+      # region unit conversion factors
+      double lengthFactor = 1, massFactor = 1, thermalFactor = 1, stressFactor = 1, strainFactor = 1;
+      if (!string.IsNullOrEmpty(speckleLengthUnit) && !string.IsNullOrEmpty(gsaLengthUnit))
+      {
+        lengthFactor = Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
+      }
+      if (!string.IsNullOrEmpty(speckleMassUnit) && !string.IsNullOrEmpty(gsaMassUnit))
+      {
+        massFactor = MassUnits.GetConversionFactor(speckleMassUnit, gsaMassUnit);
+      }
+      var densityFactor = massFactor / Math.Pow(lengthFactor, 3);
+      if (!string.IsNullOrEmpty(speckleTemperatureUnit) && !string.IsNullOrEmpty(gsaTemperatureUnit))
+      {
+        thermalFactor = 1 / TemperatureUnits.GetTemperatureChangeConversionFactor(speckleTemperatureUnit, gsaTemperatureUnit);
+      }
+      if (!string.IsNullOrEmpty(speckleStressUnit) && !string.IsNullOrEmpty(gsaStressUnit))
+      {
+        stressFactor = StressUnits.GetConversionFactor(speckleStressUnit, gsaStressUnit);
+      }
+      if (!string.IsNullOrEmpty(speckleStrainUnit) && !string.IsNullOrEmpty(gsaStrainUnit))
+      {
+        strainFactor = StrainUnits.GetConversionFactor(speckleStrainUnit, gsaStrainUnit);
+      }
+      #endregion
+
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Mass, Name = gsaMassUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Temperature, Name = gsaTemperatureUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Stress, Name = gsaStressUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Strain, Name = gsaStrainUnit });
       var gsaMatConcrete = GsaMatConcreteExample("concrete 1");
       gsaRecords.Add(gsaMatConcrete);
       Instance.GsaModel.Cache.Upsert(gsaRecords);
@@ -1500,21 +1675,143 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-      var speckleObjects = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList());
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
+      var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
+      var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleDesignModel.materials.FindAll(o => o is GSAConcrete).ToList());
+      speckleDesignModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.mass = speckleMassUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.temperature = speckleTemperatureUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.stress = speckleStressUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.strain = speckleStrainUnit; //change the units
+      speckleObjects.Add(speckleDesignModel.specs.settings.modelUnits);
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
       var gsaConvertedConcrete = gsaConvertedRecords.FindAll(r => r is GsaMatConcrete).Select(r => (GsaMatConcrete)r).First();
       var compareLogic = new CompareLogic();
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMat x) => x.E));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMat x) => x.F));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMat x) => x.G));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMat x) => x.Rho));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMat x) => x.Alpha));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMat x) => x.Eps));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatAnal x) => x.E));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatAnal x) => x.G));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatAnal x) => x.Rho));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatAnal x) => x.Alpha));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainElasticCompression));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainElasticTension));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainPlasticCompression));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainPlasticTension));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainFailureCompression));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainFailureTension));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.Fc));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.Fcdt));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.EpsU));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.Fcd));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.Fcdc));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.Fcfib));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.EmEs));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.Emod));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.Eps));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.EpsPeak));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.EpsMax));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.EpsAx));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.EpsTran));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.EpsAxs));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.Shrink));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.Confine));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.Fcc));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.EpsPlasC));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.EpsUC));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.Agg));
       var result = compareLogic.Compare(gsaMatConcrete, gsaConvertedConcrete);
       Assert.Empty(result.Differences);
+      Assert.Equal(stressFactor * gsaMatConcrete.Mat.E, gsaConvertedConcrete.Mat.E);
+      Assert.Equal(stressFactor * gsaMatConcrete.Mat.F, gsaConvertedConcrete.Mat.F);
+      Assert.Equal(stressFactor * gsaMatConcrete.Mat.G, gsaConvertedConcrete.Mat.G);
+      Assert.Equal(densityFactor * gsaMatConcrete.Mat.Rho, gsaConvertedConcrete.Mat.Rho);
+      Assert.Equal(thermalFactor * gsaMatConcrete.Mat.Alpha, gsaConvertedConcrete.Mat.Alpha);
+      Assert.Equal(strainFactor * gsaMatConcrete.Mat.Eps, gsaConvertedConcrete.Mat.Eps);
+      Assert.Equal(stressFactor * gsaMatConcrete.Mat.Prop.E, gsaConvertedConcrete.Mat.Prop.E);
+      Assert.Equal(stressFactor * gsaMatConcrete.Mat.Prop.G, gsaConvertedConcrete.Mat.Prop.G);
+      Assert.Equal(densityFactor * gsaMatConcrete.Mat.Prop.Rho, gsaConvertedConcrete.Mat.Prop.Rho);
+      Assert.Equal(thermalFactor * gsaMatConcrete.Mat.Prop.Alpha, gsaConvertedConcrete.Mat.Prop.Alpha);
+      Assert.Equal(strainFactor * gsaMatConcrete.Mat.Uls.StrainElasticCompression, gsaConvertedConcrete.Mat.Uls.StrainElasticCompression);
+      Assert.Equal(strainFactor * gsaMatConcrete.Mat.Uls.StrainElasticTension, gsaConvertedConcrete.Mat.Uls.StrainElasticTension);
+      Assert.Equal(strainFactor * gsaMatConcrete.Mat.Uls.StrainPlasticCompression, gsaConvertedConcrete.Mat.Uls.StrainPlasticCompression);
+      Assert.Equal(strainFactor * gsaMatConcrete.Mat.Uls.StrainPlasticTension, gsaConvertedConcrete.Mat.Uls.StrainPlasticTension);
+      Assert.Equal(strainFactor * gsaMatConcrete.Mat.Uls.StrainFailureCompression, gsaConvertedConcrete.Mat.Uls.StrainFailureCompression);
+      Assert.Equal(strainFactor * gsaMatConcrete.Mat.Uls.StrainFailureTension, gsaConvertedConcrete.Mat.Uls.StrainFailureTension);
+      Assert.Equal(strainFactor * gsaMatConcrete.Mat.Sls.StrainElasticCompression, gsaConvertedConcrete.Mat.Sls.StrainElasticCompression);
+      Assert.Equal(strainFactor * gsaMatConcrete.Mat.Sls.StrainElasticTension, gsaConvertedConcrete.Mat.Sls.StrainElasticTension);
+      Assert.Equal(strainFactor * gsaMatConcrete.Mat.Sls.StrainPlasticCompression, gsaConvertedConcrete.Mat.Sls.StrainPlasticCompression);
+      Assert.Equal(strainFactor * gsaMatConcrete.Mat.Sls.StrainPlasticTension, gsaConvertedConcrete.Mat.Sls.StrainPlasticTension);
+      Assert.Equal(strainFactor * gsaMatConcrete.Mat.Sls.StrainFailureCompression, gsaConvertedConcrete.Mat.Sls.StrainFailureCompression);
+      Assert.Equal(strainFactor * gsaMatConcrete.Mat.Sls.StrainFailureTension, gsaConvertedConcrete.Mat.Sls.StrainFailureTension);
+      Assert.Equal(stressFactor * gsaMatConcrete.Fc, gsaConvertedConcrete.Fc);
+      Assert.Equal(stressFactor * gsaMatConcrete.Fcdt, gsaConvertedConcrete.Fcdt);
+      Assert.Equal(strainFactor * gsaMatConcrete.EpsU, gsaConvertedConcrete.EpsU);
+      Assert.Equal(stressFactor * gsaMatConcrete.Fcd, gsaConvertedConcrete.Fcd);
+      Assert.Equal(stressFactor * gsaMatConcrete.Fcdc, gsaConvertedConcrete.Fcdc);
+      Assert.Equal(stressFactor * gsaMatConcrete.Fcfib, gsaConvertedConcrete.Fcfib);
+      Assert.Equal(stressFactor * gsaMatConcrete.EmEs, gsaConvertedConcrete.EmEs);
+      Assert.Equal(stressFactor * gsaMatConcrete.Emod, gsaConvertedConcrete.Emod);
+      Assert.Equal(strainFactor * gsaMatConcrete.Eps, gsaConvertedConcrete.Eps);
+      Assert.Equal(strainFactor * gsaMatConcrete.EpsPeak, gsaConvertedConcrete.EpsPeak);
+      Assert.Equal(strainFactor * gsaMatConcrete.EpsMax, gsaConvertedConcrete.EpsMax);
+      Assert.Equal(strainFactor * gsaMatConcrete.EpsAx, gsaConvertedConcrete.EpsAx);
+      Assert.Equal(strainFactor * gsaMatConcrete.EpsTran, gsaConvertedConcrete.EpsTran);
+      Assert.Equal(strainFactor * gsaMatConcrete.EpsAxs, gsaConvertedConcrete.EpsAxs);
+      Assert.Equal(strainFactor * gsaMatConcrete.Shrink, gsaConvertedConcrete.Shrink);
+      Assert.Equal(stressFactor * gsaMatConcrete.Confine, gsaConvertedConcrete.Confine);
+      Assert.Equal(stressFactor * gsaMatConcrete.Fcc, gsaConvertedConcrete.Fcc);
+      Assert.Equal(strainFactor * gsaMatConcrete.EpsPlasC, gsaConvertedConcrete.EpsPlasC);
+      Assert.Equal(strainFactor * gsaMatConcrete.EpsUC, gsaConvertedConcrete.EpsUC);
+      Assert.Equal(lengthFactor * gsaMatConcrete.Agg, gsaConvertedConcrete.Agg);
     }
 
-    [Fact]
-    public void ConcreteToNative()
+    [Theory]
+    [InlineData("m", "kg", "oC", "Pa", "ε", "mm", "t", "oF", "MPa", "%ε")]
+    [InlineData("m", null, null, null, null, "mm", null, null, null, null)]
+    [InlineData(null, null, null, null, null, null, null, null, null, null)]
+    public void ConcreteToNative(string gsaLengthUnit, string gsaMassUnit, string gsaTemperatureUnit, string gsaStressUnit, string gsaStrainUnit,
+      string speckleLengthUnit, string speckleMassUnit, string speckleTemperatureUnit, string speckleStressUnit, string speckleStrainUnit)
     {
+      # region unit conversion factors
+      double lengthFactor = 1, massFactor = 1, thermalFactor = 1, stressFactor = 1, strainFactor = 1;
+      if (!string.IsNullOrEmpty(speckleLengthUnit) && !string.IsNullOrEmpty(gsaLengthUnit))
+      {
+        lengthFactor = Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
+      }
+      if (!string.IsNullOrEmpty(speckleMassUnit) && !string.IsNullOrEmpty(gsaMassUnit))
+      {
+        massFactor = MassUnits.GetConversionFactor(speckleMassUnit, gsaMassUnit);
+      }
+      var densityFactor = massFactor / Math.Pow(lengthFactor, 3);
+      if (!string.IsNullOrEmpty(speckleTemperatureUnit) && !string.IsNullOrEmpty(gsaTemperatureUnit))
+      {
+        thermalFactor = 1 / TemperatureUnits.GetTemperatureChangeConversionFactor(speckleTemperatureUnit, gsaTemperatureUnit);
+      }
+      if (!string.IsNullOrEmpty(speckleStressUnit) && !string.IsNullOrEmpty(gsaStressUnit))
+      {
+        stressFactor = StressUnits.GetConversionFactor(speckleStressUnit, gsaStressUnit);
+      }
+      if (!string.IsNullOrEmpty(speckleStrainUnit) && !string.IsNullOrEmpty(gsaStrainUnit))
+      {
+        strainFactor = StrainUnits.GetConversionFactor(speckleStrainUnit, gsaStrainUnit);
+      }
+      #endregion
+
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Mass, Name = gsaMassUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Temperature, Name = gsaTemperatureUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Stress, Name = gsaStressUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Strain, Name = gsaStrainUnit });
       var gsaMatConcrete = GsaMatConcreteExample("concrete 1");
       gsaRecords.Add(gsaMatConcrete);
       Instance.GsaModel.Cache.Upsert(gsaRecords);
@@ -1522,18 +1819,51 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-      var speckleAppSpecificObjects = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList());
-      Map<GSAConcrete, Concrete>(speckleAppSpecificObjects.Select(o => (GSAConcrete)o).ToList(), out var speckleAppAgnosticObjects);
-      var gsaConvertedRecords = converter.ConvertToNative(speckleAppAgnosticObjects.Select(o => (Base)o).ToList());
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
+      var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
+      var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
+      var speckleAppSpecificObjects = speckleDesignModel.materials.Select(o => (GSAConcrete)o).ToList();
+      speckleAppSpecificObjects[0].compressiveStrength /= stressFactor;
+      speckleAppSpecificObjects[0].tensileStrength /= stressFactor;
+      speckleAppSpecificObjects[0].density /= densityFactor;
+      speckleAppSpecificObjects[0].elasticModulus /= stressFactor;
+      speckleAppSpecificObjects[0].shearModulus /= stressFactor;
+      speckleAppSpecificObjects[0].thermalExpansivity /= thermalFactor;
+      speckleAppSpecificObjects[0].maxCompressiveStrain /= strainFactor;
+      speckleAppSpecificObjects[0].maxTensileStrain /= strainFactor;
+      speckleAppSpecificObjects[0].maxAggregateSize /= lengthFactor;
+      Map<GSAConcrete, Concrete>(speckleAppSpecificObjects, out var speckleAppAgnosticObjects);
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleAppAgnosticObjects);
+      speckleDesignModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.mass = speckleMassUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.temperature = speckleTemperatureUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.stress = speckleStressUnit; //change the units
+      speckleDesignModel.specs.settings.modelUnits.strain = speckleStrainUnit; //change the units
+      speckleObjects.Add(speckleDesignModel.specs.settings.modelUnits);
+      Instance.GsaModel.Cache.Upsert(gsaRecords);
+      var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
       var gsaConvertedConcrete = gsaConvertedRecords.FindAll(r => r is GsaMatConcrete).Select(r => (GsaMatConcrete)r).First();
       var compareLogic = new CompareLogic();
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMat x) => x.Name)); //Ignore app specific data
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatConcrete x) => x.Fcfib));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainElasticCompression));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainPlasticCompression));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainFailureCompression));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaMatCurveParam x) => x.StrainFailureTension));
       var result = compareLogic.Compare(gsaMatConcrete, gsaConvertedConcrete);
       Assert.Empty(result.Differences);
       Assert.Equal(gsaMatConcrete.Fcfib.Value, gsaConvertedConcrete.Fcfib.Value, 3);
+      Assert.Equal(gsaMatConcrete.Mat.Uls.StrainElasticCompression.Value, gsaConvertedConcrete.Mat.Uls.StrainElasticCompression.Value, 9);
+      Assert.Equal(gsaMatConcrete.Mat.Uls.StrainPlasticCompression.Value, gsaConvertedConcrete.Mat.Uls.StrainPlasticCompression.Value, 9);
+      Assert.Equal(gsaMatConcrete.Mat.Uls.StrainFailureCompression.Value, gsaConvertedConcrete.Mat.Uls.StrainFailureCompression.Value, 9);
+      Assert.Equal(gsaMatConcrete.Mat.Uls.StrainFailureTension.Value, gsaConvertedConcrete.Mat.Uls.StrainFailureTension.Value, 9);
+      Assert.Equal(gsaMatConcrete.Mat.Sls.StrainElasticCompression.Value, gsaConvertedConcrete.Mat.Sls.StrainElasticCompression.Value, 9);
+      Assert.Equal(gsaMatConcrete.Mat.Sls.StrainPlasticCompression.Value, gsaConvertedConcrete.Mat.Sls.StrainPlasticCompression.Value, 9);
+      Assert.Equal(gsaMatConcrete.Mat.Sls.StrainFailureCompression.Value, gsaConvertedConcrete.Mat.Sls.StrainFailureCompression.Value, 9);
+      Assert.Equal(gsaMatConcrete.Mat.Sls.StrainFailureTension.Value, gsaConvertedConcrete.Mat.Sls.StrainFailureTension.Value, 9);
     }
     #endregion
 
@@ -1720,11 +2050,17 @@ namespace ConverterGSATests
     #endregion
 
     #region Constraints
-    [Fact]
-    public void GSARigidConstraintToNative()
+    [Theory]
+    [InlineData("m", "mm")]
+    [InlineData(null, null)]
+    public void GSARigidConstraintToNative(string gsaLengthUnit, string speckleLengthUnit)
     {
+      //unit conversion factors
+      var lengthFactor = (string.IsNullOrEmpty(speckleLengthUnit) || string.IsNullOrEmpty(gsaLengthUnit)) ? 1 : Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
+
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit });
       gsaRecords.Add(GsaMatSteelExample("steel material 1"));
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
@@ -1739,8 +2075,13 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList());
-      var speckleObjects = ((Model)speckleModels.Last()).elements.FindAll(o => o is GSARigidConstraint).ToList();
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
+      var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
+      var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleAnalysisModel.elements.FindAll(o => o is GSARigidConstraint).ToList());
+      speckleAnalysisModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units
+      speckleObjects.Add(speckleAnalysisModel.specs.settings.modelUnits);
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
@@ -1750,11 +2091,17 @@ namespace ConverterGSATests
       Assert.Empty(result.Differences);
     }
 
-    [Fact]
-    public void GSAGeneralisedRestraintToNative()
+    [Theory]
+    [InlineData("m", "mm")]
+    [InlineData(null, null)]
+    public void GSAGeneralisedRestraintToNative(string gsaLengthUnit, string speckleLengthUnit)
     {
+      //unit conversion factors
+      var lengthFactor = (string.IsNullOrEmpty(speckleLengthUnit) || string.IsNullOrEmpty(gsaLengthUnit)) ? 1 : Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
+
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit });
       gsaRecords.Add(GsaMatSteelExample("steel material 1"));
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
@@ -1769,8 +2116,13 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList());
-      var speckleObjects = ((Model)speckleModels.Last()).elements.FindAll(o => o is GSAGeneralisedRestraint).ToList();
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
+      var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
+      var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleAnalysisModel.elements.FindAll(o => o is GSAGeneralisedRestraint).ToList());
+      speckleAnalysisModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units
+      speckleObjects.Add(speckleAnalysisModel.specs.settings.modelUnits);
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
@@ -1782,41 +2134,59 @@ namespace ConverterGSATests
     #endregion
 
     #region Analysis Stages
-    [Fact]
-    public void GSAStageToNative()
+    [Theory]
+    [InlineData("m", "mm")]
+    [InlineData(null, null)]
+    public void GSAStageToNative(string gsaLengthUnit, string speckleLengthUnit)
     {
-      var twoElements = new List<GSAElement1D>
-      {
-        GetElement1d1(),
-        new GSAElement1D(2, null, null, ElementType1D.Bar, orientationAngle: 0D),
-      }.Select(x => x as Base).ToList();
+      //unit conversion factors
+      var lengthFactor = (string.IsNullOrEmpty(speckleLengthUnit) || string.IsNullOrEmpty(gsaLengthUnit)) ? 1 : Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
 
-      var twoLockedElements = new List<GSAElement1D>
-      {
-        new GSAElement1D(3, null, null, ElementType1D.Bar, orientationAngle: 0D),
-        new GSAElement1D(4, null, null, ElementType1D.Bar, orientationAngle: 0D),
-      }.Select(x => x as Base).ToList();
+      //Create native objects
+      var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit });
+      gsaRecords.Add(GsaMatSteelExample("steel material 1"));
+      gsaRecords.Add(GsaPropMassExample("property mass 1"));
+      gsaRecords.Add(GsaPropSprExample("property spring 1"));
+      gsaRecords.AddRange(GsaNodeExamples(3, "node 1", "node 2", "node 3"));
+      gsaRecords.Add(GsaCatalogueSectionExample("section 1"));
+      gsaRecords.AddRange(GsaElement1dExamples(2, "element 1", "element 2"));
+      var gsaStage = GsaAnalStageExamples(1, "stage 1").First();
+      gsaRecords.Add(gsaStage);
+      Instance.GsaModel.Cache.Upsert(gsaRecords);
 
-      var gsaStage = new GSAStage(1, "", Colour.RED.ToString(), twoElements, 1, 2, twoLockedElements);
-      var gsaRecord = converter.ConvertToNative(gsaStage) as List<GsaRecord>;
+      //Convert
+      Instance.GsaModel.StreamLayer = GSALayer.Both;
+      Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
+      var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
+      var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleAnalysisModel.elements.FindAll(o => o is GSAStage).ToList());
+      speckleAnalysisModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units
+      speckleObjects.Add(speckleAnalysisModel.specs.settings.modelUnits);
+      var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
-      var gsaAnalStage = GenericTestForList<GsaAnalStage>(gsaRecord);
-
-      Assert.Equal(gsaStage.colour, gsaAnalStage.Colour.ToString());
-      Assert.Equal(gsaStage.name, gsaAnalStage.Name);
-      Assert.Equal(gsaStage.creepFactor, gsaAnalStage.Phi);
-      Assert.Equal(gsaStage.stageTime, gsaAnalStage.Days);
-      Assert.Equal(gsaStage.elements.Count, twoElements.Count);
-      Assert.Equal(gsaStage.lockedElements.Count, twoLockedElements.Count);
+      //Checks
+      var gsaConvertedStage = gsaConvertedRecords.FindAll(r => r is GsaAnalStage).Select(r => (GsaAnalStage)r).First();
+      var compareLogic = new CompareLogic();
+      var result = compareLogic.Compare(gsaStage, gsaConvertedStage);
+      Assert.Empty(result.Differences);
     }
     #endregion
 
     #region Bridges
-    [Fact]
-    public void GSAAlignmentToNative()
+    [Theory]
+    [InlineData("m", "mm")]
+    [InlineData(null, null)]
+    public void GSAAlignmentToNative(string gsaLengthUnit, string speckleLengthUnit)
     {
+      //unit conversion factors
+      var lengthFactor = (string.IsNullOrEmpty(speckleLengthUnit) || string.IsNullOrEmpty(gsaLengthUnit)) ? 1 : Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
+
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit });
       gsaRecords.Add(GsaAxisExample("axis 1"));
       gsaRecords.Add(GsaMatSteelExample("steel material 1"));
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
@@ -1838,20 +2208,35 @@ namespace ConverterGSATests
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleObjects = new List<Base>();
       speckleObjects.AddRange(speckleAnalysisModel.elements.FindAll(o => o is GSAAlignment));
+      speckleAnalysisModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units
+      speckleObjects.Add(speckleAnalysisModel.specs.settings.modelUnits);
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
       var gsaConvertedAligns = gsaConvertedRecords.FindAll(r => r is GsaAlign).Select(r => (GsaAlign)r).ToList();
       var compareLogic = new CompareLogic();
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaAlign x) => x.Chain));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaAlign x) => x.Curv));
       var result = compareLogic.Compare(gsaAligns, gsaConvertedAligns);
       Assert.Empty(result.Differences);
+      for (var i = 0; i < gsaAligns.Count(); i++)
+      {
+        Assert.Equal(gsaAligns[i].Chain.Select(v => lengthFactor * v).ToList(), gsaConvertedAligns[i].Chain);
+        Assert.Equal(gsaAligns[i].Curv.Select(v => (1 / lengthFactor) * v).ToList(), gsaConvertedAligns[i].Curv);
+      }
     }
 
-    [Fact]
-    public void GSAInfluenceBeamToNative()
+    [Theory]
+    [InlineData("m", "mm")]
+    [InlineData(null, null)]
+    public void GSAInfluenceBeamToNative(string gsaLengthUnit, string speckleLengthUnit)
     {
+      //unit conversion factors
+      var lengthFactor = (string.IsNullOrEmpty(speckleLengthUnit) || string.IsNullOrEmpty(gsaLengthUnit)) ? 1 : Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
+
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit });
       gsaRecords.Add(GsaMatSteelExample("steel material 1"));
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
@@ -1870,20 +2255,33 @@ namespace ConverterGSATests
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleObjects = new List<Base>();
       speckleObjects.AddRange(speckleAnalysisModel.elements.FindAll(o => o is GSAInfluenceBeam));
+      speckleAnalysisModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units
+      speckleObjects.Add(speckleAnalysisModel.specs.settings.modelUnits);
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
       var gsaConvertedInfBeams = gsaConvertedRecords.FindAll(r => r is GsaInfBeam).Select(r => (GsaInfBeam)r).ToList();
       var compareLogic = new CompareLogic();
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaInfBeam x) => x.Position));
       var result = compareLogic.Compare(gsaInfBeams, gsaConvertedInfBeams);
       Assert.Empty(result.Differences);
+      for (var i = 0; i < gsaInfBeams.Count(); i++)
+      {
+        Assert.Equal(lengthFactor * gsaInfBeams[i].Position, gsaConvertedInfBeams[i].Position);
+      }
     }
 
-    [Fact]
-    public void GSAInfluenceNodeToNative()
+    [Theory]
+    [InlineData("m", "mm")]
+    [InlineData(null, null)]
+    public void GSAInfluenceNodeToNative(string gsaLengthUnit, string speckleLengthUnit)
     {
+      //unit conversion factors
+      var lengthFactor = (string.IsNullOrEmpty(speckleLengthUnit) || string.IsNullOrEmpty(gsaLengthUnit)) ? 1 : Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
+
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit });
       gsaRecords.Add(GsaAxisExample("axis 1"));
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
@@ -1900,6 +2298,8 @@ namespace ConverterGSATests
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleObjects = new List<Base>();
       speckleObjects.AddRange(speckleAnalysisModel.elements.FindAll(o => o is GSAInfluenceNode));
+      speckleAnalysisModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units
+      speckleObjects.Add(speckleAnalysisModel.specs.settings.modelUnits);
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
@@ -1909,11 +2309,17 @@ namespace ConverterGSATests
       Assert.Empty(result.Differences);
     }
 
-    [Fact]
-    public void GSAPathToNative()
+    [Theory]
+    [InlineData("m", "mm")]
+    [InlineData(null, null)]
+    public void GSAPathToNative(string gsaLengthUnit, string speckleLengthUnit)
     {
+      //unit conversion factors
+      var lengthFactor = (string.IsNullOrEmpty(speckleLengthUnit) || string.IsNullOrEmpty(gsaLengthUnit)) ? 1 : Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
+
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit });
       gsaRecords.Add(GsaAxisExample("axis 1"));
       gsaRecords.Add(GsaMatSteelExample("steel material 1"));
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
@@ -1936,20 +2342,38 @@ namespace ConverterGSATests
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleObjects = new List<Base>();
       speckleObjects.AddRange(speckleAnalysisModel.elements.FindAll(o => o is GSAPath));
+      speckleAnalysisModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units
+      speckleObjects.Add(speckleAnalysisModel.specs.settings.modelUnits);
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
       var gsaConvertedPaths = gsaConvertedRecords.FindAll(r => r is GsaPath).Select(r => (GsaPath)r).ToList();
       var compareLogic = new CompareLogic();
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaPath x) => x.Left));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaPath x) => x.Right));
       var result = compareLogic.Compare(gsaPaths, gsaConvertedPaths);
       Assert.Empty(result.Differences);
+      for (var i = 0; i < gsaPaths.Count(); i++)
+      {
+        Assert.Equal(lengthFactor * gsaPaths[i].Left, gsaConvertedPaths[i].Left);
+        Assert.Equal(lengthFactor * gsaPaths[i].Right, gsaConvertedPaths[i].Right);
+      }
     }
 
-    [Fact]
-    public void GSAUserVehicleToNative()
+    [Theory]
+    [InlineData("m", "N", "mm", "kN")]
+    [InlineData("m", null, "mm", null)]
+    [InlineData(null, null, null, null)]
+    public void GSAUserVehicleToNative(string gsaLengthUnit, string gsaForceUnit, string speckleLengthUnit, string speckleForceUnit)
     {
+      //unit conversion factors
+      var lengthFactor = (string.IsNullOrEmpty(speckleLengthUnit) || string.IsNullOrEmpty(gsaLengthUnit)) ? 1 : Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
+      var forceFactor = (string.IsNullOrEmpty(speckleForceUnit) || string.IsNullOrEmpty(gsaForceUnit)) ? 1 : ForceUnits.GetConversionFactor(speckleForceUnit, gsaForceUnit);
+
       //Create native objects
       var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnit });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Force, Name = gsaForceUnit });
       var gsaVehicles = GsaUserVehicleExamples(2, "vehicle 1", "vehicle 2");
       gsaRecords.AddRange(gsaVehicles);
       Instance.GsaModel.Cache.Upsert(gsaRecords);
@@ -1962,13 +2386,29 @@ namespace ConverterGSATests
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleObjects = new List<Base>();
       speckleObjects.AddRange(speckleAnalysisModel.elements.FindAll(o => o is GSAUserVehicle));
+      speckleAnalysisModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units
+      speckleAnalysisModel.specs.settings.modelUnits.force = speckleForceUnit; //change the units
+      speckleObjects.Add(speckleAnalysisModel.specs.settings.modelUnits);
       var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
       //Checks
       var gsaConvertedVehicles = gsaConvertedRecords.FindAll(r => r is GsaUserVehicle).Select(r => (GsaUserVehicle)r).ToList();
       var compareLogic = new CompareLogic();
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaUserVehicle x) => x.Width));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaUserVehicle x) => x.AxlePosition));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaUserVehicle x) => x.AxleOffset));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaUserVehicle x) => x.AxleLeft));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaUserVehicle x) => x.AxleRight));
       var result = compareLogic.Compare(gsaVehicles, gsaConvertedVehicles);
       Assert.Empty(result.Differences);
+      for (var i = 0; i < gsaVehicles.Count(); i++)
+      {
+        Assert.Equal(lengthFactor * gsaVehicles[i].Width, gsaConvertedVehicles[i].Width);
+        Assert.Equal(gsaVehicles[i].AxlePosition.Select(v => lengthFactor * v).ToList(), gsaConvertedVehicles[i].AxlePosition);
+        Assert.Equal(gsaVehicles[i].AxleOffset.Select(v => lengthFactor * v).ToList(), gsaConvertedVehicles[i].AxleOffset);
+        Assert.Equal(gsaVehicles[i].AxleLeft.Select(v => forceFactor * v).ToList(), gsaConvertedVehicles[i].AxleLeft);
+        Assert.Equal(gsaVehicles[i].AxleRight.Select(v => forceFactor * v).ToList(), gsaConvertedVehicles[i].AxleRight);
+      }
     }
     #endregion
 

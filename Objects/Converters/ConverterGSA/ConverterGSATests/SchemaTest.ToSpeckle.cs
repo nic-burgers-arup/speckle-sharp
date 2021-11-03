@@ -4614,11 +4614,11 @@ namespace ConverterGSATests
           Name = "1",
           Colour = Colour.NO_RGB,
           ElementIndices = new List<int>(){ 1 },
-          //MemberIndices = null,
+          MemberIndices = new List<int>(),
           Phi = 2,
           Days = 28,
           LockElementIndices = new List<int>() { 2 },
-          //LockMemberIndices = null,
+          LockMemberIndices = new List<int>(),
         },
         new GsaAnalStage()
         {

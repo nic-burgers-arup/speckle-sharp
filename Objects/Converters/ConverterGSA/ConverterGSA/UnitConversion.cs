@@ -322,5 +322,9 @@ namespace ConverterGSA
         return TemperatureUnits.Convert(speckleValue.Value, speckleUnit, this.nativeModelUnits.temperature);
       }
     } 
+
+    public double DensityFactorToNative() => this.mass / Math.Pow(this.length, 3);
+
+    public double ThermalExapansionFactorToNative() => 1 / TemperatureUnits.GetTemperatureChangeConversionFactor(this.speckleModelUnits.temperature, this.nativeModelUnits.temperature);
   }
 }

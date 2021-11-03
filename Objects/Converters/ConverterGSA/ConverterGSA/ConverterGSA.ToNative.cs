@@ -1430,29 +1430,45 @@ namespace ConverterGSA
     {
       //Values based on GSA10.1 with design code AS4100-1998, material grade 200-450 from AS3678
       var speckleSteel = (Steel)speckleObject;
-      var eps = GetSteelStrain(speckleSteel.yieldStrength);
+      double? e = null, eh = null, fy = null, fu = null, nu = null, g = null, rho = null, alpha = null, damp = null, epsMax = null, eps = null, cost = null;
+
+      if (speckleSteel.yieldStrength > 0)
+      {
+        fy = speckleSteel.yieldStrength * conversionFactors.stress;
+        eps = GetSteelStrain(speckleSteel.yieldStrength) * StrainUnits.GetConversionFactor(StrainUnits.Strain, conversionFactors.nativeModelUnits.strain);
+      }
+      if (speckleSteel.elasticModulus > 0) e = speckleSteel.elasticModulus * conversionFactors.stress;
+      if (speckleSteel.poissonsRatio > 0) nu = speckleSteel.poissonsRatio;
+      if (speckleSteel.shearModulus > 0) g = speckleSteel.shearModulus * conversionFactors.stress;
+      if (speckleSteel.density > 0) rho = speckleSteel.density * conversionFactors.DensityFactorToNative();
+      if (speckleSteel.thermalExpansivity > 0) alpha = speckleSteel.thermalExpansivity * conversionFactors.ThermalExapansionFactorToNative();
+      if (speckleSteel.maxStrain > 0) epsMax = speckleSteel.maxStrain * conversionFactors.strain;
+      if (speckleSteel.ultimateStrength > 0) fu = speckleSteel.ultimateStrength * conversionFactors.stress;
+      if (speckleSteel.strainHardeningModulus > 0) eh = speckleSteel.strainHardeningModulus * conversionFactors.stress;
+      if (speckleSteel.cost > 0) cost = speckleSteel.cost; 
+
       var gsaSteel = new GsaMatSteel()
       {
         ApplicationId = speckleSteel.applicationId,
         Index = speckleSteel.GetIndex<GsaMatSteel>(),
         Mat = new GsaMat()
         {
-          E = speckleSteel.elasticModulus.IsPositiveOrNull(),
-          F = speckleSteel.yieldStrength.IsPositiveOrNull(),
-          Nu = speckleSteel.poissonsRatio.IsPositiveOrNull(),
-          G = speckleSteel.shearModulus.IsPositiveOrNull(),
-          Rho = speckleSteel.density.IsPositiveOrNull(),
-          Alpha = speckleSteel.thermalExpansivity.IsPositiveOrNull(),
+          E = e,
+          F = fy,
+          Nu = nu,
+          G = g,
+          Rho = rho,
+          Alpha = alpha,
           Prop = new GsaMatAnal()
           {
             Type = MatAnalType.MAT_ELAS_ISO,
             NumParams = 6,
-            E = speckleSteel.elasticModulus.IsPositiveOrNull(),
-            Nu = speckleSteel.poissonsRatio.IsPositiveOrNull(),
-            Rho = speckleSteel.density.IsPositiveOrNull(),
-            Alpha = speckleSteel.thermalExpansivity.IsPositiveOrNull(),
-            G = speckleSteel.shearModulus.IsPositiveOrNull(),
-            Damp = speckleSteel.dampingRatio.IsPositiveOrNull(),
+            E = e,
+            Nu = nu,
+            Rho = rho,
+            Alpha = alpha,
+            G = g,
+            Damp = damp,
           },
           NumUC = 0,
           AbsUC = Dimension.NotSet,
@@ -1470,7 +1486,7 @@ namespace ConverterGSA
           AbsST = Dimension.NotSet,
           OrdST = Dimension.NotSet,
           PtsST = null,
-          Eps = speckleSteel.maxStrain.IsPositiveOrNull(),
+          Eps = epsMax,
           Uls = new GsaMatCurveParam()
           {
             Model = new List<MatCurveParamType>() { MatCurveParamType.ELAS_PLAS },
@@ -1478,8 +1494,8 @@ namespace ConverterGSA
             StrainElasticTension = eps,
             StrainPlasticCompression = eps,
             StrainPlasticTension = eps,
-            StrainFailureCompression = speckleSteel.maxStrain.IsPositiveOrNull(),
-            StrainFailureTension = speckleSteel.maxStrain.IsPositiveOrNull(),
+            StrainFailureCompression = epsMax,
+            StrainFailureTension = epsMax,
             GammaF = 1,
             GammaE = 1,
           },
@@ -1490,18 +1506,18 @@ namespace ConverterGSA
             StrainElasticTension = eps,
             StrainPlasticCompression = eps,
             StrainPlasticTension = eps,
-            StrainFailureCompression = speckleSteel.maxStrain.IsPositiveOrNull(),
-            StrainFailureTension = speckleSteel.maxStrain.IsPositiveOrNull(),
+            StrainFailureCompression = epsMax,
+            StrainFailureTension = epsMax,
             GammaF = 1,
             GammaE = 1,
           },
-          Cost = speckleSteel.cost.IsPositiveOrNull(),
+          Cost = cost,
           Type = MatType.STEEL,
         },
-        Fy = speckleSteel.yieldStrength.IsPositiveOrNull(),
-        Fu = speckleSteel.ultimateStrength.IsPositiveOrNull(),
+        Fy = fy,
+        Fu = fu,
         EpsP = null,
-        Eh = speckleSteel.strainHardeningModulus.IsPositiveOrNull(),
+        Eh = eh,
       };
 
       if (!string.IsNullOrEmpty(speckleSteel.name))
@@ -1524,29 +1540,51 @@ namespace ConverterGSA
       var gsaRecords = ConcreteToNative(speckleObject);
       var gsaConcrete = (GsaMatConcrete)gsaRecords.First(o => o is GsaMatConcrete);
       var speckleConcrete = (GSAConcrete)speckleObject;
+
+      //Get dynamic properties from base object
       gsaConcrete.Mat = GetMat(speckleConcrete.GetDynamicValue<Base>("Mat"));
       gsaConcrete.Type = speckleConcrete.GetDynamicEnum<MatConcreteType>("Type");
       gsaConcrete.Cement = speckleConcrete.GetDynamicEnum<MatConcreteCement>("Cement");
-      gsaConcrete.Fcd = speckleConcrete.GetDynamicValue<double>("Fcd").IsPositiveOrNull();
-      gsaConcrete.Fcdc = speckleConcrete.GetDynamicValue<double>("Fcdc").IsPositiveOrNull();
-      gsaConcrete.Fcfib = speckleConcrete.GetDynamicValue<double>("Fcfib").IsPositiveOrNull();
-      gsaConcrete.EmEs = speckleConcrete.GetDynamicValue<double>("EmEs").IsPositiveOrNull();
-      gsaConcrete.N = speckleConcrete.GetDynamicValue<double>("N").IsPositiveOrNull();
-      gsaConcrete.Emod = speckleConcrete.GetDynamicValue<double>("Emod").IsPositiveOrNull();
-      gsaConcrete.Eps = speckleConcrete.GetDynamicValue<double>("Eps").IsPositiveOrNull();
-      gsaConcrete.EpsPeak = speckleConcrete.GetDynamicValue<double>("EpsPeak").IsPositiveOrNull();
-      gsaConcrete.EpsMax = speckleConcrete.GetDynamicValue<double>("EpsMax").IsPositiveOrNull();
-      gsaConcrete.EpsAx = speckleConcrete.GetDynamicValue<double>("EpsAx").IsPositiveOrNull();
-      gsaConcrete.EpsTran = speckleConcrete.GetDynamicValue<double>("EpsTran").IsPositiveOrNull();
-      gsaConcrete.EpsAxs = speckleConcrete.GetDynamicValue<double>("EpsAxs").IsPositiveOrNull();
       gsaConcrete.XdMin = speckleConcrete.GetDynamicValue<double>("XdMin");
       gsaConcrete.XdMax = speckleConcrete.GetDynamicValue<double>("XdMax");
-      gsaConcrete.Beta = speckleConcrete.GetDynamicValue<double>("Beta").IsPositiveOrNull();
-      gsaConcrete.Shrink = speckleConcrete.GetDynamicValue<double>("Shrink").IsPositiveOrNull();
-      gsaConcrete.Confine = speckleConcrete.GetDynamicValue<double>("Confine").IsPositiveOrNull();
-      gsaConcrete.Fcc = speckleConcrete.GetDynamicValue<double>("Fcc").IsPositiveOrNull();
-      gsaConcrete.EpsPlasC = speckleConcrete.GetDynamicValue<double>("EpsPlasC").IsPositiveOrNull();
-      gsaConcrete.EpsUC = speckleConcrete.GetDynamicValue<double>("EpsUC").IsPositiveOrNull();
+      var Fcd = speckleConcrete.GetDynamicValue<double?>("Fcd");
+      var Fcdc = speckleConcrete.GetDynamicValue<double?>("Fcdc");
+      var Fcfib = speckleConcrete.GetDynamicValue<double?>("Fcfib");
+      var EmEs = speckleConcrete.GetDynamicValue<double?>("EmEs");
+      var N = speckleConcrete.GetDynamicValue<double?>("N");
+      var Emod = speckleConcrete.GetDynamicValue<double?>("Emod");
+      var Eps = speckleConcrete.GetDynamicValue<double?>("Eps");
+      var EpsPeak = speckleConcrete.GetDynamicValue<double?>("EpsPeak");
+      var EpsMax = speckleConcrete.GetDynamicValue<double?>("EpsMax");
+      var EpsAx = speckleConcrete.GetDynamicValue<double?>("EpsAx");
+      var EpsTran = speckleConcrete.GetDynamicValue<double?>("EpsTran");
+      var EpsAxs = speckleConcrete.GetDynamicValue<double?>("EpsAxs");
+      var Beta = speckleConcrete.GetDynamicValue<double?>("Beta");
+      var Shrink = speckleConcrete.GetDynamicValue<double?>("Shrink");
+      var Confine = speckleConcrete.GetDynamicValue<double?>("Confine");
+      var Fcc = speckleConcrete.GetDynamicValue<double?>("Fcc");
+      var EpsPlasC = speckleConcrete.GetDynamicValue<double?>("EpsPlasC");
+      var EpsUC = speckleConcrete.GetDynamicValue<double?>("EpsUC");
+
+      //test if positive and convert units
+      if (Fcd.HasValue && Fcd > 0)           gsaConcrete.Fcd = Fcd * conversionFactors.stress;
+      if (Fcdc.HasValue && Fcdc > 0)         gsaConcrete.Fcdc = Fcdc * conversionFactors.stress;
+      if (Fcfib.HasValue && Fcfib > 0)       gsaConcrete.Fcfib = Fcfib * conversionFactors.stress;
+      if (EmEs.HasValue && EmEs > 0)         gsaConcrete.EmEs = EmEs * conversionFactors.stress;
+      if (N.HasValue && N > 0)               gsaConcrete.N = N;
+      if (Emod.HasValue && Emod > 0)         gsaConcrete.Emod = Emod * conversionFactors.stress;
+      if (Eps.HasValue && Eps > 0)           gsaConcrete.Eps = Eps * conversionFactors.strain;
+      if (EpsPeak.HasValue && EpsPeak > 0)   gsaConcrete.EpsPeak = EpsPeak * conversionFactors.strain;
+      if (EpsMax.HasValue && EpsMax > 0)     gsaConcrete.EpsMax = EpsMax * conversionFactors.strain;
+      if (EpsAx.HasValue && EpsAx  > 0)      gsaConcrete.EpsAx = EpsAx * conversionFactors.strain;
+      if (EpsTran.HasValue && EpsTran > 0)   gsaConcrete.EpsTran = EpsTran * conversionFactors.strain;
+      if (EpsAxs.HasValue && EpsAxs > 0)     gsaConcrete.EpsAxs = EpsAxs * conversionFactors.strain;
+      if (Beta.HasValue && Beta > 0)         gsaConcrete.Beta = Beta;
+      if (Shrink.HasValue && Shrink  > 0)    gsaConcrete.Shrink = Shrink * conversionFactors.strain;
+      if (Confine.HasValue && Confine > 0)   gsaConcrete.Confine = Confine * conversionFactors.stress;
+      if (Fcc.HasValue && Fcc > 0)           gsaConcrete.Fcc = Fcc * conversionFactors.stress;
+      if (EpsPlasC.HasValue && EpsPlasC > 0) gsaConcrete.EpsPlasC = EpsPlasC * conversionFactors.strain;
+      if (EpsUC.HasValue && EpsUC > 0)       gsaConcrete.EpsUC = EpsUC * conversionFactors.strain;
 
       return gsaRecords;
     }
@@ -1555,7 +1593,28 @@ namespace ConverterGSA
     {
       //Values based on GSA10.1 with design code AS3600-2018
       var speckleConcrete = (Concrete)speckleObject;
-      var eps = GetEpsMax(speckleConcrete.compressiveStrength);
+      double? e = null, fc = null, ft = null, nu = null, g = null, rho = null, alpha = null, 
+        damp = null, eps = null, epsT = null, epsC = null, cost = null, agg = null, beta = null;
+      var strainFactor = StrainUnits.GetConversionFactor(StrainUnits.Strain, conversionFactors.nativeModelUnits.strain);
+
+      if (speckleConcrete.compressiveStrength > 0)
+      {
+        fc = speckleConcrete.compressiveStrength * conversionFactors.stress;
+        beta = GetBeta(speckleConcrete.compressiveStrength);
+        eps = GetEpsMax(speckleConcrete.compressiveStrength) * strainFactor;
+      }
+      if (speckleConcrete.elasticModulus > 0) e = speckleConcrete.elasticModulus * conversionFactors.stress;
+      if (speckleConcrete.tensileStrength > 0) ft = speckleConcrete.tensileStrength * conversionFactors.stress;
+      if (speckleConcrete.poissonsRatio > 0) nu = speckleConcrete.poissonsRatio;
+      if (speckleConcrete.shearModulus > 0) g = speckleConcrete.shearModulus * conversionFactors.stress;
+      if (speckleConcrete.density > 0) rho = speckleConcrete.density * conversionFactors.DensityFactorToNative();
+      if (speckleConcrete.thermalExpansivity > 0) alpha = speckleConcrete.thermalExpansivity * conversionFactors.ThermalExapansionFactorToNative();
+      if (speckleConcrete.dampingRatio > 0) damp = speckleConcrete.dampingRatio;
+      if (speckleConcrete.maxCompressiveStrain > 0) epsC = speckleConcrete.maxCompressiveStrain * conversionFactors.strain;
+      if (speckleConcrete.maxTensileStrain > 0) epsT = speckleConcrete.maxTensileStrain * conversionFactors.strain;
+      if (speckleConcrete.cost > 0) cost = speckleConcrete.cost;
+      if (speckleConcrete.maxAggregateSize > 0) agg = speckleConcrete.maxAggregateSize * conversionFactors.length;
+
       var gsaConcrete = new GsaMatConcrete()
       {
         ApplicationId = speckleConcrete.applicationId,
@@ -1563,22 +1622,22 @@ namespace ConverterGSA
         Name = speckleConcrete.name,
         Mat = new GsaMat()
         {
-          E = speckleConcrete.elasticModulus.IsPositiveOrNull(),
-          F = speckleConcrete.compressiveStrength.IsPositiveOrNull(),
-          Nu = speckleConcrete.poissonsRatio.IsPositiveOrNull(),
-          G = speckleConcrete.shearModulus.IsPositiveOrNull(),
-          Rho = speckleConcrete.density.IsPositiveOrNull(),
-          Alpha = speckleConcrete.thermalExpansivity.IsPositiveOrNull(),
+          E = e,
+          F = fc,
+          Nu = nu,
+          G = g,
+          Rho = rho,
+          Alpha = alpha,
           Prop = new GsaMatAnal()
           {
             Type = MatAnalType.MAT_ELAS_ISO,
             NumParams = 6,
-            E = speckleConcrete.elasticModulus.IsPositiveOrNull(),
-            Nu = speckleConcrete.poissonsRatio.IsPositiveOrNull(),
-            Rho = speckleConcrete.density.IsPositiveOrNull(),
-            Alpha = speckleConcrete.thermalExpansivity.IsPositiveOrNull(),
-            G = speckleConcrete.shearModulus.IsPositiveOrNull(),
-            Damp = speckleConcrete.dampingRatio.IsPositiveOrNull(),
+            E = e,
+            Nu = nu,
+            Rho = rho,
+            Alpha = alpha,
+            G = g,
+            Damp = damp,
           },
           NumUC = 0,
           AbsUC = Dimension.NotSet,
@@ -1604,7 +1663,7 @@ namespace ConverterGSA
             StrainElasticTension = null,
             StrainPlasticCompression = eps,
             StrainPlasticTension = null,
-            StrainFailureCompression = 0.003,
+            StrainFailureCompression = 0.003 * strainFactor,
             StrainFailureTension = 1,
             GammaF = 1,
             GammaE = 1,
@@ -1612,39 +1671,39 @@ namespace ConverterGSA
           Sls = new GsaMatCurveParam()
           {
             Model = new List<MatCurveParamType>() { MatCurveParamType.LINEAR, MatCurveParamType.INTERPOLATED },
-            StrainElasticCompression = 0.003,
+            StrainElasticCompression = 0.003 * strainFactor,
             StrainElasticTension = null,
-            StrainPlasticCompression = 0.003,
+            StrainPlasticCompression = 0.003 * strainFactor,
             StrainPlasticTension = null,
-            StrainFailureCompression = 0.003,
-            StrainFailureTension = speckleConcrete.maxTensileStrain.IsPositiveOrNull(),
+            StrainFailureCompression = 0.003 * strainFactor,
+            StrainFailureTension = epsT,
             GammaF = 1,
             GammaE = 1,
           },
-          Cost = speckleConcrete.cost.IsPositiveOrNull(),
+          Cost = cost,
           Type = MatType.CONCRETE,
         },
         Type = MatConcreteType.CYLINDER, //strength type
         Cement = MatConcreteCement.N, //cement class
-        Fc = speckleConcrete.compressiveStrength.IsPositiveOrNull(), //concrete strength
-        Fcd = (0.85 * speckleConcrete.compressiveStrength).IsPositiveOrNull(), //design strength
-        Fcdc = (0.4 * speckleConcrete.compressiveStrength).IsPositiveOrNull(), //cracked strength
-        Fcdt = speckleConcrete.tensileStrength.IsPositiveOrNull(), //tensile strength
-        Fcfib = (0.6 * speckleConcrete.tensileStrength).IsPositiveOrNull(), //peak strength for FIB/Popovics curves
+        Fc = fc, //concrete strength
+        Fcd = 0.85 * fc, //design strength
+        Fcdc = 0.4 * fc, //cracked strength
+        Fcdt = ft, //tensile strength
+        Fcfib = 0.6 * ft, //peak strength for FIB/Popovics curves
         EmEs = null, //ratio of initial elastic modulus to secant modulus
         N = 2, //parabolic coefficient (normally 2)
         Emod = 1, //modifier on elastic stiffness typically in range (0.8:1.2)
-        EpsPeak = 0.003, //concrete strain at peak SLS stress
+        EpsPeak = 0.003 * strainFactor, //concrete strain at peak SLS stress
         EpsMax = eps, //maximum conrete SLS strain
-        EpsU = speckleConcrete.maxCompressiveStrain.IsPositiveOrNull(), //concrete ULS failure strain
-        EpsAx = 0.0025, //concrete max compressive ULS strain
-        EpsTran = 0.002, //slab transition strain
-        EpsAxs = 0.0025, //slab axial strain limit
+        EpsU = epsC, //concrete ULS failure strain
+        EpsAx = 0.0025 * strainFactor, //concrete max compressive ULS strain
+        EpsTran = 0.002 * strainFactor, //slab transition strain
+        EpsAxs = 0.0025 * strainFactor, //slab axial strain limit
         Light = speckleConcrete.lightweight, //lightweight flag
-        Agg = speckleConcrete.maxAggregateSize.IsPositiveOrNull(), //maximum aggregate size
+        Agg = agg, //maximum aggregate size
         XdMin = 0, //minimum x/d in flexure
         XdMax = 1, //maximum x/d in flexure
-        Beta = GetBeta(speckleConcrete.compressiveStrength), //depth of rectangular stress block
+        Beta = beta, //depth of rectangular stress block
         Shrink = null, //shrinkage strain
         Confine = null, //confining stress
         Fcc = null, //concrete strength [confined]
@@ -2330,15 +2389,15 @@ namespace ConverterGSA
       };
       if (analStage.elements != null)
       {
-        var speckleElements = analStage.elements.FindAll(e => e is Element1D && e is Element2D);
-        var speckleMembers = analStage.elements.FindAll(e => e is GSAMember1D && e is GSAMember2D);
+        var speckleElements = analStage.elements.FindAll(e => e is Element1D || e is Element2D);
+        var speckleMembers = analStage.elements.FindAll(e => e is GSAMember1D || e is GSAMember2D);
         gsaAnalStage.ElementIndices = IndexByConversionOrLookup<GsaEl>(speckleElements, ref gsaRecords) ?? new List<int>();
         gsaAnalStage.MemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleMembers, ref gsaRecords) ?? new List<int>();
       }
       if (analStage.lockedElements != null)
       {
-        var speckleElements = analStage.lockedElements.FindAll(e => e is Element1D && e is Element2D);
-        var speckleMembers = analStage.lockedElements.FindAll(e => e is GSAMember1D && e is GSAMember2D);
+        var speckleElements = analStage.lockedElements.FindAll(e => e is Element1D || e is Element2D);
+        var speckleMembers = analStage.lockedElements.FindAll(e => e is GSAMember1D || e is GSAMember2D);
         gsaAnalStage.LockElementIndices = IndexByConversionOrLookup<GsaEl>(speckleElements, ref gsaRecords) ?? new List<int>();
         gsaAnalStage.LockMemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleMembers, ref gsaRecords) ?? new List<int>();
       }
@@ -2785,17 +2844,17 @@ namespace ConverterGSA
 
       var gsaMat = new GsaMat();
       gsaMat.Name = speckleObject.GetDynamicValue<string>("Name");
-      gsaMat.E = speckleObject.GetDynamicValue<double>("E").IsPositiveOrNull();
-      gsaMat.F = speckleObject.GetDynamicValue<double>("F").IsPositiveOrNull();
-      gsaMat.Nu = speckleObject.GetDynamicValue<double>("Nu").IsPositiveOrNull();
-      gsaMat.G = speckleObject.GetDynamicValue<double>("G").IsPositiveOrNull();
-      gsaMat.Rho = speckleObject.GetDynamicValue<double>("Rho").IsPositiveOrNull();
-      gsaMat.Alpha = speckleObject.GetDynamicValue<double>("Alpha").IsPositiveOrNull();
+      var e = speckleObject.GetDynamicValue<double?>("E");
+      var f = speckleObject.GetDynamicValue<double?>("F");
+      var nu = speckleObject.GetDynamicValue<double?>("Nu");
+      var g = speckleObject.GetDynamicValue<double?>("G");
+      var rho = speckleObject.GetDynamicValue<double?>("Rho");
+      var alpha = speckleObject.GetDynamicValue<double?>("Alpha");
       gsaMat.Prop = GetMatAnal(speckleObject.GetDynamicValue<Base>("Prop"));
       gsaMat.Uls = GetMatCurveParam(speckleObject.GetDynamicValue<Base>("Uls"));
       gsaMat.Sls = GetMatCurveParam(speckleObject.GetDynamicValue<Base>("Sls"));
-      gsaMat.Eps = speckleObject.GetDynamicValue<double>("Eps").IsPositiveOrNull();
-      gsaMat.Cost = speckleObject.GetDynamicValue<double>("Cost").IsPositiveOrNull();
+      var eps = speckleObject.GetDynamicValue<double?>("Eps");
+      var cost = speckleObject.GetDynamicValue<double?>("Cost");
       gsaMat.Type = speckleObject.GetDynamicEnum<MatType>("Type");
       gsaMat.PtsUC = speckleObject.GetDynamicValue<double[]>("PtsUC");
       gsaMat.PtsUC = speckleObject.GetDynamicValue<double[]>("PtsSC");
@@ -2825,6 +2884,21 @@ namespace ConverterGSA
         gsaMat.AbsST = speckleObject.GetDynamicEnum<Dimension>("AbsST");
         gsaMat.OrdST = speckleObject.GetDynamicEnum<Dimension>("OrdST");
       }
+
+      //unit conversion
+      var stressFactor = conversionFactors.stress;
+      var strainFactor = conversionFactors.strain;
+      var densityFactor = conversionFactors.DensityFactorToNative();
+      var thermalFactor = conversionFactors.ThermalExapansionFactorToNative();
+      if (e.HasValue && e > 0)         gsaMat.E = stressFactor * e;
+      if (f.HasValue && f > 0)         gsaMat.F = stressFactor * f;
+      if (nu.HasValue && nu > 0)       gsaMat.Nu = nu;
+      if (g.HasValue && g > 0)         gsaMat.G = stressFactor * g;
+      if (rho.HasValue && rho > 0)     gsaMat.Rho = densityFactor * rho;
+      if (alpha.HasValue && alpha > 0) gsaMat.Alpha = thermalFactor * alpha;
+      if (eps.HasValue && eps > 0)     gsaMat.Eps = strainFactor * eps;
+      if (cost.HasValue && cost > 0)   gsaMat.Cost = cost;
+
       return gsaMat;
     }
 
@@ -2837,38 +2911,80 @@ namespace ConverterGSA
       var index = speckleObject.GetDynamicValue<long?>("Index");
       if(index == null) index = speckleObject.GetDynamicValue<int?>("Index");
       gsaMatAnal.Index = (int?)index;
-        {
-        }
       gsaMatAnal.Colour = speckleObject.GetDynamicEnum<Colour>("Colour");
       gsaMatAnal.Type = speckleObject.GetDynamicEnum<MatAnalType>("Type");
       gsaMatAnal.NumParams = speckleObject.GetDynamicValue<int>("NumParams");
-      gsaMatAnal.E = speckleObject.GetDynamicValue<double>("E").IsPositiveOrNull();
-      gsaMatAnal.Nu = speckleObject.GetDynamicValue<double>("Nu").IsPositiveOrNull();
-      gsaMatAnal.Rho = speckleObject.GetDynamicValue<double>("Rho").IsPositiveOrNull();
-      gsaMatAnal.Alpha = speckleObject.GetDynamicValue<double>("Alpha").IsPositiveOrNull();
-      gsaMatAnal.G = speckleObject.GetDynamicValue<double>("G").IsPositiveOrNull();
-      gsaMatAnal.Damp = speckleObject.GetDynamicValue<double>("Damp").IsPositiveOrNull();
-      gsaMatAnal.Yield = speckleObject.GetDynamicValue<double>("Yield").IsPositiveOrNull();
-      gsaMatAnal.Ultimate = speckleObject.GetDynamicValue<double>("Ultimate").IsPositiveOrNull();
-      gsaMatAnal.Eh = speckleObject.GetDynamicValue<double>("Eh").IsPositiveOrNull();
-      gsaMatAnal.Beta = speckleObject.GetDynamicValue<double>("Beta").IsPositiveOrNull();
-      gsaMatAnal.Cohesion = speckleObject.GetDynamicValue<double>("Cohesion").IsPositiveOrNull();
-      gsaMatAnal.Phi = speckleObject.GetDynamicValue<double>("Phi").IsPositiveOrNull();
-      gsaMatAnal.Psi = speckleObject.GetDynamicValue<double>("Psi").IsPositiveOrNull();
-      gsaMatAnal.Scribe = speckleObject.GetDynamicValue<double>("Scribe").IsPositiveOrNull();
-      gsaMatAnal.Ex = speckleObject.GetDynamicValue<double>("Ex").IsPositiveOrNull();
-      gsaMatAnal.Ey = speckleObject.GetDynamicValue<double>("Ey").IsPositiveOrNull();
-      gsaMatAnal.Ez = speckleObject.GetDynamicValue<double>("Ez").IsPositiveOrNull();
-      gsaMatAnal.Nuxy = speckleObject.GetDynamicValue<double>("Nuxy").IsPositiveOrNull();
-      gsaMatAnal.Nuyz = speckleObject.GetDynamicValue<double>("Nuyz").IsPositiveOrNull();
-      gsaMatAnal.Nuzx = speckleObject.GetDynamicValue<double>("Nuzx").IsPositiveOrNull();
-      gsaMatAnal.Alphax = speckleObject.GetDynamicValue<double>("Alphax").IsPositiveOrNull();
-      gsaMatAnal.Alphay = speckleObject.GetDynamicValue<double>("Alphay").IsPositiveOrNull();
-      gsaMatAnal.Alphaz = speckleObject.GetDynamicValue<double>("Alphaz").IsPositiveOrNull();
-      gsaMatAnal.Gxy = speckleObject.GetDynamicValue<double>("Gxy").IsPositiveOrNull();
-      gsaMatAnal.Gyz = speckleObject.GetDynamicValue<double>("Gyz").IsPositiveOrNull();
-      gsaMatAnal.Gzx = speckleObject.GetDynamicValue<double>("Gzx").IsPositiveOrNull();
-      gsaMatAnal.Comp = speckleObject.GetDynamicValue<double>("Comp").IsPositiveOrNull();
+      var e = speckleObject.GetDynamicValue<double?>("E");
+      var nu = speckleObject.GetDynamicValue<double?>("Nu");
+      var rho = speckleObject.GetDynamicValue<double?>("Rho");
+      var alpha = speckleObject.GetDynamicValue<double?>("Alpha");
+      var g = speckleObject.GetDynamicValue<double?>("G");
+      var damp = speckleObject.GetDynamicValue<double?>("Damp");
+      var yield = speckleObject.GetDynamicValue<double?>("Yield");
+      var ultimate = speckleObject.GetDynamicValue<double?>("Ultimate");
+      var eh = speckleObject.GetDynamicValue<double?>("Eh");
+      var beta = speckleObject.GetDynamicValue<double?>("Beta");
+      var cohesion = speckleObject.GetDynamicValue<double?>("Cohesion");
+      var phi = speckleObject.GetDynamicValue<double?>("Phi");
+      var psi = speckleObject.GetDynamicValue<double?>("Psi");
+      var scribe = speckleObject.GetDynamicValue<double?>("Scribe");
+      var ex = speckleObject.GetDynamicValue<double?>("Ex");
+      var ey = speckleObject.GetDynamicValue<double?>("Ey");
+      var ez = speckleObject.GetDynamicValue<double?>("Ez");
+      var nuxy = speckleObject.GetDynamicValue<double?>("Nuxy");
+      var nuyz = speckleObject.GetDynamicValue<double?>("Nuyz");
+      var nuzx = speckleObject.GetDynamicValue<double?>("Nuzx");
+      var alphax = speckleObject.GetDynamicValue<double?>("Alphax");
+      var alphay = speckleObject.GetDynamicValue<double?>("Alphay");
+      var alphaz = speckleObject.GetDynamicValue<double?>("Alphaz");
+      var gxy = speckleObject.GetDynamicValue<double?>("Gxy");
+      var gyz = speckleObject.GetDynamicValue<double?>("Gyz");
+      var gzx = speckleObject.GetDynamicValue<double?>("Gzx");
+      var comp = speckleObject.GetDynamicValue<double?>("Comp");
+
+      //unit conversion
+      var stressFactor = conversionFactors.stress;
+      var densityFactor = conversionFactors.DensityFactorToNative();
+      var thermalFactor = conversionFactors.ThermalExapansionFactorToNative();
+      var angleFactor = conversionFactors.angle;
+      if (gsaMatAnal.Type == MatAnalType.MAT_FABRIC)
+      {
+        if (ex.HasValue && ex > 0)     gsaMatAnal.Ex = conversionFactors.force / conversionFactors.length * ex;
+        if (ey.HasValue && ey > 0)     gsaMatAnal.Ey = conversionFactors.force / conversionFactors.length * ey;
+        if (nu.HasValue && nu > 0)     gsaMatAnal.Nu = nu;
+        if (g.HasValue && g > 0)       gsaMatAnal.G = conversionFactors.force / conversionFactors.length * g;
+        if (comp.HasValue && comp > 0) gsaMatAnal.Comp = comp;
+      }
+      else
+      {
+        if (e.HasValue && e > 0)               gsaMatAnal.E = stressFactor * e;
+        if (nu.HasValue && nu > 0)             gsaMatAnal.Nu = nu;
+        if (rho.HasValue && rho > 0)           gsaMatAnal.Rho = densityFactor * rho;
+        if (alpha.HasValue && alpha > 0)       gsaMatAnal.Alpha = thermalFactor * alpha;
+        if (g.HasValue && g > 0)               gsaMatAnal.G = stressFactor * g;
+        if (damp.HasValue && damp > 0)         gsaMatAnal.Damp = damp;
+        if (yield.HasValue && yield > 0)       gsaMatAnal.Yield = stressFactor * yield;
+        if (ultimate.HasValue && ultimate > 0) gsaMatAnal.Ultimate = stressFactor * ultimate;
+        if (eh.HasValue && eh > 0)             gsaMatAnal.Eh = stressFactor * eh;
+        if (beta.HasValue && beta > 0)         gsaMatAnal.Beta = beta;
+        if (cohesion.HasValue && cohesion > 0) gsaMatAnal.Cohesion = stressFactor * cohesion;
+        if (phi.HasValue && phi > 0)           gsaMatAnal.Phi = angleFactor * phi;
+        if (psi.HasValue && psi > 0)           gsaMatAnal.Psi = angleFactor * psi;
+        if (scribe.HasValue && scribe > 0)     gsaMatAnal.Scribe = scribe;
+        if (ex.HasValue && ex > 0)             gsaMatAnal.Ex = stressFactor * ex;
+        if (ey.HasValue && ey > 0)             gsaMatAnal.Ey = stressFactor * ey;
+        if (ez.HasValue && ez > 0)             gsaMatAnal.Ez = stressFactor * ez;
+        if (nuxy.HasValue && nuxy > 0)         gsaMatAnal.Nuxy = nuxy;
+        if (nuyz.HasValue && nuyz > 0)         gsaMatAnal.Nuyz = nuyz;
+        if (nuzx.HasValue && nuzx > 0)         gsaMatAnal.Nuzx = nuzx;
+        if (alphax.HasValue && alphax > 0)     gsaMatAnal.Alphax = thermalFactor * alphax;
+        if (alphay.HasValue && alphay > 0)     gsaMatAnal.Alphay = thermalFactor * alphay;
+        if (alphaz.HasValue && alphaz > 0)     gsaMatAnal.Alphaz = thermalFactor * alphaz;
+        if (gxy.HasValue && gxy > 0)           gsaMatAnal.Gxy = stressFactor * gxy;
+        if (gyz.HasValue && gyz > 0)           gsaMatAnal.Gyz = stressFactor * gyz;
+        if (gzx.HasValue && gzx > 0)           gsaMatAnal.Gzx = stressFactor * gzx;
+      }
+
       return gsaMatAnal;
     }
 
@@ -2887,22 +3003,47 @@ namespace ConverterGSA
       {
         gsaMatCurveParam.Model = model.Select(s => Enum.TryParse(s, true, out MatCurveParamType v) ? v : MatCurveParamType.UNDEF).ToList();
       }
-      gsaMatCurveParam.StrainElasticCompression = speckleObject.GetDynamicValue<double>("StrainElasticCompression").IsPositiveOrNull();
-      gsaMatCurveParam.StrainElasticTension = speckleObject.GetDynamicValue<double>("StrainElasticTension").IsPositiveOrNull();
-      gsaMatCurveParam.StrainPlasticCompression = speckleObject.GetDynamicValue<double>("StrainPlasticCompression").IsPositiveOrNull();
-      gsaMatCurveParam.StrainPlasticTension = speckleObject.GetDynamicValue<double>("StrainPlasticTension").IsPositiveOrNull();
-      gsaMatCurveParam.StrainFailureCompression = speckleObject.GetDynamicValue<double>("StrainFailureCompression").IsPositiveOrNull();
-      gsaMatCurveParam.StrainFailureTension = speckleObject.GetDynamicValue<double>("StrainFailureTension").IsPositiveOrNull();
-      gsaMatCurveParam.GammaF = speckleObject.GetDynamicValue<double>("GammaF").IsPositiveOrNull();
-      gsaMatCurveParam.GammaE = speckleObject.GetDynamicValue<double>("GammaE").IsPositiveOrNull();
+      var epsEC = speckleObject.GetDynamicValue<double?>("StrainElasticCompression");
+      var epsET = speckleObject.GetDynamicValue<double?>("StrainElasticTension");
+      var epsPC = speckleObject.GetDynamicValue<double?>("StrainPlasticCompression");
+      var epsPT = speckleObject.GetDynamicValue<double?>("StrainPlasticTension");
+      var epsFC = speckleObject.GetDynamicValue<double?>("StrainFailureCompression");
+      var epsFT = speckleObject.GetDynamicValue<double?>("StrainFailureTension");
+      var gammaF = speckleObject.GetDynamicValue<double?>("GammaF");
+      var gammaE = speckleObject.GetDynamicValue<double?>("GammaE");
+
+      //unit conversions and tests to ensure positive value or null
+      if (epsEC.HasValue && epsEC > 0)   gsaMatCurveParam.StrainElasticCompression = epsEC * conversionFactors.strain;
+      if (epsET.HasValue && epsET > 0)   gsaMatCurveParam.StrainElasticTension = epsET * conversionFactors.strain;
+      if (epsPC.HasValue && epsPC > 0)   gsaMatCurveParam.StrainPlasticCompression = epsPC * conversionFactors.strain;
+      if (epsPT.HasValue && epsPT > 0)   gsaMatCurveParam.StrainPlasticTension = epsPT * conversionFactors.strain;
+      if (epsFC.HasValue && epsFC > 0)   gsaMatCurveParam.StrainFailureCompression = epsFC * conversionFactors.strain;
+      if (epsFT.HasValue && epsFT > 0)   gsaMatCurveParam.StrainFailureTension = epsFT * conversionFactors.strain;
+      if (gammaF.HasValue && gammaF > 0) gsaMatCurveParam.GammaF = gammaF;
+      if (gammaE.HasValue && gammaE > 0) gsaMatCurveParam.GammaE = gammaE;
       return gsaMatCurveParam;
     }
 
-    private double GetBeta(double fc) => LinearInterp(20e6, 100e6, 0.92, 0.72, Math.Abs(fc)); //TODO: - units
+    private double GetBeta(double fc)
+    {
+      //assumes fc is compressive strength of concrete in speckle stress units
+      fc = Math.Abs(fc) * StressUnits.GetConversionFactor(conversionFactors.speckleModelUnits.stress, StressUnits.Pascal);
+      return LinearInterp(20e6, 100e6, 0.92, 0.72, fc);
+    }
 
-    private double GetEpsMax(double fc) => LinearInterp(20e6, 100e6, 0.00024, 0.00084, Math.Abs(fc)); //TODO: - units
+    private double GetEpsMax(double fc)
+    {
+      //assumes fc is compressive strength of concrete in speckle stress units
+      fc = Math.Abs(fc) * StressUnits.GetConversionFactor(conversionFactors.speckleModelUnits.stress, StressUnits.Pascal);
+      return LinearInterp(20e6, 100e6, 0.00024, 0.00084, fc);
+    }
 
-    private double GetSteelStrain(double fy) => LinearInterp(200e6, 450e6, 0.001, 0.00225, Math.Abs(fy)); //TODO - units
+    private double GetSteelStrain(double fy)
+    {
+      //assumes fy is yield strength of steel in speckle stress units
+      fy = Math.Abs(fy) * StressUnits.GetConversionFactor(conversionFactors.speckleModelUnits.stress, StressUnits.Pascal);
+      return LinearInterp(200e6, 450e6, 0.001, 0.00225, fy);
+    }
     #endregion
 
     #region Properties
