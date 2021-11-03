@@ -2,6 +2,7 @@
 using Speckle.Core.Api;
 using Speckle.Core.Credentials;
 using Speckle.Core.Kits;
+using Speckle.Core.Models;
 using Speckle.Core.Transports;
 using Speckle.GSA.API;
 using Speckle.GSA.API.GwaSchema;
@@ -98,54 +99,6 @@ namespace ConnectorGSATests
 
     }
 
-    /*
-    private async Task<CoordinateReceiveResult> CoordinateReceive(ISpeckleConverter converter)
-    {
-      var result = new CoordinateReceiveResult();
-      Instance.GsaModel.Proxy = new Speckle.ConnectorGSA.Proxy.GsaProxy();
-
-      var account = AccountManager.GetDefaultAccount();
-      var client = new Client(account);
-      var streamState = await GetTestStream(client);
-
-      //var branchName = streamState.Stream.branches.items.First().name;
-      //var branch = await client.BranchGet(streamState.Stream.id, branchName, 1);
-      var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
-
-      var transport = new ServerTransport(streamState.Client.Account, streamState.Stream.id);
-
-      result.Received = await Commands.Receive(commitId, streamState, transport, converter.CanConvertToNative);
-      if (result.Received)
-      {
-        result.Converted = Commands.ConvertToNative(converter); //This writes it to the cache
-      }
-      if (!result.Received || !result.Converted)
-      {
-        return result;
-      }
-
-      var nativeTypeGenerations = Instance.GsaModel.Proxy.TxTypeDependencyGenerations;
-      var natives = new List<GsaRecord>();
-      foreach (var gen in nativeTypeGenerations)
-      {
-        foreach (var t in gen)
-        {
-          //Getting it from the cache means the objects are extracted after merging between existing and new is done
-          if (Instance.GsaModel.Cache.GetNative(t, out var currNatives) && currNatives != null && currNatives.Any())
-          {
-            natives.AddRange(currNatives);
-          }
-        }
-      }
-
-      if (natives.Any())
-      {
-        result.ConvertedObjects = natives;
-      }
-
-      return result;
-    }
-    */
 
     private async Task<CoordinateReceiveResult> CoordinateReceive(ISpeckleConverter converter, Client client, IProgress<MessageEventArgs> loggingProgress)
     {
@@ -162,11 +115,11 @@ namespace ConnectorGSATests
       var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
 
       var transport = new ServerTransport(streamState.Client.Account, streamState.Stream.id);
-
-      result.Received = await Commands.Receive(commitId, streamState, transport, converter.CanConvertToNative);
+      var topLevelObjects = new List<Base>();
+      result.Received = await Commands.Receive(commitId, streamState, transport, topLevelObjects);
       if (result.Received)
       {
-        result.Converted = Commands.ConvertToNative(converter, loggingProgress); //This writes it to the cache
+        result.Converted = Commands.ConvertToNative(topLevelObjects, converter, loggingProgress); //This writes it to the cache
       }
       if (!result.Received || !result.Converted)
       {

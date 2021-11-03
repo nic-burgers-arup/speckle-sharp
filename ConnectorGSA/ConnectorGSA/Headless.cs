@@ -14,6 +14,7 @@ using System.Deployment.Application;
 using System.Threading.Tasks;
 using Speckle.GSA.API.GwaSchema;
 using Speckle.ConnectorGSA.Proxy;
+using Speckle.Core.Models;
 
 namespace ConnectorGSA
 {
@@ -212,6 +213,8 @@ namespace ConnectorGSA
       {
         var streamIds = argPairs["streamIDs"].Split(new char[] { ',' });
 
+        var topLevelObjects = new List<Base>();
+
         //There seem to be some issues with HTTP requests down the line if this is run on the initial (UI) thread, so this ensures it runs on another thread
         cliResult = Task.Run(() =>
         {
@@ -230,12 +233,12 @@ namespace ConnectorGSA
             var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
             var transport = new ServerTransport(streamState.Client.Account, streamState.Stream.id);
 
-            Commands.Receive(commitId, streamState, transport, converter.CanConvertToNative).Wait();
+            var received = Commands.Receive(commitId, streamState, transport, topLevelObjects).Result;
 
             streamStates.Add(streamState);
           }
 
-          Commands.ConvertToNative(converter, loggingProgress);
+          Commands.ConvertToNative(topLevelObjects, converter, loggingProgress);
 
           //The cache is filled with natives
           if (Instance.GsaModel.Cache.GetNatives(out var gsaRecords))

@@ -16,6 +16,11 @@ namespace ConnectorGSATests
     public override IGSACache Cache { get; set; } = new GsaCache();
     public override IGSAProxy Proxy { get; set; } = new GsaProxyMock();
 
+    public override List<List<Type>> SpeckleDependencyTree()
+    {
+      throw new NotImplementedException();
+    }
+
     //public override IGSAMessenger Messenger { get; set; } = new GsaMessenger();
   }
 

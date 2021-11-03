@@ -1127,6 +1127,14 @@ namespace ConverterGSA
         target.Add(element);
     }
 
+    public static void AddRangeIfNotNull<T>(this ICollection<T> target, IEnumerable<T> source)
+    {
+      if (target != null && source != null && source.Count() > 0)
+      {
+        target.AddRange(source);
+      }
+    }
+
     public static void UpsertDictionary<T, U>(this Dictionary<T, List<U>> d, T key, U value)
     {
       if (!d.ContainsKey(key))

@@ -233,46 +233,22 @@ namespace ConnectorGSA
       return (loadedCache && (cumulativeErrorRows == 0));
     }
 
-    public static bool ConvertToNative(ISpeckleConverter converter, IProgress<MessageEventArgs> loggingProgress) //Includes writing to Cache
+    public static bool ConvertToNative(List<Base> TopLevelObjects, ISpeckleConverter converter, IProgress<MessageEventArgs> loggingProgress) //Includes writing to Cache
     {
-      var speckleDependencyTree = ((GsaModel)Instance.GsaModel).SpeckleDependencyTree();
-
-      //With the attached objects in speckle objects, there is no type dependency needed on the receive side, so just convert each object
-
-      if (Instance.GsaModel.Cache.GetSpeckleObjects(out var speckleObjects))
+      foreach (var tlo in TopLevelObjects)
       {
-        var objectsByType = speckleObjects.GroupBy(t => t.GetType()).ToDictionary(g => g.Key, g => g.ToList());
-
-        foreach (var gen in speckleDependencyTree)
+        try
         {
-          //foreach (var t in gen)
-          Parallel.ForEach(gen, t =>
+          if (converter.CanConvertToNative(tlo))
           {
-            if (objectsByType.ContainsKey(t))
-            {
-              foreach (Base so in objectsByType[t])
-              //Parallel.ForEach(objectsByType[t].Cast<Base>(), so =>
-              {
-                string appId = "";
-                try
-                {
-                  if (converter.CanConvertToNative(so))
-                  {
-                    var nativeObjects = converter.ConvertToNative(new List<Base> { so }).Cast<GsaRecord>().ToList();
-                    appId = string.IsNullOrEmpty(so.applicationId) ? so.id : so.applicationId;
-                    Instance.GsaModel.Cache.SetNatives(so.GetType(), appId, nativeObjects);
-                  }
-                }
-                catch (Exception ex)
-                {
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "Unable to convert " + t.Name + " " + appId + " - refer to logs for more information"));
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ex, "Unable to load file"));
-                }
-              }
-              //);
-            }
+            var nativeObjects = converter.ConvertToNative(new List<Base> { tlo }).Cast<GsaRecord>().ToList();
+            Instance.GsaModel.Cache.Upsert(nativeObjects);
           }
-          );
+        }
+        catch (Exception ex)
+        {
+          loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "Unable to convert one or more received objects.  Refer to logs for more information"));
+          loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ex, "Converion error"));
         }
       }
 
@@ -393,6 +369,9 @@ namespace ConnectorGSA
       statusProgress.Report("Accessing streams");
       var streamIds = coordinator.ReceiverTab.StreamList.StreamListItems.Select(i => i.StreamId).ToList();
       var receiveTasks = new List<Task>();
+      
+      var topLevelObjects = new List<Base>();
+
       foreach (var streamId in streamIds)
       {
         var streamState = new StreamState(account.userInfo.id, account.serverInfo.url)
@@ -417,11 +396,15 @@ namespace ConnectorGSA
                 }
                 var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
 
+                
+                var received = await Commands.Receive(commitId, streamState, transport, topLevelObjects);
+                /*
                 var received = await Commands.Receive(commitId, streamState, transport, converter.CanConvertToNative);
                 if (received)
                 {
                   loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Received data from " + streamId + " stream"));
                 }
+                */
 
                 if (streamState.Errors != null && streamState.Errors.Count > 0)
                 {
@@ -449,7 +432,8 @@ namespace ConnectorGSA
       startTime = DateTime.Now;
 
       statusProgress.Report("Converting");
-      var numToConvert = ((GsaCache)Instance.GsaModel.Cache).NumSpeckleObjects;
+      //var numToConvert = ((GsaCache)Instance.GsaModel.Cache).NumSpeckleObjects;
+      var numToConvert = topLevelObjects.Count();
       int numConverted = 0;
       int totalConversionPercentage = 90 - percentage;
       Instance.GsaModel.ConversionProgress = new Progress<bool>((bool success) =>
@@ -461,7 +445,8 @@ namespace ConnectorGSA
         percentageProgress.Report(percentage + Math.Round(((double)numConverted / (double)numToConvert) * totalConversionPercentage, 0));
       });
 
-      Commands.ConvertToNative(converter, loggingProgress);
+
+      Commands.ConvertToNative(topLevelObjects, converter, loggingProgress);
 
       if (converter.ConversionErrors != null && converter.ConversionErrors.Count > 0)
       {
@@ -505,7 +490,7 @@ namespace ConnectorGSA
       return true;
     }
 
-    public static async Task<bool> Receive(string commitId, StreamState state, ITransport transport, Func<Base, bool> IsSingleObjectFn)
+    public static async Task<bool> Receive(string commitId, StreamState state, ITransport transport, List<Base> topLevelObjects)
     {
       var commitObject = await Operations.Receive(
           commitId,
@@ -519,32 +504,10 @@ namespace ConnectorGSA
 
       if (commitObject != null)
       {
-        var receivedObjects = FlattenCommitObject(commitObject, IsSingleObjectFn);
-
-        var receivedByType = receivedObjects.GroupBy(ro => ro.GetType()).ToDictionary(ro => ro.Key, ro => ro.ToList());
-        //var receivedByTypeAppId = new Dictionary<Type, Dictionary<string, List<object>>>();
-
-        int index = 0;
-        bool found = false;
-        do
+        foreach (var prop in commitObject.GetDynamicMembers().Where(m => commitObject[m] is Base))
         {
-          foreach (var t in receivedByType.Keys)
-          {
-            var receivedByTypeAppId = receivedByType[t].GroupBy(o => o.applicationId).ToDictionary(g => g.Key, g => g.ToList());
-            found = receivedByTypeAppId.Any(kvp => kvp.Value.Count > index);
-            if (found)
-            {
-              if (!Instance.GsaModel.Cache.Upsert(receivedByTypeAppId.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value[index])))
-              {
-                return false;
-              }
-            }
-          }
-          index++;
-        } while (found);
-
-        //var task = (Instance.GsaModel.Cache.Upsert(objDict)
-        //  && receivedObjects != null && receivedObjects.Any() && state.Errors.Count == 0);
+          topLevelObjects.Add((Base)commitObject[prop]);
+        }
         return true;
       }
       return false;

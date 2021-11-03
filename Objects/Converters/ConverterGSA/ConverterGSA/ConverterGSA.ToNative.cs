@@ -44,6 +44,7 @@ namespace ConverterGSA
     {
       ToNativeFns = new Dictionary<Type, Func<Base, List<GsaRecord>>>()
       {
+        { typeof(Model), ModelToNative },
         //Geometry
         { typeof(Axis), AxisToNative },
         { typeof(Point), PointToNative },
@@ -107,6 +108,64 @@ namespace ConverterGSA
 
     #region ToNative
     //TO DO: implement conversion code for ToNative
+
+    private List<GsaRecord> ModelToNative(Base speckleObject)
+    {
+      var model = (Model)speckleObject;
+      var retList = new List<GsaRecord>();
+
+      if (model.specs != null && model.specs.settings != null && model.specs.settings.modelUnits != null)
+      {
+        conversionFactors = new UnitConversion(model.specs.settings.modelUnits);
+      }
+
+      var speckleDependencyTree = Instance.GsaModel.SpeckleDependencyTree();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRangeIfNotNull(model.nodes);
+      speckleObjects.AddRangeIfNotNull(model.elements);
+      speckleObjects.AddRangeIfNotNull(model.loads);
+      speckleObjects.AddRangeIfNotNull(model.restraints);
+      speckleObjects.AddRangeIfNotNull(model.properties);
+      speckleObjects.AddRangeIfNotNull(model.materials);
+      
+      var objectsByType = speckleObjects.GroupBy(t => t.GetType()).ToDictionary(g => g.Key, g => g.ToList());
+
+      foreach (var gen in speckleDependencyTree)
+      {
+        foreach (var t in gen)
+        //Parallel.ForEach(gen, t =>
+        {
+          if (objectsByType.ContainsKey(t))
+          {
+            //Reserve indices
+            //foreach (Base so in objectsByType[t])
+            //{
+            //  Instance.GsaModel.Cache.ResolveIndex(t, so.applicationId);
+            //}
+            foreach (Base so in objectsByType[t])
+            //Parallel.ForEach(objectsByType[t].Cast<Base>(), so =>
+            {
+              string appId = so.applicationId ?? so.id;
+              try
+              {
+                if (CanConvertToNative(so))
+                {
+                  retList.AddRangeIfNotNull((ToNativeFns.ContainsKey(t)) ? ToNativeFns[t](so) : null);
+                }
+              }
+              catch (Exception ex)
+              {
+                ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + appId + " - refer to logs for more information"));
+              }
+            }
+            //);
+          }
+        }
+        //);
+      }
+
+      return retList;
+    }
 
     #region Geometry
     private List<GsaRecord> AxisToNative(Base speckleObject)
@@ -369,7 +428,8 @@ namespace ConverterGSA
       int? index = null;
       if (!string.IsNullOrEmpty(obj.applicationId))
       {
-        index = Instance.GsaModel.Cache.LookupIndex<N>(obj.applicationId);
+        //index = Instance.GsaModel.Cache.LookupIndex<N>(obj.applicationId);
+        index = Instance.GsaModel.Cache.ResolveIndex<N>(obj.applicationId);
         if (index != null) return index;
       }
       if (!ConvertedObjectsList.Contains(obj.id))
@@ -390,9 +450,11 @@ namespace ConverterGSA
             }
           }
         }
-      } else
+      } 
+      else
       {
-        index = Instance.GsaModel.Cache.LookupIndex<N>(obj.id);
+        //index = Instance.GsaModel.Cache.LookupIndex<N>(obj.id);
+        index = Instance.GsaModel.Cache.ResolveIndex<N>(obj.id);
       }
 
 
@@ -976,7 +1038,7 @@ namespace ConverterGSA
       && x.definition.normal.Equals(UnitY, GeometricDecimalPlaces));
     */
 
-    private List<GsaRecord> GSAPolylineToNative(Base speckleObject)
+      private List<GsaRecord> GSAPolylineToNative(Base speckleObject)
     {
       var specklePolyline = (GSAPolyline)speckleObject;
       var gsaPolyline = new GsaPolyline()
@@ -1696,7 +1758,8 @@ namespace ConverterGSA
           else if (speckleProperty.designMaterial.materialType == MaterialType.Concrete && speckleProperty.designMaterial != null)
           {
             sectionComp.MaterialType = Section1dMaterialType.CONCRETE;
-            sectionComp.MaterialIndex = Instance.GsaModel.Cache.LookupIndex<GsaMatConcrete>(speckleProperty.designMaterial.applicationId);
+            //sectionComp.MaterialIndex = Instance.GsaModel.Cache.LookupIndex<GsaMatConcrete>(speckleProperty.designMaterial.applicationId);
+            sectionComp.MaterialIndex = Instance.GsaModel.Cache.ResolveIndex<GsaMatConcrete>(speckleProperty.designMaterial.applicationId);
 
             var gsaSectionConc = new SectionConc();
             var gsaSectionLink = new SectionLink();
@@ -1794,7 +1857,7 @@ namespace ConverterGSA
 
       if (speckleProperty.profile != null)
       {
-        Property1dProfileToSpeckle(speckleProperty.profile, out sectionComp.ProfileDetails, out sectionComp.ProfileGroup);
+        Property1dProfileToNative(speckleProperty.profile, out sectionComp.ProfileDetails, out sectionComp.ProfileGroup);
       }
 
       retList.Add(gsaSection);
@@ -1818,7 +1881,7 @@ namespace ConverterGSA
       return true;
     }
 
-    private bool Property1dProfileToSpeckle(SectionProfile sectionProfile, out ProfileDetails gsaProfileDetails, out Section1dProfileGroup gsaProfileGroup)
+    private bool Property1dProfileToNative(SectionProfile sectionProfile, out ProfileDetails gsaProfileDetails, out Section1dProfileGroup gsaProfileGroup)
     {
       if (sectionProfile.shapeType == ShapeType.Catalogue)
       {
@@ -2684,7 +2747,8 @@ namespace ConverterGSA
 
       //Try and find index, else create string
       if (specklePolyline == null) return false;
-      if (specklePolyline.applicationId != null) gsaPolgonIndex = Instance.GsaModel.Cache.LookupIndex<GsaPolyline>(specklePolyline.applicationId);
+      //if (specklePolyline.applicationId != null) gsaPolgonIndex = Instance.GsaModel.Cache.LookupIndex<GsaPolyline>(specklePolyline.applicationId);
+      if (specklePolyline.applicationId != null) gsaPolgonIndex = Instance.GsaModel.Cache.ResolveIndex<GsaPolyline>(specklePolyline.applicationId);
       if (gsaPolgonIndex == null) gsaPolygon = specklePolyline.ToGwaString();
       if (gsaPolgonIndex == null && gsaPolygon == "") return false;
       else if (gsaPolgonIndex != null) gsaOption = LoadLineOption.PolyRef;
@@ -2701,7 +2765,8 @@ namespace ConverterGSA
 
       //Try and find index, else create string
       if (specklePolyline == null) return true;
-      if (specklePolyline.applicationId != null) gsaPolgonIndex = Instance.GsaModel.Cache.LookupIndex<GsaPolyline>(specklePolyline.applicationId);
+      //if (specklePolyline.applicationId != null) gsaPolgonIndex = Instance.GsaModel.Cache.LookupIndex<GsaPolyline>(specklePolyline.applicationId);
+      if (specklePolyline.applicationId != null) gsaPolgonIndex = Instance.GsaModel.Cache.ResolveIndex<GsaPolyline>(specklePolyline.applicationId);
       if (gsaPolgonIndex == null) gsaPolygon = specklePolyline.ToString();
       if (gsaPolgonIndex == null && gsaPolygon == "")
       {
