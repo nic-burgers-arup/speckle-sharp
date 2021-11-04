@@ -430,6 +430,7 @@ namespace ConverterGSA
         colour = gsaMemb.Colour.ToString(),
         isDummy = gsaMemb.Dummy,
         intersectsWithOthers = gsaMemb.IsIntersector,
+        memberType = gsaMemb.Type.ToSpeckle(),
       };
 
       //-- App agnostic --
@@ -542,6 +543,7 @@ namespace ConverterGSA
         colour = gsaMemb.Colour.ToString(),
         isDummy = gsaMemb.Dummy,
         intersectsWithOthers = gsaMemb.IsIntersector,
+        memberType = gsaMemb.Type.ToSpeckle(),
       };
 
       //-- App agnostic --
