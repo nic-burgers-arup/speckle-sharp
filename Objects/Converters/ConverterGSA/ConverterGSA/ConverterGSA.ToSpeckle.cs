@@ -712,7 +712,7 @@ namespace ConverterGSA
         nativeId = gsaPolyline.Index ?? 0,
         name = gsaPolyline.Name,
         colour = gsaPolyline.Colour.ToString(),
-        units = gsaPolyline.Units,
+        //units = gsaPolyline.Units, //TO DO: remove units from interim schema?
       };
       if (gsaPolyline.Index.IsIndex()) specklePolyline.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaPolyline>(gsaPolyline.Index.Value);
       if (gsaPolyline.GridPlaneIndex.IsIndex()) specklePolyline.gridPlane = GetGridPlaneFromIndex(gsaPolyline.GridPlaneIndex.Value);
@@ -1472,10 +1472,10 @@ namespace ConverterGSA
         orientationAxis = GetOrientationAxis(gsaProp2d.AxisRefType, gsaProp2d.AxisIndex),
         refSurface = gsaProp2d.RefPt.ToSpeckle(),
         type = gsaProp2d.Type.ToSpeckle(),
-        modifierInPlane = gsaProp2d.InPlaneStiffnessPercentage ?? 0, //Only supporting Percentage modifiers
-        modifierBending = gsaProp2d.BendingStiffnessPercentage ?? 0,
-        modifierShear = gsaProp2d.ShearStiffnessPercentage ?? 0,
-        modifierVolume = gsaProp2d.VolumePercentage ?? 0,
+        modifierInPlane = AddValueOrPencentage(gsaProp2d.InPlane, gsaProp2d.InPlaneStiffnessPercentage),
+        modifierBending = AddValueOrPencentage(gsaProp2d.Bending, gsaProp2d.BendingStiffnessPercentage),
+        modifierShear = AddValueOrPencentage(gsaProp2d.Shear, gsaProp2d.ShearStiffnessPercentage),
+        modifierVolume = AddValueOrPencentage(gsaProp2d.Volume, gsaProp2d.VolumePercentage),
         additionalMass = gsaProp2d.Mass,
         concreteSlabProp = gsaProp2d.Profile, 
         cost = 0, //not part of GSA definition
@@ -1519,11 +1519,10 @@ namespace ConverterGSA
       //Mass modifications
       if (gsaPropMass.Mod != MassModification.NotSet)
       {
-        if (gsaPropMass.Mod == MassModification.Modified) specklePropertyMass.massModified = true;
-        else if (gsaPropMass.Mod == MassModification.Defined) specklePropertyMass.massModified = false;
-        if (gsaPropMass.ModXPercentage.IsPositive()) specklePropertyMass.massModifierX = gsaPropMass.ModXPercentage.Value;
-        if (gsaPropMass.ModYPercentage.IsPositive()) specklePropertyMass.massModifierY = gsaPropMass.ModYPercentage.Value;
-        if (gsaPropMass.ModZPercentage.IsPositive()) specklePropertyMass.massModifierZ = gsaPropMass.ModZPercentage.Value;
+        specklePropertyMass.massModified = (gsaPropMass.Mod == MassModification.Modified) ? true : false;
+        if (gsaPropMass.ModX.HasValue) specklePropertyMass.massModifierX = gsaPropMass.ModX.Value;
+        if (gsaPropMass.ModY.HasValue) specklePropertyMass.massModifierY = gsaPropMass.ModY.Value;
+        if (gsaPropMass.ModZ.HasValue) specklePropertyMass.massModifierZ = gsaPropMass.ModZ.Value;
       }
 
       return new ToSpeckleResult(specklePropertyMass);
@@ -2015,7 +2014,7 @@ namespace ConverterGSA
         factor = gsaInfBeam.Factor ?? 0,
       };
       if (gsaInfBeam.Index.IsIndex()) speckleInfBeam.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaInfBeam>(gsaInfBeam.Index.Value);
-      if (gsaInfBeam.Position.Value >= 0 && gsaInfBeam.Position.Value <= 1) speckleInfBeam.position = gsaInfBeam.Position.Value;
+      if (gsaInfBeam.Position.HasValue) speckleInfBeam.position = gsaInfBeam.Position.Value;
       if (gsaInfBeam.Element.IsIndex()) speckleInfBeam.element = GetElement1DFromIndex(gsaInfBeam.Element.Value);
 
       return new ToSpeckleResult(speckleInfBeam);
@@ -3781,6 +3780,22 @@ namespace ConverterGSA
     private Property2D GetProperty2dFromIndex(int index)
     {
       return (Instance.GsaModel.Cache.GetSpeckleObjects<GsaProp2d, Property2D>(index, out var speckleObjects)) ? speckleObjects.First() : null;
+    }
+
+    private double AddValueOrPencentage(double? value, double? percentage)
+    {
+      if (value.HasValue && value > 0)
+      {
+        return value.Value;
+      }
+      else if (percentage.HasValue && percentage > 0)
+      {
+        return -percentage.Value / 100;
+      }
+      else
+      {
+        return 0;
+      }
     }
     #endregion
     #endregion

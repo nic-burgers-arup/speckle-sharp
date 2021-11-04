@@ -11,9 +11,9 @@
     public double Iyz;
     public double Izx;
     public MassModification Mod;
-    public double? ModXPercentage;
-    public double? ModYPercentage;
-    public double? ModZPercentage;
+    public double? ModX;
+    public double? ModY;
+    public double? ModZ;
 
     public GsaPropMass() : base()
     {

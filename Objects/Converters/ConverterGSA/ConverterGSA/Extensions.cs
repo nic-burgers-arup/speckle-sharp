@@ -190,12 +190,12 @@ namespace ConverterGSA
       }
     }
 
-    public static Section1dType ToNative(this Objects.Structural.Geometry.MemberType speckleElementType)
+    public static Section1dType ToNative(this MemberType speckleElementType)
     {
       switch (speckleElementType)
       {
-        case Objects.Structural.Geometry.MemberType.Beam: return Section1dType.Beam;
-        case Objects.Structural.Geometry.MemberType.Column: return Section1dType.Column;
+        case MemberType.Beam: return Section1dType.Beam;
+        case MemberType.Column: return Section1dType.Column;
         default: return Section1dType.Generic;
       }
     }
@@ -958,7 +958,17 @@ namespace ConverterGSA
       return (gsaIndices.Count() > 0) ? gsaIndices : null;
     }
 
-    public static int? GetIndex<T>(this Base speckleObject) => (speckleObject == null) ? null : (int?)Instance.GsaModel.Cache.ResolveIndex<T>(speckleObject.applicationId);
+    public static int? GetIndex<T>(this Base speckleObject)
+    {
+      if (speckleObject == null || speckleObject.applicationId == null)
+      {
+        return null;
+      }
+      else
+      {
+        return Instance.GsaModel.Cache.ResolveIndex<T>(speckleObject.applicationId);
+      }
+    }
 
     public static List<int> NodeAt(this List<Node> speckleNodes, UnitConversion factors)
     {
@@ -1012,11 +1022,95 @@ namespace ConverterGSA
     {
       return string.IsNullOrEmpty(specklePoint.units) ? factors.length : factors.ConversionFactorToNative(UnitDimension.Length, specklePoint.units);
     }
+
+    public static double GetScaleFactor(this LoadBeam speckleLoad, UnitConversion factors)
+    {
+      double value = 1;
+      //TO DO: handle case where units are specified within the object (i.e. speckleLoad.units)
+      var forceFactor = factors.force;
+      var lengthFactor = factors.length;
+
+      switch (speckleLoad.direction)
+      {
+        case LoadDirection.X:
+        case LoadDirection.Y:
+        case LoadDirection.Z:
+          value = forceFactor;
+          break;
+        case LoadDirection.XX:
+        case LoadDirection.YY:
+        case LoadDirection.ZZ:
+          value = forceFactor * lengthFactor;
+          break;
+      }
+      switch (speckleLoad.loadType)
+      {
+        case BeamLoadType.Uniform:
+        case BeamLoadType.Linear:
+        case BeamLoadType.Patch:
+        case BeamLoadType.TriLinear:
+          value /= lengthFactor;
+          break;
+        case BeamLoadType.Point:
+          //do nothing
+          break;
+      }
+
+      return value;
+    }
+
+    public static double GetScaleFactor(this LoadFace speckleLoad, UnitConversion factors)
+    {
+      double value = 1;
+      //TO DO: handle case where units are specified within the object (i.e. speckleLoad.units)
+      var forceFactor = factors.force;
+      var lengthFactor = factors.length;
+
+      switch (speckleLoad.loadType)
+      {
+        case FaceLoadType.Constant:
+        case FaceLoadType.Variable:
+          value = forceFactor / Math.Pow(lengthFactor, 2);
+          break;
+        case FaceLoadType.Point:
+          value = forceFactor;
+          break;
+      }
+
+      return value;
+    }
+
+    public static double GetScaleFactor(this LoadNode speckleLoad, UnitConversion factors)
+    {
+      double value = 1;
+      //TO DO: handle case where units are specified within the object (i.e. speckleLoad.units)
+      var forceFactor = factors.force;
+      var lengthFactor = factors.length;
+
+      switch (speckleLoad.direction)
+      {
+        case LoadDirection.X:
+        case LoadDirection.Y:
+        case LoadDirection.Z:
+          value = forceFactor;
+          break;
+        case LoadDirection.XX:
+        case LoadDirection.YY:
+        case LoadDirection.ZZ:
+          value = forceFactor * lengthFactor;
+          break;
+      }
+
+      return value;
+    }
     #endregion
 
-    public static T GetDynamicValue<T>(this Base speckleObject, string member)
+    public static T GetDynamicValue<T>(this Base speckleObject, string member, Dictionary<string, object> members = null)
     {
-      var members = speckleObject.GetMembers();
+      if (members == null)
+      {
+        members = speckleObject.GetMembers();
+      }
       if (members.ContainsKey(member))
       {
         if (speckleObject[member] is T)
@@ -1036,9 +1130,12 @@ namespace ConverterGSA
       return default(T);
     }
 
-    public static T GetDynamicEnum<T>(this Base speckleObject, string member) where T : struct
+    public static T GetDynamicEnum<T>(this Base speckleObject, string member, Dictionary<string, object> members = null) where T : struct
     {
-      var members = speckleObject.GetMembers();
+      if (members == null)
+      {
+        members = speckleObject.GetMembers();
+      }
       if (members.ContainsKey(member) && speckleObject[member] is string)
       {
         return Enum.TryParse(speckleObject[member] as string, true, out T v) ? v : default(T);

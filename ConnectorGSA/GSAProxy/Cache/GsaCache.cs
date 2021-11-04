@@ -460,7 +460,7 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
     public List<int> LookupIndices<T>()
     {
       var t = typeof(T);
-      return (GetRecordIndices(t).Select(k => k).ToList());
+      return (GetRecordIndices(t).ToList());
     }
 
 
@@ -586,25 +586,21 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
       //should return GSA indices, be ordered!
 
       var gsaIndexHash = new HashSet<int>();
-
       if (recordIndicesBySchemaType.ContainsKey(t))
-      {  
-        foreach (var i in recordIndicesBySchemaType[t])
-        {
-          if (records[i].GsaRecord.Index.HasValue && !gsaIndexHash.Contains(records[i].GsaRecord.Index.Value))
-          {
-            gsaIndexHash.Add(records[i].GsaRecord.Index.Value);
-          }
-        }
+      {
+        gsaIndexHash = new HashSet<int>(recordIndicesBySchemaType[t].Where(i => records[i].GsaRecord != null 
+          && records[i].GsaRecord.Index.HasValue)
+          .Select(i => records[i].GsaRecord.Index.Value));
       }
       if (provisionals.ContainsKey(t))
       {
-        foreach (var i in provisionals[t].Lefts)
+        if (gsaIndexHash.Count == 0)
         {
-          if (!gsaIndexHash.Contains(i))
-          {
-            gsaIndexHash.Add(i);
-          }
+          return new HashSet<int>(provisionals[t].Lefts);
+        }
+        else
+        {
+          gsaIndexHash.UnionWith(new HashSet<int>(provisionals[t].Lefts));
         }
       }
       return gsaIndexHash;

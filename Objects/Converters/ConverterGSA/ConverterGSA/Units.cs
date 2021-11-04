@@ -289,6 +289,25 @@ namespace ConverterGSA
       return v;
     }
 
+    public static double GetTemperatureChangeConversionFactor(string from, string to)
+    {
+      from = GetUnitsFromString(from);
+      to = GetUnitsFromString(to);
+
+      return GetTemperatureChangeConversionFactorToSI(from) / GetTemperatureChangeConversionFactorToSI(to);
+    }
+
+    private static double GetTemperatureChangeConversionFactorToSI(string from)
+    {
+      switch (from)
+      {
+        case Celcius: return 1;
+        case Fahrenheit: return 5d/9d;
+        case None: return 1;
+      }
+      return 1;
+    }
+
     public static string GetUnitsFromString(string unit)
     {
       if (unit == null) return null;

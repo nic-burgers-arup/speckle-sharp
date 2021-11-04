@@ -18,7 +18,7 @@ namespace ConnectorGSATests
 
     public override List<List<Type>> SpeckleDependencyTree()
     {
-      throw new NotImplementedException();
+      return null;
     }
 
     //public override IGSAMessenger Messenger { get; set; } = new GsaMessenger();
