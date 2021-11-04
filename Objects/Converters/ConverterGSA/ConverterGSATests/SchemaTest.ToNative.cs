@@ -1868,19 +1868,23 @@ namespace ConverterGSATests
     #endregion
 
     #region Properties
-
-    [Fact]
-    public void Property1dToNative()
+    [Theory]
+    [InlineData("m", "mm")]
+    [InlineData(null, null)]
+    public void Property1dToNative2(string gsaDisplacementUnits, string speckleDisplacementUnits)
     {
-      //Define GSA objects
-      //These should be in order that respects the type dependency tree (which is only available in the GSAProxy library, which isn't referenced yet
-      var gsaRecords = new List<GsaRecord>
+      # region unit conversion factors
+      double displacementFactor = 1;
+      if (!string.IsNullOrEmpty(speckleDisplacementUnits) && !string.IsNullOrEmpty(gsaDisplacementUnits))
       {
-        //Generation #1: Types with no other dependencies - the leaves of the tree
-        GsaMatSteelExample("steel material 1")
-      };
+        displacementFactor = Units.GetConversionFactor(speckleDisplacementUnits, gsaDisplacementUnits);
+      }
+      #endregion
 
-      //Gen #2
+      //Create native objects
+      var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Displacements, Name = gsaDisplacementUnits });
+      gsaRecords.Add(GsaMatSteelExample("steel material 1"));
       var gsaSections = new List<GsaSection>
       {
         GsaCatalogueSectionExample("section 1"),
@@ -1896,157 +1900,407 @@ namespace ConverterGSATests
         GsaChannelSectionExample("section 11")
       };
       gsaRecords.AddRange(gsaSections);
-
       Instance.GsaModel.Cache.Upsert(gsaRecords);
 
-      foreach (var record in gsaRecords)
-      {
-        var speckleObjects = converter.ConvertToSpeckle(new List<object> { record });
-        Assert.Empty(converter.ConversionErrors);
+      //Convert
+      Instance.GsaModel.StreamLayer = GSALayer.Both;
+      Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(r => (object)r).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
+      var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
+      var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleDesignModel.properties.FindAll(o => o is GSAProperty1D).ToList());
+      speckleDesignModel.specs.settings.modelUnits.displacements = speckleDisplacementUnits; //change the units
+      speckleObjects.Add(speckleDesignModel.specs.settings.modelUnits);
+      var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
-        Instance.GsaModel.Cache.SetSpeckleObjects(record, speckleObjects.ToDictionary(so => so.applicationId, so => (object)so));
-      }
-
-      Assert.True(Instance.GsaModel.Cache.GetSpeckleObjects(out var objs));
-
-      var structuralObjects = objs.Cast<Base>().OrderBy(o => o.applicationId).ToList();
-
-      Assert.NotEmpty(structuralObjects);
-      Assert.Contains(structuralObjects, so => so is GSAProperty1D);
-
-      var speckleProperty1Ds = structuralObjects.FindAll(so => so is GSAProperty1D).Select(so => (GSAProperty1D)so).ToList();
-
+      //Checks
+      var gsaConvertedSections = gsaConvertedRecords.FindAll(r => r is GsaSection).Select(r => (GsaSection)r).ToList();
       var compareLogic = new CompareLogic();
+      #region members to ignore
       compareLogic.Config.MembersToIgnore.Add("SectionSteel.Type");
-      //compareLogic.Config.IgnoreProperty<SectionSteel>(c => c.Type);
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsExplicit x) => x.Area));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsExplicit x) => x.Iyy));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsExplicit x) => x.Izz));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsExplicit x) => x.J));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsPerimeter x) => x.Y));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsPerimeter x) => x.Z));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsRectangular x) => x.b));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsRectangular x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTwoThickness x) => x.b));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTwoThickness x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTwoThickness x) => x.tw));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTwoThickness x) => x.tf));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsCircular x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsCircularHollow x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsCircularHollow x) => x.t));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaper x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaper x) => x.bt));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaper x) => x.bb));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsEllipse x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsEllipse x) => x.b));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsEllipse x) => x.k));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsGeneralI x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsGeneralI x) => x.bt));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsGeneralI x) => x.bb));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsGeneralI x) => x.tw));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsGeneralI x) => x.tfb));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsGeneralI x) => x.tft));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaperTAngle x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaperTAngle x) => x.b));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaperTAngle x) => x.twt));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaperTAngle x) => x.twb));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaperTAngle x) => x.tf));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsRectoEllipse x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsRectoEllipse x) => x.b));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsRectoEllipse x) => x.df));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsRectoEllipse x) => x.bf));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsRectoEllipse x) => x.k));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaperI x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaperI x) => x.bt));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaperI x) => x.bb));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaperI x) => x.twt));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaperI x) => x.twb));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaperI x) => x.tft));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsTaperI x) => x.tfb));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsSecant x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsSecant x) => x.c));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsSecant x) => x.n));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsOval x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsOval x) => x.b));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsOval x) => x.t));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsZ x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsZ x) => x.bt));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsZ x) => x.bb));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsZ x) => x.dt));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsZ x) => x.db));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsZ x) => x.t));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsC x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsC x) => x.b));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsC x) => x.dt));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsC x) => x.t));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsCastellatedCellular x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsCastellatedCellular x) => x.b));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsCastellatedCellular x) => x.tw));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsCastellatedCellular x) => x.tf));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsCastellatedCellular x) => x.ds));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsCastellatedCellular x) => x.p));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsAsymmetricCellular x) => x.dt));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsAsymmetricCellular x) => x.bt));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsAsymmetricCellular x) => x.twt));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsAsymmetricCellular x) => x.tft));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsAsymmetricCellular x) => x.db));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsAsymmetricCellular x) => x.bb));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsAsymmetricCellular x) => x.twb));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsAsymmetricCellular x) => x.tfb));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsAsymmetricCellular x) => x.ds));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsAsymmetricCellular x) => x.p));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsSheetPile x) => x.d));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsSheetPile x) => x.b));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsSheetPile x) => x.bt));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsSheetPile x) => x.bb));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsSheetPile x) => x.tf));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((ProfileDetailsSheetPile x) => x.tw));
+      #endregion
+      var result = compareLogic.Compare(gsaSections, gsaConvertedSections);
+      Assert.Empty(result.Differences);
 
-      foreach (var prop in speckleProperty1Ds)
-      {
-        var newNatives = converter.ConvertToNative(new List<Base> { prop });
-        var newNative = newNatives.FirstOrDefault(n => n.GetType().IsAssignableFrom(typeof(GsaSection)));
-        var oldNative = gsaSections.FirstOrDefault(s => s.ApplicationId.Equals(prop.applicationId, StringComparison.InvariantCultureIgnoreCase));
-        var result = compareLogic.Compare(newNative, oldNative);
-        Assert.True(result.AreEqual);
-      }
+      var i = 0;
+      #region catalogue
+      //No scaling required, therefore no additional checks required.
+      i++;
+      #endregion
+      #region explicit
+      var oldExplicit = (ProfileDetailsExplicit)((SectionComp)gsaSections[i].Components[0]).ProfileDetails;
+      var newExplicit = (ProfileDetailsExplicit)((SectionComp)gsaConvertedSections[i].Components[0]).ProfileDetails;
+      Assert.Equal(oldExplicit.Area * Math.Pow(displacementFactor, 2), newExplicit.Area);
+      Assert.Equal(oldExplicit.Iyy * Math.Pow(displacementFactor, 4), newExplicit.Iyy);
+      Assert.Equal(oldExplicit.Izz * Math.Pow(displacementFactor, 4), newExplicit.Izz);
+      Assert.Equal(oldExplicit.J * Math.Pow(displacementFactor, 4), newExplicit.J);
+      i++;
+      #endregion
+      #region perimeter
+      var oldPerimeter = (ProfileDetailsPerimeter)((SectionComp)gsaSections[i].Components[0]).ProfileDetails;
+      var newPerimeter = (ProfileDetailsPerimeter)((SectionComp)gsaConvertedSections[i].Components[0]).ProfileDetails;
+      Assert.Equal(oldPerimeter.Y.Select(v => v * displacementFactor).ToList(), newPerimeter.Y);
+      Assert.Equal(oldPerimeter.Z.Select(v => v * displacementFactor).ToList(), newPerimeter.Z);
+      i++;
+      #endregion
+      #region rectangle
+      var oldRect = (ProfileDetailsRectangular)((SectionComp)gsaSections[i].Components[0]).ProfileDetails;
+      var newRect = (ProfileDetailsRectangular)((SectionComp)gsaConvertedSections[i].Components[0]).ProfileDetails;
+      Assert.Equal(oldRect.b * displacementFactor, newRect.b);
+      Assert.Equal(oldRect.d * displacementFactor, newRect.d);
+      i++;
+      #endregion
+      #region rhs
+      var oldRhs = (ProfileDetailsTwoThickness)((SectionComp)gsaSections[i].Components[0]).ProfileDetails;
+      var newRhs = (ProfileDetailsTwoThickness)((SectionComp)gsaConvertedSections[i].Components[0]).ProfileDetails;
+      Assert.Equal(oldRhs.b * displacementFactor, newRhs.b);
+      Assert.Equal(oldRhs.d * displacementFactor, newRhs.d);
+      Assert.Equal(oldRhs.tf * displacementFactor, newRhs.tf);
+      Assert.Equal(oldRhs.tw * displacementFactor, newRhs.tw);
+      i++;
+      #endregion
+      #region circular
+      var oldCirc = (ProfileDetailsCircular)((SectionComp)gsaSections[i].Components[0]).ProfileDetails;
+      var newCirc = (ProfileDetailsCircular)((SectionComp)gsaConvertedSections[i].Components[0]).ProfileDetails;
+      Assert.Equal(oldCirc.d * displacementFactor, newCirc.d);
+      i++;
+      #endregion
+      #region chs
+      var oldChs = (ProfileDetailsCircularHollow)((SectionComp)gsaSections[i].Components[0]).ProfileDetails;
+      var newChs = (ProfileDetailsCircularHollow)((SectionComp)gsaConvertedSections[i].Components[0]).ProfileDetails;
+      Assert.Equal(oldChs.d * displacementFactor, newChs.d);
+      Assert.Equal(oldChs.t * displacementFactor, newChs.t);
+      i++;
+      #endregion
+      #region I
+      var oldI = (ProfileDetailsTwoThickness)((SectionComp)gsaSections[i].Components[0]).ProfileDetails;
+      var newI = (ProfileDetailsTwoThickness)((SectionComp)gsaConvertedSections[i].Components[0]).ProfileDetails;
+      Assert.Equal(oldI.b * displacementFactor, newI.b);
+      Assert.Equal(oldI.d * displacementFactor, newI.d);
+      Assert.Equal(oldI.tf * displacementFactor, newI.tf);
+      Assert.Equal(oldI.tw * displacementFactor, newI.tw);
+      i++;
+      #endregion
+      #region T
+      var oldT = (ProfileDetailsTwoThickness)((SectionComp)gsaSections[i].Components[0]).ProfileDetails;
+      var newT = (ProfileDetailsTwoThickness)((SectionComp)gsaConvertedSections[i].Components[0]).ProfileDetails;
+      Assert.Equal(oldT.b * displacementFactor, newT.b);
+      Assert.Equal(oldT.d * displacementFactor, newT.d);
+      Assert.Equal(oldT.tf * displacementFactor, newT.tf);
+      Assert.Equal(oldT.tw * displacementFactor, newT.tw);
+      i++;
+      #endregion
+      #region angle
+      var oldAng = (ProfileDetailsTwoThickness)((SectionComp)gsaSections[i].Components[0]).ProfileDetails;
+      var newAng = (ProfileDetailsTwoThickness)((SectionComp)gsaConvertedSections[i].Components[0]).ProfileDetails;
+      Assert.Equal(oldAng.b * displacementFactor, newAng.b);
+      Assert.Equal(oldAng.d * displacementFactor, newAng.d);
+      Assert.Equal(oldAng.tf * displacementFactor, newAng.tf);
+      Assert.Equal(oldAng.tw * displacementFactor, newAng.tw);
+      i++;
+      #endregion
+      #region channel
+      var oldChl = (ProfileDetailsTwoThickness)((SectionComp)gsaSections[i].Components[0]).ProfileDetails;
+      var newChl = (ProfileDetailsTwoThickness)((SectionComp)gsaConvertedSections[i].Components[0]).ProfileDetails;
+      Assert.Equal(oldChl.b * displacementFactor, newChl.b);
+      Assert.Equal(oldChl.d * displacementFactor, newChl.d);
+      Assert.Equal(oldChl.tf * displacementFactor, newChl.tf);
+      Assert.Equal(oldChl.tw * displacementFactor, newChl.tw);
+      i++;
+      #endregion
     }
 
-    [Fact]
-    public void Property2dToNative()
+    [Theory]
+    [InlineData("m", "m", "m", "kg", "mm", "cm", "m", "g")]
+    [InlineData("m", null, null, null, "mm", null, null, null)]
+    [InlineData(null, null, null, null, null, null, null, null)]
+    public void Property2dToNative(string gsaLengthUnits, string gsaDisplacementUnits, string gsaSectionUnits, string gsaMassUnits, 
+      string speckleLengthUnits, string speckleDisplacementUnits, string speckleSectionUnits, string speckleMassUnits)
     {
-      //Define GSA objects
-      //These should be in order that respects the type dependency tree (which is only available in the GSAProxy library, which isn't referenced yet
+      # region unit conversion factors
+      double lengthFactor = 1, displacementFactor = 1, sectionFactor = 1, massFactor = 1;
+      if (!string.IsNullOrEmpty(speckleLengthUnits) && !string.IsNullOrEmpty(gsaLengthUnits))
+      {
+        lengthFactor = Units.GetConversionFactor(speckleLengthUnits, gsaLengthUnits);
+      }
+      if (!string.IsNullOrEmpty(speckleDisplacementUnits) && !string.IsNullOrEmpty(gsaDisplacementUnits))
+      {
+        displacementFactor = Units.GetConversionFactor(speckleDisplacementUnits, gsaDisplacementUnits);
+      }
+      if (!string.IsNullOrEmpty(speckleSectionUnits) && !string.IsNullOrEmpty(gsaSectionUnits))
+      {
+        sectionFactor = Units.GetConversionFactor(speckleSectionUnits, gsaSectionUnits);
+      }
+      if (!string.IsNullOrEmpty(speckleMassUnits) && !string.IsNullOrEmpty(gsaMassUnits))
+      {
+        massFactor = MassUnits.GetConversionFactor(speckleMassUnits, gsaMassUnits);
+      }
+      var thicknessFactor = displacementFactor;
+      var inPlaneFactor = Math.Pow(displacementFactor, 2) / lengthFactor;
+      var bendingFactor = Math.Pow(sectionFactor, 4) / lengthFactor;
+      var shearFactor = Math.Pow(displacementFactor, 2) / lengthFactor;
+      var volumeFactor = Math.Pow(sectionFactor, 3) / Math.Pow(lengthFactor, 2);
+      massFactor /= Math.Pow(lengthFactor, 2);
+      #endregion
+
+      //Create native objects
       var gsaRecords = new List<GsaRecord>();
-
-      //Generation #1: Types with no other dependencies - the leaves of the tree
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnits });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Displacements, Name = gsaDisplacementUnits });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Sections, Name = gsaSectionUnits });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Mass, Name = gsaMassUnits });
       gsaRecords.Add(GsaMatSteelExample("steel material 1"));
-
-      //Gen #2
       var gsaProp2d = GsaProp2dExample("property 2D 1");
       gsaRecords.Add(gsaProp2d);
-
       Instance.GsaModel.Cache.Upsert(gsaRecords);
 
-      foreach (var record in gsaRecords)
-      {
-        var speckleObjects = converter.ConvertToSpeckle(new List<object> { record });
-        Assert.Empty(converter.ConversionErrors);
+      //Convert
+      Instance.GsaModel.StreamLayer = GSALayer.Both;
+      Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
+      var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
+      var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleDesignModel.properties.FindAll(o => o is GSAProperty2D).ToList());
+      speckleDesignModel.specs.settings.modelUnits.length = speckleLengthUnits; //change the units
+      speckleDesignModel.specs.settings.modelUnits.displacements = speckleDisplacementUnits; //change the units
+      speckleDesignModel.specs.settings.modelUnits.sections = speckleSectionUnits; //change the units
+      speckleDesignModel.specs.settings.modelUnits.mass = speckleMassUnits; //change the units
+      speckleObjects.Add(speckleDesignModel.specs.settings.modelUnits);
+      var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
-        Instance.GsaModel.Cache.SetSpeckleObjects(record, speckleObjects.ToDictionary(so => so.applicationId, so => (object)so));
-      }
-
-      Assert.True(Instance.GsaModel.Cache.GetSpeckleObjects(out var structuralObjects));
-
-      Assert.NotEmpty(structuralObjects);
-      Assert.Contains(structuralObjects, so => so is GSAProperty2D);
-
-      var prop = (GSAProperty2D)structuralObjects.FirstOrDefault(so => so is GSAProperty2D);
-
+      //Checks
+      var gsaConvertedProp2d = (GsaProp2d)gsaConvertedRecords.FirstOrDefault(n => n is GsaProp2d);
       var compareLogic = new CompareLogic();
-
-      var newNatives = converter.ConvertToNative(new List<Base> { prop });
-      var newNative = newNatives.FirstOrDefault(n => n.GetType().IsAssignableFrom(typeof(GsaProp2d)));
-      var oldNative = gsaProp2d;
-      var result = compareLogic.Compare(newNative, oldNative);
-      Assert.True(result.AreEqual);
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaProp2d x) => x.Thickness));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaProp2d x) => x.Mass));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaProp2d x) => x.InPlane));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaProp2d x) => x.Bending));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaProp2d x) => x.Shear));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaProp2d x) => x.Volume));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaProp2d x) => x.InPlaneStiffnessPercentage));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaProp2d x) => x.BendingStiffnessPercentage));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaProp2d x) => x.ShearStiffnessPercentage));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaProp2d x) => x.VolumePercentage));
+      var result = compareLogic.Compare(gsaProp2d, gsaConvertedProp2d);
+      Assert.Empty(result.Differences);
+      Assert.Equal(gsaProp2d.Thickness * thicknessFactor, gsaConvertedProp2d.Thickness);
+      Assert.Equal(gsaProp2d.Mass * massFactor, gsaConvertedProp2d.Mass);
+      Assert.Equal(gsaProp2d.InPlane * inPlaneFactor, gsaConvertedProp2d.InPlane);
+      Assert.Equal(gsaProp2d.Bending * bendingFactor, gsaConvertedProp2d.Bending);
+      Assert.Equal(gsaProp2d.Shear * shearFactor, gsaConvertedProp2d.Shear);
+      Assert.Equal(gsaProp2d.Volume * volumeFactor, gsaConvertedProp2d.Volume);
+      Assert.Equal(gsaProp2d.InPlaneStiffnessPercentage, gsaConvertedProp2d.InPlaneStiffnessPercentage);
+      Assert.Equal(gsaProp2d.BendingStiffnessPercentage, gsaConvertedProp2d.BendingStiffnessPercentage);
+      Assert.Equal(gsaProp2d.ShearStiffnessPercentage, gsaConvertedProp2d.ShearStiffnessPercentage);
+      Assert.Equal(gsaProp2d.VolumePercentage, gsaConvertedProp2d.VolumePercentage);
     }
 
-    [Fact]
-    public void PropertyMassToNative()
+    [Theory]
+    [InlineData("m", "kg", "mm", "g")]
+    [InlineData("m", null, "mm", null)]
+    [InlineData(null, null, null, null)]
+    public void PropertyMassToNative(string gsaLengthUnits, string gsaMassUnits, string speckleLengthUnits, string speckleMassUnits)
     {
-      //Define GSA objects
-      //These should be in order that respects the type dependency tree (which is only available in the GSAProxy library, which isn't referenced yet
-      var gsaRecords = new List<GsaRecord>();
+      # region unit conversion factors
+      double lengthFactor = 1, massFactor = 1;
+      if (!string.IsNullOrEmpty(speckleLengthUnits) && !string.IsNullOrEmpty(gsaLengthUnits))
+      {
+        lengthFactor = Units.GetConversionFactor(speckleLengthUnits, gsaLengthUnits);
+      }
+      if (!string.IsNullOrEmpty(speckleMassUnits) && !string.IsNullOrEmpty(gsaMassUnits))
+      {
+        massFactor = MassUnits.GetConversionFactor(speckleMassUnits, gsaMassUnits);
+      }
+      #endregion
 
-      //Generation #1: Types with no other dependencies - the leaves of the tree
+      //Create native objects
+      var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnits });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Mass, Name = gsaMassUnits });
       var gsaPropMass = GsaPropMassExample("property mass 1");
       gsaRecords.Add(gsaPropMass);
-
       Instance.GsaModel.Cache.Upsert(gsaRecords);
 
-      foreach (var record in gsaRecords)
-      {
-        var speckleObjects = converter.ConvertToSpeckle(new List<object> { record });
-        Assert.Empty(converter.ConversionErrors);
+      //Convert
+      Instance.GsaModel.StreamLayer = GSALayer.Both;
+      Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
+      var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
+      var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleDesignModel.properties.FindAll(o => o is PropertyMass).ToList());
+      speckleDesignModel.specs.settings.modelUnits.length = speckleLengthUnits; //change the units
+      speckleDesignModel.specs.settings.modelUnits.mass = speckleMassUnits; //change the units
+      speckleObjects.Add(speckleDesignModel.specs.settings.modelUnits);
+      var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
-        Instance.GsaModel.Cache.SetSpeckleObjects(record, speckleObjects.ToDictionary(so => so.applicationId, so => (object)so));
-      }
-
-      Assert.True(Instance.GsaModel.Cache.GetSpeckleObjects(out var structuralObjects));
-
-      Assert.NotEmpty(structuralObjects);
-      Assert.Contains(structuralObjects, so => so is PropertyMass);
-
-      var specklePropertyMass = (PropertyMass)structuralObjects.FirstOrDefault(so => so is PropertyMass);
-
+      //Checks
+      var gsaConvertedPropMass = (GsaPropMass)gsaConvertedRecords.FirstOrDefault(n => n is GsaPropMass);
       var compareLogic = new CompareLogic();
-
-      var newNatives = converter.ConvertToNative(new List<Base> { specklePropertyMass });
-      var newNative = newNatives.FirstOrDefault(n => n.GetType().IsAssignableFrom(typeof(GsaPropMass)));
-      var oldNative = gsaPropMass;
-      var result = compareLogic.Compare(newNative, oldNative);
-      Assert.True(result.AreEqual);
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaPropMass x) => x.Mass));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaPropMass x) => x.Ixx));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaPropMass x) => x.Iyy));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaPropMass x) => x.Izz));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaPropMass x) => x.Ixy));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaPropMass x) => x.Iyz));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaPropMass x) => x.Izx));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaPropMass x) => x.ModX));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaPropMass x) => x.ModY));
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaPropMass x) => x.ModZ));
+      var result = compareLogic.Compare(gsaPropMass, gsaConvertedPropMass);
+      Assert.Empty(result.Differences);
+      Assert.Equal(gsaPropMass.Mass * massFactor, gsaConvertedPropMass.Mass);
+      Assert.Equal(gsaPropMass.Ixx * massFactor * Math.Pow(lengthFactor, 2), gsaConvertedPropMass.Ixx);
+      Assert.Equal(gsaPropMass.Iyy * massFactor * Math.Pow(lengthFactor, 2), gsaConvertedPropMass.Iyy);
+      Assert.Equal(gsaPropMass.Izz * massFactor * Math.Pow(lengthFactor, 2), gsaConvertedPropMass.Izz);
+      Assert.Equal(gsaPropMass.Ixy * massFactor * Math.Pow(lengthFactor, 2), gsaConvertedPropMass.Ixy);
+      Assert.Equal(gsaPropMass.Iyz * massFactor * Math.Pow(lengthFactor, 2), gsaConvertedPropMass.Iyz);
+      Assert.Equal(gsaPropMass.Izx * massFactor * Math.Pow(lengthFactor, 2), gsaConvertedPropMass.Izx);
+      if (gsaPropMass.ModX > 0) Assert.Equal(gsaPropMass.ModX * massFactor, gsaConvertedPropMass.ModX);
+      else Assert.Equal(gsaPropMass.ModX, gsaConvertedPropMass.ModX);
+      if (gsaPropMass.ModY > 0) Assert.Equal(gsaPropMass.ModY * massFactor, gsaConvertedPropMass.ModY);
+      else Assert.Equal(gsaPropMass.ModY, gsaConvertedPropMass.ModY);
+      if (gsaPropMass.ModZ > 0) Assert.Equal(gsaPropMass.ModZ * massFactor, gsaConvertedPropMass.ModZ);
+      else Assert.Equal(gsaPropMass.ModZ, gsaConvertedPropMass.ModZ);
     }
 
-    [Fact]
-    public void PropertySpringToNative()
+    [Theory]
+    [InlineData("m", "N", "mm", "kN")]
+    [InlineData("m", null, "mm", null)]
+    [InlineData(null, null, null, null)]
+    public void PropertySpringToNative(string gsaLengthUnits, string gsaForceUnits, string speckleLengthUnits, string speckleForceUnits)
     {
-      //Define GSA objects
-      //These should be in order that respects the type dependency tree (which is only available in the GSAProxy library, which isn't referenced yet
-      var gsaRecords = new List<GsaRecord>();
+      # region unit conversion factors
+      double lengthFactor = 1, forceFactor = 1;
+      if (!string.IsNullOrEmpty(speckleLengthUnits) && !string.IsNullOrEmpty(gsaLengthUnits))
+      {
+        lengthFactor = Units.GetConversionFactor(speckleLengthUnits, gsaLengthUnits);
+      }
+      if (!string.IsNullOrEmpty(speckleForceUnits) && !string.IsNullOrEmpty(gsaForceUnits))
+      {
+        forceFactor = ForceUnits.GetConversionFactor(speckleForceUnits, gsaForceUnits);
+      }
+      #endregion
 
-      //Generation #1: Types with no other dependencies - the leaves of the tree
+      //Create native objects
+      var gsaRecords = new List<GsaRecord>();
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Length, Name = gsaLengthUnits });
+      gsaRecords.Add(new GsaUnitData() { Option = UnitDimension.Force, Name = gsaForceUnits });
       var gsaProSpr = GsaPropSprExample("property spring 1");
       gsaRecords.Add(gsaProSpr);
-
       Instance.GsaModel.Cache.Upsert(gsaRecords);
 
-      foreach (var record in gsaRecords)
-      {
-        var speckleObjects = converter.ConvertToSpeckle(new List<object> { record });
-        Assert.Empty(converter.ConversionErrors);
+      //Convert
+      Instance.GsaModel.StreamLayer = GSALayer.Both;
+      Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
+      var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
+      var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
+      var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRange(speckleDesignModel.properties.FindAll(o => o is PropertySpring).ToList());
+      speckleDesignModel.specs.settings.modelUnits.length = speckleLengthUnits; //change the units
+      speckleDesignModel.specs.settings.modelUnits.force = speckleForceUnits; //change the units
+      speckleObjects.Add(speckleDesignModel.specs.settings.modelUnits);
+      var gsaConvertedRecords = converter.ConvertToNative(speckleObjects);
 
-        Instance.GsaModel.Cache.SetSpeckleObjects(record, speckleObjects.ToDictionary(so => so.applicationId, so => (object)so));
-      }
-
-      Assert.True(Instance.GsaModel.Cache.GetSpeckleObjects(out var structuralObjects));
-
-      Assert.NotEmpty(structuralObjects);
-      Assert.Contains(structuralObjects, so => so is PropertySpring);
-
-      var specklePropertySpring = (PropertySpring)structuralObjects.FirstOrDefault(so => so is PropertySpring);
-
+      //Checks
+      var gsaConvertedProSpr = (GsaPropSpr)gsaConvertedRecords.FirstOrDefault(n => n is GsaPropSpr);
       var compareLogic = new CompareLogic();
-
-      var newNatives = converter.ConvertToNative(new List<Base> { specklePropertySpring });
-      var newNative = newNatives.FirstOrDefault(n => n.GetType().IsAssignableFrom(typeof(GsaPropSpr)));
-      var oldNative = gsaProSpr;
-      var result = compareLogic.Compare(newNative, oldNative);
-      Assert.True(result.AreEqual);
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaPropSpr x) => x.Stiffnesses));
+      var result = compareLogic.Compare(gsaProSpr, gsaConvertedProSpr);
+      Assert.Empty(result.Differences);
+      Assert.Equal(gsaProSpr.Stiffnesses[GwaAxisDirection6.X] * forceFactor / lengthFactor, gsaConvertedProSpr.Stiffnesses[GwaAxisDirection6.X]);
+      Assert.Equal(gsaProSpr.Stiffnesses[GwaAxisDirection6.Y] * forceFactor / lengthFactor, gsaConvertedProSpr.Stiffnesses[GwaAxisDirection6.Y]);
+      Assert.Equal(gsaProSpr.Stiffnesses[GwaAxisDirection6.Z] * forceFactor / lengthFactor, gsaConvertedProSpr.Stiffnesses[GwaAxisDirection6.Z]);
+      Assert.Equal(gsaProSpr.Stiffnesses[GwaAxisDirection6.XX] * forceFactor * lengthFactor, gsaConvertedProSpr.Stiffnesses[GwaAxisDirection6.XX]);
+      Assert.Equal(gsaProSpr.Stiffnesses[GwaAxisDirection6.YY] * forceFactor * lengthFactor, gsaConvertedProSpr.Stiffnesses[GwaAxisDirection6.YY]);
+      Assert.Equal(gsaProSpr.Stiffnesses[GwaAxisDirection6.ZZ] * forceFactor * lengthFactor, gsaConvertedProSpr.Stiffnesses[GwaAxisDirection6.ZZ]);
     }
 
-    #endregion
-
-    #region Results
     #endregion
 
     #region Constraints
@@ -2410,6 +2664,9 @@ namespace ConverterGSATests
         Assert.Equal(gsaVehicles[i].AxleRight.Select(v => forceFactor * v).ToList(), gsaConvertedVehicles[i].AxleRight);
       }
     }
+    #endregion
+
+    #region Results
     #endregion
 
     #region Helper

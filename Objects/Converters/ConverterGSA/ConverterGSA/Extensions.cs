@@ -190,12 +190,12 @@ namespace ConverterGSA
       }
     }
 
-    public static Section1dType ToNative(this Objects.Structural.Geometry.MemberType speckleElementType)
+    public static Section1dType ToNative(this MemberType speckleElementType)
     {
       switch (speckleElementType)
       {
-        case Objects.Structural.Geometry.MemberType.Beam: return Section1dType.Beam;
-        case Objects.Structural.Geometry.MemberType.Column: return Section1dType.Column;
+        case MemberType.Beam: return Section1dType.Beam;
+        case MemberType.Column: return Section1dType.Column;
         default: return Section1dType.Generic;
       }
     }

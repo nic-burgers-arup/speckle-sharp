@@ -1733,8 +1733,8 @@ namespace ConverterGSA
       if (gsaSection != null)
       {
         gsaSection.Colour = (Enum.TryParse(speckleProperty.colour, true, out Colour gsaColour) ? gsaColour : Colour.NO_RGB);
-        gsaSection.Mass = (speckleProperty.additionalMass == 0) ? null : (double?)speckleProperty.additionalMass;
-        gsaSection.Cost = (speckleProperty.cost == 0) ? null : (double?)speckleProperty.cost;
+        gsaSection.Mass = (speckleProperty.additionalMass > 0) ? (double?)(speckleProperty.additionalMass * conversionFactors.mass / conversionFactors.length) : null;
+        gsaSection.Cost = (speckleProperty.cost == 0) ? null : (double?)(speckleProperty.cost / conversionFactors.mass); //units: e.g. $/kg
         if (speckleProperty.designMaterial != null && gsaSection.Components != null && gsaSection.Components.Count > 0)
         {
           var sectionComp = (SectionComp)gsaSection.Components.First();
@@ -1743,7 +1743,6 @@ namespace ConverterGSA
             sectionComp.MaterialType = Section1dMaterialType.STEEL;
             sectionComp.MaterialIndex = IndexByConversionOrLookup<GsaMatSteel>(speckleProperty.designMaterial, ref retList);
 
-            var steelMaterial = (Steel)speckleProperty.designMaterial;
             var gsaSectionSteel = new SectionSteel()
             {
               //GradeIndex = 0,
@@ -1761,7 +1760,7 @@ namespace ConverterGSA
           else if (speckleProperty.designMaterial.materialType == MaterialType.Concrete && speckleProperty.designMaterial != null)
           {
             sectionComp.MaterialType = Section1dMaterialType.CONCRETE;
-            sectionComp.MaterialIndex = Instance.GsaModel.Cache.LookupIndex<GsaMatConcrete>(speckleProperty.designMaterial.applicationId);
+            sectionComp.MaterialIndex = IndexByConversionOrLookup<GsaMatConcrete>(speckleProperty.designMaterial, ref retList);
 
             var gsaSectionConc = new SectionConc();
             var gsaSectionLink = new SectionLink();
@@ -1787,7 +1786,18 @@ namespace ConverterGSA
     {
       var retList = new List<GsaRecord>();
       var speckleProperty = (Property1D)speckleObject;
-      
+
+      //unit conversion for offsets - section offsets are always specified in mm in GSA!
+      double offsetFactor = 1;
+      if (speckleProperty.profile != null && !string.IsNullOrEmpty(speckleProperty.profile.units))
+      {
+        offsetFactor = Units.GetConversionFactor(speckleProperty.profile.units, Units.Millimeters);
+      }
+      else if (conversionFactors.speckleModelUnits != null && !string.IsNullOrEmpty(conversionFactors.speckleModelUnits.displacements))
+      {
+        offsetFactor = Units.GetConversionFactor(conversionFactors.speckleModelUnits.displacements, Units.Millimeters);
+      }
+
       var gsaSection = new GsaSection()
       {
         Index = speckleProperty.GetIndex<GsaSection>(),
@@ -1796,8 +1806,8 @@ namespace ConverterGSA
         Type = speckleProperty.memberType.ToNative(),
         //PoolIndex = 0,
         ReferencePoint = speckleProperty.referencePoint.ToNative(),
-        RefY = (speckleProperty.offsetY == 0) ? null : (double?)speckleProperty.offsetY,
-        RefZ = (speckleProperty.offsetZ == 0) ? null : (double?)speckleProperty.offsetZ,
+        RefY = (speckleProperty.offsetY == 0) ? null : (double?)speckleProperty.offsetY * offsetFactor,
+        RefZ = (speckleProperty.offsetZ == 0) ? null : (double?)speckleProperty.offsetZ * offsetFactor,
         Fraction = 1,
         //Left = 0,
         //Right = 0,
@@ -1816,7 +1826,6 @@ namespace ConverterGSA
         {
           sectionComp.MaterialType = Section1dMaterialType.STEEL;
           sectionComp.MaterialIndex = IndexByConversionOrLookup<GsaMatSteel>(speckleProperty.material, ref retList);
-          var steelMaterial = (Steel)speckleProperty.material;
           var gsaSectionSteel = new SectionSteel()
           {
             //GradeIndex = 0,
@@ -1885,6 +1894,8 @@ namespace ConverterGSA
 
     private bool Property1dProfileToSpeckle(SectionProfile sectionProfile, out ProfileDetails gsaProfileDetails, out Section1dProfileGroup gsaProfileGroup)
     {
+      var lengthFactor = string.IsNullOrEmpty(sectionProfile.units) ? conversionFactors.displacements : 1;     
+
       if (sectionProfile.shapeType == ShapeType.Catalogue)
       {
         var p = (Catalogue)sectionProfile;
@@ -1897,36 +1908,48 @@ namespace ConverterGSA
       else if (sectionProfile.shapeType == ShapeType.Explicit)
       {
         var p = (Explicit)sectionProfile;
-        gsaProfileDetails = new ProfileDetailsExplicit() { Area = p.area, Iyy = p.Iyy, Izz = p.Izz, J = p.J, Ky = p.Ky, Kz = p.Kz };
+        gsaProfileDetails = new ProfileDetailsExplicit()
+        { 
+          Area = p.area * Math.Pow(lengthFactor, 2), 
+          Iyy = p.Iyy * Math.Pow(lengthFactor, 4), 
+          Izz = p.Izz * Math.Pow(lengthFactor, 4), 
+          J = p.J * Math.Pow(lengthFactor, 4), 
+          Ky = p.Ky, 
+          Kz = p.Kz 
+        };
         gsaProfileGroup = Section1dProfileGroup.Explicit;
       }
       else if (sectionProfile.shapeType == ShapeType.Perimeter)
       {
         var p = (Perimeter)sectionProfile;
         var hollow = (p.voids != null && p.voids.Count > 0);
-        gsaProfileDetails = new ProfileDetailsPerimeter()
-        {
-          Type = "P"
-        };
+        List<string> actions = null;
+        List<double?> y = null, z = null;
+        
         if (p.outline is Curve && (p.voids == null || (p.voids.All(v => v is Curve))))
         {
-          ((ProfileDetailsPerimeter)gsaProfileDetails).Actions = new List<string>();
-          ((ProfileDetailsPerimeter)gsaProfileDetails).Y = new List<double?>();
-          ((ProfileDetailsPerimeter)gsaProfileDetails).Z = new List<double?>();
+          actions = new List<string>();
+          y = new List<double?>();
+          z = new List<double?>();
 
-          CurveToGsaOutline(p.outline, ref ((ProfileDetailsPerimeter)gsaProfileDetails).Y, 
-            ref ((ProfileDetailsPerimeter)gsaProfileDetails).Z, ref ((ProfileDetailsPerimeter)gsaProfileDetails).Actions);
+          CurveToGsaOutline(p.outline, ref y, ref z, ref actions);
 
           if (hollow)
           {
             foreach (var v in p.voids)
             {
-              CurveToGsaOutline(v, ref ((ProfileDetailsPerimeter)gsaProfileDetails).Y, 
-                ref ((ProfileDetailsPerimeter)gsaProfileDetails).Z, ref ((ProfileDetailsPerimeter)gsaProfileDetails).Actions);
+              CurveToGsaOutline(v, ref y, ref z, ref actions);
             }
           }
         }
         gsaProfileGroup = Section1dProfileGroup.Perimeter;
+        gsaProfileDetails = new ProfileDetailsPerimeter()
+        {
+          Type = "P",
+          Actions = actions,
+          Y = y.Select(v => v * lengthFactor).ToList(),
+          Z = z.Select(v => v * lengthFactor).ToList(),
+        };
       }
       else
       {
@@ -1938,12 +1961,13 @@ namespace ConverterGSA
           if (hollow)
           {
             gsaProfileDetails = new ProfileDetailsTwoThickness() { ProfileType = Section1dStandardProfileType.RectangularHollow };
-            ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth, p.width, p.webThickness, p.flangeThickness);
+            ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth * lengthFactor, p.width * lengthFactor, p.webThickness * lengthFactor, p.flangeThickness * lengthFactor);
+
           }
           else
           {
             gsaProfileDetails = new ProfileDetailsRectangular() { ProfileType = Section1dStandardProfileType.Rectangular };
-            ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth, p.width);
+            ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth * lengthFactor, p.width * lengthFactor);
           }
         }
         else if (sectionProfile.shapeType == ShapeType.Circular)
@@ -1953,43 +1977,48 @@ namespace ConverterGSA
           if (hollow)
           {
             gsaProfileDetails = new ProfileDetailsCircularHollow() { ProfileType = Section1dStandardProfileType.CircularHollow };
-            ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.radius * 2, p.wallThickness);
+            ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.radius * 2 * lengthFactor, p.wallThickness * lengthFactor);
           }
           else
           {
             gsaProfileDetails = new ProfileDetailsCircular() { ProfileType = Section1dStandardProfileType.Circular };
-            ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.radius * 2);
+            ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.radius * 2 * lengthFactor);
           }
         }
         else if (sectionProfile.shapeType == ShapeType.Angle)
         {
           var p = (Angle)sectionProfile;
           gsaProfileDetails = new ProfileDetailsTwoThickness() { ProfileType = Section1dStandardProfileType.Angle };
-          ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth, p.width, p.webThickness, p.flangeThickness);
+          ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth * lengthFactor, p.width * lengthFactor, p.webThickness * lengthFactor, p.flangeThickness * lengthFactor);
         }
         else if (sectionProfile.shapeType == ShapeType.Channel)
         {
           var p = (Channel)sectionProfile;
           gsaProfileDetails = new ProfileDetailsTwoThickness() { ProfileType = Section1dStandardProfileType.Channel };
-          ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth, p.width, p.webThickness, p.flangeThickness);
+          ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth * lengthFactor, p.width * lengthFactor, p.webThickness * lengthFactor, p.flangeThickness * lengthFactor);
         }
         else if (sectionProfile.shapeType == ShapeType.I)
         {
           var p = (ISection)sectionProfile;
           gsaProfileDetails = new ProfileDetailsTwoThickness() { ProfileType = Section1dStandardProfileType.ISection };
-          ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth, p.width, p.webThickness, p.flangeThickness);
+          ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth * lengthFactor, p.width * lengthFactor, p.webThickness * lengthFactor, p.flangeThickness * lengthFactor);
         }
         else if (sectionProfile.shapeType == ShapeType.Tee)
         {
           var p = (Tee)sectionProfile;
           gsaProfileDetails = new ProfileDetailsTwoThickness() { ProfileType = Section1dStandardProfileType.Tee };
-          ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth, p.width, p.webThickness, p.flangeThickness);
+          ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth * lengthFactor, p.width * lengthFactor, p.webThickness * lengthFactor, p.flangeThickness * lengthFactor);
         }
         else
         {
           gsaProfileDetails = null;
         }
       }
+      if (gsaProfileDetails != null && sectionProfile.units != null)
+      {
+        gsaProfileDetails.Units = sectionProfile.units;
+      }
+
       return true;
     }
 
@@ -2003,37 +2032,24 @@ namespace ConverterGSA
       if (gsaProp2d != null)
       {
         gsaProp2d.Colour = (Enum.TryParse(speckleProperty.colour, true, out Colour gsaColour) ? gsaColour : Colour.NO_RGB);
-        gsaProp2d.Mass = speckleProperty.additionalMass;
+        gsaProp2d.Mass = speckleProperty.additionalMass * conversionFactors.mass / Math.Pow(conversionFactors.length, 2);
         gsaProp2d.Profile = speckleProperty.concreteSlabProp;
         if (speckleProperty.designMaterial != null)
         {
-          int? materialIndex = null;
           if (speckleProperty.designMaterial.materialType == MaterialType.Steel && speckleProperty.designMaterial is GSASteel)
           {
-            //var mat = (GSASteel)speckleProperty.designMaterial;
-            materialIndex = IndexByConversionOrLookup<GsaMatSteel>(speckleProperty.designMaterial, ref retList);
-            //materialIndex = Instance.GsaModel.Cache.LookupIndex<GsaMatSteel>(speckleProperty.designMaterial.applicationId);
+            gsaProp2d.GradeIndex = IndexByConversionOrLookup<GsaMatSteel>(speckleProperty.designMaterial, ref retList);
             gsaProp2d.MatType = Property2dMaterialType.Steel;
           }
           else if (speckleProperty.designMaterial.materialType == MaterialType.Concrete && speckleProperty.designMaterial is GSAConcrete)
           {
-            //materialIndex = Instance.GsaModel.Cache.LookupIndex<GsaMatConcrete>(speckleProperty.designMaterial.applicationId);
-            materialIndex = IndexByConversionOrLookup<GsaMatConcrete>(speckleProperty.designMaterial, ref retList);
+            gsaProp2d.GradeIndex = IndexByConversionOrLookup<GsaMatConcrete>(speckleProperty.designMaterial, ref retList);
             gsaProp2d.MatType = Property2dMaterialType.Concrete;
           }
           else
           {
             //Not supported yet
             gsaProp2d.MatType = Property2dMaterialType.Generic;
-          }
-
-          if (materialIndex.HasValue)
-          {
-            gsaProp2d.GradeIndex = materialIndex;
-          }
-          else
-          {
-            //TO DO: ToNative() of the material
           }
         }
       }
@@ -2047,19 +2063,30 @@ namespace ConverterGSA
       var retList = new List<GsaRecord>();
       var speckleProperty = (Property2D)speckleObject;
 
+      //unit conversion scale factors (GSA units are messed up!)
+      var thicknessFactor = conversionFactors.displacements;
+      var inPlaneFactor = Math.Pow(conversionFactors.displacements, 2) / conversionFactors.length;
+      var bendingFactor = Math.Pow(conversionFactors.sections, 4) / conversionFactors.length;
+      var shearFactor = Math.Pow(conversionFactors.displacements, 2) / conversionFactors.length;
+      var volumeFactor = Math.Pow(conversionFactors.sections, 3) / Math.Pow(conversionFactors.length, 2);
+
       var gsaProp2d = new GsaProp2d()
       {
         Index = speckleProperty.GetIndex<GsaProp2d>(),
         Name = speckleProperty.name,
         ApplicationId = speckleProperty.applicationId,
-        Thickness = (speckleProperty.thickness == 0) ? null : (double?)speckleProperty.thickness,
-        RefZ = speckleProperty.zOffset,
+        Thickness = (speckleProperty.thickness > 0) ? (double?)speckleProperty.thickness * thicknessFactor : null,
+        RefZ = speckleProperty.zOffset * thicknessFactor,
         RefPt = speckleProperty.refSurface.ToNative(),
         Type = speckleProperty.type.ToNative(),
-        InPlaneStiffnessPercentage = speckleProperty.modifierInPlane == 0 ? null : (double?)speckleProperty.modifierInPlane,
-        BendingStiffnessPercentage = speckleProperty.modifierBending == 0 ? null : (double?)speckleProperty.modifierBending,
-        ShearStiffnessPercentage = speckleProperty.modifierShear == 0 ? null : (double?)speckleProperty.modifierShear,
-        VolumePercentage = speckleProperty.modifierVolume == 0 ? null : (double?)speckleProperty.modifierVolume
+        InPlane = speckleProperty.modifierInPlane > 0 ? (double?)speckleProperty.modifierInPlane * inPlaneFactor : null,
+        Bending = speckleProperty.modifierBending > 0 ? (double?)speckleProperty.modifierBending * bendingFactor : null,
+        Shear = speckleProperty.modifierShear > 0 ? (double?)speckleProperty.modifierShear * shearFactor : null,
+        Volume = speckleProperty.modifierVolume > 0 ? (double?)speckleProperty.modifierVolume * volumeFactor : null,
+        InPlaneStiffnessPercentage = speckleProperty.modifierInPlane < 0 ? -(double?)speckleProperty.modifierInPlane * 100 : null,
+        BendingStiffnessPercentage = speckleProperty.modifierBending < 0 ? -(double?)speckleProperty.modifierBending * 100 : null,
+        ShearStiffnessPercentage = speckleProperty.modifierShear < 0 ? -(double?)speckleProperty.modifierShear * 100 : null,
+        VolumePercentage = speckleProperty.modifierVolume < 0 ? -(double?)speckleProperty.modifierVolume * 100 : null,
       };
 
       if (speckleProperty.orientationAxis == null)
@@ -2093,23 +2120,27 @@ namespace ConverterGSA
     private List<GsaRecord> PropertyMassToNative(Base speckleObject)
     {
       var specklePropertyMass = (PropertyMass)speckleObject;
+      var inertiaFactor = conversionFactors.mass * Math.Pow(conversionFactors.length, 2);
       var gsaPropMass = new GsaPropMass()
       {
         Index = specklePropertyMass.GetIndex<GsaPropMass>(),
         Name = specklePropertyMass.name,
         ApplicationId = specklePropertyMass.applicationId,
-        Mass = specklePropertyMass.mass,
-        Ixx = specklePropertyMass.inertiaXX,
-        Iyy = specklePropertyMass.inertiaYY,
-        Izz = specklePropertyMass.inertiaZZ,
-        Ixy = specklePropertyMass.inertiaXY,
-        Iyz = specklePropertyMass.inertiaYZ,
-        Izx = specklePropertyMass.inertiaZX
+        Mass = specklePropertyMass.mass * conversionFactors.mass,
+        Ixx = specklePropertyMass.inertiaXX * inertiaFactor,
+        Iyy = specklePropertyMass.inertiaYY * inertiaFactor,
+        Izz = specklePropertyMass.inertiaZZ * inertiaFactor,
+        Ixy = specklePropertyMass.inertiaXY * inertiaFactor,
+        Iyz = specklePropertyMass.inertiaYZ * inertiaFactor,
+        Izx = specklePropertyMass.inertiaZX * inertiaFactor
       };
       gsaPropMass.Mod = (specklePropertyMass.massModified) ? MassModification.Modified : MassModification.Defined;
-      gsaPropMass.ModXPercentage = specklePropertyMass.massModifierX;
-      gsaPropMass.ModYPercentage = specklePropertyMass.massModifierY;
-      gsaPropMass.ModZPercentage = specklePropertyMass.massModifierZ;
+      if (specklePropertyMass.massModified)
+      {
+        gsaPropMass.ModX = MassModifierUnitConversion(specklePropertyMass.massModifierX);
+        gsaPropMass.ModY = MassModifierUnitConversion(specklePropertyMass.massModifierY);
+        gsaPropMass.ModZ = MassModifierUnitConversion(specklePropertyMass.massModifierZ);
+      }
 
       return new List<GsaRecord>() { gsaPropMass };
     }
@@ -2153,28 +2184,28 @@ namespace ConverterGSA
     private bool SetPropertySpringAxial(PropertySpring specklePropertySpring, GsaPropSpr gsaPropSpr)
     {
       gsaPropSpr.PropertyType = StructuralSpringPropertyType.Axial;
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX * conversionFactors.force / conversionFactors.length);
       return true;
     }
 
     private bool SetPropertySpringTorsional(PropertySpring specklePropertySpring, GsaPropSpr gsaPropSpr)
     {
       gsaPropSpr.PropertyType = StructuralSpringPropertyType.Torsional;
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.XX, specklePropertySpring.stiffnessXX);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.XX, specklePropertySpring.stiffnessXX * conversionFactors.force * conversionFactors.length);
       return true;
     }
 
     private bool SetPropertySpringCompression(PropertySpring specklePropertySpring, GsaPropSpr gsaPropSpr)
     {
       gsaPropSpr.PropertyType = StructuralSpringPropertyType.Compression;
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX * conversionFactors.force / conversionFactors.length);
       return true;
     }
 
     private bool SetPropertySpringTension(PropertySpring specklePropertySpring, GsaPropSpr gsaPropSpr)
     {
       gsaPropSpr.PropertyType = StructuralSpringPropertyType.Tension;
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX * conversionFactors.force / conversionFactors.length);
       return true;
     }
 
@@ -2182,23 +2213,23 @@ namespace ConverterGSA
     {
       //Also for LOCKUP, there are positive and negative parameters, but these aren't supported yet
       gsaPropSpr.PropertyType = StructuralSpringPropertyType.Lockup;
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX * conversionFactors.force / conversionFactors.length);
       return true;
     }
 
     private bool SetPropertySpringGap(PropertySpring specklePropertySpring, GsaPropSpr gsaPropSpr)
     {
       gsaPropSpr.PropertyType = StructuralSpringPropertyType.Gap;
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX * conversionFactors.force / conversionFactors.length);
       return true;
     }
 
     private bool SetPropertySpringFriction(PropertySpring specklePropertySpring, GsaPropSpr gsaPropSpr)
     {
       gsaPropSpr.PropertyType = StructuralSpringPropertyType.Friction;
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX);
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.Y, specklePropertySpring.stiffnessY);
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.Z, specklePropertySpring.stiffnessZ);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX * conversionFactors.force / conversionFactors.length);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.Y, specklePropertySpring.stiffnessY * conversionFactors.force / conversionFactors.length);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.Z, specklePropertySpring.stiffnessZ * conversionFactors.force / conversionFactors.length);
       gsaPropSpr.FrictionCoeff = specklePropertySpring.frictionCoefficient;
       return true;
     }
@@ -2206,12 +2237,12 @@ namespace ConverterGSA
     private bool SetPropertySpringGeneral(PropertySpring specklePropertySpring, GsaPropSpr gsaPropSpr)
     {
       gsaPropSpr.PropertyType = StructuralSpringPropertyType.General;
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX);
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.Y, specklePropertySpring.stiffnessY);
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.Z, specklePropertySpring.stiffnessZ);
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.XX, specklePropertySpring.stiffnessXX);
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.YY, specklePropertySpring.stiffnessYY);
-      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.ZZ, specklePropertySpring.stiffnessZZ);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.X, specklePropertySpring.stiffnessX * conversionFactors.force / conversionFactors.length);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.Y, specklePropertySpring.stiffnessY * conversionFactors.force / conversionFactors.length);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.Z, specklePropertySpring.stiffnessZ * conversionFactors.force / conversionFactors.length);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.XX, specklePropertySpring.stiffnessXX * conversionFactors.force * conversionFactors.length);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.YY, specklePropertySpring.stiffnessYY * conversionFactors.force * conversionFactors.length);
+      gsaPropSpr.Stiffnesses.Add(GwaAxisDirection6.ZZ, specklePropertySpring.stiffnessZZ * conversionFactors.force * conversionFactors.length);
       return true;
     }
 
@@ -3102,6 +3133,18 @@ namespace ConverterGSA
         },
         Environ = false
       };
+    }
+
+    private double MassModifierUnitConversion(double speckleMassModifier)
+    {
+      if (speckleMassModifier > 0)
+      {
+        return speckleMassModifier * conversionFactors.mass;
+      }
+      else
+      {
+        return speckleMassModifier; //percentage
+      }
     }
     #endregion
 

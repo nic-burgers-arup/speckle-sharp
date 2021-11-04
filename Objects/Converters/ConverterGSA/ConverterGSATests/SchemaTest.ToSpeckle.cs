@@ -1959,10 +1959,14 @@ namespace ConverterGSATests
       Assert.Equal(PropertyType2D.Shell, speckleProperty2D.type);
       Assert.Equal(ReferenceSurface.Middle, speckleProperty2D.refSurface);
       Assert.Equal(gsaProp2d.RefZ, speckleProperty2D.zOffset);
-      Assert.Equal(gsaProp2d.InPlaneStiffnessPercentage.Value, speckleProperty2D.modifierInPlane);  //Check modifiers (currently no way to distinguish between value and percentage in speckle object)
-      Assert.Equal(gsaProp2d.BendingStiffnessPercentage.Value, speckleProperty2D.modifierBending);
-      Assert.Equal(gsaProp2d.ShearStiffnessPercentage.Value, speckleProperty2D.modifierShear);
-      Assert.Equal(gsaProp2d.VolumePercentage.Value, speckleProperty2D.modifierVolume);
+      if (gsaProp2d.InPlaneStiffnessPercentage.HasValue) Assert.Equal(-gsaProp2d.InPlaneStiffnessPercentage.Value / 100, speckleProperty2D.modifierInPlane);
+      else if (gsaProp2d.InPlane.HasValue) Assert.Equal(gsaProp2d.InPlane.Value, speckleProperty2D.modifierInPlane);
+      if (gsaProp2d.BendingStiffnessPercentage.HasValue) Assert.Equal(-gsaProp2d.BendingStiffnessPercentage.Value / 100, speckleProperty2D.modifierBending);
+      else if (gsaProp2d.Bending.HasValue) Assert.Equal(gsaProp2d.Bending.Value, speckleProperty2D.modifierBending);
+      if (gsaProp2d.ShearStiffnessPercentage.HasValue) Assert.Equal(-gsaProp2d.ShearStiffnessPercentage.Value / 100, speckleProperty2D.modifierShear);
+      else if (gsaProp2d.Shear.HasValue) Assert.Equal(gsaProp2d.Shear.Value, speckleProperty2D.modifierShear);
+      if (gsaProp2d.VolumePercentage.HasValue) Assert.Equal(-gsaProp2d.VolumePercentage.Value / 100, speckleProperty2D.modifierVolume);
+      else if (gsaProp2d.Volume.HasValue) Assert.Equal(gsaProp2d.Volume.Value, speckleProperty2D.modifierVolume);
       Assert.Equal(gsaProp2d.Mass, speckleProperty2D.additionalMass);
       Assert.Equal(gsaProp2d.Profile, speckleProperty2D.concreteSlabProp);
       Assert.Equal(gsaProp2d.Index.Value, speckleProperty2D.nativeId);
@@ -2009,9 +2013,9 @@ namespace ConverterGSATests
       Assert.Equal(gsaPropMass.Iyz, specklePropertyMass.inertiaYZ);
       Assert.Equal(gsaPropMass.Izx, specklePropertyMass.inertiaZX);
       Assert.True(specklePropertyMass.massModified);
-      Assert.Equal(gsaPropMass.ModXPercentage, specklePropertyMass.massModifierX);
-      Assert.Equal(gsaPropMass.ModYPercentage, specklePropertyMass.massModifierY);
-      Assert.Equal(gsaPropMass.ModZPercentage, specklePropertyMass.massModifierZ);
+      Assert.Equal(gsaPropMass.ModX, specklePropertyMass.massModifierX);
+      Assert.Equal(gsaPropMass.ModY, specklePropertyMass.massModifierY);
+      Assert.Equal(gsaPropMass.ModZ, specklePropertyMass.massModifierZ);
     }
 
     [Fact]
@@ -4323,9 +4327,9 @@ namespace ConverterGSATests
         Iyz = 0,
         Izx = 0,
         Mod = MassModification.Modified,
-        ModXPercentage = 1,
-        ModYPercentage = 1,
-        ModZPercentage = 1
+        ModX = -1,
+        ModY = -1,
+        ModZ = -1
       };
     }
 
