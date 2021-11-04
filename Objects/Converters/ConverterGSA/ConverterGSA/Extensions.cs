@@ -190,13 +190,20 @@ namespace ConverterGSA
       }
     }
 
-    public static Section1dType ToNative(this MemberType speckleElementType)
+    public static MemberType ToSpeckle(this GwaMemberType gsaMemberType)
     {
-      switch (speckleElementType)
+      switch (gsaMemberType)
       {
-        case MemberType.Beam: return Section1dType.Beam;
-        case MemberType.Column: return Section1dType.Column;
-        default: return Section1dType.Generic;
+        case GwaMemberType.Beam: return MemberType.Beam;
+        case GwaMemberType.Column: return MemberType.Column;
+        case GwaMemberType.Generic1d: return MemberType.Generic1D;
+        case GwaMemberType.Void1d: return MemberType.VoidCutter1D;
+        case GwaMemberType.Slab: return MemberType.Slab;
+        case GwaMemberType.Wall: return MemberType.Wall;
+        case GwaMemberType.Generic2d: return MemberType.Generic2D;
+        case GwaMemberType.Void2d: return MemberType.VoidCutter2D;
+        default:
+          throw new Exception(gsaMemberType.ToString() + " is not currently a supported member type.");
       }
     }
 
@@ -588,6 +595,32 @@ namespace ConverterGSA
     #endregion
 
     #region ToNative
+    public static GwaMemberType ToNative(this MemberType speckleMemberType)
+    {
+      switch (speckleMemberType)
+      {
+        case MemberType.Beam: return GwaMemberType.Beam;
+        case MemberType.Column: return GwaMemberType.Column;
+        case MemberType.Generic1D: return GwaMemberType.Generic1d;
+        case MemberType.VoidCutter1D: return GwaMemberType.Void1d;
+        case MemberType.Slab: return GwaMemberType.Slab;
+        case MemberType.Wall: return GwaMemberType.Wall;
+        case MemberType.Generic2D: return GwaMemberType.Generic2d;
+        case MemberType.VoidCutter2D: return GwaMemberType.Void2d;
+        default:
+          throw new Exception(speckleMemberType.ToString() + " is not currently a supported member type.");
+      }
+    }
+
+    public static Section1dType ToNativeSection(this MemberType speckleElementType)
+    {
+      switch (speckleElementType)
+      {
+        case MemberType.Beam: return Section1dType.Beam;
+        case MemberType.Column: return Section1dType.Column;
+        default: return Section1dType.Generic;
+      }
+    }
     public static ElementType ToNative(this ElementType1D speckleType)
     {
       switch (speckleType)
