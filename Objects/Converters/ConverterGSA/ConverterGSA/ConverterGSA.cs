@@ -178,83 +178,113 @@ namespace ConverterGSA
     {
       var retList = new List<object>();
 
-      var speckleDependencyTree = Instance.GsaModel.SpeckleDependencyTree();
       var objectsByType = objects.GroupBy(t => t.GetType()).ToDictionary(g => g.Key, g => g.ToList());
 
       //Ensure the model info is done first - it's assumed that there is just one such object per batch of Base objects to be converted to native
-      var modelInfoType = typeof(ModelInfo);
-      if (objectsByType.ContainsKey(modelInfoType))
+      var modelSpecTypes = new List<Type> { typeof(ModelInfo), typeof(ModelUnits) };
+      foreach (var t in modelSpecTypes)
       {
-        ModelInfoToNative(objectsByType[modelInfoType].First());
+        if (objectsByType.ContainsKey(t) && ToNativeFns.ContainsKey(t))
+        {
+          ToNativeFns[t](objectsByType[t].First());
+          objectsByType.Remove(t);
+        }
       }
 
-      foreach (var gen in speckleDependencyTree)
+      var speckleDependencyTree = Instance.GsaModel.SpeckleDependencyTree();
+      if (speckleDependencyTree == null)
       {
-//#if DEBUG
-        foreach (var t in gen)
-//#else
-        //Parallel.ForEach(gen, t =>
-//#endif
+        foreach (Base o in objects)
         {
-          if (objectsByType.ContainsKey(t))
+          var t = o.GetType();
+          try
           {
-#if !DEBUG
-            if (parallelisable.ContainsKey(t))
+            if (CanConvertToNative(o) && ToNativeFns.ContainsKey(t))
             {
-              foreach (Base so in objectsByType[t].Where(o => !string.IsNullOrEmpty(o.applicationId)))
+              var natives = ToNativeFns[t](o);
+              retList.AddRangeIfNotNull(natives);
+              if (Instance.GsaModel.ConversionProgress != null)
               {
-                Instance.GsaModel.Cache.ResolveIndex(parallelisable[t], so.applicationId);
+                Instance.GsaModel.ConversionProgress.Report(natives != null);
               }
-
-              Parallel.ForEach(objectsByType[t].Cast<Base>(), so =>
-              {
-                try
-                {
-                  if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
-                  {
-                    var natives = ToNativeFns[t](so);
-                    retList.AddRangeIfNotNull(natives);
-                    if (Instance.GsaModel.ConversionProgress != null)
-                    {
-                      Instance.GsaModel.ConversionProgress.Report(natives != null);
-                    }
-                  }
-                }
-                catch
-                {
-                  ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
-                }
-              }
-              );
             }
-            else
-#endif
+          }
+          catch
+          {
+            ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (o.applicationId ?? o.id) + " - refer to logs for more information"));
+          }
+        }
+      }
+      else
+      {
+        foreach (var gen in speckleDependencyTree)
+        {
+//#if DEBUG
+          foreach (var t in gen)
+//#else
+          //Parallel.ForEach(gen, t =>
+//#endif
+          {
+            if (objectsByType.ContainsKey(t))
             {
-              foreach (Base so in objectsByType[t])
+#if !DEBUG
+              if (parallelisable.ContainsKey(t))
               {
-                try
+                foreach (Base so in objectsByType[t].Where(o => !string.IsNullOrEmpty(o.applicationId)))
                 {
-                  if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
+                  Instance.GsaModel.Cache.ResolveIndex(parallelisable[t], so.applicationId);
+                }
+
+                Parallel.ForEach(objectsByType[t].Cast<Base>(), so =>
+                {
+                  try
                   {
-                    var natives = ToNativeFns[t](so);
-                    retList.AddRangeIfNotNull(natives);
-                    if (Instance.GsaModel.ConversionProgress != null)
+                    if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
                     {
-                      Instance.GsaModel.ConversionProgress.Report(natives != null);
+                      var natives = ToNativeFns[t](so);
+                      retList.AddRangeIfNotNull(natives);
+                      if (Instance.GsaModel.ConversionProgress != null)
+                      {
+                        Instance.GsaModel.ConversionProgress.Report(natives != null);
+                      }
                     }
                   }
+                  catch
+                  {
+                    ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
+                  }
                 }
-                catch
+                );
+              }
+              else
+#endif
+              {
+                foreach (Base so in objectsByType[t])
                 {
-                  ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
+                  try
+                  {
+                    if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
+                    {
+                      var natives = ToNativeFns[t](so);
+                      retList.AddRangeIfNotNull(natives);
+                      if (Instance.GsaModel.ConversionProgress != null)
+                      {
+                        Instance.GsaModel.ConversionProgress.Report(natives != null);
+                      }
+                    }
+                  }
+                  catch
+                  {
+                    ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
+                  }
                 }
               }
             }
           }
-        }
 //#if !DEBUG
-        //);
+          //);
 //#endif
+        }
       }
 
       return retList;

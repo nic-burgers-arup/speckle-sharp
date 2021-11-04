@@ -46,6 +46,7 @@ namespace ConverterGSA
       {
         //{ typeof(Model), ModelToNative },
         { typeof(ModelInfo), ModelInfoToNative },
+        { typeof(ModelUnits), ModelUnitsToNative },
         //Geometry
         { typeof(Axis), AxisToNative },
         { typeof(Point), PointToNative },
@@ -207,9 +208,16 @@ namespace ConverterGSA
     private List<GsaRecord> ModelInfoToNative(Base speckleObject)
     {
       var modelInfo = (ModelInfo)speckleObject;
-      if (modelInfo.settings != null && modelInfo.settings.modelUnits != null)
+      return (modelInfo.settings != null && modelInfo.settings.modelUnits != null)
+        ? ModelUnitsToNative(modelInfo.settings.modelUnits) : null;
+    }
+
+    private List<GsaRecord> ModelUnitsToNative(Base speckleObject)
+    {
+      var modelUnits = (ModelUnits)speckleObject;
+      if (modelUnits != null)
       {
-        conversionFactors = new UnitConversion(modelInfo.settings.modelUnits);
+        conversionFactors = new UnitConversion(modelUnits);
       }
       return null;
     }

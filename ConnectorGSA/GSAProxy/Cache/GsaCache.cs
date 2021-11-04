@@ -588,16 +588,9 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
       var gsaIndexHash = new HashSet<int>();
       if (recordIndicesBySchemaType.ContainsKey(t))
       {
-        gsaIndexHash = new HashSet<int>(recordIndicesBySchemaType[t].Where(i => records[i].GsaRecord != null && records[i].GsaRecord.Index.HasValue));
-        /*
-        foreach (var i in recordIndicesBySchemaType[t])
-        {
-          if (records[i].GsaRecord.Index.HasValue && !gsaIndexHash.Contains(records[i].GsaRecord.Index.Value))
-          {
-            gsaIndexHash.Add(records[i].GsaRecord.Index.Value);
-          }
-        }
-        */
+        gsaIndexHash = new HashSet<int>(recordIndicesBySchemaType[t].Where(i => records[i].GsaRecord != null 
+          && records[i].GsaRecord.Index.HasValue)
+          .Select(i => records[i].GsaRecord.Index.Value));
       }
       if (provisionals.ContainsKey(t))
       {
