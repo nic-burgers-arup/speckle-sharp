@@ -1014,9 +1014,12 @@ namespace ConverterGSA
     }
     #endregion
 
-    public static T GetDynamicValue<T>(this Base speckleObject, string member)
+    public static T GetDynamicValue<T>(this Base speckleObject, string member, Dictionary<string, object> members = null)
     {
-      var members = speckleObject.GetMembers();
+      if (members == null)
+      {
+        members = speckleObject.GetMembers();
+      }
       if (members.ContainsKey(member))
       {
         if (speckleObject[member] is T)
@@ -1036,9 +1039,12 @@ namespace ConverterGSA
       return default(T);
     }
 
-    public static T GetDynamicEnum<T>(this Base speckleObject, string member) where T : struct
+    public static T GetDynamicEnum<T>(this Base speckleObject, string member, Dictionary<string, object> members = null) where T : struct
     {
-      var members = speckleObject.GetMembers();
+      if (members == null)
+      {
+        members = speckleObject.GetMembers();
+      }
       if (members.ContainsKey(member) && speckleObject[member] is string)
       {
         return Enum.TryParse(speckleObject[member] as string, true, out T v) ? v : default(T);

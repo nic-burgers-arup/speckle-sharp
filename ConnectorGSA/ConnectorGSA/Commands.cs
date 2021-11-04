@@ -233,8 +233,22 @@ namespace ConnectorGSA
       return (loadedCache && (cumulativeErrorRows == 0));
     }
 
-    public static bool ConvertToNative(List<Base> TopLevelObjects, ISpeckleConverter converter, IProgress<MessageEventArgs> loggingProgress) //Includes writing to Cache
+    //public static bool ConvertToNative(List<Base> TopLevelObjects, ISpeckleConverter converter, IProgress<MessageEventArgs> loggingProgress) //Includes writing to Cache
+    public static bool ConvertToNative(List<Base> objects, ISpeckleConverter converter, IProgress<MessageEventArgs> loggingProgress) //Includes writing to Cache
     {
+      try
+      {
+        var nativeObjects = converter.ConvertToNative(objects).Cast<GsaRecord>().ToList();
+        Instance.GsaModel.Cache.Upsert(nativeObjects);
+      }
+      catch (Exception ex)
+      {
+        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, 
+          "Unable to convert one or more received objects.  Refer to logs for more information"));
+
+        loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ex, "Converion error"));
+      }
+      /*
       foreach (var tlo in TopLevelObjects)
       {
         try
@@ -251,6 +265,7 @@ namespace ConnectorGSA
           loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ex, "Converion error"));
         }
       }
+      */
 
       return true;
     }
@@ -330,6 +345,7 @@ namespace ConnectorGSA
       };
 
       var perecentageProgressLock = new object();
+      var numToConvertProgressLock = new object();
 
       var account = ((GsaModel)Instance.GsaModel).Account;
       var client = new Client(account);
@@ -398,13 +414,10 @@ namespace ConnectorGSA
 
                 
                 var received = await Commands.Receive(commitId, streamState, transport, topLevelObjects);
-                /*
-                var received = await Commands.Receive(commitId, streamState, transport, converter.CanConvertToNative);
                 if (received)
                 {
                   loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Received data from " + streamId + " stream"));
                 }
-                */
 
                 if (streamState.Errors != null && streamState.Errors.Count > 0)
                 {
@@ -432,9 +445,16 @@ namespace ConnectorGSA
       startTime = DateTime.Now;
 
       statusProgress.Report("Converting");
-      //var numToConvert = ((GsaCache)Instance.GsaModel.Cache).NumSpeckleObjects;
-      var numToConvert = topLevelObjects.Count();
+
+      var flattenedGroups = new List<List<Base>>();
+      foreach (var tlo in topLevelObjects)
+      {
+        var flattened = FlattenCommitObject(tlo, (Base o) => converter.CanConvertToNative(o));
+        flattenedGroups.Add(flattened);
+      }
+
       int numConverted = 0;
+      int numToConvert = flattenedGroups.Sum(fg => fg.Count);
       int totalConversionPercentage = 90 - percentage;
       Instance.GsaModel.ConversionProgress = new Progress<bool>((bool success) =>
       {
@@ -445,15 +465,18 @@ namespace ConnectorGSA
         percentageProgress.Report(percentage + Math.Round(((double)numConverted / (double)numToConvert) * totalConversionPercentage, 0));
       });
 
-
-      Commands.ConvertToNative(topLevelObjects, converter, loggingProgress);
-
-      if (converter.ConversionErrors != null && converter.ConversionErrors.Count > 0)
+      foreach (var fg in flattenedGroups)
       {
-        foreach (var ce in converter.ConversionErrors)
+        //These objects have already passed through a CanConvertToNative
+        Commands.ConvertToNative(fg, converter, loggingProgress);
+
+        if (converter.ConversionErrors != null && converter.ConversionErrors.Count > 0)
         {
-          loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, ce.Message));
-          loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ce, ce.Message));
+          foreach (var ce in converter.ConversionErrors)
+          {
+            loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, ce.Message));
+            loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ce, ce.Message));
+          }
         }
       }
 
