@@ -560,7 +560,7 @@ namespace ConnectorGSA
       }
     }
 
-    private static List<Base> FlattenCommitObject(object obj, Func<Base, bool> IsSingleObjectFn)
+    public static List<Base> FlattenCommitObject(object obj, Func<Base, bool> IsSingleObjectFn)
     {
       //This is needed because with GSA models, there could be a design and analysis layer with objects appearing in both, so only include the first
       //occurrence of each object (distinguished by the ID returned by the Base.GetId() method) in the list returned
