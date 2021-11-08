@@ -595,21 +595,33 @@ namespace ConverterGSA
     #endregion
 
     #region ToNative
-    public static GwaMemberType ToNative(this MemberType speckleMemberType)
+    public static GwaMemberType ToNative(this MemberType speckleMemberType, int dimension)
     {
-      switch (speckleMemberType)
+      if (dimension == 1)
       {
-        case MemberType.Beam: return GwaMemberType.Beam;
-        case MemberType.Column: return GwaMemberType.Column;
-        case MemberType.Generic1D: return GwaMemberType.Generic1d;
-        case MemberType.VoidCutter1D: return GwaMemberType.Void1d;
-        case MemberType.Slab: return GwaMemberType.Slab;
-        case MemberType.Wall: return GwaMemberType.Wall;
-        case MemberType.Generic2D: return GwaMemberType.Generic2d;
-        case MemberType.VoidCutter2D: return GwaMemberType.Void2d;
-        default:
-          throw new Exception(speckleMemberType.ToString() + " is not currently a supported member type.");
+        switch (speckleMemberType)
+        {
+          case MemberType.Beam: return GwaMemberType.Beam;
+          case MemberType.Column: return GwaMemberType.Column;
+          case MemberType.Generic1D: return GwaMemberType.Generic1d;
+          case MemberType.VoidCutter1D: return GwaMemberType.Void1d;
+          default:
+            throw new Exception(speckleMemberType.ToString() + " is not currently a supported member type for a 1D element.");
+        }
       }
+      else if (dimension == 2)
+      {
+        switch (speckleMemberType)
+        {
+          case MemberType.Slab: return GwaMemberType.Slab;
+          case MemberType.Wall: return GwaMemberType.Wall;
+          case MemberType.Generic2D: return GwaMemberType.Generic2d;
+          case MemberType.VoidCutter2D: return GwaMemberType.Void2d;
+          default:
+            throw new Exception(speckleMemberType.ToString() + " is not currently a supported member type for a 2D element.");
+        }
+      }
+      return GwaMemberType.NotSet;
     }
 
     public static Section1dType ToNativeSection(this MemberType speckleElementType)
