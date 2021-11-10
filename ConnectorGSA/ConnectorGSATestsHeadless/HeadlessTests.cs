@@ -13,7 +13,8 @@ namespace ConnectorGSATestsHeadless
   public class HeadlessTests
   {
     //private string rxStreamId = "44ac187897";
-    private string rxStreamId = "789a7f35e6";
+    //private string rxStreamId = "789a7f35e6";
+    private string rxStreamId = "9937956209";
     private string rxServerUrl = "https://speckle.xyz";
       
     private string saveAsAlternativeFilepath(string fn)
