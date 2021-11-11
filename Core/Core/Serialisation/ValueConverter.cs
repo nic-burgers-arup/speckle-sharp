@@ -102,7 +102,7 @@ namespace Speckle.Core.Serialisation
           return false;
         Dictionary<string, object> valueDict = (Dictionary<string, object>)value;
 
-        if (type.GenericTypeArguments[0] != typeof(string))
+        if (type.GenericTypeArguments[0] != typeof(string) && !type.GenericTypeArguments[0].IsEnum)
           throw new Exception("Dictionaries with non-string keys are not supported");
         Type dictValueType = type.GenericTypeArguments[1];
         IDictionary ret = Activator.CreateInstance(type) as IDictionary;
@@ -112,7 +112,27 @@ namespace Speckle.Core.Serialisation
           object convertedDictValue;
           if (!ConvertValue(dictValueType, kv.Value, out convertedDictValue))
             return false;
-          ret[kv.Key] = convertedDictValue;
+          if (type.GenericTypeArguments[0].IsEnum)
+          {
+            object key = null;
+            if (Enum.IsDefined(type.GenericTypeArguments[0], kv.Key))
+            {
+              var keyObj = Enum.Parse(type.GenericTypeArguments[0], kv.Key);
+              key = Convert.ChangeType(keyObj, type.GenericTypeArguments[0]);
+              if (key != null)
+              {
+                ret[key] = convertedDictValue;
+              }
+            }
+            if (key == null)
+            {
+              return false;
+            }
+          }
+          else
+          {
+            ret[kv.Key] = convertedDictValue;
+          }
         }
         convertedValue = ret;
         return true;
