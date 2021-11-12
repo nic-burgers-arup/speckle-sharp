@@ -2,6 +2,7 @@
 using Speckle.Core.Credentials;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -26,14 +27,19 @@ namespace ConnectorSNAPTests
     protected string v2ServerUrl = "https://v2.speckle.arup.com";
 
     [Fact]
+    public void HeadlessReceiveProcessStart()
+    {
+      Process.Start(@"C:\Nicolaas\Repo\speckle-sharp-nic-burgers-arup\ConnectorSNAP\ConnectorSNAP\bin\Debug\ConnectorSNAP.exe", "receiver --file \"C:\\Temp\\test.s81\" -- streamIds \"9937956209\"");
+
+
+    }
+
+    [Fact]
     public void HeadlessReceiveBothModels()
     {
       var headless = new Headless();
       var account = AccountManager.GetDefaultAccount();
       var cliResult = headless.RunCLI("receiver",
-        "--server", account.serverInfo.url,
-        "--email", account.userInfo.email,
-        "--token", account.token,
         "--file", Path.Combine(TestDataDirectory, "Received.s8i"),
         "--streamIDs", rxStreamId,
         "--nodeAllowance", "0.1");

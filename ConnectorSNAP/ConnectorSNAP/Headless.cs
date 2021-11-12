@@ -35,6 +35,7 @@ namespace ConnectorSNAP
 
     private UserInfo userInfo;
 
+    [STAThread]
     public bool RunCLI(params string[] args)
     {
       CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
@@ -57,6 +58,8 @@ namespace ConnectorSNAP
         loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, e));
         loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, e));
       };
+
+      Console.WriteLine("");
 
       cliMode = args[0];
       if (cliMode == "-h")
@@ -82,9 +85,6 @@ namespace ConnectorSNAP
         Console.WriteLine("Usage: ConnectorGSA.exe receiver\n");
         Console.WriteLine("\n");
         Console.Write("Required arguments:\n");
-        Console.Write("--server <server>\t\tAddress of Speckle server\n");
-        Console.Write("--email <email>\t\t\tEmail of account\n");
-        Console.Write("--token <token>\t\tJWT token\n");
         Console.Write("--file <path>\t\t\tFile to save to. If file does not exist, a new one will be created\n");
         Console.Write("--streamIDs <streamIDs>\t\tComma-delimited ID of streams to be received\n");
         Console.WriteLine("\n");
@@ -98,9 +98,6 @@ namespace ConnectorSNAP
         Console.WriteLine("Usage: ConnectorGSA.exe sender\n");
         Console.WriteLine("\n");
         Console.Write("Required arguments:\n");
-        Console.Write("--server <server>\t\tAddress of Speckle server\n");
-        Console.Write("--email <email>\t\t\tEmail of account\n");
-        Console.Write("--token <token>\t\tJWT token\n");
         Console.Write("--file <path>\t\t\tFile path to open\n");
         Console.WriteLine("\n");
         Console.Write("Optional arguments:\n");
@@ -130,13 +127,10 @@ namespace ConnectorSNAP
         }
       }
 
-      foreach (var a in (new[] { "server", "file" }))
+      if (!argPairs.ContainsKey("file"))
       {
-        if (!argPairs.ContainsKey(a))
-        {
-          Console.WriteLine("Missing -" + a + " argument");
-          return false;
-        }
+        Console.WriteLine("Missing --file argument");
+        return false;
       }
       #endregion
 
@@ -157,11 +151,15 @@ namespace ConnectorSNAP
       Account account;
       if (string.IsNullOrEmpty(RestApi) || string.IsNullOrEmpty(ApiToken))
       {
+        Console.WriteLine("Retrieving default account stored on this machine");
+
         account = AccountManager.GetDefaultAccount();
         userInfo = account.userInfo;
       }
       else
       {
+        Console.WriteLine("Retrieving matching account stored on this machine");
+
         userInfo = AccountManager.GetUserInfo(ApiToken, RestApi).Result;
         account = AccountManager.GetAccounts().FirstOrDefault(a => a.userInfo.id == userInfo.id);
       }
@@ -171,7 +169,16 @@ namespace ConnectorSNAP
       #region file
       // GSA File
       var fileArg = argPairs["file"];
+
       var filePath = fileArg.StartsWith(".") ? Path.Combine(AssemblyDirectory, fileArg) : fileArg;
+
+      var fileDir = Path.GetDirectoryName(filePath);
+      if (!Directory.Exists(fileDir))
+      {
+        Console.WriteLine("Could not locate directory: " + filePath);
+        //sending needs the file to exist
+        return false;
+      }
 
       //If receiving, then it's valid for a file name not to exist - in this case, it's the file name that a new file should be saved as
       if (!File.Exists(filePath) && sendReceive == SendReceive.Send)
@@ -211,6 +218,8 @@ namespace ConnectorSNAP
 
         var topLevelObjects = new List<Base>();
 
+        Console.WriteLine("Attempting to receive from stream " + string.Join(", ", streamIds));
+
         //There seem to be some issues with HTTP requests down the line if this is run on the initial (UI) thread, so this ensures it runs on another thread
         cliResult = Task.Run(() =>
         {
@@ -224,47 +233,23 @@ namespace ConnectorSNAP
               Stream = new Speckle.Core.Api.Stream() { id = streamId },
               IsReceiving = true
             };
+
+            Console.WriteLine("Retrieving information about stream " + streamId + " from the server");
+
             streamState.RefreshStream(loggingProgress).Wait();
             streamState.Stream.branch = client.StreamGetBranches(streamId, 1).Result.First();
             var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
             var transport = new ServerTransport(streamState.Client.Account, streamState.Stream.id);
 
+            Console.WriteLine("Retrieving objects in stream " + streamId + " from the server");
+
             var received = Commands.Receive(commitId, streamState, transport, topLevelObjects).Result;
 
             streamStates.Add(streamState);
           }
-          /*
-          //Dealing with streams with two models, where objects in one might find objects in the other with matching applicationIds,
-          //might be moved to the kit but for now, just exclude all but the first occurrence of each application ID by type
-          var appIdsByType = new Dictionary<Type, HashSet<string>>();
-          var flattened = new List<Base>();
-          foreach (var tlo in topLevelObjects)
-          {
-            var tloFlattened = Commands.FlattenCommitObject(tlo, (Base o) => converter.CanConvertToNative(o));
-            foreach (var f in tloFlattened)
-            {
-              var t = f.GetType();
-              if (string.IsNullOrEmpty(f.applicationId))
-              {
-                flattened.Add(f);
-              }
-              else
-              {
-                if (!appIdsByType.ContainsKey(t))
-                {
-                  appIdsByType.Add(t, new HashSet<string>());
-                }
-                else if (!appIdsByType[t].Contains(f.applicationId))
-                {
-                  appIdsByType[t].Add(f.applicationId);
-                  flattened.Add(f);
-                }
-              }
-            }
-          }
-          //These objects have already passed through a CanConvertToNative
-          Commands.ConvertToNative(flattened, converter, loggingProgress);
-          */
+
+          Console.WriteLine("Converting objects into SNAP records in .s8i format");
+
           Commands.ConvertToNative(topLevelObjects, converter, loggingProgress);
 
           if (converter.ConversionErrors != null && converter.ConversionErrors.Count > 0)
@@ -277,16 +262,23 @@ namespace ConnectorSNAP
           }
 
           //The cache is filled with natives
-          if (Instance.SnapModel.Cache.GetNatives(out var gsaRecords))
+          if (Instance.SnapModel.Cache.GetNatives(out var snapRecords) && snapRecords != null && snapRecords.Count > 0)
           {
-            ((SnapProxy)Instance.SnapModel.Proxy).WriteModel(gsaRecords);
+            Console.WriteLine("Writing " + snapRecords.Count() + " SNAP records in .s8i format to " + saveAsFilePath);
+
+            ((SnapProxy)Instance.SnapModel.Proxy).WriteModel(snapRecords);
+
+            var saved = ((SnapProxy)Instance.SnapModel.Proxy).SaveAs(saveAsFilePath);
+
+            Console.WriteLine("Receiving complete");
+
+            return saved;
           }
-
-          Console.WriteLine("Receiving complete");
-
-          ((SnapProxy)Instance.SnapModel.Proxy).SaveAs(saveAsFilePath);
-
-          return true;
+          else
+          {
+            Console.WriteLine("Conversion resulted in no records to be written to file");
+            return true;
+          }
         }).Result;
       }
       else //Send

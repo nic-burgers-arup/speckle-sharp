@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Speckle.SNAP.API.s8iSchema
+﻿namespace Speckle.SNAP.API.s8iSchema
 {
   public class Node
   {
@@ -15,9 +9,9 @@ namespace Speckle.SNAP.API.s8iSchema
     public double AdditionalMass { get; set; } = 0;
     public double Mass { get; set; } = 0;
     public string Restraint { get; set; }
-    public double AxisX { get; set; } = 0;
-    public double AxisY { get; set; } = 0;
-    public double AxisZ { get; set; } = 0;
+    public string AxisX { get; set; } = "";
+    public string AxisY { get; set; } = "";
+    public string AxisZ { get; set; } = "";
     public bool HistoryOutput { get; set; } = false;
     public bool Output { get; set; } = true;
   }
