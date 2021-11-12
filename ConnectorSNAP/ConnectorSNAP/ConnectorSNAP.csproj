@@ -34,6 +34,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>ConnectorSNAP.App</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -131,10 +134,6 @@
     <ProjectReference Include="..\..\Core\Core\Core.csproj">
       <Project>{a2c8730a-b605-483e-914e-61f3ed7954d9}</Project>
       <Name>Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\DesktopUI\DesktopUI\DesktopUI.csproj">
-      <Project>{a97c3046-2d55-4c49-ab40-a3c2194b82fa}</Project>
-      <Name>DesktopUI</Name>
     </ProjectReference>
     <ProjectReference Include="..\Speckle.SNAP.API\Speckle.SNAP.API.csproj">
       <Project>{9a299f88-3966-4d0c-a9e2-a8fdd55e597e}</Project>
