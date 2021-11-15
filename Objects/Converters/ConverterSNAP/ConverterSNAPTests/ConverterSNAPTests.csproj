@@ -62,11 +62,11 @@
       <Name>Speckle.SNAP.API</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\..\Core\Core\Core.csproj">
-      <Project>{49c8c535-be64-478c-a265-ca511441d8af}</Project>
+      <Project>{4bdaf4e2-45c0-49a1-becb-7983f41c2ac8}</Project>
       <Name>Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Objects\Objects.csproj">
-      <Project>{2e9ab382-7855-41ac-997d-b4cafc742099}</Project>
+      <Project>{ba1b63a1-1020-4bdd-8a9c-da6476a3abd3}</Project>
       <Name>Objects</Name>
     </ProjectReference>
     <ProjectReference Include="..\ConverterSNAP\ConverterSNAP.csproj">

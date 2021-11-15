@@ -132,7 +132,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Core\Core\Core.csproj">
-      <Project>{a2c8730a-b605-483e-914e-61f3ed7954d9}</Project>
+      <Project>{4bdaf4e2-45c0-49a1-becb-7983f41c2ac8}</Project>
       <Name>Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\Speckle.SNAP.API\Speckle.SNAP.API.csproj">
