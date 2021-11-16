@@ -21,8 +21,11 @@ namespace ConnectorSNAP
 
     public List<string> Errors => errors;
 
-    public bool SaveAs(string saveAsFilePath) => Writes8iCsv(saveAsFilePath, recordsToSave, out errors);
-
+    public bool SaveAs(string saveAsFilePath)
+    {
+      filePath = saveAsFilePath;
+      return Writes8iCsv(saveAsFilePath, recordsToSave, out errors);
+    }
     private string filePath;
 
     public void Close()
