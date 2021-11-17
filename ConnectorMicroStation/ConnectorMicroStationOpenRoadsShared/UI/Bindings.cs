@@ -636,13 +636,11 @@ namespace Speckle.ConnectorMicroStationOpenRoads.UI
         string containerName = string.Empty;
         try
         {
-          var levelCache = Model.GetFileLevelCache();
-          var objLevel = levelCache.GetLevel(obj.LevelId);
+          var objLevel = Model.GetFileLevelCache().GetLevel(obj.LevelId);
+
           var layerName = "Unknown";
-          if (objLevel != null)
-          {
+          if (objLevel.Status != LevelCacheErrorCode.CannotFindLevel)
             layerName = objLevel.Name;
-          }
 
 #if (OPENROADS || OPENRAIL)
           if (convertCivilObject)
