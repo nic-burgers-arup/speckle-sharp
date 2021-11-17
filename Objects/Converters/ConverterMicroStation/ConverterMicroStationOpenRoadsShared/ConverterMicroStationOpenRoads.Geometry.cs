@@ -593,6 +593,7 @@ namespace Objects.Converter.MicroStationOpenRoads
       Plane specklePlane = PlaneToSpeckle(new DPlane3d(center, normal));
 
       var u = units ?? ModelUnits;
+      radius = ScaleToSpeckle(radius, UoR);
       var _circle = new Circle(specklePlane, radius, u);
       _circle.domain = new Interval(0, 1);
       _circle.length = 2 * Math.PI * radius;
@@ -1661,7 +1662,6 @@ namespace Objects.Converter.MicroStationOpenRoads
     {
       var element = new Base();
 
-
       return element;
     }
 
@@ -1669,10 +1669,8 @@ namespace Objects.Converter.MicroStationOpenRoads
     {
       var element = new CellHeaderElement(Model, null, new DPoint3d(), new DMatrix3d(), new List<Element>() { });
 
-
       return element;
     }
-
 
     public Base Type2ElementToSpeckle(Type2Element cellHeader, string units = null)
     {
@@ -1680,7 +1678,36 @@ namespace Objects.Converter.MicroStationOpenRoads
       Processor processor = new Processor();
       ElementGraphicsOutput.Process(cellHeader, processor);
 
-      var x = cellHeader.GetChildren();
+      var ecProperties = new Base();
+
+      var instanceCollection = GetElementProperties(cellHeader);
+      foreach (var instance in instanceCollection)
+      {
+        var collection = new Base();
+        foreach (var propertyValue in instance)
+        {
+          if (propertyValue != null)
+          {            
+            if (propertyValue.TryGetDoubleValue(out double doubleValue))
+              collection[propertyValue.Property.Name] = propertyValue.DoubleValue;
+            else if (propertyValue.TryGetIntValue(out int intValue))
+              collection[propertyValue.Property.Name] = propertyValue.IntValue;
+            else if (propertyValue.TryGetStringValue(out string stringValue))
+              collection[propertyValue.Property.Name] = propertyValue.StringValue;
+            else
+              try
+              {
+                if (!propertyValue.IsNull) collection[propertyValue.Property.Name] = propertyValue.NativeValue;
+              }
+              catch { }
+          }          
+        }
+        var instanceName = instance.ClassDefinition.Name;
+        ecProperties[$"@{instanceName}"] = collection;
+      }
+
+      element["@properties"] = ecProperties;
+
       var segments = new List<ICurve>();
       var curves = processor.curveVectors;
 
@@ -1688,6 +1715,7 @@ namespace Objects.Converter.MicroStationOpenRoads
       {
         foreach (var curve in curves)
         {
+          curve.Transform(processor._transform);
           foreach (var primitive in curve)
           {
             var curvePrimitiveType = primitive.GetCurvePrimitiveType();
@@ -1726,18 +1754,17 @@ namespace Objects.Converter.MicroStationOpenRoads
     }
 
 
-
-    internal class Processor : ElementGraphicsProcessor
+    public class Processor : ElementGraphicsProcessor
     {
-      private DTransform3d _transform;
+      public DTransform3d _transform;
 
       public List<CurveVector> curveVectors = new List<CurveVector>();
       public List<CurvePrimitive> curvePrimitives = new List<CurvePrimitive>();
+
       public List<Base> elements = new List<Base>();
 
       public override void AnnounceElementDisplayParameters(ElementDisplayParameters displayParams)
       {
-        var asdfsaf = displayParams.ElementClass;
       }
 
       public override void AnnounceElementMatSymbology(ElementMatSymbology matSymb)
@@ -1753,25 +1780,38 @@ namespace Objects.Converter.MicroStationOpenRoads
         _transform = trans;
       }
 
-      public override bool ProcessAsBody(bool isCurved)
+      //public override bool ProcessAsBody(bool isCurved)
+      //{
+      //  if (isCurved)
+      //    return true;
+      //  else
+      //    return false;
+      //}
+
+      //public override bool ProcessAsFacets(bool isPolyface)
+      //{
+      //  if (isPolyface)
+      //    return true;
+      //  else
+      //    return false;
+      //}
+
+      public override bool ProcessAsBody(bool isCurved) => false;
+      public override bool ProcessAsFacets(bool isPolyface) => false;
+
+      public override BentleyStatus ProcessSolidPrimitive(SolidPrimitive primitive)
       {
-        if (isCurved)
-          return true;
-        else
-          return false;
+        return BentleyStatus.Success;
       }
 
-      public override bool ProcessAsFacets(bool isPolyface)
+      public override BentleyStatus ProcessBody(SolidKernelEntity entity)
       {
-        if (isPolyface)
-          return true;
-        else
-          return false;
+        return BentleyStatus.Success;
       }
 
       public override BentleyStatus ProcessSurface(MSBsplineSurface surface)
-      {
-        return BentleyStatus.Error;
+      {        
+        return BentleyStatus.Success;
       }
 
       public override BentleyStatus ProcessFacets(PolyfaceHeader meshData, bool filled)
@@ -1792,14 +1832,11 @@ namespace Objects.Converter.MicroStationOpenRoads
         curvePrimitives.Add(curvePrimitive);
         var curvePrimitiveType = curvePrimitive.GetCurvePrimitiveType();
 
-        Base geometry = null;
         switch (curvePrimitiveType)
         {
           case CurvePrimitive.CurvePrimitiveType.LineString:
             var pointList = new List<DPoint3d>();
             curvePrimitive.TryGetLineString(pointList);
-            //PolylineToSpeckle(pointList);
-
             break;
           case CurvePrimitive.CurvePrimitiveType.Arc:
             curvePrimitive.TryGetArc(out DEllipse3d arc);
@@ -1810,7 +1847,6 @@ namespace Objects.Converter.MicroStationOpenRoads
           case CurvePrimitive.CurvePrimitiveType.BsplineCurve:
             var curve = curvePrimitive.GetBsplineCurve();
             break;
-
         }
 
         return BentleyStatus.Success;
