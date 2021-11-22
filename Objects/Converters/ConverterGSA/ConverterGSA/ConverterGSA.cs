@@ -35,7 +35,9 @@ namespace ConverterGSA
 
     public string WebsiteOrEmail => "https://www.oasys-software.com/";
 
+    public ProgressReport Report { get; private set; } = new ProgressReport();
     public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
+
     #endregion ISpeckleConverter props
 
     private UnitConversion conversionFactors = new UnitConversion();  //Default
@@ -308,7 +310,7 @@ namespace ConverterGSA
       var native = objects.Where(o => o.GetType().IsSubclassOf(typeof(GsaRecord)));
       if (native.Count() < objects.Count())
       {
-        ConversionErrors.Add(new Exception("Non-native objects: " + (objects.Count() - native.Count())));
+        Report.ConversionErrors.Add(new Exception("Non-native objects: " + (objects.Count() - native.Count())));
         objects = native.ToList();
       }
 

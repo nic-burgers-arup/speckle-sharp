@@ -366,6 +366,7 @@ namespace ConverterGSATests
       gsaRecords.AddRange(gsaGridLines);
       Instance.GsaModel.Cache.Upsert(gsaRecords);
 
+        Assert.Empty(converter.Report.ConversionErrors);
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
@@ -426,6 +427,7 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
+        Assert.Empty(converter.Report.ConversionErrors);
       var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
@@ -1905,6 +1907,7 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
+        Assert.Empty(converter.Report.ConversionErrors);
       var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(r => (object)r).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
@@ -2140,6 +2143,7 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
+        Assert.Empty(converter.Report.ConversionErrors);
       var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
@@ -2208,6 +2212,7 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
+        Assert.Empty(converter.Report.ConversionErrors);
       var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
@@ -2277,6 +2282,7 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
+        Assert.Empty(converter.Report.ConversionErrors);
       var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();

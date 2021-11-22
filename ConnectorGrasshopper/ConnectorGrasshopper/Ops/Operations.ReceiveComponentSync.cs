@@ -120,7 +120,7 @@ namespace ConnectorGrasshopper.Ops
     protected override void AppendAdditionalComponentMenuItems(ToolStripDropDown menu)
     {
       Menu_AppendSeparator(menu);
-      Menu_AppendItem(menu, "Select the converter you want to use:");
+      Menu_AppendItem(menu, "Select the converter you want to use:", null, false);
       var kits = KitManager.GetKitsWithConvertersForApp(Applications.Rhino6);
 
       foreach (var kit in kits)
@@ -286,6 +286,21 @@ namespace ConnectorGrasshopper.Ops
           disposeTransports: true
           ).Result;
 
+          try
+          {
+            await client.CommitReceived(new CommitReceivedInput
+            {
+              streamId = StreamWrapper.StreamId,
+              commitId = myCommit.id,
+              message = myCommit.message,
+              sourceApplication = Applications.Grasshopper
+            });
+          }
+          catch
+          {
+            // Do nothing!
+          }
+          
           return ReceivedObject;
         }, source.Token);
         TaskList.Add(task);
