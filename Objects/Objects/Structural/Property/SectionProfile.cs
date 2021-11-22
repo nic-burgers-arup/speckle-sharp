@@ -169,6 +169,7 @@ namespace Objects.Structural.Properties.Profiles
             this.name = name;
             this.outline = outline;
             this.voids = voids;
+            this.shapeType = ShapeType.Perimeter;
         }
     }
     public class Catalogue : SectionProfile
@@ -193,6 +194,7 @@ namespace Objects.Structural.Properties.Profiles
             this.catalogueName = catalogueName;
             this.sectionType = sectionType;
             this.sectionName = sectionName;
+            this.shapeType = ShapeType.Catalogue;
         }
     }
 
