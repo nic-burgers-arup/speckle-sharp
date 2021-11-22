@@ -1,4 +1,5 @@
-﻿using Speckle.Core.Api;
+﻿using DesktopUI2.Models;
+using Speckle.Core.Api;
 using Speckle.Core.Credentials;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
@@ -6,7 +7,6 @@ using Speckle.Core.Transports;
 using Speckle.SNAP.API;
 using System;
 using System.Collections.Generic;
-using System.Deployment.Application;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -48,15 +48,14 @@ namespace ConnectorSNAP
       var kit = KitManager.GetDefaultKit();
       var converter = kit.LoadConverter(Applications.SNAP);
 
-      IProgress<MessageEventArgs> loggingProgress = new Progress<MessageEventArgs>();
+      IProgress<string> loggingProgress = new Progress<string>();
       //TO DO: add logging to console
 
       //A simplified one just for use by the proxy class
       var proxyLoggingProgress = new Progress<string>();
       proxyLoggingProgress.ProgressChanged += (object o, string e) =>
       {
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, e));
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, e));
+        loggingProgress.Report(e);
       };
 
       Console.WriteLine("");
@@ -228,22 +227,19 @@ namespace ConnectorSNAP
 
           foreach (var streamId in streamIds)
           {
-            var streamState = new StreamState(userInfo.id, RestApi)
-            {
-              Stream = new Speckle.Core.Api.Stream() { id = streamId },
-              IsReceiving = true
-            };
+            var streamState = new StreamState(account, new Speckle.Core.Api.Stream() { id = streamId });
 
             Console.WriteLine("Retrieving information about stream " + streamId + " from the server");
 
-            streamState.RefreshStream(loggingProgress).Wait();
-            streamState.Stream.branch = client.StreamGetBranches(streamId, 1).Result.First();
-            var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
-            var transport = new ServerTransport(streamState.Client.Account, streamState.Stream.id);
+            streamState.CachedStream = streamState.Client.StreamGet(streamState.StreamId).Result;
+
+            streamState.CachedStream.branch = client.StreamGetBranches(streamId, 1).Result.First();
+            var commitId = streamState.CachedStream.branch.commits.items.FirstOrDefault().referencedObject;
+            var transport = new ServerTransport(streamState.Client.Account, streamState.StreamId);
 
             Console.WriteLine("Retrieving objects in stream " + streamId + " from the server");
 
-            var received = Commands.Receive(commitId, streamState, transport, topLevelObjects).Result;
+            var received = Commands.Receive(commitId, transport, topLevelObjects).Result;
 
             streamStates.Add(streamState);
           }
@@ -256,8 +252,8 @@ namespace ConnectorSNAP
           {
             foreach (var ce in converter.ConversionErrors)
             {
-              loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, ce.Message));
-              loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ce, ce.Message));
+              loggingProgress.Report(ce.Message);
+              loggingProgress.Report(ce.Message);
             }
           }
 
@@ -374,34 +370,7 @@ namespace ConnectorSNAP
         Console.WriteLine("[" + DateTime.Now.ToString("h:mm:ss tt") + "] ERROR: " + string.Join(" ", e.MessagePortions.Where(mp => !string.IsNullOrEmpty(mp))));
       }
     }
-
-    /// <summary>
-    /// Change status handler.
-    /// </summary>
-    private void ChangeStatus(object sender, StatusEventArgs e)
-    {
-      if (e.Percent >= 0 & e.Percent <= 100)
-      {
-        Console.WriteLine("[" + DateTime.Now.ToString("h:mm:ss tt") + "] " + e.Name + " : " + e.Percent);
-      }
-      else
-      {
-        Console.WriteLine("[" + DateTime.Now.ToString("h:mm:ss tt") + "] " + e.Name + "...");
-      }
-    }
     #endregion
-
-    private Version getRunningVersion()
-    {
-      try
-      {
-        return ApplicationDeployment.CurrentDeployment.CurrentVersion;
-      }
-      catch (Exception)
-      {
-        return Assembly.GetExecutingAssembly().GetName().Version;
-      }
-    }
 
     private static string AssemblyDirectory
     {

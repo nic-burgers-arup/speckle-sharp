@@ -1,4 +1,5 @@
-﻿using Speckle.Core.Api;
+﻿using DesktopUI2.Models;
+using Speckle.Core.Api;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using Speckle.Core.Transports;
@@ -50,14 +51,15 @@ namespace ConnectorSNAP
       }
     }
 
-    public static async Task<bool> Receive(string commitId, StreamState state, ITransport transport, List<Base> topLevelObjects)
+    public static async Task<bool> Receive(string commitId, ITransport transport, List<Base> topLevelObjects)
     {
+      var errors = new List<Exception>();
       var commitObject = await Operations.Receive(
           commitId,
           transport,
           onErrorAction: (s, e) =>
           {
-            state.Errors.Add(e);
+            errors.Add(e);
           },
           disposeTransports: true
           );
@@ -73,7 +75,7 @@ namespace ConnectorSNAP
       return false;
     }
 
-    public static bool ConvertToNative(List<Base> objects, ISpeckleConverter converter, IProgress<MessageEventArgs> loggingProgress) //Includes writing to Cache
+    public static bool ConvertToNative(List<Base> objects, ISpeckleConverter converter, IProgress<string> loggingProgress) //Includes writing to Cache
     {
       try
       {
@@ -82,10 +84,7 @@ namespace ConnectorSNAP
       }
       catch (Exception ex)
       {
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error,
-          "Unable to convert one or more received objects.  Refer to logs for more information"));
-
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ex, "Converion error"));
+        loggingProgress.Report("Unable to convert one or more received objects: " + ex.Message);
       }
 
       return true;
