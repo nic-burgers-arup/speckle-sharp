@@ -413,7 +413,7 @@ namespace ConverterGSA
         else
         {
           gsaElement.OffsetY = conversionFactors.length * speckleElement.end1Offset.y;
-          ConversionErrors.Add(new Exception("Element1dToNative: "
+          Report.ConversionErrors.Add(new Exception("Element1dToNative: "
             + "Error converting element1d with application id (" + speckleElement.applicationId + "). "
             + "Different y offsets were assigned at either end."
             + "end 1 y offset of " + gsaElement.OffsetY.ToString() + " has been applied"));
@@ -425,7 +425,7 @@ namespace ConverterGSA
         else
         {
           gsaElement.OffsetZ = conversionFactors.length * speckleElement.end1Offset.z;
-          ConversionErrors.Add(new Exception("Element1dToNative: "
+          Report.ConversionErrors.Add(new Exception("Element1dToNative: "
             + "Error converting element1d with application id (" + speckleElement.applicationId + "). "
             + "Different z offsets were assigned at either end."
             + "end 1 z offset of " + gsaElement.OffsetY.ToString() + " has been applied"));
@@ -548,7 +548,6 @@ namespace ConverterGSA
       var dynamicMembers = speckleMember.GetMembers();
 
       //Dynamic properties
-      gsaMember.Exposure = speckleMember.GetDynamicEnum<ExposedSurfaces>("Exposure", dynamicMembers);
       var exposure = speckleMember.GetDynamicEnum<ExposedSurfaces>("Exposure", dynamicMembers);
       gsaMember.Exposure = exposure == ExposedSurfaces.NotSet ? ExposedSurfaces.ALL : exposure;
       var analysisType = speckleMember.GetDynamicEnum<AnalysisType>("AnalysisType", dynamicMembers);
@@ -596,7 +595,7 @@ namespace ConverterGSA
         else
         {
           gsaMember.OffsetY = conversionFactors.length * speckleMember.end1Offset.y;
-          ConversionErrors.Add(new Exception("GSAMember1dToNative: "
+          Report.ConversionErrors.Add(new Exception("GSAMember1dToNative: "
             + "Error converting element1d with application id (" + speckleMember.applicationId + "). "
             + "Different y offsets were assigned at either end."
             + "end 1 y offset of " + gsaMember.OffsetY.ToString() + " has been applied"));
@@ -608,7 +607,7 @@ namespace ConverterGSA
         else
         {
           gsaMember.OffsetZ = conversionFactors.length * speckleMember.end1Offset.z;
-          ConversionErrors.Add(new Exception("GSAMember1dToNative: "
+          Report.ConversionErrors.Add(new Exception("GSAMember1dToNative: "
             + "Error converting element1d with application id (" + speckleMember.applicationId + "). "
             + "Different z offsets were assigned at either end."
             + "end 1 z offset of " + gsaMember.OffsetY.ToString() + " has been applied"));
@@ -674,8 +673,6 @@ namespace ConverterGSA
         IsIntersector = speckleMember.intersectsWithOthers,
 
         //Dynamic properties
-        Exposure = speckleMember.GetDynamicEnum<ExposedSurfaces>("Exposure", dynamicMembers),
-        AnalysisType = speckleMember.GetDynamicEnum<AnalysisType>("AnalysisType", dynamicMembers),
         Fire = speckleMember.GetDynamicEnum<FireResistance>("Fire", dynamicMembers),
         CreationFromStartDays = speckleMember.GetDynamicValue<int>("CreationFromStartDays", dynamicMembers),
         StartOfDryingDays = speckleMember.GetDynamicValue<int>("StartOfDryingDays", dynamicMembers),
@@ -684,6 +681,12 @@ namespace ConverterGSA
         OffsetAutomaticInternal = speckleMember.GetDynamicValue<bool>("OffsetAutomaticInternal", dynamicMembers),
         LimitingTemperature = conversionFactors.TemperatureToNative(speckleMember.GetDynamicValue<double?>("LimitingTemperature", dynamicMembers)),
       };
+
+
+      var exposure = speckleMember.GetDynamicEnum<ExposedSurfaces>("Exposure");
+      gsaMember.Exposure = exposure == ExposedSurfaces.NotSet ? ExposedSurfaces.ALL : exposure;
+      var analysisType = speckleMember.GetDynamicEnum<AnalysisType>("AnalysisType");
+      gsaMember.AnalysisType = analysisType == AnalysisType.NotSet ? AnalysisType.LINEAR : analysisType;
 
       if (speckleMember.property != null)
       {
@@ -1227,7 +1230,7 @@ namespace ConverterGSA
       }
       else
       {
-        ConversionErrors.Add(new Exception("LoadBeamToNative: beam load type (" + speckleLoad.loadType.ToString() + ") is not currently supported"));
+        Report.ConversionErrors.Add(new Exception("LoadBeamToNative: beam load type (" + speckleLoad.loadType.ToString() + ") is not currently supported"));
       }
       return gsaRecords;
     }
@@ -2341,7 +2344,7 @@ namespace ConverterGSA
       }
       else
       {
-        ConversionErrors.Add(new Exception("PropertySpring: spring type (" + specklePropertySpring.springType.ToString() + ") is not currently supported"));
+        Report.ConversionErrors.Add(new Exception("PropertySpring: spring type (" + specklePropertySpring.springType.ToString() + ") is not currently supported"));
       }
 
       return new List<GsaRecord>() { gsaPropSpr };

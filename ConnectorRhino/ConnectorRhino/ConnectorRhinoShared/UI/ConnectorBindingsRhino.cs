@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using System.Windows.Threading;
 using System.Timers;
 using Rhino.Display;
+using ProgressReport = Speckle.DesktopUI.Utils.ProgressReport;
 
 namespace SpeckleRhino
 {
@@ -215,12 +216,14 @@ namespace SpeckleRhino
       string referencedObject = state.Commit.referencedObject;
 
       var commitId = state.Commit.id;
+      var commitMsg = state.Commit.message;
       //if "latest", always make sure we get the latest commit when the user clicks "receive"
       if (commitId == "latest")
       {
         var res = await state.Client.BranchGet(state.CancellationTokenSource.Token, state.Stream.id, state.Branch.name, 1);
         var commit = res.commits.items.FirstOrDefault();
         commitId = commit.id;
+        commitMsg = commit.message;
         referencedObject = commit.referencedObject;
       }
 
@@ -233,6 +236,21 @@ namespace SpeckleRhino
         onErrorAction: (message, exception) => { Exceptions.Add(exception); },
         disposeTransports: true
         );
+
+      try
+      {
+        await state.Client.CommitReceived(new CommitReceivedInput
+        {
+          streamId = stream.id,
+          commitId = commitId,
+          message = commitMsg,
+          sourceApplication = Utils.RhinoAppName
+        });
+      }
+      catch
+      {
+        // Do nothing!
+      }
 
       if (Exceptions.Count != 0)
       {
@@ -256,6 +274,15 @@ namespace SpeckleRhino
 
       // give converter a way to access the base commit layer name
       RhinoDoc.ActiveDoc.Notes += "%%%" + commitLayerName;
+
+      // purge commit layer from doc if it already exists
+      var existingLayer = Doc.Layers.FindName(commitLayerName);
+      var existingBlocks = Doc.InstanceDefinitions.Where(o => o.Name.StartsWith(commitLayerName))?.Select(o => o.Index)?.ToList();
+      if (existingBlocks != null)
+        foreach (var blockIndex in existingBlocks)
+          Doc.InstanceDefinitions.Purge(blockIndex);
+      if (existingLayer != null)
+        Doc.Layers.Purge(existingLayer.Id, false);
 
       // flatten the commit object to retrieve children objs
       int count = 0;
@@ -345,77 +372,88 @@ namespace SpeckleRhino
     // conversion and bake
     private void BakeObject(Base obj, string layerPath, StreamState state, ISpeckleConverter converter)
     {
-      var converted = converter.ConvertToNative(obj);
-      var convertedRH = converted as Rhino.Geometry.GeometryBase;
-
-      if (convertedRH != null)
+      var converted = converter.ConvertToNative(obj); // this may be an array, eg hatches
+      if (converted == null)
       {
-        if (convertedRH.IsValidWithLog(out string log))
+        state.Errors.Add(new Exception($"Failed to convert object {obj.id} of type {obj.speckle_type}."));
+        return;
+      }
+
+      var convertedList = new List<object>();
+      if (converted.GetType().IsArray)
+        foreach (object o in (Array)converted)
+          convertedList.Add(o);
+      else
+        convertedList.Add(converted);
+
+      foreach (var convertedItem in convertedList)
+      {
+        var convertedRH = convertedItem as Rhino.Geometry.GeometryBase;
+        if (convertedRH != null)
         {
-          Layer bakeLayer = Doc.GetLayer(layerPath, true);
-          if (bakeLayer != null)
+          if (convertedRH.IsValidWithLog(out string log))
           {
-            var attributes = new ObjectAttributes { LayerIndex = bakeLayer.Index };
-
-            // handle display
-            Base display = obj[@"displayStyle"] as Base;
-            if (display != null)
+            Layer bakeLayer = Doc.GetLayer(layerPath, true);
+            if (bakeLayer != null)
             {
-              var color = display["color"] as int?;
-              var lineStyle = display["linetype"] as string;
-              var lineWidth = display["lineweight"] as double?;
+              var attributes = new ObjectAttributes { LayerIndex = bakeLayer.Index };
 
-              if (color != null)
+              // handle display
+              Base display = obj[@"displayStyle"] as Base;
+              if (display != null)
               {
-                attributes.ColorSource = ObjectColorSource.ColorFromObject;
-                attributes.ObjectColor = System.Drawing.Color.FromArgb((int)color);
-              }
-              if (lineWidth != null)
-                attributes.PlotWeight = (double)lineWidth;
-              if (lineStyle != null)
-              {
-                var ls = Doc.Linetypes.FindName(lineStyle);
-                if (ls != null)
-                {
-                  attributes.LinetypeSource = ObjectLinetypeSource.LinetypeFromObject;
-                  attributes.LinetypeIndex = ls.Index;
-                }
-              }
-            }
-            /* Not implemented since revit displaymesh objs do not have render materials attached
-            else
-            {
-              Base render = obj[@"renderMaterial"] as Base;
-              if (render != null)
-              {
-                var color = render["diffuse"] as int?;
+                var color = display["color"] as int?;
+                var lineStyle = display["linetype"] as string;
+                var lineWidth = display["lineweight"] as double?;
 
                 if (color != null)
                 {
                   attributes.ColorSource = ObjectColorSource.ColorFromObject;
                   attributes.ObjectColor = System.Drawing.Color.FromArgb((int)color);
                 }
+                if (lineWidth != null)
+                  attributes.PlotWeight = (double)lineWidth;
+                if (lineStyle != null)
+                {
+                  var ls = Doc.Linetypes.FindName(lineStyle);
+                  if (ls != null)
+                  {
+                    attributes.LinetypeSource = ObjectLinetypeSource.LinetypeFromObject;
+                    attributes.LinetypeIndex = ls.Index;
+                  }
+                }
               }
+              /* Not implemented since revit displaymesh objs do not have render materials attached
+              else
+              {
+                Base render = obj[@"renderMaterial"] as Base;
+                if (render != null)
+                {
+                  var color = render["diffuse"] as int?;
+
+                  if (color != null)
+                  {
+                    attributes.ColorSource = ObjectColorSource.ColorFromObject;
+                    attributes.ObjectColor = System.Drawing.Color.FromArgb((int)color);
+                  }
+                }
+              }
+              */
+
+              // handle schema
+              string schema = obj["SpeckleSchema"] as string;
+              if (schema != null)
+                attributes.SetUserString("SpeckleSchema", schema);
+
+              if (Doc.Objects.Add(convertedRH, attributes) == Guid.Empty)
+                state.Errors.Add(new Exception($"Failed to bake object {obj.id} of type {obj.speckle_type}."));
             }
-            */
-
-            // handle schema
-            string schema = obj["SpeckleSchema"] as string;
-            if (schema != null)
-              attributes.SetUserString("SpeckleSchema", schema);
-
-            if (Doc.Objects.Add(convertedRH, attributes) == Guid.Empty)
-              state.Errors.Add(new Exception($"Failed to bake object {obj.id} of type {obj.speckle_type}."));
+            else
+              state.Errors.Add(new Exception($"Could not create layer {layerPath} to bake objects into."));
           }
           else
-            state.Errors.Add(new Exception($"Could not create layer {layerPath} to bake objects into."));
+            state.Errors.Add(new Exception($"Failed to bake object {obj.id} of type {obj.speckle_type}: {log.Replace("\n", "").Replace("\r", "")}"));
         }
-        else
-          state.Errors.Add(new Exception($"Failed to bake object {obj.id} of type {obj.speckle_type}: {log}"));
-      }
-      else if (converted == null)
-      {
-        state.Errors.Add(new Exception($"Failed to convert object {obj.id} of type {obj.speckle_type}."));
       }
     }
 
@@ -458,64 +496,65 @@ namespace SpeckleRhino
       foreach (var applicationId in state.SelectedObjectIds)
       {
         if (state.CancellationTokenSource.Token.IsCancellationRequested)
-        {
           return null;
-        }
 
         Base converted = null;
         string containerName = string.Empty;
 
-        try
+        // applicationId can either be doc obj guid or name of view
+        RhinoObject obj = null;
+        int viewIndex = -1;
+        try 
         {
-          RhinoObject obj = Doc.Objects.FindId(new Guid(applicationId)); // try get geom object
-          if (obj != null)
-          {
-            if (!converter.CanConvertToSpeckle(obj))
-            {
-              state.Errors.Add(new Exception($"Objects of type ${obj.Geometry.ObjectType} are not supported"));
-              continue;
-            }
-            converted = converter.ConvertToSpeckle(obj);
-            if (converted == null)
-            {
-              state.Errors.Add(new Exception($"Failed to convert object ${applicationId} of type ${obj.Geometry.ObjectType}."));
-              continue;
-            }
-
-            foreach (var key in obj.Attributes.GetUserStrings().AllKeys)
-              converted[key] = obj.Attributes.GetUserString(key);
-
-            if (obj is InstanceObject)
-              containerName = "Blocks";
-            else
-            {
-              var layerPath = Doc.Layers[obj.Attributes.LayerIndex].FullPath;
-              string cleanLayerPath = RemoveInvalidDynamicPropChars(layerPath);
-              containerName = cleanLayerPath;
-              if (!cleanLayerPath.Equals(layerPath))
-                renamedlayers = true;
-            }
-          }
+          obj = Doc.Objects.FindId(new Guid(applicationId)); // try get geom object
         }
-        catch
+        catch 
         {
-          int viewIndex = Doc.NamedViews.FindByName(applicationId); // try get view
-          ViewInfo view = (viewIndex >= 0) ? Doc.NamedViews[viewIndex] : null;
-          if (view != null)
+          viewIndex = Doc.NamedViews.FindByName(applicationId); // try get view
+        }
+        if (obj != null)
+        {
+          if (!converter.CanConvertToSpeckle(obj))
           {
-            converted = converter.ConvertToSpeckle(view);
-          }
-          else
-          {
-            state.Errors.Add(new Exception($"Failed to find local view ${applicationId}."));
+            state.Errors.Add(new Exception($"Objects of type ${obj.Geometry.ObjectType} are not supported"));
             continue;
           }
+          converted = converter.ConvertToSpeckle(obj);
+          if (converted == null)
+          {
+            state.Errors.Add(new Exception($"Failed to convert object ${applicationId} of type ${obj.Geometry.ObjectType}."));
+            continue;
+          }
+
+          foreach (var key in obj.Attributes.GetUserStrings().AllKeys)
+            converted[key] = obj.Attributes.GetUserString(key);
+
+          if (obj is InstanceObject)
+            containerName = "Blocks";
+          else
+          {
+            var layerPath = Doc.Layers[obj.Attributes.LayerIndex].FullPath;
+            string cleanLayerPath = RemoveInvalidDynamicPropChars(layerPath);
+            containerName = cleanLayerPath;
+            if (!cleanLayerPath.Equals(layerPath))
+              renamedlayers = true;
+          }
+        }
+        else if (viewIndex != -1)
+        {
+          ViewInfo view = Doc.NamedViews[viewIndex];
+          converted = converter.ConvertToSpeckle(view);
           if (converted == null)
           {
             state.Errors.Add(new Exception($"Failed to convert object ${applicationId} of type ${view.GetType()}."));
             continue;
           }
           containerName = "Named Views";
+        }
+        else
+        {
+          state.Errors.Add(new Exception($"Failed to find doc object ${applicationId}."));
+          continue;
         }
 
         if (commitObj[$"@{containerName}"] == null)

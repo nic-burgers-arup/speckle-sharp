@@ -85,13 +85,6 @@ namespace ConnectorGrasshopper.Objects
                 }
               }
 
-              if (values.Any(p => p == null))
-              {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
-                  $"List access parameter {param.NickName} cannot contain null values. Please clean your data tree.");
-                hasErrors = true;
-              }
-
               inputData[key] = values;
               break;
             case GH_ParamAccess.tree:
@@ -113,12 +106,12 @@ namespace ConnectorGrasshopper.Objects
       
       if(Converter != null)
       {
-        foreach (var error in Converter.ConversionErrors)
+        foreach (var error in Converter.Report.ConversionErrors)
         {
           AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
             error.Message + ": " + error.InnerException?.Message);
         }
-        Converter.ConversionErrors.Clear();
+        Converter.Report.ConversionErrors.Clear();
       }
       
       if (!GetSolveResults(DA, out Base result))

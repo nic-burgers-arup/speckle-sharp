@@ -148,7 +148,7 @@ namespace ConverterGSA
       }
       else
       {
-        ConversionErrors.Add(new Exception("GsaAssemblyToSpeckle: GSAEntity type (" + gsaAssembly.Type.ToString() + ") not supported when GSAlayer (" + layer.ToString() + ") is called."));
+        Report.ConversionErrors.Add(new Exception("GsaAssemblyToSpeckle: GSAEntity type (" + gsaAssembly.Type.ToString() + ") not supported when GSAlayer (" + layer.ToString() + ") is called."));
         return new ToSpeckleResult(false);
       }
     }
@@ -260,7 +260,7 @@ namespace ConverterGSA
         else //3D element
         {
           //TODO: add conversion code for 3D elements
-          ConversionErrors.Add(new Exception("GsaElement3dToSpeckle: "
+          Report.ConversionErrors.Add(new Exception("GsaElement3dToSpeckle: "
           + "Conversion of 3D elements not yet implemented"));
           return new ToSpeckleResult(false);
         }
@@ -301,7 +301,7 @@ namespace ConverterGSA
       }
       else
       {
-        ConversionErrors.Add(new Exception("GsaElement1dToSpeckle: "
+        Report.ConversionErrors.Add(new Exception("GsaElement1dToSpeckle: "
           + "Error converting 1D element with application id (" + speckleElement1d.applicationId + "). "
           + "There must be atleast 2 nodes to define the element"));
         return null;
@@ -360,7 +360,7 @@ namespace ConverterGSA
       }
       else
       {
-        ConversionErrors.Add(new Exception("GsaElement2dToSpeckle: "
+        Report.ConversionErrors.Add(new Exception("GsaElement2dToSpeckle: "
           + "Error converting 2D element with application id (" + speckleElement2d.applicationId + "). "
           + "There must be atleast 3 nodes to define the element"));
         return null;
@@ -401,7 +401,7 @@ namespace ConverterGSA
         else //3D element
         {
           //TODO: add conversion code for 3D members
-          ConversionErrors.Add(new Exception("GsaMember3dToSpeckle: "
+          Report.ConversionErrors.Add(new Exception("GsaMember3dToSpeckle: "
           + "Conversion of 3D members not yet implemented"));
           return new ToSpeckleResult(false);
         }
@@ -443,7 +443,7 @@ namespace ConverterGSA
       }
       else
       {
-        ConversionErrors.Add(new Exception("GsaMember1dToSpeckle: "
+        Report.ConversionErrors.Add(new Exception("GsaMember1dToSpeckle: "
           + "Error converting 1D member with application id (" + speckleMember1d.applicationId + "). "
           + "There must be atleast 2 nodes to define the member"));
         return null;
@@ -554,7 +554,7 @@ namespace ConverterGSA
       }
       else
       {
-        ConversionErrors.Add(new Exception("GsaMember2dToSpeckle: "
+        Report.ConversionErrors.Add(new Exception("GsaMember2dToSpeckle: "
           + "Error converting 2D member with application id (" + speckleMember2d.applicationId + "). "
           + "There must be atleast 3 nodes to define the member"));
         return null;
@@ -1406,7 +1406,7 @@ namespace ConverterGSA
       if (gsaSectionComp.MatAnalIndex.IsIndex()) //TODO: intention is to use this to convert MAT_ANAL to a material, but this is not currently possible
       {
         speckleProperty1D.material = null;
-        ConversionErrors.Add(new Exception("GsaSectionToSpeckle: Conversion of MAT_ANAL keyword not currently supported"));
+        Report.ConversionErrors.Add(new Exception("GsaSectionToSpeckle: Conversion of MAT_ANAL keyword not currently supported"));
       }
       if (gsaSectionComp.MaterialIndex.IsIndex())
       {
@@ -1487,9 +1487,9 @@ namespace ConverterGSA
       if (gsaProp2d.AnalysisMaterialIndex.IsIndex())
       {
         speckleProperty2d.material = null;
-        ConversionErrors.Add(new Exception("GsaProperty2dToSpeckle: Conversion of MAT_ANAL keyword not currently supported"));
+        Report.ConversionErrors.Add(new Exception("GsaProperty2dToSpeckle: Conversion of MAT_ANAL keyword not currently supported"));
       }
-      if (gsaProp2d.DesignIndex.IsIndex()) ConversionErrors.Add(new Exception("GsaProperty2dToSpeckle: Conversion of PROP_RC2D keyword not currently supported"));
+      if (gsaProp2d.DesignIndex.IsIndex()) Report.ConversionErrors.Add(new Exception("GsaProperty2dToSpeckle: Conversion of PROP_RC2D keyword not currently supported"));
 
       return new ToSpeckleResult(speckleProperty2d);
 
@@ -1559,7 +1559,7 @@ namespace ConverterGSA
       if (fns.ContainsKey(gsaPropSpr.PropertyType)) fns[gsaPropSpr.PropertyType](gsaPropSpr, specklePropertySpring);
       else
       {
-        ConversionErrors.Add(new Exception("GsaPropertySpringToSpeckle: spring type (" + gsaPropSpr.PropertyType.ToString() + ") is not currently supported"));
+        Report.ConversionErrors.Add(new Exception("GsaPropertySpringToSpeckle: spring type (" + gsaPropSpr.PropertyType.ToString() + ") is not currently supported"));
       }
 
       return new ToSpeckleResult(specklePropertySpring);
@@ -1600,7 +1600,7 @@ namespace ConverterGSA
           var gsaCaseIndex = Convert.ToInt32(gsaResult.CaseId.Substring(1));
           if (gsaResult.CaseId[0] == 'A')
           {
-            result.resultCase = GetLoadCaseFromIndex(gsaCaseIndex);
+            result.resultCase = GetAnalysisCaseFromIndex(gsaCaseIndex);
           }
           else if (gsaResult.CaseId[0] == 'C')
           {
@@ -1680,7 +1680,7 @@ namespace ConverterGSA
           var gsaCaseIndex = Convert.ToInt32(gsaResult.CaseId.Substring(1));
           if (gsaResult.CaseId[0] == 'A')
           {
-            result.resultCase = GetLoadCaseFromIndex(gsaCaseIndex);
+            result.resultCase = GetAnalysisCaseFromIndex(gsaCaseIndex);
           }
           else if (gsaResult.CaseId[0] == 'C')
           {
@@ -1748,7 +1748,7 @@ namespace ConverterGSA
           var gsaCaseIndex = Convert.ToInt32(gsaResult.CaseId.Substring(1));
           if (gsaResult.CaseId[0] == 'A')
           {
-            result.resultCase = GetLoadCaseFromIndex(gsaCaseIndex);
+            result.resultCase = GetAnalysisCaseFromIndex(gsaCaseIndex);
           }
           else if (gsaResult.CaseId[0] == 'C')
           {
@@ -2693,11 +2693,11 @@ namespace ConverterGSA
       {
         if (gsaMemb == null)
         {
-          ConversionErrors.Add(new Exception("GetMemberFromIndex: member with index " + index.ToString() + " does not exist."));
+          Report.ConversionErrors.Add(new Exception("GetMemberFromIndex: member with index " + index.ToString() + " does not exist."));
         }
         else
         {
-          ConversionErrors.Add(new Exception("GetMemberFromIndex: member type (" + gsaMemb.Type.ToString() + ") is not currently supported."));
+          Report.ConversionErrors.Add(new Exception("GetMemberFromIndex: member type (" + gsaMemb.Type.ToString() + ") is not currently supported."));
         }
         return null;
       }
@@ -2962,7 +2962,7 @@ namespace ConverterGSA
 
     private GSATask GetTaskFromIndex(int index)
     {
-      //ConversionErrors.Add(new Exception("GetTaskFromIndex: TASK keyword not currently supported"));
+      //Report.ConversionErrors.Add(new Exception("GetTaskFromIndex: TASK keyword not currently supported"));
       return null;
 
       //TODO: when TASK is included in interim schema
@@ -3760,6 +3760,7 @@ namespace ConverterGSA
       if (gsaAxisRefType == AxisRefType.Local)
       {
         return null;
+        Report.ConversionErrors.Add(new Exception("GetOrientationAxis: Not yet implemented for local reference axis"));
       }
       else if (gsaAxisRefType == AxisRefType.Reference && gsaAxisIndex.IsIndex())
       {

@@ -250,9 +250,9 @@ namespace ConnectorGSA
             //These objects have already passed through a CanConvertToNative
             Commands.ConvertToNative(fg, converter, loggingProgress);
 
-            if (converter.ConversionErrors != null && converter.ConversionErrors.Count > 0)
+            if (converter.Report.ConversionErrors != null && converter.Report.ConversionErrors.Count > 0)
             {
-              foreach (var ce in converter.ConversionErrors)
+              foreach (var ce in converter.Report.ConversionErrors)
               {
                 loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, ce.Message));
                 loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ce, ce.Message));
