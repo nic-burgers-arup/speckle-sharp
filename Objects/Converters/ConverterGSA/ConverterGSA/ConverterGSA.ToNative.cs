@@ -407,7 +407,7 @@ namespace ConverterGSA
         Type = speckleMember.type.ToNativeMember(),
         Colour = speckleMember.colour?.ColourToNative() ?? Colour.NotSet,
         Dummy = speckleMember.isDummy,
-        IsIntersector = speckleMember.intersectsWithOthers,
+        IsIntersector = true,
         //TaperOffsetPercentageEnd1 - currently not supported
         //TaperOffsetPercentageEnd2 - currently not supported
         PropertyIndex = IndexByConversionOrLookup<GsaSection>(speckleMember.property, ref retList),
@@ -552,7 +552,7 @@ namespace ConverterGSA
         Type = speckleMember.type.ToNativeMember(),
         Colour = speckleMember.colour?.ColourToNative() ?? Colour.NotSet,
         Dummy = speckleMember.isDummy,
-        IsIntersector = speckleMember.intersectsWithOthers,
+        IsIntersector = true,
 
         //Dynamic properties
         Fire = speckleMember.GetDynamicEnum<FireResistance>("Fire"),
@@ -1764,7 +1764,7 @@ namespace ConverterGSA
         {
           sectionComp.MaterialType = Section1dMaterialType.STEEL;
           sectionComp.MaterialIndex = IndexByConversionOrLookup<GsaMatSteel>(speckleProperty.material, ref retList);
-          var steelMaterial = (Steel)speckleProperty.material;
+          //var steelMaterial = (Steel)speckleProperty.material;
           var gsaSectionSteel = new SectionSteel()
           {
             //GradeIndex = 0,
@@ -2011,6 +2011,18 @@ namespace ConverterGSA
         ShearStiffnessPercentage = speckleProperty.modifierShear == 0 ? null : (double?)speckleProperty.modifierShear,
         VolumePercentage = speckleProperty.modifierVolume == 0 ? null : (double?)speckleProperty.modifierVolume
       };
+
+      if (speckleProperty.material != null)
+      {
+        if (speckleProperty.material.materialType == MaterialType.Concrete)
+        {
+          gsaProp2d.MatType = Property2dMaterialType.Concrete;
+        }
+        else if (speckleProperty.material.materialType == MaterialType.Steel)
+        {
+          gsaProp2d.MatType = Property2dMaterialType.Steel;
+        }
+      }
 
       if (speckleProperty.orientationAxis != null)
       {
@@ -2359,6 +2371,11 @@ namespace ConverterGSA
     {
       gsaAxisRefType = NodeAxisRefType.NotSet;
       gsaAxisIndex = null;
+      if (speckleAxis == null)
+      {
+        gsaAxisRefType = NodeAxisRefType.Global;
+        return true;
+      }
       if (speckleAxis.definition.IsGlobal())
       {
         gsaAxisRefType = NodeAxisRefType.Global;
