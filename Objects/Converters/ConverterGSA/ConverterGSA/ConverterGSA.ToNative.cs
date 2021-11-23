@@ -191,7 +191,7 @@ namespace ConverterGSA
                 }
                 catch
                 {
-                  ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
+                  Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
                 }
               }
             }
@@ -525,7 +525,7 @@ namespace ConverterGSA
         ApplicationId = speckleMember.applicationId,
         Index = speckleMember.GetIndex<GsaMemb>(),
         Name = speckleMember.name,
-        Type = speckleMember.memberType.ToNative(1),
+        Type = ToNative(speckleMember.memberType, 1),
         Colour = speckleMember.colour?.ColourToNative() ?? Colour.NotSet,
         Dummy = speckleMember.isDummy,
         IsIntersector = speckleMember.intersectsWithOthers,
@@ -667,7 +667,7 @@ namespace ConverterGSA
         ApplicationId = speckleMember.applicationId,
         Index = speckleMember.GetIndex<GsaMemb>(),
         Name = speckleMember.name,
-        Type = speckleMember.memberType.ToNative(2),
+        Type = ToNative(speckleMember.memberType, 2),
         Colour = speckleMember.colour?.ColourToNative() ?? Colour.NotSet,
         Dummy = speckleMember.isDummy,
         IsIntersector = speckleMember.intersectsWithOthers,
@@ -1441,11 +1441,18 @@ namespace ConverterGSA
         ApplicationId = speckleLoad.applicationId,
         Index = speckleLoad.GetIndex<GsaLoadGravity>(),
         Name = speckleLoad.name,
-        LoadCaseIndex = IndexByConversionOrLookup< GsaLoadCase>(speckleLoad.loadCase, ref gsaRecords),
-        ElementIndices = IndexByConversionOrLookup<GsaEl>(speckleLoad.elements.FindAll(o => o is Element1D || o is Element2D), ref gsaRecords) ?? new List<int>(),
-        MemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleLoad.elements.FindAll(o => o is GSAMember1D || o is GSAMember2D), ref gsaRecords) ?? new List<int>(),
-        Nodes = speckleLoad.nodes.Select(n => (Node)n).ToList().NodeAt(conversionFactors),
+        LoadCaseIndex = IndexByConversionOrLookup<GsaLoadCase>(speckleLoad.loadCase, ref gsaRecords)
       };
+
+      if (speckleLoad.nodes != null)
+      {
+        gsaLoad.Nodes = speckleLoad.nodes.Select(n => (Node)n).ToList().NodeAt(conversionFactors);
+      }
+      if (speckleLoad.elements != null)
+      {
+        gsaLoad.ElementIndices = IndexByConversionOrLookup<GsaEl>(speckleLoad.elements.FindAll(o => o is Element1D || o is Element2D), ref gsaRecords) ?? new List<int>();
+        gsaLoad.MemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleLoad.elements.FindAll(o => o is GSAMember1D || o is GSAMember2D), ref gsaRecords) ?? new List<int>();
+      }
 
       if (speckleLoad.gravityFactors != null) 
       {
@@ -2718,9 +2725,40 @@ namespace ConverterGSA
       }
       return true;
     }
-#endregion
+    #endregion
 
-#region Element
+    #region Element
+    public Speckle.GSA.API.GwaSchema.MemberType ToNative(Objects.Structural.Geometry.MemberType speckleMemberType, int dimension)
+    {
+      if (dimension == 1)
+      {
+        switch (speckleMemberType)
+        {
+          case Objects.Structural.Geometry.MemberType.Beam: return Speckle.GSA.API.GwaSchema.MemberType.Beam;
+          case Objects.Structural.Geometry.MemberType.Column: return Speckle.GSA.API.GwaSchema.MemberType.Column;
+          case Objects.Structural.Geometry.MemberType.Generic1D: return Speckle.GSA.API.GwaSchema.MemberType.Generic1d;
+          case Objects.Structural.Geometry.MemberType.VoidCutter1D: return Speckle.GSA.API.GwaSchema.MemberType.Void1d;
+          default:
+            Report.ConversionErrors.Add(new Exception(speckleMemberType.ToString() + " is not currently a supported member type for a 1D element."));
+            return Speckle.GSA.API.GwaSchema.MemberType.NotSet;
+        }
+      }
+      else if (dimension == 2)
+      {
+        switch (speckleMemberType)
+        {
+          case Objects.Structural.Geometry.MemberType.Slab: return Speckle.GSA.API.GwaSchema.MemberType.Slab;
+          case Objects.Structural.Geometry.MemberType.Wall: return Speckle.GSA.API.GwaSchema.MemberType.Wall;
+          case Objects.Structural.Geometry.MemberType.Generic2D: return Speckle.GSA.API.GwaSchema.MemberType.Generic2d;
+          case Objects.Structural.Geometry.MemberType.VoidCutter2D: return Speckle.GSA.API.GwaSchema.MemberType.Void2d;
+          default:
+            Report.ConversionErrors.Add(new Exception(speckleMemberType.ToString() + " is not currently a supported member type for a 2D element."));
+            return Speckle.GSA.API.GwaSchema.MemberType.NotSet;
+        }
+      }
+      return Speckle.GSA.API.GwaSchema.MemberType.NotSet;
+    }
+
     private bool GetReleases(Restraint speckleRelease, out Dictionary<GwaAxisDirection6,ReleaseCode> gsaRelease, out List<double> gsaStiffnesses, out ReleaseInclusion gsaReleaseInclusion)
     {
       if (speckleRelease.code == "FFFFFF")
