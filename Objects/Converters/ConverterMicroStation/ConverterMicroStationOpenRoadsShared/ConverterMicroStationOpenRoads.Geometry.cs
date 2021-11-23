@@ -12,9 +12,12 @@ using Brep = Objects.Geometry.Brep;
 using Circle = Objects.Geometry.Circle;
 using Curve = Objects.Geometry.Curve;
 using Ellipse = Objects.Geometry.Ellipse;
+using FamilyInstance = Objects.BuiltElements.Revit.FamilyInstance;
 using Interval = Objects.Primitive.Interval;
+using Level = Objects.BuiltElements.Level;
 using Line = Objects.Geometry.Line;
 using Mesh = Objects.Geometry.Mesh;
+using Parameter = Objects.BuiltElements.Revit.Parameter;
 using Plane = Objects.Geometry.Plane;
 using Point = Objects.Geometry.Point;
 using Polyline = Objects.Geometry.Polyline;
@@ -38,7 +41,9 @@ namespace Objects.Converter.MicroStationOpenRoads
 {
     public partial class ConverterMicroStationOpenRoads
     {
-        public double tolerance = 0.000;    // tolerance for geometry      
+        public double tolerance = 0.000;    // tolerance for geometry
+                                            // 
+        public Dictionary<string, FamilyInstance> familyInstances = new Dictionary<string, FamilyInstance>();
 
         public double[] PointToArray(DPoint2d pt)
         {
@@ -1771,6 +1776,22 @@ namespace Objects.Converter.MicroStationOpenRoads
 
             string part = (string)properties["PART"];
             string family = (string)properties["FAMILY"];
+
+            FamilyInstance familyInstance = familyInstances[family];
+            if (familyInstance == null)
+            {
+                Point basePoint = new Point();
+                string type = "";
+                Level level = new Level();
+                double rotation = 0;
+                bool facingFlipped = false;
+                bool handFlipped = false;
+                familyInstance = new FamilyInstance(basePoint, family, type, level, rotation, facingFlipped, handFlipped, new List<Parameter>());
+                //familyInstance.category
+                //familyInstance.elementId
+                familyInstances.Add(family, familyInstance);
+            }
+
 
             Base element;
             var u = units ?? ModelUnits;
