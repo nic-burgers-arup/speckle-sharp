@@ -2071,6 +2071,7 @@ namespace ConverterGSATests
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
       gsaRecords.AddRange(GsaLoadCaseExamples(2, "load case 1", "load case 2"));
+      gsaRecords.AddRange(GsaAnalysisCaseExamples(2, "analysis case 1", "analysis case 2"));
 
       //Gen #2
       var gsaNodes = GsaNodeExamples(1, "node 1");
@@ -2102,11 +2103,11 @@ namespace ConverterGSATests
         var gsaResult = (CsvNode)nodeResults[i];
         var loadCase = (i + 1).ToString();
 
-        Assert.Equal("node 1_load case " + loadCase, speckleNodeResults[i].applicationId);
+        Assert.Equal("node 1_analysis case " + loadCase, speckleNodeResults[i].applicationId);
         Assert.Equal("node 1", speckleNodeResults[i].node.applicationId); //assume the conversion of the node is tested elsewhere
         Assert.Equal("", speckleNodeResults[i].description);
         Assert.Equal("", speckleNodeResults[i].permutation);
-        Assert.Equal("load case " + loadCase, speckleNodeResults[i].resultCase.applicationId);
+        Assert.Equal("analysis case " + loadCase, speckleNodeResults[i].resultCase.applicationId);
         Assert.Equal(gsaResult.Ux.Value, speckleNodeResults[i].dispX);
         Assert.Equal(gsaResult.Uy.Value, speckleNodeResults[i].dispY);
         Assert.Equal(gsaResult.Uz.Value, speckleNodeResults[i].dispZ);
@@ -2152,6 +2153,7 @@ namespace ConverterGSATests
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
       gsaRecords.Add(GsaLoadCaseExamples(1, "load case 1").First());
+      gsaRecords.AddRange(GsaAnalysisCaseExamples(2, "analysis case 1", "analysis case 2"));
 
       //Gen #2
       gsaRecords.AddRange(GsaNodeExamples(2, "node 1", "node 2"));
@@ -2186,12 +2188,12 @@ namespace ConverterGSATests
         var gsaResult = (CsvElem1d)gsaElement1dResults[i];
 
         //result description
-        Assert.Equal("element 1_load case 1_" + gsaResult.PosR, speckleElement1dResults[i].applicationId);
+        Assert.Equal("element 1_analysis case 1_" + gsaResult.PosR, speckleElement1dResults[i].applicationId);
         Assert.Equal("", speckleElement1dResults[i].permutation);
         Assert.Equal("", speckleElement1dResults[i].description);
         Assert.Equal("element 1", speckleElement1dResults[i].element.applicationId);
         Assert.Equal(float.Parse(gsaResult.PosR), speckleElement1dResults[i].position);
-        Assert.Equal("load case 1", speckleElement1dResults[i].resultCase.applicationId);
+        Assert.Equal("analysis case 1", speckleElement1dResults[i].resultCase.applicationId);
 
         //results
         Assert.Equal(gsaResult.Ux.Value, speckleElement1dResults[i].dispX);
@@ -2232,6 +2234,7 @@ namespace ConverterGSATests
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
       gsaRecords.Add(GsaLoadCaseExamples(1, "load case 1").First());
+      gsaRecords.AddRange(GsaAnalysisCaseExamples(2, "analysis case 1", "analysis case 2"));
 
       //Gen #2
       gsaRecords.AddRange(GsaNodeExamples(4, "node 1", "node 2", "node 3", "node 4"));
@@ -2266,11 +2269,11 @@ namespace ConverterGSATests
         var gsaResult = (CsvElem2d)gsaElement2dResults[i];
 
         //result description
-        Assert.Equal("element 1_load case 1_" + gsaResult.PosR.ToString() + "_" + gsaResult.PosS.ToString(), speckleElement2dResults[i].applicationId);
+        Assert.Equal("element 1_analysis case 1_" + gsaResult.PosR.ToString() + "_" + gsaResult.PosS.ToString(), speckleElement2dResults[i].applicationId);
         Assert.Equal("", speckleElement2dResults[i].permutation);
         Assert.Equal("", speckleElement2dResults[i].description);
         Assert.Equal("element 1", speckleElement2dResults[i].element.applicationId);
-        Assert.Equal("load case 1", speckleElement2dResults[i].resultCase.applicationId);
+        Assert.Equal("analysis case 1", speckleElement2dResults[i].resultCase.applicationId);
         Assert.Equal(2, speckleElement2dResults[i].position.Count());
         Assert.Equal(gsaResult.PosR.Value, speckleElement2dResults[i].position[0]);
         Assert.Equal(gsaResult.PosS.Value, speckleElement2dResults[i].position[1]);
@@ -3443,7 +3446,7 @@ namespace ConverterGSATests
           Desc = "1.2L1 + 1.5L2",
         },
       };
-      for (int i = 0; i < appIds.Count(); i++)
+      for (int i = 0; i < Math.Min(appIds.Count(), gsaAnals.Count()); i++)
       {
         gsaAnals[i].ApplicationId = appIds[i];
       }
