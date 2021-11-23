@@ -21,6 +21,7 @@ using Plane = Objects.Geometry.Plane;
 using Point = Objects.Geometry.Point;
 using Polyline = Objects.Geometry.Polyline;
 using RevitBeam = Objects.BuiltElements.Revit.RevitBeam;
+using RevitColumn = Objects.BuiltElements.Revit.RevitColumn;
 using Surface = Objects.Geometry.Surface;
 using Vector = Objects.Geometry.Vector;
 
@@ -33,6 +34,7 @@ using BIM = Bentley.Interop.MicroStationDGN;
 using Bentley.ECObjects.Schema;
 using Bentley.DgnPlatformNET.DgnEC;
 using Bentley.EC.Persistence.Query;
+using Speckle.Core.Logging;
 
 namespace Objects.Converter.MicroStationOpenRoads
 {
@@ -1686,29 +1688,16 @@ namespace Objects.Converter.MicroStationOpenRoads
             Processor processor = new Processor();
             ElementGraphicsOutput.Process(cellHeader, processor);
 
-            var ecProperties = new Base();
-
             var instanceCollection = GetElementProperties(cellHeader);
-            string part = "";
-            string family = "";
+            Dictionary<string, object> properties = new Dictionary<string, object>();
             foreach (var instance in instanceCollection)
             {
-                var collection = new Base();
                 foreach (var propertyValue in instance)
                 {
                     if (propertyValue != null)
                     {
                         string type = propertyValue.GetType().Name;
                         string propertyName = propertyValue.Property.Name;
-
-                        if (propertyName == "PART")
-                        {
-                            part = propertyName;
-                        }
-                        else if (propertyName == "FAMILY")
-                        {
-                            family = propertyName;
-                        }
 
                         propertyValue.TryGetDoubleValue(out double doubleValue);
                         propertyValue.TryGetIntValue(out int intValue);
@@ -1719,86 +1708,147 @@ namespace Objects.Converter.MicroStationOpenRoads
                         {
                             case "ECDBooleanValue":
                                 if (nativeValue != null)
-                                    collection[propertyName] = (bool)nativeValue;
+                                {
+                                    AddProperty(properties, propertyName, nativeValue);
+                                }
                                 break;
 
                             case "ECDIntegerValue":
                                 if (nativeValue != null)
-                                    collection[propertyName] = intValue;
+                                {
+                                    AddProperty(properties, propertyName, intValue);
+                                }
                                 break;
 
                             case "ECDLongValue":
                             case "ECDDoubleValue":
                                 if (nativeValue != null)
-                                    collection[propertyName] = doubleValue;
+                                {
+                                    AddProperty(properties, propertyName, doubleValue);
+                                }
                                 break;
 
                             case "ECDDateTimeValue":
                                 if (stringValue != null)
-                                    collection[propertyName] = stringValue;
+                                {
+                                    AddProperty(properties, propertyName, stringValue);
+                                }
                                 break;
 
                             case "ECDArrayValue":
                             case "ECDStructValue":
                             case "ECDStructArrayValue":
                                 if (stringValue != null)
-                                    collection[propertyName] = stringValue;
+                                {
+                                    AddProperty(properties, propertyName, stringValue);
+                                }
                                 break;
 
                             case "ECDStringValue":
                             case "ECDCalculatedStringValue":
                                 if (stringValue != null)
-                                    collection[propertyName] = stringValue;
+                                {
+                                    AddProperty(properties, propertyName, stringValue);
+                                }
                                 break;
 
                             case "ECDDPoint3dValue":
                                 if (nativeValue != null)
                                 {
                                     DPoint3d point = (DPoint3d)nativeValue;
-                                    collection[propertyName] = ConvertToSpeckle(point);
+                                    Base converted = ConvertToSpeckle(point);
+                                    AddProperty(properties, propertyName, converted);
                                 }
                                 break;
 
                             case "ECDBinaryValue":
                             default:
+                                // do nothing
                                 break;
                         }
                     }
                 }
                 var instanceName = instance.ClassDefinition.Name;
-                ecProperties[$"@{instanceName}"] = collection;
             }
 
+            string part = (string)properties["PART"];
+            string family = (string)properties["FAMILY"];
 
+            Base element;
+            var u = units ?? ModelUnits;
+            Point start = (Point)GetProperty(properties, "RangeLow");
+            Point end = (Point)GetProperty(properties, "RangeHigh");
+            // for some reason the ElementID is a long
+            int elementId = (int)(double)GetProperty(properties, "ElementID");
+
+            // levels in OBD are actually layers..
+            //int level = (int)GetProperty(properties, "Level");
+            //string levelName = (string)GetProperty(properties, "LEVELNAME");
+
+            // remove duplicates 
+            properties.Remove("OV");
+            properties.Remove("PTS_0");
+            properties.Remove("PTS_1");
+            properties.Remove("ELEMENTID");
             switch (part)
             {
-                case ("Beam"):
+                case ("Beams"):
                     RevitBeam beam = new RevitBeam();
-                    //beam.baseLine
+                    beam.baseLine = new Line(start, end, u);
                     //beam.displayMesh
-                    //beam.units
-                    beam.family = family;
+                    beam.units = u;
                     beam.type = part;
-                    //beam.parameters
-                    //beam.elementId
-                    //beam.level
+                    properties.Remove("PART");
+                    beam.family = family;
+                    properties.Remove("FAMILY");
+                    beam.elementId = elementId.ToString();
+                    //beam.level = level;
 
+                    element = beam;
                     break;
 
-                case ("Column"):
-                    break;
+                case ("Columns"):
+                case ("Piles"):
+                    RevitColumn column = new RevitColumn();
+                    column.baseLine = new Line(start, end, u);
+                    //column.displayMesh
+                    column.units = u;
+                    column.type = part;
+                    properties.Remove("PART");
+                    column.family = family;
+                    properties.Remove("FAMILY");
+                    column.elementId = elementId.ToString();
+                    //column.level = level;
 
-                case ("Pile"):
+                    element = column;
                     break;
 
                 default:
+                    element = new Base();
                     break;
             }
 
-            var element = new Base();
 
+            Base parameters = new Base();
+            foreach (string propertyName in properties.Keys)
+            {
+                parameters[propertyName] = properties[propertyName];
+            }
+            switch (part)
+            {
+                case ("Beam"):
+                    ((RevitBeam)element).parameters = parameters;
+                    break;
 
-            element["@properties"] = ecProperties;
+                case ("Column"):
+                case ("Pile"):
+                    ((RevitColumn)element).parameters = parameters;
+                    break;
+
+                default:
+                    element["@parameters"] = parameters;
+                    break;
+            }
 
             var segments = new List<ICurve>();
             var curves = processor.curveVectors;
@@ -1845,6 +1895,28 @@ namespace Objects.Converter.MicroStationOpenRoads
             return element;
         }
 
+        private Dictionary<string, object> AddProperty(Dictionary<string, object> properties, string propertyName, object value)
+        {
+            if (properties.ContainsKey(propertyName))
+            {
+                throw new SpeckleException("Can´t convert duplicate property " + propertyName + " with key " + value + ".");
+            }
+            else
+            {
+                properties.Add(propertyName, value);
+            }
+            return properties;
+        }
+
+        private Object GetProperty(Dictionary<string, object> properties, string propertyName)
+        {
+            if (properties.TryGetValue(propertyName, out object value))
+            {
+                properties.Remove(propertyName);
+                return value;
+            }
+            return null;
+        }
 
         public class Processor : ElementGraphicsProcessor
         {
