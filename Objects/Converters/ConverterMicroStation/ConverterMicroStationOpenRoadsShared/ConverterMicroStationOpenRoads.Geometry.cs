@@ -8,10 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Arc = Objects.Geometry.Arc;
 using Box = Objects.Geometry.Box;
-using Beam = Objects.BuiltElements.Beam;
 using Brep = Objects.Geometry.Brep;
 using Circle = Objects.Geometry.Circle;
-using Column = Objects.BuiltElements.Column;
 using Curve = Objects.Geometry.Curve;
 using Ellipse = Objects.Geometry.Ellipse;
 using Interval = Objects.Primitive.Interval;
@@ -1819,6 +1817,9 @@ namespace Objects.Converter.MicroStationOpenRoads
                     properties.Remove("FAMILY");
                     column.elementId = elementId.ToString();
                     //column.level = level;
+
+                    double rotation = (double)GetProperty(properties, "ROTATION");
+                    column.rotation = rotation;
 
                     element = column;
                     break;
