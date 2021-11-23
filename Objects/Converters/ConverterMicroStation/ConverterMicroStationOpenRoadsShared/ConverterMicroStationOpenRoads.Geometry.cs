@@ -22,6 +22,7 @@ using Plane = Objects.Geometry.Plane;
 using Point = Objects.Geometry.Point;
 using Polyline = Objects.Geometry.Polyline;
 using RevitBeam = Objects.BuiltElements.Revit.RevitBeam;
+using RevitCategory = Objects.BuiltElements.Revit.RevitCategory;
 using RevitColumn = Objects.BuiltElements.Revit.RevitColumn;
 using Surface = Objects.Geometry.Surface;
 using Vector = Objects.Geometry.Vector;
@@ -1775,10 +1776,26 @@ namespace Objects.Converter.MicroStationOpenRoads
             }
 
             string part = (string)properties["PART"];
-            string family = (string)properties["FAMILY"];
+            Category category = Category.None;
+            if (part.Contains("Beam"))
+            {
+                category = Category.Beams;
+            }
+            else if (part.Contains("Column"))
+            {
+                category = Category.Columns;
+            }
+            else if(part.Contains("Pile"))
+            {
+                category = Category.Piles;
+            }
+            else if (part.Contains("Slab"))
+            {
+                category = Category.Slabs;
+            }
 
-            FamilyInstance familyInstance = familyInstances[family];
-            if (familyInstance == null)
+            string family = (string)properties["FAMILY"];
+            if (familyInstances.TryGetValue(family, out FamilyInstance familyInstance))
             {
                 Point basePoint = new Point();
                 string type = "";
@@ -1791,7 +1808,6 @@ namespace Objects.Converter.MicroStationOpenRoads
                 //familyInstance.elementId
                 familyInstances.Add(family, familyInstance);
             }
-
 
             Base element;
             var u = units ?? ModelUnits;
@@ -1809,9 +1825,9 @@ namespace Objects.Converter.MicroStationOpenRoads
             properties.Remove("PTS_0");
             properties.Remove("PTS_1");
             properties.Remove("ELEMENTID");
-            switch (part)
+            switch (category)
             {
-                case ("Beams"):
+                case (Category.Beams):
                     RevitBeam beam = new RevitBeam();
                     beam.baseLine = new Line(start, end, u);
                     //beam.displayMesh
@@ -1821,13 +1837,13 @@ namespace Objects.Converter.MicroStationOpenRoads
                     beam.family = family;
                     properties.Remove("FAMILY");
                     beam.elementId = elementId.ToString();
-                    //beam.level = level;
+                    beam.level = new Level();
 
                     element = beam;
                     break;
 
-                case ("Columns"):
-                case ("Piles"):
+                case (Category.Columns):
+                case (Category.Piles):
                     RevitColumn column = new RevitColumn();
                     column.baseLine = new Line(start, end, u);
                     //column.displayMesh
@@ -1837,7 +1853,7 @@ namespace Objects.Converter.MicroStationOpenRoads
                     column.family = family;
                     properties.Remove("FAMILY");
                     column.elementId = elementId.ToString();
-                    //column.level = level;
+                    column.level = new Level();
 
                     double rotation = (double)GetProperty(properties, "ROTATION");
                     column.rotation = rotation;
@@ -2042,6 +2058,14 @@ namespace Objects.Converter.MicroStationOpenRoads
             {
                 return false;
             }
+        }
+        enum Category
+        {
+            Beams,
+            Columns,
+            None,
+            Piles,
+            Slabs
         }
     }
 }
