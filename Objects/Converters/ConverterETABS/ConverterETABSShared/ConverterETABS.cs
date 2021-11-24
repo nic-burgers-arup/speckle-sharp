@@ -11,6 +11,8 @@ using OSEA = Objects.Structural.ETABS.Analysis;
 using Objects.Converter.ETABS;
 using Speckle.Core.Logging;
 using Objects.Structural.Analysis;
+using Objects.Structural.Results;
+using Objects.Structural.ETABS.Geometry;
 
 namespace Objects.Converter.ETABS
 {
@@ -19,8 +21,8 @@ namespace Objects.Converter.ETABS
 #if ETABSV18
         public static string ETABSAppName = Applications.ETABSv18;
 #elif ETABSV19
-        public static string ETABSAppName = Applications.ETABSv19;
-#else 
+    public static string ETABSAppName = Applications.ETABSv19;
+#else
         public static string ETABSAppName = Applications.ETABS;
 #endif
         public string Description => "Default Speckle Kit for ETABS";
@@ -35,14 +37,16 @@ namespace Objects.Converter.ETABS
 
         public Model SpeckleModel { get; set; }
 
+        public ResultSetAll AnalysisResults { get; set; }
+
         public void SetContextDocument(object doc)
         {
             Model = (cSapModel)doc;
             SpeckleModel = ModelToSpeckle();
+            AnalysisResults = ResultsToSpeckle();
         }
 
         public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
-
 
         public ProgressReport Report { get; private set; } = new ProgressReport();
 
@@ -86,7 +90,7 @@ namespace Objects.Converter.ETABS
                     return FrameToNative(o);
                     Report.Log($"Created Element1D {o.id}");
                 case OSG.Element2D o:
-                    return AreaToNative(o);
+                    return AreaToNative((ETABSElement2D)o);
                     Report.Log($"Created Element2D {o.id}");
                 case Model o:
                     return ModelToNative(o);
@@ -119,6 +123,9 @@ namespace Objects.Converter.ETABS
                 case "Model":
                     returnObject = SpeckleModel;
                     break;
+                case "AnalysisResults":
+                    returnObject = AnalysisResults;
+                    break;
                 case "Stories":
                     returnObject = StoriesToSpeckle();
                     break;
@@ -146,6 +153,9 @@ namespace Objects.Converter.ETABS
                     returnObject = BraceToSpeckle(name);
                     Report.Log($"Created Brace");
                     break;
+                case "ElementsCount":
+                    returnObject = ModelElementsCountToSpeckle();
+                    break;
 
                 //case "Link":
                 //    returnObject = LinkToSpeckle(name);
@@ -166,7 +176,7 @@ namespace Objects.Converter.ETABS
                     Report.Log($"Created Loading Brace");
                     break;
                 case "FrameLoading":
-                    returnObject = LoadFrameToSpeckle(name,GetAllFrameNames(Model).Count());
+                    returnObject = LoadFrameToSpeckle(name, GetAllFrameNames(Model).Count());
                     Report.Log($"Created Loading Frame");
                     break;
                 case "FloorLoading":
@@ -190,7 +200,6 @@ namespace Objects.Converter.ETABS
                     Report.Log($"Created Loading Pattern");
                     break;
                     //case "ColumnResults":
-
                     //    returnObject = FrameResultSet1dToSpeckle(name);
                     //    break;
                     //case "BeamResults":
@@ -254,7 +263,7 @@ namespace Objects.Converter.ETABS
 
         public List<Base> ConvertToSpeckle(List<object> objects)
         {
-                return objects.Select(x => ConvertToSpeckle(x)).ToList();
+            return objects.Select(x => ConvertToSpeckle(x)).ToList();
         }
 
         public IEnumerable<string> GetServicedApplications() => new string[] { ETABSAppName };
