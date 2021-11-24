@@ -470,9 +470,9 @@ namespace ConnectorGSA
         //These objects have already passed through a CanConvertToNative
         Commands.ConvertToNative(fg, converter, loggingProgress);
 
-      if (converter.Report.ConversionErrors != null && converter.Report.ConversionErrors.Count > 0)
+        if (converter.Report.ConversionErrors != null && converter.Report.ConversionErrors.Count > 0)
         {
-        foreach (var ce in converter.Report.ConversionErrors)
+          foreach (var ce in converter.Report.ConversionErrors)
           {
             loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, ce.Message));
             loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ce, ce.Message));
@@ -527,13 +527,47 @@ namespace ConnectorGSA
 
       if (commitObject != null)
       {
-        foreach (var prop in commitObject.GetDynamicMembers().Where(m => commitObject[m] is Base))
+        var dynamicMembers = commitObject.GetDynamicMembers();
+        foreach (var item in dynamicMembers)
         {
-          topLevelObjects.Add((Base)commitObject[prop]);
+          if (commitObject[item] is Base)
+          {
+            topLevelObjects.Add((Base)commitObject[item]);
+          }  
+          else if (commitObject[item].GetType().IsAssignableFrom(typeof(List<object>)))
+          {
+            var drilledDownObjects = DrillDownToBase((List<object>)commitObject[item]);
+            if (drilledDownObjects != null && drilledDownObjects.Count > 0)
+            {
+              topLevelObjects.AddRange(drilledDownObjects);
+            }
+          }
         }
+
         return true;
       }
       return false;
+    }
+
+    private static List<Base> DrillDownToBase(List<object> l)
+    {
+      var retList = new List<Base>();
+      foreach (var item in l)
+      {
+        if (item is Base)
+        {
+          retList.Add((Base)item);
+        }
+        else if (item is List<object>)
+        {
+          var baseObjs = DrillDownToBase((List<object>)item);
+          if (baseObjs != null && baseObjs.Count > 0)
+          {
+            retList.AddRange(baseObjs);
+          }
+        }
+      }
+      return retList;
     }
 
     private static bool UpdateCache(IProgress<string> gwaLoggingProgress = null, bool onlyNodesWithApplicationIds = true)

@@ -36,7 +36,7 @@ namespace ConverterGSA
     public string WebsiteOrEmail => "https://www.oasys-software.com/";
 
     public ProgressReport Report { get; private set; } = new ProgressReport();
-    public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
+    //public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
 
     #endregion ISpeckleConverter props
 
@@ -213,7 +213,7 @@ namespace ConverterGSA
           }
           catch
           {
-            ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (o.applicationId ?? o.id) + " - refer to logs for more information"));
+            Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (o.applicationId ?? o.id) + " - refer to logs for more information"));
           }
         }
       }
@@ -277,7 +277,7 @@ namespace ConverterGSA
                   }
                   catch
                   {
-                    ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
+                    Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
                   }
                 }
               }
