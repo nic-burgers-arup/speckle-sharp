@@ -103,10 +103,17 @@ namespace Objects.Converter.MicroStationOpenRoads
       return myPoint;
     }
 
-    public Point Point3dToSpeckle(DPoint3d pt, string units = null)
+    public Point Point3dToSpeckle(DPoint3d pt, bool isScaled = true, string units = null)
     {
       var u = units ?? ModelUnits;
-      return new Point(ScaleToSpeckle(pt.X, UoR), ScaleToSpeckle(pt.Y, UoR), ScaleToSpeckle(pt.Z, UoR), u);
+      if (isScaled)
+      {
+        return new Point(ScaleToSpeckle(pt.X, UoR), ScaleToSpeckle(pt.Y, UoR), ScaleToSpeckle(pt.Z, UoR), u);
+      }
+      else
+      {
+        return new Point(pt.X, pt.Y, pt.Z, u);
+      }
     }
 
     public Point Point3dToSpeckle(Point3d pt, string units = null)
@@ -256,6 +263,26 @@ namespace Objects.Converter.MicroStationOpenRoads
       var range = DRange3d.FromPoints(line.StartPoint, line.EndPoint);
       bool worldXY = range.Low.Z == 0 && range.High.Z == 0 ? true : false;
       _line.bbox = BoxToSpeckle(range, worldXY);
+
+      return _line;
+    }
+
+    public Line LineToSpeckle(DPoint3d start, DPoint3d end, bool isScaled = true, string units = null)
+    {
+      var u = units ?? ModelUnits;
+      var _line = new Line(Point3dToSpeckle(start, isScaled), Point3dToSpeckle(end, isScaled), u);
+      double deltaX = end.X - start.X;
+      double deltaY = end.Y - start.Y;
+      double deltaZ = end.Z - start.Z;
+      double length = Math.Sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+      _line.length = length;
+      if (isScaled)
+        _line.length /= UoR;
+      _line.domain = new Interval(0, length);
+
+      var range = DRange3d.FromPoints(start, end);
+      bool worldXY = range.Low.Z == 0 && range.High.Z == 0 ? true : false;
+      _line.bbox = BoxToSpeckle(range, worldXY, false);
 
       return _line;
     }
@@ -1269,7 +1296,7 @@ namespace Objects.Converter.MicroStationOpenRoads
 
 
     // Box
-    public Box BoxToSpeckle(DRange3d range, bool OrientToWorldXY = false, string units = null)
+    public Box BoxToSpeckle(DRange3d range, bool OrientToWorldXY = false, bool isScaled = true, string units = null)
     {
       try
       {
@@ -1279,9 +1306,19 @@ namespace Objects.Converter.MicroStationOpenRoads
         var max = range.High;
 
         // get dimension intervals
-        var xSize = new Interval(ScaleToSpeckle(min.X, UoR), ScaleToSpeckle(max.X, UoR));
-        var ySize = new Interval(ScaleToSpeckle(min.Y, UoR), ScaleToSpeckle(max.Y, UoR));
-        var zSize = new Interval(ScaleToSpeckle(min.Z, UoR), ScaleToSpeckle(max.Z, UoR));
+        Interval xSize, ySize, zSize;
+        if (isScaled)
+        {
+          xSize = new Interval(ScaleToSpeckle(min.X, UoR), ScaleToSpeckle(max.X, UoR));
+          ySize = new Interval(ScaleToSpeckle(min.Y, UoR), ScaleToSpeckle(max.Y, UoR));
+          zSize = new Interval(ScaleToSpeckle(min.Z, UoR), ScaleToSpeckle(max.Z, UoR));
+        }
+        else
+        {
+          xSize = new Interval(min.X, max.X);
+          ySize = new Interval(min.Y, max.Y);
+          zSize = new Interval(min.Z, max.Z);
+        }
 
         // get box size info
         double area = 2 * ((xSize.Length * ySize.Length) + (xSize.Length * zSize.Length) + (ySize.Length * zSize.Length));
@@ -1290,7 +1327,15 @@ namespace Objects.Converter.MicroStationOpenRoads
         if (OrientToWorldXY)
         {
           var origin = new DPoint3d(0, 0, 0);
-          var normal = new DVector3d(0, 0, 1 * UoR);
+          DVector3d normal;
+          if (isScaled)
+          {
+            normal = new DVector3d(0, 0, 1 * UoR);
+          }
+          else
+          {
+            normal = new DVector3d(0, 0, 1);
+          }
           var plane = PlaneToSpeckle(new DPlane3d(origin, normal));
           box = new Box(plane, xSize, ySize, zSize, ModelUnits) { area = area, volume = volume };
         }
@@ -1694,11 +1739,10 @@ namespace Objects.Converter.MicroStationOpenRoads
       string family = (string)GetProperty(properties, "FAMILY");
       // for some reason the ElementID is a long
       int elementId = (int)(double)GetProperty(properties, "ElementID");
-      DPoint3d start = (DPoint3d)GetProperty(properties, "RangeLow");
-      DPoint3d end = (DPoint3d)GetProperty(properties, "RangeHigh");
+      DPoint3d start = (DPoint3d)GetProperty(properties, "PTS_0");
+      DPoint3d end = (DPoint3d)GetProperty(properties, "PTS_1");
 
-      DSegment3d dSegment = new DSegment3d(start, end);
-      beam.baseLine = LineToSpeckle(dSegment);
+      beam.baseLine = LineToSpeckle(start, end, false);
       //beam.displayMesh
       beam.units = u;
       beam.type = part;
@@ -1718,12 +1762,11 @@ namespace Objects.Converter.MicroStationOpenRoads
       string family = (string)GetProperty(properties, "FAMILY");
       // for some reason the ElementID is a long
       int elementId = (int)(double)GetProperty(properties, "ElementID");
-      DPoint3d start = (DPoint3d)GetProperty(properties, "RangeLow");
-      DPoint3d end = (DPoint3d)GetProperty(properties, "RangeHigh");
+      DPoint3d start = (DPoint3d)GetProperty(properties, "PTS_0");
+      DPoint3d end = (DPoint3d)GetProperty(properties, "PTS_1");
       double rotation = (double)GetProperty(properties, "ROTATION");
 
-      DSegment3d dSegment = new DSegment3d(start, end);
-      column.baseLine = LineToSpeckle(dSegment);
+      column.baseLine = LineToSpeckle(start, end, false);
       //column.displayMesh
       column.units = u;
       column.type = part;
@@ -1867,8 +1910,8 @@ namespace Objects.Converter.MicroStationOpenRoads
 
       // remove duplicates 
       properties.Remove("OV");
-      properties.Remove("PTS_0");
-      properties.Remove("PTS_1");
+      properties.Remove("RangeLow");
+      properties.Remove("RangeHigh");
       properties.Remove("ELEMENTID");
       switch (category)
       {
