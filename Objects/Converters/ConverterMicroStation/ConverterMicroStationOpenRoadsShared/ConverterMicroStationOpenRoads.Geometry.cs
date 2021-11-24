@@ -250,7 +250,7 @@ namespace Objects.Converter.MicroStationOpenRoads
     {
       var u = units ?? ModelUnits;
       var _line = new Line(Point3dToSpeckle(line.StartPoint), Point3dToSpeckle(line.EndPoint), u);
-      _line.length = line.Length;
+      _line.length = line.Length / UoR;
       _line.domain = new Interval(0, line.Length);
 
       var range = DRange3d.FromPoints(line.StartPoint, line.EndPoint);
