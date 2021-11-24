@@ -1908,6 +1908,9 @@ namespace Objects.Converter.MicroStationOpenRoads
       //int level = (int)GetProperty(properties, "Level");
       //string levelName = (string)GetProperty(properties, "LEVELNAME");
 
+      // ModifiedTime causes problems with de-serialisation atm
+      properties.Remove("ModifiedTime");
+
       // remove duplicates 
       properties.Remove("OV");
       properties.Remove("RangeLow");
