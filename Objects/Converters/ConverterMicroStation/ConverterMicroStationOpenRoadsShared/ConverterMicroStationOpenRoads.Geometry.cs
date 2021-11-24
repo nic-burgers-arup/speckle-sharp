@@ -1748,7 +1748,8 @@ namespace Objects.Converter.MicroStationOpenRoads
       beam.type = part;
       beam.family = family;
       beam.elementId = elementId.ToString();
-      beam.level = new Level();
+      //beam.level = new Level();
+      //beam.level.units = u;
 
       return beam;
     }
@@ -1772,7 +1773,8 @@ namespace Objects.Converter.MicroStationOpenRoads
       column.type = part;
       column.family = family;
       column.elementId = elementId.ToString();
-      column.level = new Level();
+      //column.level = new Level();
+      //column.level.units = u;
       column.rotation = rotation;
 
       return column;
@@ -1946,14 +1948,14 @@ namespace Objects.Converter.MicroStationOpenRoads
         }
       }
 
-      switch (part)
+      switch (category)
       {
-        case ("Beam"):
+        case (Category.Beams):
           ((RevitBeam)element).parameters = parameters;
           break;
 
-        case ("Column"):
-        case ("Pile"):
+        case (Category.Columns):
+        case (Category.Piles):
           ((RevitColumn)element).parameters = parameters;
           break;
 
