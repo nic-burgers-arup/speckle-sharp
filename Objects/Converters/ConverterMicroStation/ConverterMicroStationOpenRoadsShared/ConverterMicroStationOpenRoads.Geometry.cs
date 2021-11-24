@@ -1748,8 +1748,8 @@ namespace Objects.Converter.MicroStationOpenRoads
       beam.type = part;
       beam.family = family;
       beam.elementId = elementId.ToString();
-      //beam.level = new Level();
-      //beam.level.units = u;
+      beam.level = new Level();
+      beam.level.units = u;
 
       return beam;
     }
