@@ -180,6 +180,18 @@ namespace ConverterGSA
     {
       var retList = new List<object>();
 
+      //Handle Model objects as a special case, essentially flatten them first
+      var models = objects.Where(o => o is Model).ToList();
+      if (models.Any())
+      {
+        foreach (var m in models)
+        {
+          var flattened = FlattenModel((Model)m);
+
+          retList.AddRange(ConvertToNative(flattened));
+        }
+      }
+
       var objectsByType = objects.GroupBy(t => t.GetType()).ToDictionary(g => g.Key, g => g.ToList());
 
       //Ensure the model info is done first - it's assumed that there is just one such object per batch of Base objects to be converted to native

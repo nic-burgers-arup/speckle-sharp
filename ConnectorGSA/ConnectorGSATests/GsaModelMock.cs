@@ -1,4 +1,5 @@
 ﻿using ConnectorGSA;
+using Speckle.ConnectorGSA.Proxy;
 using Speckle.ConnectorGSA.Proxy.Cache;
 using Speckle.GSA.API;
 using Speckle.GSA.API.CsvSchema;
@@ -16,12 +17,7 @@ namespace ConnectorGSATests
     public override IGSACache Cache { get; set; } = new GsaCache();
     public override IGSAProxy Proxy { get; set; } = new GsaProxyMock();
 
-    public override List<List<Type>> SpeckleDependencyTree()
-    {
-      return null;
-    }
-
-    //public override IGSAMessenger Messenger { get; set; } = new GsaMessenger();
+    public override List<List<Type>> SpeckleDependencyTree() => (new GsaModel()).SpeckleDependencyTree();
   }
 
   public class GsaProxyMock : IGSAProxy

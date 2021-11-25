@@ -527,19 +527,26 @@ namespace ConnectorGSA
 
       if (commitObject != null)
       {
-        var dynamicMembers = commitObject.GetDynamicMembers();
-        foreach (var item in dynamicMembers)
+        if (commitObject is Base)
         {
-          if (commitObject[item] is Base)
+          topLevelObjects.Add(commitObject);
+        }
+        else
+        {
+          var dynamicMembers = commitObject.GetDynamicMembers();
+          foreach (var item in dynamicMembers)
           {
-            topLevelObjects.Add((Base)commitObject[item]);
-          }  
-          else if (commitObject[item].GetType().IsAssignableFrom(typeof(List<object>)))
-          {
-            var drilledDownObjects = DrillDownToBase((List<object>)commitObject[item]);
-            if (drilledDownObjects != null && drilledDownObjects.Count > 0)
+            if (commitObject[item] is Base)
             {
-              topLevelObjects.AddRange(drilledDownObjects);
+              topLevelObjects.Add((Base)commitObject[item]);
+            }
+            else if (commitObject[item].GetType().IsAssignableFrom(typeof(List<object>)))
+            {
+              var drilledDownObjects = DrillDownToBase((List<object>)commitObject[item]);
+              if (drilledDownObjects != null && drilledDownObjects.Count > 0)
+              {
+                topLevelObjects.AddRange(drilledDownObjects);
+              }
             }
           }
         }

@@ -44,7 +44,7 @@ namespace ConverterGSA
     {
       ToNativeFns = new Dictionary<Type, Func<Base, List<GsaRecord>>>()
       {
-        //{ typeof(Model), ModelToNative },
+        // typeof(Model), ModelToNative },
         { typeof(ModelInfo), ModelInfoToNative },
         { typeof(ModelUnits), ModelUnitsToNative },
         //Geometry
@@ -111,6 +111,19 @@ namespace ConverterGSA
     #region ToNative
     //TO DO: implement conversion code for ToNative
 
+    private List<Base> FlattenModel(Model model)
+    {
+      var speckleObjects = new List<Base>();
+      speckleObjects.AddRangeIfNotNull(model.nodes);
+      speckleObjects.AddRangeIfNotNull(model.elements);
+      speckleObjects.AddRangeIfNotNull(model.loads);
+      speckleObjects.AddRangeIfNotNull(model.restraints);
+      speckleObjects.AddRangeIfNotNull(model.properties);
+      speckleObjects.AddRangeIfNotNull(model.materials);
+      return speckleObjects;
+    }
+
+    /*
     private List<GsaRecord> ModelToNative(Base speckleObject)
     {
       var model = (Model)speckleObject;
@@ -120,7 +133,6 @@ namespace ConverterGSA
       {
         conversionFactors = new UnitConversion(model.specs.settings.modelUnits);
       }
-
       
       var speckleObjects = new List<Base>();
       speckleObjects.AddRangeIfNotNull(model.nodes);
@@ -204,6 +216,7 @@ namespace ConverterGSA
 
       return retList;
     }
+    */
 
     private List<GsaRecord> ModelInfoToNative(Base speckleObject)
     {
