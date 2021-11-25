@@ -1,5 +1,4 @@
-﻿using Speckle.GSA.API.GwaSchema;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Speckle.GSA.API

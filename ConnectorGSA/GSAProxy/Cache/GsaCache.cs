@@ -20,7 +20,9 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
     private readonly Dictionary<string, HashSet<int>> recordIndicesByApplicationId = new Dictionary<string, HashSet<int>>();
     private readonly Dictionary<int, HashSet<int>> recordIndicesByStreamIdIndex = new Dictionary<int, HashSet<int>>();
 
-    // < keyword , { < index, app_id >, < index, app_id >, ... } >
+    //Provisional allocation of GSA record numbers - it's mainly to avoid clashing of GSA record numbers - doesn't care about streams or latest/previous states
+    // of records
+    // < GSA schema type , { < index, app_id >, < index, app_id >, ... } >
     private readonly Dictionary<Type, IPairCollectionComparable<int, string>> provisionals = new Dictionary<Type, IPairCollectionComparable<int, string>>();
     #endregion
 
@@ -265,7 +267,7 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
           var streamIdIndex = foundStreamIds.IndexOf(record.StreamId);
           recordIndicesByStreamIdIndex.UpsertDictionary(streamIdIndex, addedIndex);
         }
-        
+
         if (provisionals.ContainsKey(t))
         {
           if (!string.IsNullOrEmpty(record.ApplicationId) && provisionals[t].ContainsRight(record.ApplicationId))

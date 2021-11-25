@@ -29,7 +29,9 @@ namespace ConnectorGSATests
     public async void ReceiveDesignModelOnly()
     {
       Instance.GsaModel.Proxy = new Speckle.ConnectorGSA.Proxy.GsaProxy();
+      ((Speckle.ConnectorGSA.Proxy.GsaProxy)Instance.GsaModel.Proxy).NewFile(false);
       Instance.GsaModel.StreamLayer = GSALayer.Design;
+      Instance.GsaModel.CoincidentNodeAllowance = 0.01;
 
       /* these lines would cause the libraries in %AppData% to be loaded, including the objects.dll library, which contains types
       * which C# would recognise as being different to the ones used in the converter code
@@ -46,54 +48,65 @@ namespace ConnectorGSATests
       {
         { typeof(GsaAxis), 3 },
         { typeof(GsaMatConcrete), 1 },
-        { typeof(GsaPropSec), 8 },
+        { typeof(GsaPropSpr), 8 },
         { typeof(GsaSection), 1 },
         { typeof(GsaProp2d), 1 },
-        { typeof(GsaNode), 7 },
+        { typeof(GsaNode), 3486 },
         { typeof(GsaLoadCase), 3 },
       };
 
-
-      //First receive
-      var result = await CoordinateReceive(converter, client, new Progress<MessageEventArgs>());
-
-      Assert.True(result.Received);
-      Assert.True(result.Converted);
-      Assert.NotEmpty(result.ConvertedObjects);
-
-      var objectsByType = result.ConvertedObjects.GroupBy(o => o.GetType()).ToDictionary(g => g.Key, g => g.ToList());
-
-      foreach (var t in numExpectedByObjectType.Keys)
+      try
       {
-        Assert.True(objectsByType.ContainsKey(t));
-        Assert.NotNull(objectsByType[t]);
-        Assert.Equal(numExpectedByObjectType[t], objectsByType[t].Count());
+        //First receive
+        var result = await CoordinateReceive(converter, client, new Progress<MessageEventArgs>());
+
+        Assert.True(result.Received);
+        Assert.True(result.Converted);
+        Assert.NotNull(result.ConvertedObjects);
+        Assert.NotEmpty(result.ConvertedObjects);
+
+        var objectsByType = result.ConvertedObjects.GroupBy(o => o.GetType()).ToDictionary(g => g.Key, g => g.ToList());
+
+        foreach (var t in numExpectedByObjectType.Keys)
+        {
+          Assert.True(objectsByType.ContainsKey(t));
+          Assert.NotNull(objectsByType[t]);
+          Assert.Equal(numExpectedByObjectType[t], objectsByType[t].Count());
+        }
+
+        //Second receive
+        result = await CoordinateReceive(converter, client, new Progress<MessageEventArgs>());
+
+        Assert.True(result.Received);
+        Assert.True(result.Converted);
+        Assert.NotEmpty(result.ConvertedObjects);
+
+        objectsByType = result.ConvertedObjects.GroupBy(o => o.GetType()).ToDictionary(g => g.Key, g => g.ToList());
+
+        foreach (var t in numExpectedByObjectType.Keys)
+        {
+          Assert.True(objectsByType.ContainsKey(t));
+          Assert.NotNull(objectsByType[t]);
+          Assert.Equal(numExpectedByObjectType[t], objectsByType[t].Count());
+        }
       }
-
-      //Second receive
-      result = await CoordinateReceive(converter, client, new Progress<MessageEventArgs>());
-
-      Assert.True(result.Received);
-      Assert.True(result.Converted);
-      Assert.NotEmpty(result.ConvertedObjects);
-
-      objectsByType = result.ConvertedObjects.GroupBy(o => o.GetType()).ToDictionary(g => g.Key, g => g.ToList());
-
-      foreach (var t in numExpectedByObjectType.Keys)
+      catch (Exception ex)
       {
-        Assert.True(objectsByType.ContainsKey(t));
-        Assert.NotNull(objectsByType[t]);
-        Assert.Equal(numExpectedByObjectType[t], objectsByType[t].Count());
+        throw new Xunit.Sdk.XunitException(ex.Message);
+      }
+      finally
+      {
+        ((Speckle.ConnectorGSA.Proxy.GsaProxy)Instance.GsaModel.Proxy).Close();
       }
     }
 
-    [Fact]
+    [Fact(Skip ="Not implemented yet")]
     public void HeadlessReceiveDesignLayer()
     {
 
     }
 
-    [Fact]
+    [Fact(Skip = "Not implemented yet")]
     public void HeadlessReceiveBothLayers()
     {
 
