@@ -1,4 +1,4 @@
-﻿using Objects.Geometry;
+using Objects.Geometry;
 using Objects.Primitive;
 using Objects.Other;
 using Speckle.Core.Kits;
@@ -2135,6 +2135,20 @@ namespace Objects.Converter.MicroStationOpenRoads
         return false;
       }
     }
+
+    private List<Element> GetChildren(Element parent)
+    {
+      List<Element> children = new List<Element>();
+      IEnumerator<Element> enumerator = parent.GetChildren().GetEnumerator();
+      while (enumerator.MoveNext())
+      {
+        Element child = enumerator.Current;
+        children.Add(child);
+        children.AddRange(GetChildren(child));
+      }
+      return children;
+    }
+
     enum Category
     {
       Beams,
