@@ -1870,23 +1870,8 @@ namespace Objects.Converter.MicroStationOpenRoads
       }
 
       string part = (string)properties["PART"];
-      Category category = Category.None;
-      if (part.Contains("Beam"))
-      {
-        category = Category.Beams;
-      }
-      else if (part.Contains("Column"))
-      {
-        category = Category.Columns;
-      }
-      else if (part.Contains("Pile"))
-      {
-        category = Category.Piles;
-      }
-      else if (part.Contains("Slab"))
-      {
-        category = Category.Slabs;
-      }
+      Category category = FindCategory(part);
+
 
       string family = (string)properties["FAMILY"];
       if (familyInstances.TryGetValue(family, out FamilyInstance familyInstance))
@@ -2007,6 +1992,28 @@ namespace Objects.Converter.MicroStationOpenRoads
       element["segments"] = segments;
 
       return element;
+    }
+
+    private Category FindCategory(string part)
+    {
+      Category category = Category.None;
+      if (part.Contains("Beam"))
+      {
+        category = Category.Beams;
+      }
+      else if (part.Contains("Column"))
+      {
+        category = Category.Columns;
+      }
+      else if (part.Contains("Pile"))
+      {
+        category = Category.Piles;
+      }
+      else if (part.Contains("Slab"))
+      {
+        category = Category.Slabs;
+      }
+      return category;
     }
 
     private Dictionary<string, object> AddProperty(Dictionary<string, object> properties, string propertyName, object value)
