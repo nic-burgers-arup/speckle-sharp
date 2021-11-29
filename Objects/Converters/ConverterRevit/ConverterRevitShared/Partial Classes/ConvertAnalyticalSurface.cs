@@ -18,9 +18,64 @@ namespace Objects.Converter.Revit
 {
   public partial class ConverterRevit
   {
+		public Objects.Geometry.Line GetBottomLine(List<Node> nodes){
+			Objects.Geometry.Line baseLine = new Objects.Geometry.Line();
+			double lowest_elv = nodes.Min(nodes => nodes.basePoint.z);
+			List<Node> nodes1 = nodes.FindAll(node => node.basePoint.z.Equals(lowest_elv));
+			if(nodes1.Count == 2){
+				var point1 = nodes1[0].basePoint;
+				var point2 = nodes1[1].basePoint;
+				baseLine = new Geometry.Line(point1, point2, point1.units);
+				return baseLine;
+			}
+			return null;
+    }
+
+		public Objects.Geometry.Polycurve PolycurveFromTopology(List<Node> nodes){
+			Polycurve polycurve = new Polycurve();
+			foreach (int index in Enumerable.Range(0, nodes.Count))
+			{
+				if (index == nodes.Count - 1){
+					var point1 = nodes[index].basePoint;
+					var point2 = nodes[0].basePoint;
+					Geometry.Line segment = new Geometry.Line(point1, point2, point1.units);
+					polycurve.segments.Add(segment);
+        }
+				else{
+					var point1 = nodes[index].basePoint;
+					var point2 = nodes[index + 1].basePoint;
+					Geometry.Line segment = new Geometry.Line(point1, point2, point1.units);
+					polycurve.segments.Add(segment);
+        }
+			}
+			return polycurve;
+    }
+
 	public List<ApplicationPlaceholderObject> AnalyticalSurfaceToNative(Element2D speckleElement)
 	{
-	  throw new NotImplementedException();
+
+		List<ApplicationPlaceholderObject> placeholderObjects = new List<ApplicationPlaceholderObject> { };
+		switch(speckleElement.property.type){
+			case Structural.PropertyType2D.Wall:
+				Geometry.Line baseline = GetBottomLine(speckleElement.topology);
+				double lowestElvevation = speckleElement.topology.Min(node => node.basePoint.z);
+				double topElevation = speckleElement.topology.Max(node => node.basePoint.z);
+				Node bottomNode = speckleElement.topology.Find(node => node.basePoint.z == lowestElvevation);
+				Node topNode = speckleElement.topology.Find(node => node.basePoint.z == topElevation);
+				var bottemLevel = LevelFromPoint(PointToNative(bottomNode.basePoint));
+				var topLevel = LevelFromPoint(PointToNative(topNode.basePoint));
+				RevitWall revitWall = new RevitWall(speckleElement.property.name, speckleElement.property.name, baseline, bottemLevel, topLevel);
+				return WallToNative(revitWall);
+			break;
+			default:
+				var polycurve = PolycurveFromTopology(speckleElement.topology);
+				var level = LevelFromPoint(PointToNative(speckleElement.topology[0].basePoint));
+				RevitFloor revitFloor = new RevitFloor(speckleElement.property.name, speckleElement.property.name, polycurve, level);
+				return FloorToNative(revitFloor);
+				break;	
+	}
+		return placeholderObjects;
+
 	}
 
 	private Element2D AnalyticalSurfaceToSpeckle(AnalyticalModelSurface revitSurface)
