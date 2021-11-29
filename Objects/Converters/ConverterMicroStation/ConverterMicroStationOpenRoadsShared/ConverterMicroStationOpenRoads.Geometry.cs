@@ -28,6 +28,10 @@ using RevitColumn = Objects.BuiltElements.Revit.RevitColumn;
 using Surface = Objects.Geometry.Surface;
 using Vector = Objects.Geometry.Vector;
 
+#if(OPENBUILDINGS)
+using BentleyColumn = Objects.Converter.MicroStationOpenRoads.BentleyColumn;
+#endif
+
 using Bentley.DgnPlatformNET;
 using Bentley.DgnPlatformNET.Elements;
 using Bentley.MstnPlatformNET;
@@ -1731,6 +1735,31 @@ namespace Objects.Converter.MicroStationOpenRoads
             return element;
         }
 
+        public Element RevitColumnToNative(RevitColumn revitColumn)
+        {
+#if (OPENBUILDINGS)
+      ICurve baseLine = revitColumn.baseLine;
+      if (baseLine is Line)
+      {
+        Point start = ((Line)baseLine).start;
+        Point end = ((Line)baseLine).end;
+        string type = revitColumn.type;
+
+        BentleyColumn bentleyColumn = BentleyColumn.CreateColumn(Point3dToNative(start), Point3dToNative(end), type, UoR);
+
+        Bentley.DgnPlatformNET.DgnModelRef modelRef = Bentley.MstnPlatformNET.Session.Instance.GetActiveDgnModelRef();
+
+        Bentley.Interop.MicroStationDGN.Element element = bentleyColumn.GetElement((Bentley.Interop.MicroStationDGN.ModelReference)modelRef);
+        return (Bentley.DgnPlatformNET.Elements.Element)element;
+      }
+      else
+      {
+        throw new SpeckleException("Only lines as base lines supported.");
+      }
+#endif
+            throw new NotImplementedException();
+        }
+
         public RevitBeam BeamToSpeckle(Dictionary<string, object> properties, string units = null)
         {
             RevitBeam beam = new RevitBeam();
@@ -1812,11 +1841,87 @@ namespace Objects.Converter.MicroStationOpenRoads
         {
 #if (OPENBUILDINGS)
 #endif
+
+            Dictionary<string, object> properties = new Dictionary<string, object>();
+            //List<string> IdentificationProperties = new List<string>()
+            //{
+            //  "GUID",
+            //  "ELEMENTID"
+            //};
+            //List<string> CatalogIdentificationProperties = new List<string>()
+            //{
+            //  "CatalogTypeName",
+            //  "CatalogInstanceName",
+            //  "DisplayLabel"
+            //};
+            //List<string> ObjectClassificationBaseClass = new List<string>()
+            //{
+            //  "ObjectClassification__x002F____x0040__Uniclass2015",
+            //  "ObjectClassification__x002F____x0040__Uniclass2015description"
+            //};
+            //List<string> ObjectDisciplineBaseClass = new List<string>()
+            //{
+            //  "ObjectDiscipline__x002F____x0040__Discipline"
+            //};
+            //List<string> ObjectFireResistanceBaseClass = new List<string>()
+            //{
+            //  "ObjectFireResistance__x002F____x0040__Compartmentation",
+            //  "ObjectFireResistance__x002F____x0040__IsCombustible",
+            //  "ObjectFireResistance__x002F____x0040__Rating",
+            //  "ObjectFireResistance__x002F____x0040__SurfaceSpreadofFlame",
+            //  "ObjectFireResistance__x002F____x0040__ReferenceID",
+            //  "ObjectFireResistance__x002F____x0040__ReferenceURL"
+            //};
+
+
+
+            //List<string> CommonStructuralProperties = new List<string>()
+            //{
+            //  "SECTNAME",
+            //  "PTS_0",
+            //  "PTS_1",
+            //  "ROTATION",
+            //  "LENGTH",
+            //  "PLACEMENT_POINT",
+            //  "REFLECT",
+            //  "OV",
+            //  "ENDACTION_0",
+            //  "ENDACTION_1",
+            //  "STF_NAME",
+            //  "MATERIAL",
+            //  "CLASS",
+            //  "STATUS",
+            //  "USER1",
+            //  "USER2",
+            //  "USER3",
+            //  "USER4",
+            //  "TYPE",
+            //  "GRADE",
+            //  "CONNDETAIL_0",
+            //  "CONNDETAIL_1"
+            //};
+            //List<string> CommonTriformaProperties = new List<string>()
+            //{
+            //  "FormWidth",
+            //  "FormHeight",
+            //  "PART",
+            //  "FAMILY",
+            //  "FILENAME",
+            //  "LEVELNAME",
+            //  "ELEMENTID"
+            //};
+            //foreach (string propertyName in CommonStructuralProperties)
+            //{
+            //  Object value = GetElementProperty(cellHeader, propertyName).NativeValue;
+            //  properties.Add(propertyName, value);
+            //}
+
+
+
             Processor processor = new Processor();
             ElementGraphicsOutput.Process(cellHeader, processor);
 
             var instanceCollection = GetElementProperties(cellHeader);
-            Dictionary<string, object> properties = new Dictionary<string, object>();
             foreach (var instance in instanceCollection)
             {
                 foreach (var propertyValue in instance)

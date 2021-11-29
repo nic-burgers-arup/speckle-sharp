@@ -9,6 +9,8 @@
     <Import_RootNamespace>ConverterMicroStationOpenRoadsShared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)BuildingElement.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Column.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterMicroStationOpenRoads.Civil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterMicroStationOpenRoads.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterMicroStationOpenRoads.Geometry.cs" />

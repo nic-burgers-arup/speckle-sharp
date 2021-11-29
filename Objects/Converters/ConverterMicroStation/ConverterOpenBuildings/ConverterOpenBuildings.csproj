@@ -95,6 +95,15 @@
       <Private>false</Private>
       <SpecificVersion>false</SpecificVersion>
     </Reference>
+    <Reference Include="Bentley.Interop.ATFCom">
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Bentley\OpenBuildings CONNECT Edition\OpenBuildingsDesigner\Assemblies\Bentley.Interop.ATFCom.dll</HintPath>
+    </Reference>
+    <Reference Include="Bentley.Interop.STFCom">
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Bentley\OpenBuildings CONNECT Edition\OpenBuildingsDesigner\Assemblies\Bentley.Interop.STFCom.dll</HintPath>
+    </Reference>
+    <Reference Include="Bentley.Interop.TFCom">
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Bentley\OpenBuildings CONNECT Edition\OpenBuildingsDesigner\Assemblies\Bentley.Interop.TFCom.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
