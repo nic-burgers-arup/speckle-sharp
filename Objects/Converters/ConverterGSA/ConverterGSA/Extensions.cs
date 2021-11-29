@@ -611,6 +611,7 @@ namespace ConverterGSA
       switch (speckleType)
       {
         case ElementType1D.Beam: return ElementType.Beam;
+        case ElementType1D.Column: return ElementType.Beam;          
         case ElementType1D.Bar: return ElementType.Bar;
         case ElementType1D.Cable: return ElementType.Cable;
         case ElementType1D.Damper: return ElementType.Damper;
