@@ -93,7 +93,7 @@ jobs:
       shell: powershell
       working-directory: Installer/Updater/Properties
       run: |
-        (Get-content .\AssemblyInfo.cs) -replace '0\.0\.0\.0', ${{ steps.calculateTagVersion.outputs.tag }} | Out-File -encoding ASCII .\AssemblyInfo.cs
+        (Get-content .\AssemblyInfo.cs) -replace '0\.0\.0\.0', '${{ steps.calculateTagVersion.outputs.tag }}' | Out-File -encoding ASCII .\AssemblyInfo.cs
           
     - name: Speckle Updater - Restore NuGets
       run: dotnet restore        
