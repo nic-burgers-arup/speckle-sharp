@@ -270,6 +270,8 @@ Type: filesandordirs; Name: "{#AnalyticsFolder}\*";
 Type: filesandordirs; Name: "{#SpeckleFolder}\*";
 Type: filesandordirs; Name: "{userappdata}\speckle-connection-manager\*"
 Type: filesandordirs; Name: "{userappdata}\speckle-connection-manager-ui\*"
+Type: filesandordirs; Name: "{group}\Check for updates";
+Type: filesandordirs; Name: "{userappdata}\Microsoft\Windows\Start Menu\Programs\Startup\Speckle";
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{userappdata}\McNeel\Rhinoceros\6.0\Plug-ins\SpeckleRhino2 (8dd5f30b-a13d-4a24-abdc-3e05c8c87143)"
