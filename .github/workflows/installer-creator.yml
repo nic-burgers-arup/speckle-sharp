@@ -124,6 +124,9 @@ jobs:
 
     - name: Excel Addin Request - Compile CLI
       run: dotnet build ExcelAddinRequest.csproj --configuration Release --runtime win-x64
+      env:
+        GH_PKG_USER: ${{ secrets.GH_PKG_USER }} 
+        GH_PKG_TOKEN: ${{ secrets.GH_PKG_TOKEN }}        
       working-directory: Installer/ExcelAddin/ExcelAddinRequest   
 
     - name: Restore SpeckleConnectionManager
