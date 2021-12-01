@@ -20,7 +20,6 @@ namespace ConverterGSATests
       var gsaModelMock = new Mock<IGSAModel>();
       gsaModelMock.SetupGet(x => x.GwaDelimiter).Returns('\t');
       */
-      converter = new ConverterGSA.ConverterGSA();
       Instance.GsaModel = gsaModelMock;
       ((GsaProxyMockForConverterTests)Instance.GsaModel.Proxy).NodeAtFn = (double x, double y, double z) =>
       {
@@ -36,6 +35,7 @@ namespace ConverterGSATests
         nodeCoords.Add(newCoords);
         return (highestNodeIndex.Value + 1);  //GSA records are base-1
       };
+      converter = new ConverterGSA.ConverterGSA();
     }
 
     public void Dispose()

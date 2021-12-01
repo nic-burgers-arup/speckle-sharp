@@ -17,6 +17,7 @@ namespace Objects.Structural.GSA.Geometry
         public bool intersectsWithOthers { get; set; }
         public double targetMeshSize { get; set; }
         public List<List<Node>> voids { get; set; }
+        public MemberType memberType { get; set; }
 
         public GSAMember2D() { }
 

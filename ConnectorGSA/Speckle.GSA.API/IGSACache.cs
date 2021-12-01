@@ -18,7 +18,7 @@ namespace Speckle.GSA.API
     string GetApplicationId<T>(int index);
     string GetApplicationId(Type t, int gsaIndex);
     List<int> LookupIndices<T>();
-    List<int?> LookupIndices<T>(IEnumerable<string> applicationIds);
+    List<int> LookupIndices<T>(IEnumerable<string> applicationIds);
     bool SetSpeckleObjects(GsaRecord gsaRecord, Dictionary<string, object> objectsByApplicationId, GSALayer layer = GSALayer.Both);
     bool SetNatives(Type speckleType, string applicationId, IEnumerable<GsaRecord> natives);
 
@@ -26,6 +26,7 @@ namespace Speckle.GSA.API
     bool Upsert(Dictionary<string, object> objectsByApplicationId, GSALayer layer = GSALayer.Both);
     bool Upsert(IEnumerable<GsaRecord> gsaRecords);
     int ResolveIndex<T>(string applicationId = "");
+    int ResolveIndex(Type t, string applicationId);
     int? LookupIndex<T>(string applicationId);
 
     double GetScalingFactor(UnitDimension unitDimension, string overrideUnits = null);

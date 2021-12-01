@@ -135,7 +135,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       else
       {
         //Standard
-        if (!pieces[1].TryParseStringValue(out Section1dStandardProfileType profileType))
+        if (!pieces[1].Split('(', ')')[0].TryParseStringValue(out Section1dStandardProfileType profileType))
         {
           return false;
         }
@@ -216,5 +216,4 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
     }
     #endregion
   }
-
 }

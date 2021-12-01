@@ -1,5 +1,4 @@
-﻿using Speckle.GSA.API.GwaSchema;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Speckle.GSA.API
@@ -31,7 +30,7 @@ namespace Speckle.GSA.API
     //IGSAMessenger Messenger { get; set; }
     IProgress<bool> ConversionProgress { get; set; }
 
-    //List<List<Type>> SpeckleDependencyTree();
+    List<List<Type>> SpeckleDependencyTree();
   }
 
   

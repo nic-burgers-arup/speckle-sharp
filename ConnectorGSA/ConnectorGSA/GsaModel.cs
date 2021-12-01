@@ -66,11 +66,11 @@ namespace ConnectorGSA
     }
 
     //TEMP: Not sure where to put this yet 
-    public List<List<Type>> SpeckleDependencyTree()
+    public override List<List<Type>> SpeckleDependencyTree()
     {
       var kit = KitManager.GetDefaultKit();
 
-      var structuralTypes = kit.Types.Where(t => t.Namespace.ToLower().Contains("structural"));
+      var structuralTypes = new HashSet<Type>(kit.Types.Where(t => t.Namespace.ToLower().Contains("structural")));
       var tree = new TypeTreeCollection<Type>(structuralTypes);
 
       var typeChildren = new Dictionary<Type, List<Type>>();
@@ -94,12 +94,12 @@ namespace ConnectorGSA
           Type typeToAdd = null;
           if (pi.IsList(out Type listType))
           {
-            if (structuralTypes.Any(st => st == listType))
+            if (structuralTypes.Contains(listType))
             {
               typeToAdd = listType;
             }
           }
-          else if (structuralTypes.Any(st => st == pi.PropertyType))
+          else if (structuralTypes.Contains(pi.PropertyType))
           {
             typeToAdd = pi.PropertyType;
           }

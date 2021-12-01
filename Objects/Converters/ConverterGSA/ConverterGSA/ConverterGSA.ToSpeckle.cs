@@ -430,6 +430,7 @@ namespace ConverterGSA
         colour = gsaMemb.Colour.ToString(),
         isDummy = gsaMemb.Dummy,
         intersectsWithOthers = gsaMemb.IsIntersector,
+        memberType = gsaMemb.Type.ToSpeckle(),
       };
 
       //-- App agnostic --
@@ -542,6 +543,7 @@ namespace ConverterGSA
         colour = gsaMemb.Colour.ToString(),
         isDummy = gsaMemb.Dummy,
         intersectsWithOthers = gsaMemb.IsIntersector,
+        memberType = gsaMemb.Type.ToSpeckle(),
       };
 
       //-- App agnostic --
@@ -712,7 +714,7 @@ namespace ConverterGSA
         nativeId = gsaPolyline.Index ?? 0,
         name = gsaPolyline.Name,
         colour = gsaPolyline.Colour.ToString(),
-        units = gsaPolyline.Units,
+        //units = gsaPolyline.Units, //TO DO: remove units from interim schema?
       };
       if (gsaPolyline.Index.IsIndex()) specklePolyline.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaPolyline>(gsaPolyline.Index.Value);
       if (gsaPolyline.GridPlaneIndex.IsIndex()) specklePolyline.gridPlane = GetGridPlaneFromIndex(gsaPolyline.GridPlaneIndex.Value);
@@ -1363,8 +1365,8 @@ namespace ConverterGSA
       if (gsaConcrete.EpsAx.HasValue) speckleConcrete["EpsAx"] = gsaConcrete.EpsAx.Value;
       if (gsaConcrete.EpsTran.HasValue) speckleConcrete["EpsTran"] = gsaConcrete.EpsTran.Value;
       if (gsaConcrete.EpsAxs.HasValue) speckleConcrete["EpsAxs"] = gsaConcrete.EpsAxs.Value;
-      if (gsaConcrete.XdMin.HasValue) speckleConcrete["XdMin"] = gsaConcrete.XdMin.Value;
-      if (gsaConcrete.XdMax.HasValue) speckleConcrete["XdMax"] = gsaConcrete.XdMax.Value;
+      speckleConcrete["XdMin"] = gsaConcrete.XdMin;
+      speckleConcrete["XdMax"] = gsaConcrete.XdMax;
       if (gsaConcrete.Beta.HasValue) speckleConcrete["Beta"] = gsaConcrete.Beta.Value;
       if (gsaConcrete.Shrink.HasValue) speckleConcrete["Shrink"] = gsaConcrete.Shrink.Value;
       if (gsaConcrete.Confine.HasValue) speckleConcrete["Confine"] = gsaConcrete.Confine.Value;
@@ -1472,10 +1474,10 @@ namespace ConverterGSA
         orientationAxis = GetOrientationAxis(gsaProp2d.AxisRefType, gsaProp2d.AxisIndex),
         refSurface = gsaProp2d.RefPt.ToSpeckle(),
         type = gsaProp2d.Type.ToSpeckle(),
-        modifierInPlane = gsaProp2d.InPlaneStiffnessPercentage ?? 0, //Only supporting Percentage modifiers
-        modifierBending = gsaProp2d.BendingStiffnessPercentage ?? 0,
-        modifierShear = gsaProp2d.ShearStiffnessPercentage ?? 0,
-        modifierVolume = gsaProp2d.VolumePercentage ?? 0,
+        modifierInPlane = AddValueOrPencentage(gsaProp2d.InPlane, gsaProp2d.InPlaneStiffnessPercentage),
+        modifierBending = AddValueOrPencentage(gsaProp2d.Bending, gsaProp2d.BendingStiffnessPercentage),
+        modifierShear = AddValueOrPencentage(gsaProp2d.Shear, gsaProp2d.ShearStiffnessPercentage),
+        modifierVolume = AddValueOrPencentage(gsaProp2d.Volume, gsaProp2d.VolumePercentage),
         additionalMass = gsaProp2d.Mass,
         concreteSlabProp = gsaProp2d.Profile, 
         cost = 0, //not part of GSA definition
@@ -1519,11 +1521,10 @@ namespace ConverterGSA
       //Mass modifications
       if (gsaPropMass.Mod != MassModification.NotSet)
       {
-        if (gsaPropMass.Mod == MassModification.Modified) specklePropertyMass.massModified = true;
-        else if (gsaPropMass.Mod == MassModification.Defined) specklePropertyMass.massModified = false;
-        if (gsaPropMass.ModXPercentage.IsPositive()) specklePropertyMass.massModifierX = gsaPropMass.ModXPercentage.Value;
-        if (gsaPropMass.ModYPercentage.IsPositive()) specklePropertyMass.massModifierY = gsaPropMass.ModYPercentage.Value;
-        if (gsaPropMass.ModZPercentage.IsPositive()) specklePropertyMass.massModifierZ = gsaPropMass.ModZPercentage.Value;
+        specklePropertyMass.massModified = (gsaPropMass.Mod == MassModification.Modified) ? true : false;
+        if (gsaPropMass.ModX.HasValue) specklePropertyMass.massModifierX = gsaPropMass.ModX.Value;
+        if (gsaPropMass.ModY.HasValue) specklePropertyMass.massModifierY = gsaPropMass.ModY.Value;
+        if (gsaPropMass.ModZ.HasValue) specklePropertyMass.massModifierZ = gsaPropMass.ModZ.Value;
       }
 
       return new ToSpeckleResult(specklePropertyMass);
@@ -1592,11 +1593,20 @@ namespace ConverterGSA
           var result = new ResultNode()
           {
             description = "",
-            permutation = "",
             node = speckleNode,
           };
 
-          var gsaCaseIndex = Convert.ToInt32(gsaResult.CaseId.Substring(1));
+          var indexString = gsaResult.CaseId.Substring(1);
+          if (!int.TryParse(indexString, out int gsaCaseIndex))
+          {
+            if(indexString.Any(x => char.IsLetter(x))){
+              var id = new string(indexString.TakeWhile(Char.IsDigit).ToArray());
+              if (!int.TryParse(id, out gsaCaseIndex))
+                return false;
+              result.permutation = indexString.Replace(id, "");
+            }
+          }
+
           if (gsaResult.CaseId[0] == 'A')
           {
             result.resultCase = GetAnalysisCaseFromIndex(gsaCaseIndex);
@@ -2015,7 +2025,7 @@ namespace ConverterGSA
         factor = gsaInfBeam.Factor ?? 0,
       };
       if (gsaInfBeam.Index.IsIndex()) speckleInfBeam.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaInfBeam>(gsaInfBeam.Index.Value);
-      if (gsaInfBeam.Position.Value >= 0 && gsaInfBeam.Position.Value <= 1) speckleInfBeam.position = gsaInfBeam.Position.Value;
+      if (gsaInfBeam.Position.HasValue) speckleInfBeam.position = gsaInfBeam.Position.Value;
       if (gsaInfBeam.Element.IsIndex()) speckleInfBeam.element = GetElement1DFromIndex(gsaInfBeam.Element.Value);
 
       return new ToSpeckleResult(speckleInfBeam);
@@ -2649,7 +2659,7 @@ namespace ConverterGSA
     private Mesh DisplayMeshPolygon(List<int> gsaNodeIndicies, System.Drawing.Color color = default)
     {      
       var edgeVertices = new List<double>();
-      var topology = gsaNodeIndicies.Select(i => GetNodeFromIndex(i)).ToList();
+      var topology = gsaNodeIndicies.Distinct().Select(i => GetNodeFromIndex(i)).ToList();
       foreach (var node in topology)
       {
         edgeVertices.AddRange(new double[] { node.basePoint.x, node.basePoint.y, node.basePoint.z });
@@ -3754,12 +3764,11 @@ namespace ConverterGSA
     private Axis GetOrientationAxis(AxisRefType gsaAxisRefType, int? gsaAxisIndex )
     {
       //Cartesian coordinate system is the only one supported.
-      Axis orientationAxis = null;
+      Axis orientationAxis;
 
       if (gsaAxisRefType == AxisRefType.Local)
       {
-        //TODO: handle local reference axis case
-        //Local would be a different coordinate system for each element that gsaProp2d was assigned to
+        return null;
         Report.ConversionErrors.Add(new Exception("GetOrientationAxis: Not yet implemented for local reference axis"));
       }
       else if (gsaAxisRefType == AxisRefType.Reference && gsaAxisIndex.IsIndex())
@@ -3783,6 +3792,22 @@ namespace ConverterGSA
     private Property2D GetProperty2dFromIndex(int index)
     {
       return (Instance.GsaModel.Cache.GetSpeckleObjects<GsaProp2d, Property2D>(index, out var speckleObjects)) ? speckleObjects.First() : null;
+    }
+
+    private double AddValueOrPencentage(double? value, double? percentage)
+    {
+      if (value.HasValue && value > 0)
+      {
+        return value.Value;
+      }
+      else if (percentage.HasValue && percentage > 0)
+      {
+        return -percentage.Value / 100;
+      }
+      else
+      {
+        return 0;
+      }
     }
     #endregion
     #endregion

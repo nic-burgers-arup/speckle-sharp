@@ -16,6 +16,7 @@ namespace Objects.Structural.GSA.Geometry //GSA.Geometry?
         public bool isDummy { get; set; }
         public bool intersectsWithOthers { get; set; }
         public double targetMeshSize { get; set; }
+        public MemberType memberType { get; set; }
 
         public GSAMember1D() { }
 

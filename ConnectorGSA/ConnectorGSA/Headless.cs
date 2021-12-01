@@ -14,6 +14,7 @@ using System.Deployment.Application;
 using System.Threading.Tasks;
 using Speckle.GSA.API.GwaSchema;
 using Speckle.ConnectorGSA.Proxy;
+using Speckle.Core.Models;
 
 namespace ConnectorGSA
 {
@@ -40,6 +41,8 @@ namespace ConnectorGSA
       CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
       CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
+      Instance.GsaModel = new GsaModel();
+
       var argPairs = new Dictionary<string, string>();
 
       var kit = KitManager.GetDefaultKit();
@@ -55,8 +58,6 @@ namespace ConnectorGSA
         loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, e));
         loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, e));
       };
-
-      Instance.GsaModel = new GsaModel();
 
       cliMode = args[0];
       if (cliMode == "-h")
@@ -212,6 +213,8 @@ namespace ConnectorGSA
       {
         var streamIds = argPairs["streamIDs"].Split(new char[] { ',' });
 
+        var topLevelObjects = new List<Base>();
+
         //There seem to be some issues with HTTP requests down the line if this is run on the initial (UI) thread, so this ensures it runs on another thread
         cliResult = Task.Run(() =>
         {
@@ -230,12 +233,32 @@ namespace ConnectorGSA
             var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
             var transport = new ServerTransport(streamState.Client.Account, streamState.Stream.id);
 
-            Commands.Receive(commitId, streamState, transport, converter.CanConvertToNative).Wait();
+            var received = Commands.Receive(commitId, streamState, transport, topLevelObjects).Result;
 
             streamStates.Add(streamState);
           }
 
-          Commands.ConvertToNative(converter, loggingProgress);
+          var flattenedGroups = new List<List<Base>>();
+          foreach (var tlo in topLevelObjects)
+          {
+            var flattened = Commands.FlattenCommitObject(tlo, (Base o) => converter.CanConvertToNative(o));
+            flattenedGroups.Add(flattened);
+          }
+
+          foreach (var fg in flattenedGroups)
+          {
+            //These objects have already passed through a CanConvertToNative
+            Commands.ConvertToNative(fg, converter, loggingProgress);
+
+            if (converter.Report.ConversionErrors != null && converter.Report.ConversionErrors.Count > 0)
+            {
+              foreach (var ce in converter.Report.ConversionErrors)
+              {
+                loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, ce.Message));
+                loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ce, ce.Message));
+              }
+            }
+          }
 
           //The cache is filled with natives
           if (Instance.GsaModel.Cache.GetNatives(out var gsaRecords))

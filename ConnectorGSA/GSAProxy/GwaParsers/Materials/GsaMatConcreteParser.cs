@@ -29,7 +29,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
         (v) => AddNullableDoubleValue(v, out record.Emod), (v) => AddNullableDoubleValue(v, out record.N), (v) => AddNullableDoubleValue(v, out record.Eps), 
         (v) => AddNullableDoubleValue(v, out record.EpsPeak), (v) => AddNullableDoubleValue(v, out record.EpsMax), (v) => AddNullableDoubleValue(v, out record.EpsU), 
         (v) => AddNullableDoubleValue(v, out record.EpsAx), (v) => AddNullableDoubleValue(v, out record.EpsTran), (v) => AddNullableDoubleValue(v, out record.EpsAxs), AddLight,
-        (v) => AddNullableDoubleValue(v, out record.Agg), (v) => AddNullableDoubleValue(v, out record.XdMin), (v) => AddNullableDoubleValue(v, out record.XdMax),
+        (v) => AddNullableDoubleValue(v, out record.Agg), (v) => double.TryParse(v, out record.XdMin), (v) => double.TryParse(v, out record.XdMax),
         (v) => AddNullableDoubleValue(v, out record.Beta), (v) => AddNullableDoubleValue(v, out record.Shrink), (v) => AddNullableDoubleValue(v, out record.Confine),
         (v) => AddNullableDoubleValue(v, out record.Fcc), (v) => AddNullableDoubleValue(v, out record.EpsPlasC), (v) => AddNullableDoubleValue(v, out record.EpsUC));
     }
