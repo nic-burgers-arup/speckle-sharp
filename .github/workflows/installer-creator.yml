@@ -149,6 +149,9 @@ jobs:
 
     - name: Build SpeckleConnectionManagerUI
       run: dotnet publish -c Release -r win10-x64 --self-contained true -p:AssemblyVersion=${{ github.event.inputs.version }}
+      env:
+        GH_PKG_USER: ${{ secrets.GH_PKG_USER }} 
+        GH_PKG_TOKEN: ${{ secrets.GH_PKG_TOKEN }}        
       working-directory: Installer/ConnectionManager/SpeckleConnectionManagerUI
 
     - name: Create Installer
