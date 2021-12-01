@@ -265,7 +265,7 @@ namespace ConverterGSA
                   }
                   catch
                   {
-                    ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
+                    Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
                   }
                 }
                 );
