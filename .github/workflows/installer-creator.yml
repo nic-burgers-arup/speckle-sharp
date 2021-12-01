@@ -124,6 +124,9 @@ jobs:
 
     - name: Excel Addin Request - Compile CLI
       run: dotnet build ExcelAddinRequest.csproj --configuration Release --runtime win-x64
+      env:
+        GH_PKG_USER: ${{ secrets.GH_PKG_USER }} 
+        GH_PKG_TOKEN: ${{ secrets.GH_PKG_TOKEN }}        
       working-directory: Installer/ExcelAddin/ExcelAddinRequest   
 
     - name: Restore SpeckleConnectionManager
@@ -134,7 +137,7 @@ jobs:
       working-directory: Installer/ConnectionManager/SpeckleConnectionManager
 
     - name: Build SpeckleConnectionManager
-      run: dotnet publish -c Release -r win10-x64 --self-contained true
+      run: dotnet publish -c Release -r win10-x64 --self-contained true -p:AssemblyVersion=${{ github.event.inputs.version }}
       working-directory: Installer/ConnectionManager/SpeckleConnectionManager
 
     - name: Restore SpeckleConnectionManagerUI
@@ -145,7 +148,10 @@ jobs:
       working-directory: Installer/ConnectionManager/SpeckleConnectionManagerUI
 
     - name: Build SpeckleConnectionManagerUI
-      run: dotnet publish -c Release -r win10-x64 --self-contained true
+      run: dotnet publish -c Release -r win10-x64 --self-contained true -p:AssemblyVersion=${{ github.event.inputs.version }}
+      env:
+        GH_PKG_USER: ${{ secrets.GH_PKG_USER }} 
+        GH_PKG_TOKEN: ${{ secrets.GH_PKG_TOKEN }}        
       working-directory: Installer/ConnectionManager/SpeckleConnectionManagerUI
 
     - name: Create Installer
