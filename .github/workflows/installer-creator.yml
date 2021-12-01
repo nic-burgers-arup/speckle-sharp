@@ -134,7 +134,7 @@ jobs:
       working-directory: Installer/ConnectionManager/SpeckleConnectionManager
 
     - name: Build SpeckleConnectionManager
-      run: dotnet publish -c Release -r win10-x64 --self-contained true
+      run: dotnet publish -c Release -r win10-x64 --self-contained true -p:AssemblyVersion=${{ github.event.inputs.version }}
       working-directory: Installer/ConnectionManager/SpeckleConnectionManager
 
     - name: Restore SpeckleConnectionManagerUI
@@ -145,7 +145,7 @@ jobs:
       working-directory: Installer/ConnectionManager/SpeckleConnectionManagerUI
 
     - name: Build SpeckleConnectionManagerUI
-      run: dotnet publish -c Release -r win10-x64 --self-contained true
+      run: dotnet publish -c Release -r win10-x64 --self-contained true -p:AssemblyVersion=${{ github.event.inputs.version }}
       working-directory: Installer/ConnectionManager/SpeckleConnectionManagerUI
 
     - name: Create Installer
