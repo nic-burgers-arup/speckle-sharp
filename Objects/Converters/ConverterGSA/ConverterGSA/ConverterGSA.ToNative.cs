@@ -2657,23 +2657,22 @@ namespace ConverterGSA
         gsaAxisRefType = NodeAxisRefType.Global;
         return true;
       }
-        if (speckleAxis.definition.IsGlobal())
-        {
-          gsaAxisRefType = NodeAxisRefType.Global;
-        }
-        else if (speckleAxis.definition.IsXElevation())
-        {
-          gsaAxisRefType = NodeAxisRefType.XElevation;
-        }
-        else if (speckleAxis.definition.IsYElevation())
-        {
-          gsaAxisRefType = NodeAxisRefType.YElevation;
-        }
-        else if (speckleAxis.definition.IsVertical())
-        {
-          gsaAxisRefType = NodeAxisRefType.Vertical;
-        }
+      if (speckleAxis.definition.IsGlobal())
+      {
+        gsaAxisRefType = NodeAxisRefType.Global;
       }
+      else if (speckleAxis.definition.IsXElevation())
+      {
+        gsaAxisRefType = NodeAxisRefType.XElevation;
+      }
+      else if (speckleAxis.definition.IsYElevation())
+      {
+        gsaAxisRefType = NodeAxisRefType.YElevation;
+      }
+      else if (speckleAxis.definition.IsVertical())
+      {
+        gsaAxisRefType = NodeAxisRefType.Vertical;
+      }      
       else if (speckleAxis.applicationId != null)
       {
         gsaAxisRefType = NodeAxisRefType.Reference;

@@ -1593,11 +1593,20 @@ namespace ConverterGSA
           var result = new ResultNode()
           {
             description = "",
-            permutation = "",
             node = speckleNode,
           };
 
-          var gsaCaseIndex = Convert.ToInt32(gsaResult.CaseId.Substring(1));
+          var indexString = gsaResult.CaseId.Substring(1);
+          if (!int.TryParse(indexString, out int gsaCaseIndex))
+          {
+            if(indexString.Any(x => char.IsLetter(x))){
+              var id = new string(indexString.TakeWhile(Char.IsDigit).ToArray());
+              if (!int.TryParse(id, out gsaCaseIndex))
+                return false;
+              result.permutation = indexString.Replace(id, "");
+            }
+          }
+
           if (gsaResult.CaseId[0] == 'A')
           {
             result.resultCase = GetAnalysisCaseFromIndex(gsaCaseIndex);
@@ -2650,7 +2659,7 @@ namespace ConverterGSA
     private Mesh DisplayMeshPolygon(List<int> gsaNodeIndicies, System.Drawing.Color color = default)
     {      
       var edgeVertices = new List<double>();
-      var topology = gsaNodeIndicies.Select(i => GetNodeFromIndex(i)).ToList();
+      var topology = gsaNodeIndicies.Distinct().Select(i => GetNodeFromIndex(i)).ToList();
       foreach (var node in topology)
       {
         edgeVertices.AddRange(new double[] { node.basePoint.x, node.basePoint.y, node.basePoint.z });
