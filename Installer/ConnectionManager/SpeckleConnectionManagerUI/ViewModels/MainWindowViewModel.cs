@@ -60,7 +60,6 @@ namespace SpeckleConnectionManagerUI.ViewModels
         _authenticate.RedirectToAuthPage(connectionStatusItem.ServerUrl);
 
       connectionStatusItem.Disconnected = false;
-      connectionStatusItem.ConnectText = "CONNECTING";
       connectionStatusItem.Colour = "Orange";
     }
 

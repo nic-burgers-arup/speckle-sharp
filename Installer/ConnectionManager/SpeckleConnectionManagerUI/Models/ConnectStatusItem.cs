@@ -7,18 +7,28 @@ namespace SpeckleConnectionManagerUI.Models
     public int Identifier { get; set; }
     public string? ServerName { get; set; }
     public string? ServerUrl { get; set; }
-    public string? ConnectText { get; set; } = "CONNECT";
+
+    private string? _connectText;
+    public string? ConnectText
+    {
+      get => _connectText;
+      set => this.RaiseAndSetIfChanged(ref _connectText, value);
+    }
 
     private bool _disconnected = true;
     public bool Disconnected
     {
       get => _disconnected;
-      set => this.RaiseAndSetIfChanged(ref _disconnected, value);
+      set 
+      {
+        this.RaiseAndSetIfChanged(ref _disconnected, value);
+        ConnectText = value ? "CONNECT" : "CONNECTED";
+      }
     }
 
     private bool _default = false;
     public bool Default
-    {
+    { 
       get => _default;
       set => this.RaiseAndSetIfChanged(ref _default, value);
     }
