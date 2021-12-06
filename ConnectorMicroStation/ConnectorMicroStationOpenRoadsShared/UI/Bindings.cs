@@ -49,7 +49,7 @@ namespace Speckle.ConnectorMicroStationOpenRoads.UI
     public List<Exception> Exceptions { get; set; } = new List<Exception>();
     public List<Exception> ConversionErrors { get; set; } = new List<Exception>();
 #if (OPENBUILDINGS)
-    public bool ExportGridLines { get; set; } = true;
+    public bool ExportGridLines { get; set; } = false;
 #else
     public bool ExportGridLines = false;
 #endif

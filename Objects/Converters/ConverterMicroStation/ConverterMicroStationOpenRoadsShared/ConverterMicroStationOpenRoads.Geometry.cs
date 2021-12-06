@@ -1796,7 +1796,7 @@ namespace Objects.Converter.MicroStationOpenRoads
       return column;
     }
 
-    public RevitFloor SlabToSpeckle(Dictionary<string, object> properties, string units = null)
+    public RevitFloor SlabToSpeckle(Dictionary<string, object> properties, List<ICurve> segments, string units = null)
     {
       RevitFloor floor = new RevitFloor();
       var u = units ?? ModelUnits;
@@ -1806,7 +1806,68 @@ namespace Objects.Converter.MicroStationOpenRoads
       // for some reason the ElementID is a long
       int elementId = (int)(double)GetProperty(properties, "ElementID");
 
-      //floor.outline
+      List<Level> levels = new List<Level>();
+
+      Dictionary<int, List<ICurve>> levelLinesMap = new Dictionary<int, List<ICurve>>();
+      int minElevation = int.MaxValue;
+
+      // this should take the used units into account
+      double epsilon = 0.001;
+
+      foreach (ICurve segment in segments)
+      {
+        Line line = (Line)segment;
+        Point start = line.start;
+        Point end = line.end;
+
+        double dx = Math.Abs(start.x - end.x);
+        double dy = Math.Abs(start.y - end.y);
+
+        if(dx < epsilon && dy < epsilon)
+        {
+          continue;
+        }
+
+        if (Math.Abs(start.z - end.z) > epsilon)
+        {
+          throw new SpeckleException("Inclined slabs not supported!");
+        }
+        else
+        {
+          int elevation = (int)Math.Round(start.z / epsilon);
+          if(minElevation > elevation) {
+            minElevation = elevation;
+          }
+          if (levelLinesMap.ContainsKey(elevation))
+          {
+            levelLinesMap[elevation].Add(line);
+          }
+          else
+          {
+            List<ICurve> lines = new List<ICurve>() { line };
+            levelLinesMap.Add(elevation, lines);
+          }
+        }
+
+      }
+
+      if (levelLinesMap.Count != 2)
+      {
+        throw new SpeckleException("Slab geometry has more than two different elevations!");
+      }
+      else
+      {
+        Polycurve outline = new Polycurve(u);
+        outline.segments = levelLinesMap[minElevation];
+        //outline.domain
+        outline.closed = true;
+        //outline.bbox
+        //outline.area
+        //outline.length
+
+        floor.outline = outline;
+      }
+
       //floor.voids
       //floor.elements
       floor.units = u;
@@ -1993,6 +2054,48 @@ namespace Objects.Converter.MicroStationOpenRoads
       Processor processor = new Processor();
       ElementGraphicsOutput.Process(cellHeader, processor);
 
+      var segments = new List<ICurve>();
+      var curves = processor.curveVectors;
+
+      if (curves.Any())
+      {
+        foreach (var curve in curves)
+        {
+          curve.Transform(processor._transform);
+          foreach (var primitive in curve)
+          {
+            var curvePrimitiveType = primitive.GetCurvePrimitiveType();
+
+            switch (curvePrimitiveType)
+            {
+              case CurvePrimitive.CurvePrimitiveType.Line:
+                primitive.TryGetLine(out DSegment3d segment);
+                segments.Add(LineToSpeckle(segment));
+                break;
+              case CurvePrimitive.CurvePrimitiveType.Arc:
+                primitive.TryGetArc(out DEllipse3d arc);
+                segments.Add(ArcToSpeckle(arc));
+                break;
+              case CurvePrimitive.CurvePrimitiveType.LineString:
+                var pointList = new List<DPoint3d>();
+                primitive.TryGetLineString(pointList);
+                segments.Add(PolylineToSpeckle(pointList));
+                break;
+              case CurvePrimitive.CurvePrimitiveType.BsplineCurve:
+                var spline = primitive.GetBsplineCurve();
+                segments.Add(BSplineCurveToSpeckle(spline));
+                break;
+              case CurvePrimitive.CurvePrimitiveType.Spiral:
+                var spiralSpline = primitive.GetProxyBsplineCurve();
+                segments.Add(SpiralCurveElementToCurve(spiralSpline));
+                break;
+            }
+          }
+        }
+      }
+
+
+
       DgnECInstanceCollection instanceCollection = GetElementProperties(cellHeader);
       Dictionary<string, object> properties = new Dictionary<string, object>();
       foreach (IDgnECInstance instance in instanceCollection)
@@ -2053,13 +2156,15 @@ namespace Objects.Converter.MicroStationOpenRoads
           break;
 
         case (Category.Slabs):
-          element = SlabToSpeckle(properties, u);
+          element = SlabToSpeckle(properties, segments, u);
           break;
 
         default:
           element = new Base();
           break;
       }
+
+      element["segments"] = segments;
 
       Base parameters = new Base();
       foreach (string propertyName in properties.Keys)
@@ -2094,48 +2199,6 @@ namespace Objects.Converter.MicroStationOpenRoads
           element["@parameters"] = parameters;
           break;
       }
-
-      var segments = new List<ICurve>();
-      var curves = processor.curveVectors;
-
-      if (curves.Any())
-      {
-        foreach (var curve in curves)
-        {
-          curve.Transform(processor._transform);
-          foreach (var primitive in curve)
-          {
-            var curvePrimitiveType = primitive.GetCurvePrimitiveType();
-
-            switch (curvePrimitiveType)
-            {
-              case CurvePrimitive.CurvePrimitiveType.Line:
-                primitive.TryGetLine(out DSegment3d segment);
-                segments.Add(LineToSpeckle(segment));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.Arc:
-                primitive.TryGetArc(out DEllipse3d arc);
-                segments.Add(ArcToSpeckle(arc));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.LineString:
-                var pointList = new List<DPoint3d>();
-                primitive.TryGetLineString(pointList);
-                segments.Add(PolylineToSpeckle(pointList));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.BsplineCurve:
-                var spline = primitive.GetBsplineCurve();
-                segments.Add(BSplineCurveToSpeckle(spline));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.Spiral:
-                var spiralSpline = primitive.GetProxyBsplineCurve();
-                segments.Add(SpiralCurveElementToCurve(spiralSpline));
-                break;
-            }
-          }
-        }
-      }
-
-      element["segments"] = segments;
 
       return element;
     }
