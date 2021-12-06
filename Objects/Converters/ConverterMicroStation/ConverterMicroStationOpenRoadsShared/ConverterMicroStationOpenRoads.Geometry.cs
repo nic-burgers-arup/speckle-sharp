@@ -1,14 +1,11 @@
 ﻿using Objects.Geometry;
 using Objects.Primitive;
-using Objects.Other;
-using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Arc = Objects.Geometry.Arc;
 using Box = Objects.Geometry.Box;
-using Brep = Objects.Geometry.Brep;
 using Circle = Objects.Geometry.Circle;
 using Curve = Objects.Geometry.Curve;
 using Ellipse = Objects.Geometry.Ellipse;
@@ -23,27 +20,19 @@ using Point = Objects.Geometry.Point;
 using Polyline = Objects.Geometry.Polyline;
 using RevitBeam = Objects.BuiltElements.Revit.RevitBeam;
 using RevitFloor = Objects.BuiltElements.Revit.RevitFloor;
-using RevitCategory = Objects.BuiltElements.Revit.RevitCategory;
 using RevitColumn = Objects.BuiltElements.Revit.RevitColumn;
 using Surface = Objects.Geometry.Surface;
 using Vector = Objects.Geometry.Vector;
 
-#if(OPENBUILDINGS)
-using BentleyColumn = Objects.Converter.MicroStationOpenRoads.BentleyColumn;
-#endif
-
 using Bentley.DgnPlatformNET;
 using Bentley.DgnPlatformNET.Elements;
-using Bentley.MstnPlatformNET;
 using Bentley.GeometryNET;
 using BMIU = Bentley.MstnPlatformNET.InteropServices.Utilities;
 using BIM = Bentley.Interop.MicroStationDGN;
 using Bentley.ECObjects.Schema;
 using Bentley.DgnPlatformNET.DgnEC;
-using Bentley.EC.Persistence.Query;
 using Speckle.Core.Logging;
 using Bentley.ECObjects.Instance;
-using Bentley.GeometryNET.Common;
 
 namespace Objects.Converter.MicroStationOpenRoads
 {
@@ -1747,12 +1736,7 @@ namespace Objects.Converter.MicroStationOpenRoads
         Point end = ((Line)baseLine).end;
         string type = revitColumn.type;
 
-        BentleyColumn bentleyColumn = BentleyColumn.CreateColumn(Point3dToNative(start), Point3dToNative(end), type, UoR);
-
-        Bentley.DgnPlatformNET.DgnModelRef modelRef = Bentley.MstnPlatformNET.Session.Instance.GetActiveDgnModelRef();
-
-        Bentley.Interop.MicroStationDGN.Element element = bentleyColumn.GetElement((Bentley.Interop.MicroStationDGN.ModelReference)modelRef);
-        return (Bentley.DgnPlatformNET.Elements.Element)element;
+        throw new NotImplementedException();
       }
       else
       {
@@ -1835,7 +1819,6 @@ namespace Objects.Converter.MicroStationOpenRoads
       //floor.slope
       //floor.slopeDirection
 
-
       return floor;
     }
 
@@ -1843,8 +1826,6 @@ namespace Objects.Converter.MicroStationOpenRoads
     {
 #if (OPENBUILDINGS)
 #endif
-
-      Dictionary<string, object> properties = new Dictionary<string, object>();
       //List<string> IdentificationProperties = new List<string>()
       //{
       //  "GUID",
@@ -1874,106 +1855,106 @@ namespace Objects.Converter.MicroStationOpenRoads
       //  "ObjectFireResistance__x002F____x0040__ReferenceID",
       //  "ObjectFireResistance__x002F____x0040__ReferenceURL"
       //};
-      List<string> ObjectIdentityBaseClass = new List<string>()
-      {
-        "ObjectIdentity__x002F____x0040__Tag",
-        "ObjectIdentity__x002F____x0040__Description",
-        "ObjectIdentity__x002F____x0040__Keynote",
-        "ObjectIdentity__x002F____x0040__NameAlt",
-        "ObjectIdentity__x002F____x0040__Notes",
-        "ObjectIdentity__x002F____x0040__InstanceMark",
-        "ObjectIdentity__x002F____x0040__Mark",
-      };
-      List<string> ObjectLEEDBaseClass = new List<string>()
-      {
-        "ObjectLEED__x002F____x0040__PercentPostConsumer",
-        "ObjectLEED__x002F____x0040__PercentRecycled",
-        "ObjectLEED__x002F____x0040__IsRegionalMaterial"
-      };
-      List<string> ObjectMaterialBaseClass = new List<string>()
-      {
-        "ObjectMaterial__x002F____x0040__PartDefinition"
-      };
-      List<string> ObjectPhasingBaseClass = new List<string>()
-      {
-        "ObjectPhasing__x002F____x0040__Phasing"
-      };
-      List<string> ObjectStructuralUsageBaseClass = new List<string>()
-      {
-        "ObjectStructuralUsage__x002F____x0040__StructuralFunction",
-        "ObjectStructuralUsage__x002F____x0040__StructuralMaterial",
-      };
-      List<string> ObjectThermalTransmittanceBaseClass = new List<string>()
-      {
-        "ObjectThermalTransmittance__x002F____x0040__IsBelowGrade",
-        "ObjectThermalTransmittance__x002F____x0040__IsExternal",
-      };
-      List<string> StructuralFramingCommonBaseClass = new List<string>()
-      {
-        "StructuralFramingCommon__x002F____x0040__sectionname",
-        "StructuralFramingCommon__x002F____x0040__structuralfinish",
-        "StructuralFramingCommon__x002F____x0040__structuraltype",
-      };
-      List<string> StructuralQuantitiesBaseClass = new List<string>()
-      {
-        "StructuralQuantities__x002F____x0040__AreaSurfaceNetModeled",
-        "StructuralQuantities__x002F____x0040__AreaCrossSection",
-        "StructuralQuantities__x002F____x0040__AreaCrossSectionModeled",
-        "StructuralQuantities__x002F____x0040__AreaSideSurfaceGrossModeled",
-        "StructuralQuantities__x002F____x0040__Length",
-        "StructuralQuantities__x002F____x0040__LengthXUnitWeight",
-        "StructuralQuantities__x002F____x0040__MaterialDensity",
-        "StructuralQuantities__x002F____x0040__UnitWeight",
-        "StructuralQuantities__x002F____x0040__VolumeGrossModeled",
-        "StructuralQuantities__x002F____x0040__VolumeGrossModeledXDensity",
-        "StructuralQuantities__x002F____x0040__VolumeGross",
-        "StructuralQuantities__x002F____x0040__VolumeGrossXDensity",
-        "StructuralQuantities__x002F____x0040__VolumeNetModeled",
-        "StructuralQuantities__x002F____x0040__VolumeNetModeledXDensity",
-        "StructuralQuantities__x002F____x0040__VolumeNet",
-        "StructuralQuantities__x002F____x0040__VolumeNetXDensity",
-        "StructuralQuantities__x002F____x0040__FeatureVolume"
-      };
-      List<string> ReferenceLineProperties = new List<string>()
-      {
-        "ReferenceLine"
-      };
-      List<string> StructuralWeights = new List<string>()
-      {
-        "GROSSVOLUME",
-        "NETVOLUME",
-        "UNITWEIGHT",
-        "WEIGHTBYLENGTH",
-        "MATERIALDENSITY",
-        "WEIGHTBYGROSSVOLUME",
-        "WEIGHTBYNETVOLUME"
-      };
+      //List<string> ObjectIdentityBaseClass = new List<string>()
+      //{
+      //  "ObjectIdentity__x002F____x0040__Tag",
+      //  "ObjectIdentity__x002F____x0040__Description",
+      //  "ObjectIdentity__x002F____x0040__Keynote",
+      //  "ObjectIdentity__x002F____x0040__NameAlt",
+      //  "ObjectIdentity__x002F____x0040__Notes",
+      //  "ObjectIdentity__x002F____x0040__InstanceMark",
+      //  "ObjectIdentity__x002F____x0040__Mark",
+      //};
+      //List<string> ObjectLEEDBaseClass = new List<string>()
+      //{
+      //  "ObjectLEED__x002F____x0040__PercentPostConsumer",
+      //  "ObjectLEED__x002F____x0040__PercentRecycled",
+      //  "ObjectLEED__x002F____x0040__IsRegionalMaterial"
+      //};
+      //List<string> ObjectMaterialBaseClass = new List<string>()
+      //{
+      //  "ObjectMaterial__x002F____x0040__PartDefinition"
+      //};
+      //List<string> ObjectPhasingBaseClass = new List<string>()
+      //{
+      //  "ObjectPhasing__x002F____x0040__Phasing"
+      //};
+      //List<string> ObjectStructuralUsageBaseClass = new List<string>()
+      //{
+      //  "ObjectStructuralUsage__x002F____x0040__StructuralFunction",
+      //  "ObjectStructuralUsage__x002F____x0040__StructuralMaterial",
+      //};
+      //List<string> ObjectThermalTransmittanceBaseClass = new List<string>()
+      //{
+      //  "ObjectThermalTransmittance__x002F____x0040__IsBelowGrade",
+      //  "ObjectThermalTransmittance__x002F____x0040__IsExternal",
+      //};
+      //List<string> StructuralFramingCommonBaseClass = new List<string>()
+      //{
+      //  "StructuralFramingCommon__x002F____x0040__sectionname",
+      //  "StructuralFramingCommon__x002F____x0040__structuralfinish",
+      //  "StructuralFramingCommon__x002F____x0040__structuraltype",
+      //};
+      //List<string> StructuralQuantitiesBaseClass = new List<string>()
+      //{
+      //  "StructuralQuantities__x002F____x0040__AreaSurfaceNetModeled",
+      //  "StructuralQuantities__x002F____x0040__AreaCrossSection",
+      //  "StructuralQuantities__x002F____x0040__AreaCrossSectionModeled",
+      //  "StructuralQuantities__x002F____x0040__AreaSideSurfaceGrossModeled",
+      //  "StructuralQuantities__x002F____x0040__Length",
+      //  "StructuralQuantities__x002F____x0040__LengthXUnitWeight",
+      //  "StructuralQuantities__x002F____x0040__MaterialDensity",
+      //  "StructuralQuantities__x002F____x0040__UnitWeight",
+      //  "StructuralQuantities__x002F____x0040__VolumeGrossModeled",
+      //  "StructuralQuantities__x002F____x0040__VolumeGrossModeledXDensity",
+      //  "StructuralQuantities__x002F____x0040__VolumeGross",
+      //  "StructuralQuantities__x002F____x0040__VolumeGrossXDensity",
+      //  "StructuralQuantities__x002F____x0040__VolumeNetModeled",
+      //  "StructuralQuantities__x002F____x0040__VolumeNetModeledXDensity",
+      //  "StructuralQuantities__x002F____x0040__VolumeNet",
+      //  "StructuralQuantities__x002F____x0040__VolumeNetXDensity",
+      //  "StructuralQuantities__x002F____x0040__FeatureVolume"
+      //};
+      //List<string> ReferenceLineProperties = new List<string>()
+      //{
+      //  "ReferenceLine"
+      //};
+      //List<string> StructuralWeights = new List<string>()
+      //{
+      //  "GROSSVOLUME",
+      //  "NETVOLUME",
+      //  "UNITWEIGHT",
+      //  "WEIGHTBYLENGTH",
+      //  "MATERIALDENSITY",
+      //  "WEIGHTBYGROSSVOLUME",
+      //  "WEIGHTBYNETVOLUME"
+      //};
 
-      List<string> CommonStructuralProperties = new List<string>()
-            {
-              "SECTNAME",
-              "PTS_0",
-              "PTS_1",
-              "ROTATION",
-              "LENGTH",
-              "PLACEMENT_POINT",
-              "REFLECT",
-              "OV",
-              "ENDACTION_0",
-              "ENDACTION_1",
-              "STF_NAME",
-              "MATERIAL",
-              "CLASS",
-              "STATUS",
-              "USER1",
-              "USER2",
-              "USER3",
-              "USER4",
-              "TYPE",
-              "GRADE",
-              "CONNDETAIL_0",
-              "CONNDETAIL_1"
-            };
+      //List<string> CommonStructuralProperties = new List<string>()
+      //      {
+      //        "SECTNAME",
+      //        "PTS_0",
+      //        "PTS_1",
+      //        "ROTATION",
+      //        "LENGTH",
+      //        "PLACEMENT_POINT",
+      //        "REFLECT",
+      //        "OV",
+      //        "ENDACTION_0",
+      //        "ENDACTION_1",
+      //        "STF_NAME",
+      //        "MATERIAL",
+      //        "CLASS",
+      //        "STATUS",
+      //        "USER1",
+      //        "USER2",
+      //        "USER3",
+      //        "USER4",
+      //        "TYPE",
+      //        "GRADE",
+      //        "CONNDETAIL_0",
+      //        "CONNDETAIL_1"
+      //      };
       //List<string> CommonTriformaProperties = new List<string>()
       //{
       //  "FormWidth",
@@ -1990,46 +1971,37 @@ namespace Objects.Converter.MicroStationOpenRoads
       //  properties.Add(propertyName, value);
       //}
 
-      List<string> additionalProperties = new List<string>()
-      {
-        //"PLACEMENT_POINT",
-        //"ReferenceLine",
-        //// according to the BaseElementSchema this should be 'MaterialProjectionClass'
-        //"MaterialProjectionParameters.Orientation",
-        //"MaterialProjectionParameters.ProjectionGroup",
-        //"MaterialProjectionParameters.ProjectionMapping",
-        //"MaterialProjectionParameters.Offset",
-        //"MaterialProjectionParameters.Scale"
-      };
-      foreach (string propertyName in additionalProperties)
-      {
-        IECPropertyValue propertyValue = GetElementProperty(cellHeader, propertyName);
-        if (propertyValue != null)
-        {
-          object value = GetValue(propertyValue);
-          if (value != null)
-          {
-            AddProperty(properties, propertyValue.Property.Name, value);
-          }
-        }
-      }
-
+      //List<string> additionalProperties = new List<string>()
+      //{
+      //"PLACEMENT_POINT",
+      //"ReferenceLine",
+      //// according to the BaseElementSchema this should be 'MaterialProjectionClass'
+      //"MaterialProjectionParameters.Orientation",
+      //"MaterialProjectionParameters.ProjectionGroup",
+      //"MaterialProjectionParameters.ProjectionMapping",
+      //"MaterialProjectionParameters.Offset",
+      //"MaterialProjectionParameters.Scale"
+      //};
+      //foreach (string propertyName in additionalProperties)
+      //{
+      //  IECPropertyValue propertyValue = GetElementProperty(cellHeader, propertyName);
+      //  if (propertyValue != null)
+      //  {
+      //    properties = GetValue(properties, propertyValue);
+      //  }
+      //}
       Processor processor = new Processor();
       ElementGraphicsOutput.Process(cellHeader, processor);
 
       DgnECInstanceCollection instanceCollection = GetElementProperties(cellHeader);
+      Dictionary<string, object> properties = new Dictionary<string, object>();
       foreach (IDgnECInstance instance in instanceCollection)
       {
         foreach (IECPropertyValue propertyValue in instance)
         {
           if (propertyValue != null)
           {
-            object value = GetValue(propertyValue);
-            if (value != null)
-            {
-              string propertyName = propertyValue.Property.Name;
-              AddProperty(properties, propertyName, value);
-            }
+            properties = GetValue(properties, propertyValue);
           }
         }
         var instanceName = instance.ClassDefinition.Name;
@@ -2168,15 +2140,13 @@ namespace Objects.Converter.MicroStationOpenRoads
       return element;
     }
 
-    private static object GetValue(IECPropertyValue propertyValue)
+    private static Dictionary<string, object> GetValue(Dictionary<string, object> properties, IECPropertyValue propertyValue)
     {
+      string propertyName = propertyValue.Property.Name;
       IECValueContainer containedValues = propertyValue.ContainedValues;
       IECValueContainer container = propertyValue.Container;
       IECProperty property = propertyValue.Property;
       IECInstance instance = propertyValue.Instance;
-
-
-
 
       string type = propertyValue.GetType().Name;
 
@@ -2190,119 +2160,124 @@ namespace Objects.Converter.MicroStationOpenRoads
         case "ECDBooleanValue":
           if (nativeValue != null)
           {
-            return nativeValue;
+            AddProperty(properties, propertyName, nativeValue);
           }
-          return null;
+          break;
 
         case "ECDIntegerValue":
           if (nativeValue != null)
           {
-            return intValue;
+            AddProperty(properties, propertyName, intValue);
           }
-          return null;
+          break;
 
         case "ECDLongValue":
         case "ECDDoubleValue":
           if (nativeValue != null)
           {
-            return doubleValue;
+            AddProperty(properties, propertyName, doubleValue);
           }
-          return null;
+          break;
 
         case "ECDDateTimeValue":
           if (stringValue != null)
           {
-            return stringValue;
+            AddProperty(properties, propertyName, stringValue);
           }
-          return null;
+          break;
 
         case "ECDArrayValue":
-          // see https://communities.bentley.com/products/programming/microstation_programming/b/weblog/posts/ec-properties-related-operations-with-native-and-managed-apis
-
-          IECArrayValue stringArrayProp = propertyValue.ContainedValues as IECArrayValue;
-          if (stringArrayProp != null)
-          {
-            for (int i = 0; i < stringArrayProp.Count; i++)
-            {
-              string foo = stringArrayProp[i].StringValue;
-            }
-          }
-
-          return null;
-
+          Dictionary<string, object> arrayProperties = GetArrayValues(propertyValue);
+          arrayProperties.ToList().ForEach(x => properties.Add(x.Key, x.Value));
+          break;
 
         case "ECDStructValue":
-          //IECStructValue structVal = propertyValue.ContainedValues as IECStructValue;
-          IECStructValue structVal = (IECStructValue)nativeValue;
-          string stringVal = structVal.GetString("Offset");
-          int? intVal = structVal.GetInteger("Offset");
-
-          IEnumerator<IECPropertyValue> enumerator = structVal.GetEnumerator(true);
-          while (enumerator.MoveNext())
+          if (nativeValue != null)
           {
-            IECPropertyValue containedPropertyValue = enumerator.Current;
-            string propertyName = propertyValue.Property.Name;
-
-            object containedValue = GetValue(containedPropertyValue);
-
-
+            Dictionary<string, object> structProperties = GetStructValues((IECStructValue)nativeValue);
+            structProperties.ToList().ForEach(x => properties.Add(x.Key, x.Value));
           }
-
-          //IGeometry orientation = structVal.GetGeometryOrDefault("Orientation");
-          //IGeometry projectionGroup = structVal.GetGeometryOrDefault("ProjectionGroup");
-          //IGeometry projectionMapping = structVal.GetGeometryOrDefault("ProjectionMapping");
-          //IGeometry offset = structVal.GetGeometryOrDefault("Offset");
-          //IGeometry scale = structVal.GetGeometryOrDefault("Scale");
-
-          return null;
+          break;
 
         case "ECDStructArrayValue":
-          //Gets all struct elements from struct array 
-          //IECPropertyValue propVal = instance["StuctArrayProperty"];
-          //IECArrayValue structArrayProp = propVal.ContainedValues as IECArrayValue;
-          //for (int i = 0; i < structArrayProp.Count; i++)
-          //{
-          //  string foo = structArrayProp[i].StringValue;
-          //}
-          //IECStructArrayValue structArrayValue = instance.GetStructArray()
-
-          // Get struct array property value using GetStructArray
-          IECStructArrayValue structArrayValue = (IECStructArrayValue)propertyValue;
-          IECStructValue[] structValues = structArrayValue.GetStructs().ToArray();
-          // To get every struct element in struct array as a single string
-          for (int i = 0; i < structValues.Length; i++)
+          if (nativeValue != null)
           {
-            string bar = structValues[i].StringValue;
+            Dictionary<string, object> structArrayProperties = GetStructArrayValues((IECPropertyValue)nativeValue);
+            structArrayProperties.ToList().ForEach(x => properties.Add(x.Key, x.Value));
           }
-
-      
-
-
-
-          return null;
+          break;
 
         case "ECDStringValue":
         case "ECDCalculatedStringValue":
           if (stringValue != null)
           {
-            return stringValue;
+            AddProperty(properties, propertyName, stringValue);
           }
-          return null;
+          break;
 
         case "ECDDPoint3dValue":
           if (nativeValue != null)
           {
             DPoint3d point = (DPoint3d)nativeValue;
-            return point;
+            AddProperty(properties, propertyName, point);
           }
-          return null;
+          break;
 
         case "ECDBinaryValue":
-          return null;
+          break;
 
         default:
-          return null;
+          break;
       }
+      return properties;
+    }
+
+    // see https://communities.bentley.com/products/programming/microstation_programming/b/weblog/posts/ec-properties-related-operations-with-native-and-managed-apis
+    private static Dictionary<string, object> GetArrayValues(IECPropertyValue container)
+    {
+      Dictionary<string, object> containedProperties = new Dictionary<string, object>();
+
+      IECArrayValue containedValues = container.ContainedValues as IECArrayValue;
+      if (containedValues != null)
+      {
+        for (int i = 0; i < containedValues.Count; i++)
+        {
+          IECPropertyValue propertyValue = containedValues[i];
+
+          containedProperties = GetValue(containedProperties, propertyValue);
+        }
+      }
+      return containedProperties;
+    }
+
+    private static Dictionary<string, object> GetStructValues(IECStructValue structValue)
+    {
+      Dictionary<string, object> containedProperties = new Dictionary<string, object>();
+
+      foreach (IECPropertyValue containedPropertyValue in structValue)
+      {
+        //IECPropertyValue containedPropertyValue = enumerator.Current;
+        string containedPropertyName = containedPropertyValue.Property.Name;
+
+        containedProperties = GetValue(containedProperties, containedPropertyValue);
+      }
+      return containedProperties;
+    }
+
+
+    private static Dictionary<string, object> GetStructArrayValues(IECPropertyValue container)
+    {
+      Dictionary<string, object> containedProperties = new Dictionary<string, object>();
+
+      IECStructArrayValue structArrayValue = (IECStructArrayValue)container;
+      if (structArrayValue != null)
+      {
+        foreach (IECStructValue structValue in structArrayValue.GetStructs())
+        {
+          containedProperties = GetStructValues(structValue);
+        }
+      }
+      return containedProperties;
     }
 
     private static Category FindCategory(string part)
