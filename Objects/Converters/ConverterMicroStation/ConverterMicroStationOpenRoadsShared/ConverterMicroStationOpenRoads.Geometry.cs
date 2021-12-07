@@ -1,10 +1,19 @@
-﻿using Objects.Geometry;
+﻿using Bentley.DgnPlatformNET;
+using Bentley.DgnPlatformNET.DgnEC;
+using Bentley.DgnPlatformNET.Elements;
+using Bentley.ECObjects.Instance;
+using Bentley.ECObjects.Schema;
+using Bentley.GeometryNET;
+using Objects.Geometry;
 using Objects.Primitive;
+using Speckle.Core.Logging;
 using Speckle.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Arc = Objects.Geometry.Arc;
+using BIM = Bentley.Interop.MicroStationDGN;
+using BMIU = Bentley.MstnPlatformNET.InteropServices.Utilities;
 using Box = Objects.Geometry.Box;
 using Circle = Objects.Geometry.Circle;
 using Curve = Objects.Geometry.Curve;
@@ -19,28 +28,17 @@ using Plane = Objects.Geometry.Plane;
 using Point = Objects.Geometry.Point;
 using Polyline = Objects.Geometry.Polyline;
 using RevitBeam = Objects.BuiltElements.Revit.RevitBeam;
-using RevitFloor = Objects.BuiltElements.Revit.RevitFloor;
 using RevitColumn = Objects.BuiltElements.Revit.RevitColumn;
+using RevitFloor = Objects.BuiltElements.Revit.RevitFloor;
+using RevitWall = Objects.BuiltElements.Revit.RevitWall;
 using Surface = Objects.Geometry.Surface;
 using Vector = Objects.Geometry.Vector;
-
-using Bentley.DgnPlatformNET;
-using Bentley.DgnPlatformNET.Elements;
-using Bentley.GeometryNET;
-using BMIU = Bentley.MstnPlatformNET.InteropServices.Utilities;
-using BIM = Bentley.Interop.MicroStationDGN;
-using Bentley.ECObjects.Schema;
-using Bentley.DgnPlatformNET.DgnEC;
-using Speckle.Core.Logging;
-using Bentley.ECObjects.Instance;
 
 namespace Objects.Converter.MicroStationOpenRoads
 {
   public partial class ConverterMicroStationOpenRoads
   {
     public double tolerance = 0.000;    // tolerance for geometry
-                                        // 
-    public Dictionary<string, FamilyInstance> familyInstances = new Dictionary<string, FamilyInstance>();
 
     public double[] PointToArray(DPoint2d pt)
     {
@@ -1796,19 +1794,37 @@ namespace Objects.Converter.MicroStationOpenRoads
       return column;
     }
 
+    public FamilyInstance InstanceToSpeckle(Dictionary<string, object> properties, string units = null)
+    {
+      var u = units ?? ModelUnits;
+      string part = (string)GetProperty(properties, "PART");
+      string family = (string)GetProperty(properties, "FAMILY");
+      // for some reason the ElementID is a long
+      int elementId = (int)(double)GetProperty(properties, "ElementID");
+
+      Point basePoint = new Point();
+      string type = part;
+      Level level = new Level();
+      double rotation = 0;
+      bool facingFlipped = false;
+      bool handFlipped = false;
+      FamilyInstance familyInstance = new FamilyInstance(basePoint, family, type, level, rotation, facingFlipped, handFlipped, new List<Parameter>());
+      //familyInstance.category
+      familyInstance.elementId = elementId.ToString();
+      return familyInstance;
+    }
+
     public RevitFloor SlabToSpeckle(Dictionary<string, object> properties, List<ICurve> segments, string units = null)
     {
       RevitFloor floor = new RevitFloor();
       var u = units ?? ModelUnits;
 
       string part = (string)GetProperty(properties, "PART");
-      string family = (string)GetProperty(properties, "FAMILY");
+      string family = "Floor";
       // for some reason the ElementID is a long
       int elementId = (int)(double)GetProperty(properties, "ElementID");
 
-      List<Level> levels = new List<Level>();
-
-      Dictionary<int, List<ICurve>> levelLinesMap = new Dictionary<int, List<ICurve>>();
+      Dictionary<int, List<ICurve>> elevationMap = new Dictionary<int, List<ICurve>>();
       int minElevation = int.MaxValue;
 
       // this should take the used units into account
@@ -1822,43 +1838,44 @@ namespace Objects.Converter.MicroStationOpenRoads
 
         double dx = Math.Abs(start.x - end.x);
         double dy = Math.Abs(start.y - end.y);
+        double dz = Math.Abs(start.z - end.z);
 
-        if(dx < epsilon && dy < epsilon)
+        if (dx < epsilon && dy < epsilon)
         {
           continue;
         }
 
-        if (Math.Abs(start.z - end.z) > epsilon)
+        if (dz > epsilon)
         {
           throw new SpeckleException("Inclined slabs not supported!");
         }
         else
         {
           int elevation = (int)Math.Round(start.z / epsilon);
-          if(minElevation > elevation) {
+          if (minElevation > elevation)
+          {
             minElevation = elevation;
           }
-          if (levelLinesMap.ContainsKey(elevation))
+          if (elevationMap.ContainsKey(elevation))
           {
-            levelLinesMap[elevation].Add(line);
+            elevationMap[elevation].Add(line);
           }
           else
           {
             List<ICurve> lines = new List<ICurve>() { line };
-            levelLinesMap.Add(elevation, lines);
+            elevationMap.Add(elevation, lines);
           }
         }
-
       }
 
-      if (levelLinesMap.Count != 2)
+      if (elevationMap.Count != 2)
       {
         throw new SpeckleException("Slab geometry has more than two different elevations!");
       }
       else
       {
         Polycurve outline = new Polycurve(u);
-        outline.segments = levelLinesMap[minElevation];
+        outline.segments = elevationMap[minElevation];
         //outline.domain
         outline.closed = true;
         //outline.bbox
@@ -1876,11 +1893,130 @@ namespace Objects.Converter.MicroStationOpenRoads
       floor.elementId = elementId.ToString();
       //floor.level = new Level();
       //floor.level.units = u;
-      //floor.structural
+      floor.structural = true;
       //floor.slope
       //floor.slopeDirection
 
       return floor;
+    }
+
+    public RevitWall WallToSpeckle(Dictionary<string, object> properties, List<ICurve> segments, string units = null)
+    {
+      RevitWall wall = new RevitWall();
+
+      var u = units ?? ModelUnits;
+      string part = (string)GetProperty(properties, "PART");
+      string family = (string)GetProperty(properties, "FAMILY");
+      // for some reason the ElementID is a long
+      int elementId = (int)(double)GetProperty(properties, "ElementID");
+
+      Dictionary<int, List<ICurve>> elevationMap = new Dictionary<int, List<ICurve>>();
+
+      // this should take the used units into account
+      double epsilon = 0.001;
+
+      // only simple walls supported so far
+      if (segments.Count != 12)
+      {
+        throw new SpeckleException("Wall geoemtry not supported!");
+      }
+
+      // sort segments by segment.length
+      List<ICurve> sortedSegments = segments.OrderBy(segment => segment.length).ToList();
+
+      // drop long edges
+      sortedSegments.RemoveRange(4, 8);
+
+      foreach (ICurve segment in sortedSegments)
+      {
+        Line line = (Line)segment;
+        Point start = line.start;
+        Point end = line.end;
+
+        double dx = Math.Abs(start.x - end.x);
+        double dy = Math.Abs(start.y - end.y);
+        double dz = Math.Abs(start.z - end.z);
+
+        // drop vertical edges
+        if (dx < epsilon && dy < epsilon)
+        {
+          // there should be none
+          continue;
+        }
+
+        if (dz > epsilon)
+        {
+          throw new SpeckleException("Wall geoemtry not supported!");
+        }
+        else
+        {
+          int currentElevation = (int)Math.Round(start.z / epsilon);
+          if (elevationMap.ContainsKey(currentElevation))
+          {
+            elevationMap[currentElevation].Add(line);
+          }
+          else
+          {
+            List<ICurve> lines = new List<ICurve>() { line };
+            elevationMap.Add(currentElevation, lines);
+          }
+        }
+      }
+
+      if (elevationMap.Count != 2)
+      {
+        throw new SpeckleException("Inclined walls not supported!");
+      }
+
+      // sort by elevations
+      List<int> sortedElevations = elevationMap.Keys.OrderBy(lines => lines).ToList();
+
+      Line baseLine = CreateWallBaseLine(elevationMap[sortedElevations[0]], u);
+
+      double elevation = sortedElevations[0] / epsilon;
+      double topElevation = sortedElevations[1] / epsilon;
+      double height = topElevation - elevation;
+
+      Level level = new Level("", elevation);
+      Level topLevel = new Level("", topElevation);
+
+      wall.height = height;
+      //wall.elements = 
+      wall.baseLine = baseLine;
+      wall.units = u;
+      wall.family = family;
+      wall.type = part;
+      wall.baseOffset = 0;
+      wall.topOffset = 0;
+      wall.flipped = false;
+      wall.structural = true;
+      wall.level = level;
+      wall.topLevel = topLevel;
+      wall.elementId = elementId.ToString();
+
+      return wall;
+    }
+
+    private Line CreateWallBaseLine(List<ICurve> shortEdges, string units = null)
+    {
+      var u = units ?? ModelUnits;
+
+      Line edge1 = (Line)shortEdges[0];
+      Line edge2 = (Line)shortEdges[1];
+
+      double dx1 = edge1.end.x - edge1.start.x;
+      double dy1 = edge1.end.y - edge1.start.y;
+      double dz1 = edge1.end.z - edge1.start.z;
+
+      double dx2 = edge2.end.x - edge2.start.x;
+      double dy2 = edge2.end.y - edge2.start.y;
+      double dz2 = edge2.end.z - edge2.start.z;
+
+      Point start = new Point(edge1.start.x + dx1/2, edge1.start.y + dy1/2, edge1.start.z + dz1/2, u);
+      Point end = new Point(edge2.start.x + dx2/2, edge2.start.y + dy2/2, edge2.start.z + dz2/2, u);
+
+      Line baseLine = new Line(start, end, u);
+      return baseLine;
     }
 
     public Base Type2ElementToSpeckle(Type2Element cellHeader, string units = null)
@@ -2094,8 +2230,6 @@ namespace Objects.Converter.MicroStationOpenRoads
         }
       }
 
-
-
       DgnECInstanceCollection instanceCollection = GetElementProperties(cellHeader);
       Dictionary<string, object> properties = new Dictionary<string, object>();
       foreach (IDgnECInstance instance in instanceCollection)
@@ -2113,21 +2247,7 @@ namespace Objects.Converter.MicroStationOpenRoads
       string part = (string)properties["PART"];
       Category category = FindCategory(part);
 
-
       string family = (string)properties["FAMILY"];
-      if (familyInstances.TryGetValue(family, out FamilyInstance familyInstance))
-      {
-        Point basePoint = new Point();
-        string type = "";
-        Level level = new Level();
-        double rotation = 0;
-        bool facingFlipped = false;
-        bool handFlipped = false;
-        familyInstance = new FamilyInstance(basePoint, family, type, level, rotation, facingFlipped, handFlipped, new List<Parameter>());
-        //familyInstance.category
-        //familyInstance.elementId
-        familyInstances.Add(family, familyInstance);
-      }
 
       Base element;
       var u = units ?? ModelUnits;
@@ -2140,10 +2260,10 @@ namespace Objects.Converter.MicroStationOpenRoads
       properties.Remove("ModifiedTime");
 
       // remove unecessary properties 
-      properties.Remove("OV");
-      properties.Remove("RangeLow");
-      properties.Remove("RangeHigh");
-      properties.Remove("ELEMENTID");
+      //properties.Remove("OV");
+      //properties.Remove("RangeLow");
+      //properties.Remove("RangeHigh");
+      //properties.Remove("ELEMENTID");
       switch (category)
       {
         case (Category.Beams):
@@ -2157,6 +2277,10 @@ namespace Objects.Converter.MicroStationOpenRoads
 
         case (Category.Slabs):
           element = SlabToSpeckle(properties, segments, u);
+          break;
+
+        case (Category.Walls):
+          element = WallToSpeckle(properties, segments, u);
           break;
 
         default:
@@ -2362,6 +2486,10 @@ namespace Objects.Converter.MicroStationOpenRoads
       {
         category = Category.Slabs;
       }
+      else if (part.Contains("Wall"))
+      {
+        category = Category.Walls;
+      }
       return category;
     }
 
@@ -2511,7 +2639,8 @@ namespace Objects.Converter.MicroStationOpenRoads
       Columns,
       None,
       Piles,
-      Slabs
+      Slabs,
+      Walls
     }
   }
 }
