@@ -1756,6 +1756,90 @@ namespace Objects.Converter.MicroStationOpenRoads
       DPoint3d start = (DPoint3d)GetProperty(properties, "PTS_0");
       DPoint3d end = (DPoint3d)GetProperty(properties, "PTS_1");
 
+      int placementPoint = (int)GetProperty(properties, "PLACEMENT_POINT");
+
+      Parameter zJustification = new Parameter("z Justification", 0, u);
+      Parameter yJustification = new Parameter("y Justification", 0, u);
+
+      // Revit ZJustification Enumeration
+      // Top = 0
+      // Center = 1
+      // Origin = 2
+      // Bottom = 3
+
+      // Revit YJustification Enumeration
+      // Left = 0
+      // Center = 1
+      // Origin = 2
+      // Right = 3
+      switch (placementPoint)
+      {
+        case (1):
+          // bottom right
+          zJustification.value = 3;
+          yJustification.value = 3;
+          break;
+
+        case (2):
+          // bottom center
+          zJustification.value = 3;
+          yJustification.value = 1;
+          break;
+
+        case (3):
+          // bottom left
+          zJustification.value = 3;
+          yJustification.value = 0;
+          break;
+
+        case (4):
+          // center right
+          zJustification.value = 1;
+          yJustification.value = 0;
+          break;
+
+        case (10):
+          // origin origin
+          zJustification.value = 2;
+          yJustification.value = 2;
+          break;
+
+        case (5):
+          // center center
+          zJustification.value = 1;
+          yJustification.value = 1;
+          break;
+
+        case (6):
+          // center left
+          zJustification.value = 1;
+          yJustification.value = 0;
+          break;
+
+        case (7):
+          // top right
+          zJustification.value = 0;
+          yJustification.value = 3;
+          break;
+
+        case (8):
+          // top center
+          zJustification.value = 0;
+          yJustification.value = 1;
+          break;
+
+        case (9):
+          // top left
+          zJustification.value = 0;
+          yJustification.value = 0;
+          break;
+
+        default:
+          zJustification.value = 0;
+          yJustification.value = 0;
+          break;
+      }
+
       beam.baseLine = LineToSpeckle(start, end, false);
       //beam.displayMesh
       beam.units = u;
@@ -1973,13 +2057,15 @@ namespace Objects.Converter.MicroStationOpenRoads
 
       Line baseLine = CreateWallBaseLine(elevationMap[sortedElevations[0]], u);
 
-      double elevation = sortedElevations[0] / epsilon;
-      double topElevation = sortedElevations[1] / epsilon;
+      double elevation = sortedElevations[0] * epsilon;
+      double topElevation = sortedElevations[1] * epsilon;
       double height = topElevation - elevation;
 
       Level level = new Level("", elevation);
+      level.units = u;
       Level topLevel = new Level("", topElevation);
-
+      topLevel.units = u;
+ 
       wall.height = height;
       //wall.elements = 
       wall.baseLine = baseLine;
@@ -2012,8 +2098,8 @@ namespace Objects.Converter.MicroStationOpenRoads
       double dy2 = edge2.end.y - edge2.start.y;
       double dz2 = edge2.end.z - edge2.start.z;
 
-      Point start = new Point(edge1.start.x + dx1/2, edge1.start.y + dy1/2, edge1.start.z + dz1/2, u);
-      Point end = new Point(edge2.start.x + dx2/2, edge2.start.y + dy2/2, edge2.start.z + dz2/2, u);
+      Point start = new Point(edge1.start.x + dx1 / 2, edge1.start.y + dy1 / 2, edge1.start.z + dz1 / 2, u);
+      Point end = new Point(edge2.start.x + dx2 / 2, edge2.start.y + dy2 / 2, edge2.start.z + dz2 / 2, u);
 
       Line baseLine = new Line(start, end, u);
       return baseLine;
