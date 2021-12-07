@@ -2061,11 +2061,11 @@ namespace Objects.Converter.MicroStationOpenRoads
       double topElevation = sortedElevations[1] * epsilon;
       double height = topElevation - elevation;
 
-      Level level = new Level("", elevation);
+      Level level = new Level("Level " + elevation + " " + u, elevation);
       level.units = u;
-      Level topLevel = new Level("", topElevation);
+      Level topLevel = new Level("Level " + topElevation + " " + u, topElevation);
       topLevel.units = u;
- 
+
       wall.height = height;
       //wall.elements = 
       wall.baseLine = baseLine;
