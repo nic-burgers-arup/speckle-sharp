@@ -1744,9 +1744,125 @@ namespace Objects.Converter.MicroStationOpenRoads
       throw new NotImplementedException();
     }
 
+    public Level CreateLevel(double elevation, string units = null)
+    {
+      var u = units ?? ModelUnits;
+
+      double accuracy = 1000.0;
+      elevation = Math.Round(elevation * accuracy) / accuracy;
+
+      Level level = new Level("Level " + elevation + " " + u, elevation);
+      level.units = u;
+      return level;
+    }
+
+    public List<Parameter> CreateParameter(Dictionary<string, object> properties, string propertyName, string units = null)
+    {
+      var u = units ?? ModelUnits;
+
+      switch (propertyName)
+      {
+        // justification
+        case ("PLACEMENT_POINT"):
+          int placementPoint = (int)GetProperty(properties, "PLACEMENT_POINT");
+
+          Parameter zJustification = new Parameter("z Justification", 0, u);
+          Parameter yJustification = new Parameter("y Justification", 0, u);
+
+          // Revit ZJustification
+          // Top = 0
+          // Center = 1
+          // Origin = 2
+          // Bottom = 3
+
+          // Revit YJustification
+          // Left = 0
+          // Center = 1
+          // Origin = 2
+          // Right = 3
+
+          switch (placementPoint)
+          {
+            case (1):
+              // bottom right
+              zJustification.value = 3;
+              yJustification.value = 3;
+              break;
+
+            case (2):
+              // bottom center
+              zJustification.value = 3;
+              yJustification.value = 1;
+              break;
+
+            case (3):
+              // bottom left
+              zJustification.value = 3;
+              yJustification.value = 0;
+              break;
+
+            case (4):
+              // center right
+              zJustification.value = 1;
+              yJustification.value = 0;
+              break;
+
+            case (10):
+              // origin origin
+              zJustification.value = 2;
+              yJustification.value = 2;
+              break;
+
+            case (5):
+              // center center
+              zJustification.value = 1;
+              yJustification.value = 1;
+              break;
+
+            case (6):
+              // center left
+              zJustification.value = 1;
+              yJustification.value = 0;
+              break;
+
+            case (7):
+              // top right
+              zJustification.value = 0;
+              yJustification.value = 3;
+              break;
+
+            case (8):
+              // top center
+              zJustification.value = 0;
+              yJustification.value = 1;
+              break;
+
+            case (9):
+              // top left
+              zJustification.value = 0;
+              yJustification.value = 0;
+              break;
+
+            default:
+              zJustification.value = 0;
+              yJustification.value = 0;
+              break;
+          }
+
+          return new List<Parameter>() { zJustification, yJustification };
+
+        case ("ROTATION"):
+          double rotation = (double)GetProperty(properties, "ROTATION");
+          Parameter structuralBendDirAngle = new Parameter("Cross-Section Rotation", 180 * rotation / Math.PI);
+          return new List<Parameter>() { structuralBendDirAngle };
+
+        default:
+          throw new SpeckleException("Parameter for property not implemented.");
+      }
+    }
+
     public RevitBeam BeamToSpeckle(Dictionary<string, object> properties, string units = null)
     {
-      RevitBeam beam = new RevitBeam();
       var u = units ?? ModelUnits;
 
       string part = (string)GetProperty(properties, "PART");
@@ -1756,105 +1872,26 @@ namespace Objects.Converter.MicroStationOpenRoads
       DPoint3d start = (DPoint3d)GetProperty(properties, "PTS_0");
       DPoint3d end = (DPoint3d)GetProperty(properties, "PTS_1");
 
-      int placementPoint = (int)GetProperty(properties, "PLACEMENT_POINT");
+      List<Parameter> parameters = new List<Parameter>();
+      // justification
+      parameters.AddRange(CreateParameter(properties, "PLACEMENT_POINT", u));
+      // rotation
+      parameters.AddRange(CreateParameter(properties, "ROTATION", u));
 
-      Parameter zJustification = new Parameter("z Justification", 0, u);
-      Parameter yJustification = new Parameter("y Justification", 0, u);
+      Line baseLine = LineToSpeckle(start, end, false);
+      Level level = new Level();
+      level.units = u;
 
-      // Revit ZJustification Enumeration
-      // Top = 0
-      // Center = 1
-      // Origin = 2
-      // Bottom = 3
-
-      // Revit YJustification Enumeration
-      // Left = 0
-      // Center = 1
-      // Origin = 2
-      // Right = 3
-      switch (placementPoint)
-      {
-        case (1):
-          // bottom right
-          zJustification.value = 3;
-          yJustification.value = 3;
-          break;
-
-        case (2):
-          // bottom center
-          zJustification.value = 3;
-          yJustification.value = 1;
-          break;
-
-        case (3):
-          // bottom left
-          zJustification.value = 3;
-          yJustification.value = 0;
-          break;
-
-        case (4):
-          // center right
-          zJustification.value = 1;
-          yJustification.value = 0;
-          break;
-
-        case (10):
-          // origin origin
-          zJustification.value = 2;
-          yJustification.value = 2;
-          break;
-
-        case (5):
-          // center center
-          zJustification.value = 1;
-          yJustification.value = 1;
-          break;
-
-        case (6):
-          // center left
-          zJustification.value = 1;
-          yJustification.value = 0;
-          break;
-
-        case (7):
-          // top right
-          zJustification.value = 0;
-          yJustification.value = 3;
-          break;
-
-        case (8):
-          // top center
-          zJustification.value = 0;
-          yJustification.value = 1;
-          break;
-
-        case (9):
-          // top left
-          zJustification.value = 0;
-          yJustification.value = 0;
-          break;
-
-        default:
-          zJustification.value = 0;
-          yJustification.value = 0;
-          break;
-      }
-
-      beam.baseLine = LineToSpeckle(start, end, false);
+      RevitBeam beam = new RevitBeam(family, part, baseLine, level, parameters);
+      beam.elementId = elementId.ToString();
       //beam.displayMesh
       beam.units = u;
-      beam.type = part;
-      beam.family = family;
-      beam.elementId = elementId.ToString();
-      beam.level = new Level();
-      beam.level.units = u;
 
       return beam;
     }
 
     public RevitColumn ColumnToSpeckle(Dictionary<string, object> properties, string units = null)
     {
-      RevitColumn column = new RevitColumn();
       var u = units ?? ModelUnits;
 
       string part = (string)GetProperty(properties, "PART");
@@ -1864,16 +1901,36 @@ namespace Objects.Converter.MicroStationOpenRoads
       DPoint3d start = (DPoint3d)GetProperty(properties, "PTS_0");
       DPoint3d end = (DPoint3d)GetProperty(properties, "PTS_1");
       double rotation = (double)GetProperty(properties, "ROTATION");
+      double rotationZ = (double)GetProperty(properties, "RotationZ");
 
-      column.baseLine = LineToSpeckle(start, end, false);
+      Line baseLine = LineToSpeckle(start, end, false);
+
+      double bottomElevation, topElevation;
+      if (start.Z > end.Z)
+      {
+        bottomElevation = end.Z;
+        topElevation = start.Z;
+      }
+      else
+      {
+        bottomElevation = start.Z;
+        topElevation = end.Z;
+      }
+
+      Level level = CreateLevel(bottomElevation, u);
+      Level topLevel = CreateLevel(topElevation, u);
+      double baseOffset = 0;
+      double topOffset = 0;
+      bool structural = true;
+
+      List<Parameter> parameters = new List<Parameter>();
+      // justification
+      parameters.AddRange(CreateParameter(properties, "PLACEMENT_POINT", u));
+
+      RevitColumn column = new RevitColumn(family, part, baseLine, level, topLevel, baseOffset, topOffset, structural, rotationZ, parameters);
+      column.elementId = elementId.ToString();
       //column.displayMesh
       column.units = u;
-      column.type = part;
-      column.family = family;
-      column.elementId = elementId.ToString();
-      //column.level = new Level();
-      //column.level.units = u;
-      column.rotation = rotation;
 
       return column;
     }
@@ -1885,14 +1942,16 @@ namespace Objects.Converter.MicroStationOpenRoads
       string family = (string)GetProperty(properties, "FAMILY");
       // for some reason the ElementID is a long
       int elementId = (int)(double)GetProperty(properties, "ElementID");
+      double rotation = (double)GetProperty(properties, "ROTATION");
+      double rotationZ = (double)GetProperty(properties, "RotationZ");
 
       Point basePoint = new Point();
       string type = part;
+      // level will need to have a unique name!
       Level level = new Level();
-      double rotation = 0;
       bool facingFlipped = false;
       bool handFlipped = false;
-      FamilyInstance familyInstance = new FamilyInstance(basePoint, family, type, level, rotation, facingFlipped, handFlipped, new List<Parameter>());
+      FamilyInstance familyInstance = new FamilyInstance(basePoint, family, type, level, rotationZ, facingFlipped, handFlipped, new List<Parameter>());
       //familyInstance.category
       familyInstance.elementId = elementId.ToString();
       return familyInstance;
@@ -2061,10 +2120,8 @@ namespace Objects.Converter.MicroStationOpenRoads
       double topElevation = sortedElevations[1] * epsilon;
       double height = topElevation - elevation;
 
-      Level level = new Level("Level " + elevation + " " + u, elevation);
-      level.units = u;
-      Level topLevel = new Level("Level " + topElevation + " " + u, topElevation);
-      topLevel.units = u;
+      Level level = CreateLevel(elevation, u);
+      Level topLevel = CreateLevel(topElevation, u);
 
       wall.height = height;
       //wall.elements = 
