@@ -1968,7 +1968,7 @@ namespace Objects.Converter.MicroStationOpenRoads
       int elementId = (int)(double)GetProperty(properties, "ElementID");
 
       Dictionary<int, List<ICurve>> elevationMap = new Dictionary<int, List<ICurve>>();
-      int minElevation = int.MaxValue;
+      int maxElevation = int.MinValue;
 
       // this should take the used units into account
       double epsilon = 0.001;
@@ -1983,6 +1983,7 @@ namespace Objects.Converter.MicroStationOpenRoads
         double dy = Math.Abs(start.y - end.y);
         double dz = Math.Abs(start.z - end.z);
 
+        // drop vertical segments
         if (dx < epsilon && dy < epsilon)
         {
           continue;
@@ -1992,22 +1993,21 @@ namespace Objects.Converter.MicroStationOpenRoads
         {
           throw new SpeckleException("Inclined slabs not supported!");
         }
+
+        int elevation = (int)Math.Round(start.z / epsilon);
+        if (elevation > maxElevation)
+        {
+          maxElevation = elevation;
+        }
+        if (elevationMap.ContainsKey(elevation))
+        {
+          elevationMap[elevation].Add(line);
+        }
         else
         {
-          int elevation = (int)Math.Round(start.z / epsilon);
-          if (minElevation > elevation)
-          {
-            minElevation = elevation;
-          }
-          if (elevationMap.ContainsKey(elevation))
-          {
-            elevationMap[elevation].Add(line);
-          }
-          else
-          {
-            List<ICurve> lines = new List<ICurve>() { line };
-            elevationMap.Add(elevation, lines);
-          }
+          List<ICurve> lines = new List<ICurve>() { line };
+          elevationMap.Add(elevation, lines);
+
         }
       }
 
@@ -2015,18 +2015,16 @@ namespace Objects.Converter.MicroStationOpenRoads
       {
         throw new SpeckleException("Slab geometry has more than two different elevations!");
       }
-      else
-      {
-        Polycurve outline = new Polycurve(u);
-        outline.segments = elevationMap[minElevation];
-        //outline.domain
-        outline.closed = true;
-        //outline.bbox
-        //outline.area
-        //outline.length
 
-        floor.outline = outline;
-      }
+      Polycurve outline = new Polycurve(u);
+      outline.segments = elevationMap[maxElevation];
+      //outline.domain
+      outline.closed = true;
+      //outline.bbox
+      //outline.area
+      //outline.length
+
+      floor.outline = outline;
 
       //floor.voids
       //floor.elements
