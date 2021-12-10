@@ -41,7 +41,7 @@ SpeckleGSA is still currently under development which can cause many quick chang
 
 ## Contributing to SpeckleGSA
 
-Checkout the [Contribution Guidelines](https://github.com/arup-group/speckleGSA/blob/master/ConnectorGSA/CONTRIBUTING.md) for guidance on compiling SpeckleGSA and how to share your changes back to the community!
+Checkout the [Contribution Guidelines](https://github.com/arup-group/speckle-sharp/blob/master/ConnectorGSA/CONTRIBUTING.md) for guidance on compiling SpeckleGSA and how to share your changes back to the community!
 
 ## About Speckle
 
