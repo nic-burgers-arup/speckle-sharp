@@ -284,7 +284,7 @@ namespace Speckle.GSA.API.GwaSchema
     public override string ToDesc()
     {
       var strItems = new List<string>() { Group.GetStringValue(), ProfileType.GetStringValue() };
-      if (Units != "") strItems[1] += strItems[1] + "(" + Units + ")";
+      if (Units != "") strItems[1] = strItems[1] + "(" + Units + ")";
       strItems.AddRange(values.Select(v => (v.HasValue ? v : 0).ToString()));
       return string.Join(" ", strItems);
     }
