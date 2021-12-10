@@ -1,5 +1,7 @@
 # SpeckleGSA
-SpeckleGSA is a plugin for [GSA 10.1](https://www.oasys-software.com/products/structural/gsa/) that connects it to the [Speckle](https://speckle.systems) ecosystem.
+SpeckleGSA is a plugin for [Oasys GSA 10.1](https://www.oasys-software.com/products/structural/gsa/) that connects it to the [Speckle](https://speckle.systems) ecosystem. 
+
+👉 Check out the SpeckleGSA docs site [here](https://arup-group.github.io/speckleGSA/) for getting started resources!   
 
 ## Contents
 
