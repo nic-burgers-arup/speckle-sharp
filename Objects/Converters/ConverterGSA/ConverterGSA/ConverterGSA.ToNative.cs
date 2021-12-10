@@ -2189,9 +2189,18 @@ namespace ConverterGSA
         }
         else if (sectionProfile.shapeType == ShapeType.I)
         {
-          var p = (ISection)sectionProfile;
-          gsaProfileDetails = new ProfileDetailsTwoThickness() { ProfileType = Section1dStandardProfileType.ISection };
-          ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth * lengthFactor, p.width * lengthFactor, p.webThickness * lengthFactor, p.flangeThickness * lengthFactor);
+          var p = sectionProfile as ISection;
+          if (p != null)
+          {
+            gsaProfileDetails = new ProfileDetailsTwoThickness() { ProfileType = Section1dStandardProfileType.ISection };
+            ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth * lengthFactor, p.width * lengthFactor, p.webThickness * lengthFactor, p.flangeThickness * lengthFactor);
+          }
+          else
+          {
+            gsaProfileDetails = new ProfileDetailsGeneralI() { ProfileType = Section1dStandardProfileType.GeneralI };
+            ((ProfileDetailsStandard)gsaProfileDetails).SetValues(sectionProfile["depth"].ToDouble() * lengthFactor, sectionProfile["topFlangeWidth"].ToDouble() * lengthFactor, sectionProfile["botFlangeWidth"].ToDouble() * lengthFactor,
+              sectionProfile["topFlangeThickness"].ToDouble() * lengthFactor, sectionProfile["botFlangeThickness"].ToDouble() * lengthFactor, sectionProfile["webThickness"].ToDouble() * lengthFactor);
+          }
         }
         else if (sectionProfile.shapeType == ShapeType.Tee)
         {
