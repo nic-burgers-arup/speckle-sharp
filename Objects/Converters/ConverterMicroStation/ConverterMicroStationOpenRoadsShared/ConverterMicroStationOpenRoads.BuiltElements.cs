@@ -339,10 +339,19 @@ namespace Objects.Converter.MicroStationOpenRoads
       double rotation = (double)GetProperty(properties, "ROTATION");
       double rotationZ = (double)GetProperty(properties, "RotationZ");
 
-      Point basePoint = Point3dToSpeckle(start, false);
+      Point basePoint;
+      if (start.Z > end.Z)
+      {
+        basePoint = Point3dToSpeckle(start, false);
+      }
+      else
+      {
+        basePoint = Point3dToSpeckle(end, false);
+      }
       string type = part;
 
       Level level = CreateLevel(basePoint.z, u);
+      basePoint.z = 0.0;
 
       bool facingFlipped = false;
       bool handFlipped = false;
