@@ -135,7 +135,9 @@ namespace Objects.Converter.MicroStationOpenRoads
           int placementPoint = (int)GetProperty(properties, "PLACEMENT_POINT");
 
           Parameter zJustification = new Parameter("z Justification", 0, u);
+          zJustification.applicationInternalName = "Z_JUSTIFICATION";
           Parameter yJustification = new Parameter("y Justification", 0, u);
+          yJustification.applicationInternalName = "Y_JUSTIFICATION";
 
           // Revit ZJustification
           // Top = 0

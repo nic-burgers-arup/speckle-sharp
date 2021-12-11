@@ -2000,42 +2000,21 @@ namespace Objects.Converter.MicroStationOpenRoads
 
       element["segments"] = segments;
 
-      Base parameters = new Base();
+      Base bentleyProperties = new Base();
       foreach (string propertyName in properties.Keys)
       {
         Object value = properties[propertyName];
         if (value.GetType().Name == "DPoint3d")
         {
-          parameters[propertyName] = ConvertToSpeckle(value);
+          bentleyProperties[propertyName] = ConvertToSpeckle(value);
         }
         else
         {
-          parameters[propertyName] = value;
+          bentleyProperties[propertyName] = value;
         }
       }
 
-      switch (category)
-      {
-        case (Category.Beams):
-          ((RevitBeam)element).parameters = parameters;
-          break;
-
-        case (Category.Columns):
-          ((RevitColumn)element).parameters = parameters;
-          break;
-
-        case (Category.Piles):
-          ((FamilyInstance)element).parameters = parameters;
-          break;
-
-        case (Category.Slabs):
-          ((RevitFloor)element).parameters = parameters;
-          break;
-
-        default:
-          element["@parameters"] = parameters;
-          break;
-      }
+      element["@properties"] = bentleyProperties;
 
       return element;
     }
