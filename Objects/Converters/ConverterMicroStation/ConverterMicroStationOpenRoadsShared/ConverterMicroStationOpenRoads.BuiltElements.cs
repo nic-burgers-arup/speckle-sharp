@@ -1,31 +1,38 @@
-﻿using Objects.Geometry;
+﻿using Bentley.DgnPlatformNET;
+using Bentley.DgnPlatformNET.DgnEC;
+using Bentley.DgnPlatformNET.Elements;
+using Bentley.ECObjects.Instance;
+using Bentley.ECObjects.Schema;
+using Bentley.GeometryNET;
+using Objects.Geometry;
 using Objects.Primitive;
-using Objects.Other;
-using Speckle.Core.Kits;
+using Speckle.Core.Logging;
 using Speckle.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Arc = Objects.Geometry.Arc;
+using BIM = Bentley.Interop.MicroStationDGN;
+using BMIU = Bentley.MstnPlatformNET.InteropServices.Utilities;
 using Box = Objects.Geometry.Box;
-using Brep = Objects.Geometry.Brep;
 using Circle = Objects.Geometry.Circle;
 using Curve = Objects.Geometry.Curve;
 using Ellipse = Objects.Geometry.Ellipse;
+using FamilyInstance = Objects.BuiltElements.Revit.FamilyInstance;
 using Interval = Objects.Primitive.Interval;
+using Level = Objects.BuiltElements.Level;
 using Line = Objects.Geometry.Line;
 using Mesh = Objects.Geometry.Mesh;
+using Parameter = Objects.BuiltElements.Revit.Parameter;
 using Plane = Objects.Geometry.Plane;
 using Point = Objects.Geometry.Point;
 using Polyline = Objects.Geometry.Polyline;
+using RevitBeam = Objects.BuiltElements.Revit.RevitBeam;
+using RevitColumn = Objects.BuiltElements.Revit.RevitColumn;
+using RevitFloor = Objects.BuiltElements.Revit.RevitFloor;
+using RevitWall = Objects.BuiltElements.Revit.RevitWall;
 using Surface = Objects.Geometry.Surface;
 using Vector = Objects.Geometry.Vector;
-
-using Bentley.DgnPlatformNET;
-using Bentley.DgnPlatformNET.Elements;
-using Bentley.GeometryNET;
-using BMIU = Bentley.MstnPlatformNET.InteropServices.Utilities;
-using BIM = Bentley.Interop.MicroStationDGN;
 
 namespace Objects.Converter.MicroStationOpenRoads
 {
@@ -222,6 +229,57 @@ namespace Objects.Converter.MicroStationOpenRoads
       }
     }
 
+    public Polycurve CreatePolyCurve(List<ICurve> segments, string units = null)
+    {
+      var u = units ?? ModelUnits;
+      Polycurve polyCurve = new Polycurve(u);
+
+      double eps = 0.001;
+
+      // sort segments
+      if (segments.Count > 0)
+      {
+        Line firstSegment = segments[0] as Line;
+        Point currentEnd = firstSegment.end;
+        List<ICurve> sortedSegments = new List<ICurve>();
+        sortedSegments.Add(firstSegment);
+        segments.Remove(firstSegment);
+        int i = 0;
+        while (segments.Count > 0)
+        {
+          if (i > segments.Count)
+          {
+            break;
+          }
+          ICurve nextSegment = segments[i];
+          i++;
+          Point nextStart = ((Line)nextSegment).start;
+          Point nextEnd = ((Line)nextSegment).end;
+
+          double dx = Math.Abs(nextStart.x - currentEnd.x);
+          double dy = Math.Abs(nextStart.y - currentEnd.y);
+          double dz = Math.Abs(nextStart.z - currentEnd.z);
+
+          if (dx < eps && dy < eps && dz < eps)
+          {
+            sortedSegments.Add(nextSegment);
+            segments.Remove(nextSegment);
+
+            currentEnd = ((Line)nextSegment).end;
+            i = 0;
+          }
+        }
+        polyCurve.segments = sortedSegments;
+      }
+      //polyCurve.domain
+      polyCurve.closed = true;
+      //polyCurve.bbox
+      //polyCurve.area
+      //polyCurve.length
+
+      return polyCurve;
+    }
+
     public Line CreateWallBaseLine(List<ICurve> shortEdges, string units = null)
     {
       var u = units ?? ModelUnits;
@@ -345,16 +403,8 @@ namespace Objects.Converter.MicroStationOpenRoads
         throw new SpeckleException("Slab geometry has more than two different elevations!");
       }
 
-      Polycurve outline = new Polycurve(u);
-      outline.segments = elevationMap[maxElevation];
-      //outline.domain
-      outline.closed = true;
-      //outline.bbox
-      //outline.area
-      //outline.length
-
+      Polycurve outline = CreatePolyCurve(elevationMap[maxElevation], u);
       floor.outline = outline;
-
       //floor.voids
       //floor.elements
       floor.units = u;
