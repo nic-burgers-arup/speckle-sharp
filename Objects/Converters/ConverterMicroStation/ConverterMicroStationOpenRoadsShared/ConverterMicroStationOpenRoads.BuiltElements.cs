@@ -119,7 +119,7 @@ namespace Objects.Converter.MicroStationOpenRoads
       double accuracy = 1000.0;
       elevation = Math.Round(elevation * accuracy) / accuracy;
 
-      Level level = new Level("Level " + elevation + " " + u, elevation);
+      Level level = new Level("Level " + elevation + u, elevation);
       level.units = u;
       return level;
     }
@@ -302,24 +302,52 @@ namespace Objects.Converter.MicroStationOpenRoads
       return baseLine;
     }
 
-    public FamilyInstance FoundationToSpeckle(Dictionary<string, object> properties, string units = null)
+    private Base CappingBeamToSpeckle(Dictionary<string, object> properties, string units = null)
     {
       var u = units ?? ModelUnits;
       string part = (string)GetProperty(properties, "PART");
       string family = (string)GetProperty(properties, "FAMILY");
       // for some reason the ElementID is a long
       int elementId = (int)(double)GetProperty(properties, "ElementID");
+      DPoint3d start = (DPoint3d)GetProperty(properties, "PTS_0");
+      DPoint3d end = (DPoint3d)GetProperty(properties, "PTS_1");
       double rotation = (double)GetProperty(properties, "ROTATION");
       double rotationZ = (double)GetProperty(properties, "RotationZ");
 
-      Point basePoint = new Point();
+      Point basePoint = Point3dToSpeckle(start);
       string type = part;
-      // level will need to have a unique name!
-      Level level = new Level();
+
+      Level level = CreateLevel(basePoint.z, u);
+
       bool facingFlipped = false;
       bool handFlipped = false;
       FamilyInstance familyInstance = new FamilyInstance(basePoint, family, type, level, rotationZ, facingFlipped, handFlipped, new List<Parameter>());
-      //familyInstance.category
+      familyInstance.category = "Structural Foundations";
+      familyInstance.elementId = elementId.ToString();
+      return familyInstance;
+    }
+
+    public FamilyInstance PileToSpeckle(Dictionary<string, object> properties, string units = null)
+    {
+      var u = units ?? ModelUnits;
+      string part = (string)GetProperty(properties, "PART");
+      string family = (string)GetProperty(properties, "FAMILY");
+      // for some reason the ElementID is a long
+      int elementId = (int)(double)GetProperty(properties, "ElementID");
+      DPoint3d start = (DPoint3d)GetProperty(properties, "PTS_0");
+      DPoint3d end = (DPoint3d)GetProperty(properties, "PTS_1");
+      double rotation = (double)GetProperty(properties, "ROTATION");
+      double rotationZ = (double)GetProperty(properties, "RotationZ");
+
+      Point basePoint = Point3dToSpeckle(start, false);
+      string type = part;
+
+      Level level = CreateLevel(basePoint.z, u);
+
+      bool facingFlipped = false;
+      bool handFlipped = false;
+      FamilyInstance familyInstance = new FamilyInstance(basePoint, family, type, level, rotationZ, facingFlipped, handFlipped, new List<Parameter>());
+      familyInstance.category = "Structural Foundations";
       familyInstance.elementId = elementId.ToString();
       return familyInstance;
     }
@@ -520,6 +548,7 @@ namespace Objects.Converter.MicroStationOpenRoads
     enum Category
     {
       Beams,
+      CappingBeam,
       Columns,
       FoundationSlab,
       None,

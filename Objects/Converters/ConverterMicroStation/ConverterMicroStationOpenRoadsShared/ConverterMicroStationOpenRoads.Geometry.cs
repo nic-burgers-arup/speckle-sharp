@@ -18,6 +18,7 @@ using Box = Objects.Geometry.Box;
 using Circle = Objects.Geometry.Circle;
 using Curve = Objects.Geometry.Curve;
 using Ellipse = Objects.Geometry.Ellipse;
+using FamilyInstance = Objects.BuiltElements.Revit.FamilyInstance;
 using Interval = Objects.Primitive.Interval;
 using Line = Objects.Geometry.Line;
 using Mesh = Objects.Geometry.Mesh;
@@ -1971,14 +1972,19 @@ namespace Objects.Converter.MicroStationOpenRoads
           element = BeamToSpeckle(properties, u);
           break;
 
+        case (Category.CappingBeam):
+          element = CappingBeamToSpeckle(properties, u);
+          break;
+
         case (Category.Columns):
           element = ColumnToSpeckle(properties, u);
           break;
 
         case (Category.Piles):
-          element = FoundationToSpeckle(properties, u);
+          element = PileToSpeckle(properties, u);
           break;
 
+        case (Category.FoundationSlab):
         case (Category.Slabs):
           element = SlabToSpeckle(properties, segments, u);
           break;
@@ -2015,8 +2021,11 @@ namespace Objects.Converter.MicroStationOpenRoads
           break;
 
         case (Category.Columns):
-        case (Category.Piles):
           ((RevitColumn)element).parameters = parameters;
+          break;
+
+        case (Category.Piles):
+          ((FamilyInstance)element).parameters = parameters;
           break;
 
         case (Category.Slabs):
@@ -2174,7 +2183,11 @@ namespace Objects.Converter.MicroStationOpenRoads
     private static Category FindCategory(string part)
     {
       Category category = Category.None;
-      if (part.Contains("Beam"))
+      if (part.Contains("CappingBeam"))
+      {
+        category = Category.CappingBeam;
+      }
+      else if (part.Contains("Beam"))
       {
         category = Category.Beams;
       }
