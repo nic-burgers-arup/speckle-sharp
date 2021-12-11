@@ -1972,8 +1972,11 @@ namespace Objects.Converter.MicroStationOpenRoads
           break;
 
         case (Category.Columns):
-        case (Category.Piles):
           element = ColumnToSpeckle(properties, u);
+          break;
+
+        case (Category.Piles):
+          element = FoundationToSpeckle(properties, u);
           break;
 
         case (Category.Slabs):
@@ -2183,6 +2186,10 @@ namespace Objects.Converter.MicroStationOpenRoads
       {
         category = Category.Piles;
       }
+      else if (part.Contains("FoundationSlab"))
+      {
+        category = Category.FoundationSlab;
+      }
       else if (part.Contains("Slab"))
       {
         category = Category.Slabs;
@@ -2332,16 +2339,6 @@ namespace Objects.Converter.MicroStationOpenRoads
         children.AddRange(GetChildren(child));
       }
       return children;
-    }
-
-    enum Category
-    {
-      Beams,
-      Columns,
-      None,
-      Piles,
-      Slabs,
-      Walls
     }
   }
 }

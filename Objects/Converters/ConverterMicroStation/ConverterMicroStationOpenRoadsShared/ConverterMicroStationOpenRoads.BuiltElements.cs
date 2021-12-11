@@ -516,5 +516,16 @@ namespace Objects.Converter.MicroStationOpenRoads
 
       return wall;
     }
+
+    enum Category
+    {
+      Beams,
+      Columns,
+      FoundationSlab,
+      None,
+      Piles,
+      Slabs,
+      Walls
+    }
   }
 }
