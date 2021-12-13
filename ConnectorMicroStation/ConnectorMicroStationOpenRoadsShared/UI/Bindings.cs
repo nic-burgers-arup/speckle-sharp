@@ -209,7 +209,7 @@ namespace Speckle.ConnectorMicroStationOpenRoads.UI
         else
         {
           schema = StreamStateManager.StreamStateListSchema.GetSchema();
-          if (schema == null) schema = StreamStateManager.StreamStateListSchema.AddSchema(); 
+          if (schema == null) schema = StreamStateManager.StreamStateListSchema.AddSchema();
           DocumentStreams = StreamStateManager.ReadState(schema);
         }
       }
@@ -520,7 +520,7 @@ namespace Speckle.ConnectorMicroStationOpenRoads.UI
       if (state.Filter != null)
       {
         if (Control.InvokeRequired)
-          state.SelectedObjectIds  = (List<string>)Control.Invoke(new GetObjectsFromFilterDelegate(GetObjectsFromFilter), new object[] { state.Filter, converter });
+          state.SelectedObjectIds = (List<string>)Control.Invoke(new GetObjectsFromFilterDelegate(GetObjectsFromFilter), new object[] { state.Filter, converter });
         else
           state.SelectedObjectIds = GetObjectsFromFilter(state.Filter, converter);
       }
@@ -640,11 +640,14 @@ namespace Speckle.ConnectorMicroStationOpenRoads.UI
         string containerName = string.Empty;
         try
         {
-          var objLevel = Model.GetFileLevelCache().GetLevel(obj.LevelId);
+          var levelCache = Model.GetFileLevelCache();
+          var objLevel = levelCache.GetLevel(obj.LevelId);
 
           var layerName = "Unknown";
-          if (objLevel.Status != LevelCacheErrorCode.CannotFindLevel)
+          if (objLevel != null)
+          {
             layerName = objLevel.Name;
+          }
 
 #if (OPENROADS || OPENRAIL)
           if (convertCivilObject)
@@ -694,7 +697,7 @@ namespace Speckle.ConnectorMicroStationOpenRoads.UI
         {
           converted[key] = obj.ExtensionDictionary.GetUserString(key);
         }
-        */      
+        */
 
         if (commitObj[$"@{containerName}"] == null)
           commitObj[$"@{containerName}"] = new List<Base>();
