@@ -10,8 +10,6 @@ namespace Objects.Structural.Geometry
     public class Element1D : Base, IDisplayMesh
   {
         public string name { get; set; } //add unique id as base identifier, name can change too easily
-
-        [DetachProperty]
         public Line baseLine { get; set; }
 
         [DetachProperty]

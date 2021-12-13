@@ -3,11 +3,12 @@ using Speckle.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Objects.Other;
 using Speckle.Newtonsoft.Json;
 
 namespace Objects.Geometry
 {
-  public class Vector : Base, IHasBoundingBox
+  public class Vector : Base, IHasBoundingBox, ITransformable<Vector>
   {
     /// <summary>
     /// OBSOLETE - This is just here for backwards compatibility.
@@ -74,43 +75,10 @@ namespace Objects.Geometry
       set;
     }
 
-    //Overloading operators
-    public static Vector operator +(Vector a) => a;
-    public static Vector operator -(Vector a) => new Vector(-a.x, -a.y, -a.z, a.units);
-    public static Vector operator +(Vector a, Vector b)
+    public bool TransformTo(Transform transform, out Vector vector)
     {
-      if (a.units == b.units)
-      {
-        return new Vector(a.x + b.x, a.y + b.y, a.z + b.z, a.units);
-      }
-      else
-      {
-        return null;
-      }
+      vector = transform.ApplyToVector(this);
+      return true;
     }
-    public static Vector operator -(Vector a, Vector b)
-    {
-      if (a.units == b.units)
-      {
-        return new Vector(a.x - b.x, a.y - b.y, a.z - b.z, a.units);
-      }
-      else
-      {
-        return null;
-      }
-    }
-    public static Vector operator *(Vector a, Vector b)
-    {
-      if (a.units == b.units)
-      {
-        return new Vector(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x, a.units);
-      }
-      else
-      {
-        return null;
-      }
-    }
-    public static Vector operator *(double s, Vector a) => new Vector(s * a.x, s * a.y, s * a.z, a.units);
-    public static Vector operator *(Vector a, double s) => s * a;
   }
 }
