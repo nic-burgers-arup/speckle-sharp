@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Objects.Other;
 using Objects.Primitive;
 using Speckle.Core.Kits;
 using Speckle.Core.Logging;
@@ -10,7 +9,7 @@ using Speckle.Core.Models;
 
 namespace Objects.Geometry
 {
-  public class Curve : Base, ICurve, IHasBoundingBox, IHasArea, ITransformable
+  public class Curve : Base, ICurve, IHasBoundingBox, IHasArea
   {
     public int degree { get; set; }
 
@@ -123,26 +122,6 @@ namespace Objects.Geometry
 
       curve.units = Units.GetUnitFromEncoding(list[list.Count - 1]);
       return curve;
-    }
-
-    public bool TransformTo(Transform transform, out ITransformable curve)
-    {
-      var result = displayValue.TransformTo(transform, out ITransformable polyline);
-      curve = new Curve
-      {
-        degree = degree,
-        periodic = periodic,
-        rational = rational,
-        points = transform.ApplyToPoints(points),
-        weights = weights,
-        knots = knots,
-        displayValue = ( Polyline ) polyline,
-        closed = closed,
-        units =  units,
-        applicationId = applicationId
-      };
-
-      return result;
     }
   }
 }

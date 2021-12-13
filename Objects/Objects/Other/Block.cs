@@ -41,8 +41,7 @@ namespace Objects.Other
     /// the 3x3 sub-matrix determines scaling
     /// the 4th column defines translation, where the last value could be a divisor
     /// </remarks>
-
-    public Transform transform { get; set; } = new Transform();
+    public double[] transform { get; set; }
 
     public string units { get; set; }
 
@@ -57,7 +56,21 @@ namespace Objects.Other
     /// <returns>Insertion point as a <see cref="Point"/></returns>
     public Point GetInsertionPoint()
     {
-      return transform.ApplyToPoint(blockDefinition.basePoint);
+      var (x, y, z, u) = blockDefinition.basePoint;
+      var insertion = new double[] { x, y, z, 1 };
+
+      if (transform.Length != 16)
+        throw new SpeckleException($"{nameof(BlockInstance)}.{nameof(transform)} is malformed: expected length to be 4x4 = 16");
+
+      for (int i = 0; i < 16; i += 4)
+        insertion[i / 4] = insertion[0] * transform[i] + insertion[1] * transform[i + 1] +
+                         insertion[2] * transform[i + 2] + insertion[3] * transform[i + 3];
+
+      return new Point(
+        insertion[0] / insertion[3], 
+        insertion[1] / insertion[3], 
+        insertion[2] / insertion[3], 
+        u);
     }
   }
 }

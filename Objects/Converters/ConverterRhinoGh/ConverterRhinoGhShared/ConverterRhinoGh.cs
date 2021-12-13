@@ -60,9 +60,9 @@ namespace Objects.Converter.RhinoGh
 
     public IEnumerable<string> GetServicedApplications()
     {
-
+      
 #if RHINO6
-      return new string[] { RhinoAppName, Applications.Grasshopper };
+      return new string[] {RhinoAppName, Applications.Grasshopper};
 #elif RHINO7
       return new string[] {RhinoAppName};
 #endif   
@@ -449,7 +449,6 @@ namespace Objects.Converter.RhinoGh
       return objects.Select(x => ConvertToSpeckleStr(x)).ToList();
     }
 
-
     public object ConvertToNative(Base @object)
     {
       object rhinoObj = null;
@@ -560,14 +559,8 @@ namespace Objects.Converter.RhinoGh
           break;
 
         case Alignment o:
-          if (o.curves is null) // TODO: remove after a few releases, this is for backwards compatibility
-          {
-            rhinoObj = CurveToNative(o.baseCurve);
-            Report.Log($"Created Alignment {o.id}");
-            break;
-          }
-          rhinoObj = AlignmentToNative(o);
-          Report.Log($"Created Alignment {o.id} as Curve");
+          rhinoObj = CurveToNative(o.baseCurve);
+          Report.Log($"Created Alignment {o.id}");
           break;
 
         case ModelCurve o:
@@ -671,7 +664,7 @@ case RH.SubD _:
     {
       switch (@object)
       {
-        case Point _:
+        case Point _ :
         case Vector _:
         case Interval _:
         case Interval2d _:
@@ -690,7 +683,7 @@ case RH.SubD _:
         case Brep _:
         case Surface _:
           return true;
-
+        
         //TODO: This types are not supported in GH!
         case Pointcloud _:
         case ModelCurve _:
@@ -701,7 +694,7 @@ case RH.SubD _:
         case Alignment _:
         case Text _:
           return true;
-
+        
         default:
           return false;
       }

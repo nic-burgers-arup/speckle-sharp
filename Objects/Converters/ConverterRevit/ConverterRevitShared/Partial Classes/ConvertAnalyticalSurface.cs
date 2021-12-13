@@ -16,8 +16,8 @@ using DB = Autodesk.Revit.DB;
 
 namespace Objects.Converter.Revit
 {
-	public partial class ConverterRevit
-	{
+  public partial class ConverterRevit
+  {
 		public Objects.Geometry.Line GetBottomLine(List<Node> nodes){
 			Objects.Geometry.Line baseLine = new Objects.Geometry.Line();
 			double lowest_elv = nodes.Min(nodes => nodes.basePoint.z);
@@ -73,104 +73,104 @@ namespace Objects.Converter.Revit
 				RevitFloor revitFloor = new RevitFloor(speckleElement.property.name, speckleElement.property.name, polycurve, level);
 				return FloorToNative(revitFloor);
 				break;	
-		}
+	}
 		return placeholderObjects;
 
 	}
 
 	private Element2D AnalyticalSurfaceToSpeckle(AnalyticalModelSurface revitSurface)
 	{
-		if (!revitSurface.IsEnabled())
-			return new Element2D();
+	  if (!revitSurface.IsEnabled())
+		  return new Element2D();
 
-		var speckleElement2D = new Element2D();
-		var structuralElement = Doc.GetElement(revitSurface.GetElementId());	 
-		var mark = GetParamValue<string>(structuralElement, BuiltInParameter.ALL_MODEL_MARK);
-		speckleElement2D.name = mark;
-		 
-		var edgeNodes = new List<Node> { };
-		var loops = revitSurface.GetLoops(AnalyticalLoopType.External);
+	  var speckleElement2D = new Element2D();
+	  var structuralElement = Doc.GetElement(revitSurface.GetElementId());	 
+	  var mark = GetParamValue<string>(structuralElement, BuiltInParameter.ALL_MODEL_MARK);
+	  speckleElement2D.name = mark;
+	 	 
+	  var edgeNodes = new List<Node> { };
+	  var loops = revitSurface.GetLoops(AnalyticalLoopType.External);
 
-		var displayLine = new Polycurve();
-		foreach (var loop in loops)
-		{
+	  var displayLine = new Polycurve();
+	  foreach (var loop in loops)
+	  {
 		var coor = new List<double>();
 		foreach (var curve in loop)
 		{
-			var points = curve.Tessellate();
+		  var points = curve.Tessellate();
 
-			foreach (var p in points.Skip(1))
-			{
+		  foreach (var p in points.Skip(1))
+		  {
 			var vertex = PointToSpeckle(p);
 			var edgeNode = new Node(vertex, null, null, null);
 			edgeNodes.Add(edgeNode);
-			}
+		  }
 
-			displayLine.segments.Add(CurveToSpeckle(curve));
+		  displayLine.segments.Add(CurveToSpeckle(curve));
 		}		
-		}
+	  }
 
-		speckleElement2D.topology = edgeNodes;
-		speckleElement2D["displayValue"] = displayLine;
+	  speckleElement2D.topology = edgeNodes;
+	  speckleElement2D["displayValue"] = displayLine;
 
-		var voidNodes = new List<List<Node>> { };
-		var voidLoops = revitSurface.GetLoops(AnalyticalLoopType.Void);
-		foreach (var loop in voidLoops)
-		{
+	  var voidNodes = new List<List<Node>> { };
+	  var voidLoops = revitSurface.GetLoops(AnalyticalLoopType.Void);
+	  foreach (var loop in voidLoops)
+	  {
 		var loopNodes = new List<Node>();
 		foreach (var curve in loop)
 		{
-			var points = curve.Tessellate();
+		  var points = curve.Tessellate();
 
-			foreach (var p in points.Skip(1))
-			{
+		  foreach (var p in points.Skip(1))
+		  {
 			var vertex = PointToSpeckle(p);
 			var voidNode = new Node(vertex, null, null, null);
 			loopNodes.Add(voidNode);
-			}
+		  }
 		}
 		voidNodes.Add(loopNodes);
-		}
-		//speckleElement2D.voids = voidNodes;
+	  }
+	  //speckleElement2D.voids = voidNodes;
 
-		//var mesh = new Geometry.Mesh();
-		//var solidGeom = GetElementSolids(structuralElement);
-		//(mesh.faces, mesh.vertices) = GetFaceVertexArrFromSolids(solidGeom);
-		//speckleElement2D.baseMesh = mesh;	  
+	  //var mesh = new Geometry.Mesh();
+	  //var solidGeom = GetElementSolids(structuralElement);
+	  //(mesh.faces, mesh.vertices) = GetFaceVertexArrFromSolids(solidGeom);
+	  //speckleElement2D.baseMesh = mesh;	  
 
-		var prop = new Property2D();
+	  var prop = new Property2D();
 
-		// Material
-		DB.Material structMaterial = null;
-		double thickness = 0;
-		var memberType = MemberType2D.Generic2D;
+	  // Material
+	  DB.Material structMaterial = null;
+	  double thickness = 0;
+	  var memberType = MemberType.Generic2D;
 
-		if (structuralElement is DB.Floor)
-		{
+	  if (structuralElement is DB.Floor)
+	  {
 		var floor = structuralElement as DB.Floor;
 		structMaterial = Doc.GetElement(floor.FloorType.StructuralMaterialId) as DB.Material;
 		thickness = GetParamValue<double>(structuralElement, BuiltInParameter.STRUCTURAL_FLOOR_CORE_THICKNESS);
-		memberType = MemberType2D.Slab;
-		}
-		else if (structuralElement is DB.Wall)
-		{
+		memberType = MemberType.Slab;
+	  }
+	  else if (structuralElement is DB.Wall)
+	  {
 		var wall = structuralElement as DB.Wall;
 		structMaterial = Doc.GetElement(wall.WallType.get_Parameter(BuiltInParameter.STRUCTURAL_MATERIAL_PARAM).AsElementId()) as DB.Material;
 		thickness = ScaleToSpeckle(wall.WallType.Width);
-		memberType = MemberType2D.Wall;
-		}
+		memberType = MemberType.Wall;
+	  }
 
-		var materialAsset = ((PropertySetElement)Doc.GetElement(structMaterial.StructuralAssetId)).GetStructuralAsset();
-		var materialType = structMaterial.MaterialClass;
+	  var materialAsset = ((PropertySetElement)Doc.GetElement(structMaterial.StructuralAssetId)).GetStructuralAsset();
+	  var materialType = structMaterial.MaterialClass;
 
-		Structural.Materials.Material speckleMaterial = null;
-		switch (materialType)
-		{
+	  Structural.Materials.Material speckleMaterial = null;
+	  switch (materialType)
+	  {
 		case "Concrete":
-			var concreteMaterial = new Concrete
-			{
+		  var concreteMaterial = new Concrete
+		  {
 			name = Doc.GetElement(structMaterial.StructuralAssetId).Name,
-			//type = Structural.MaterialType.Concrete,
+			materialType = Structural.MaterialType.Concrete,
 			grade = null,
 			designCode = null,
 			codeYear = null,
@@ -187,14 +187,14 @@ namespace Objects.Converter.Revit
 			density = materialAsset.Density,
 			thermalExpansivity = materialAsset.ThermalExpansionCoefficient.X,
 			dampingRatio = 0
-			};
-			speckleMaterial = concreteMaterial;
-			break;
+		  };
+		  speckleMaterial = concreteMaterial;
+		  break;
 		case "Steel":
-			var steelMaterial = new Steel
-			{
+		  var steelMaterial = new Steel
+		  {
 			name = Doc.GetElement(structMaterial.StructuralAssetId).Name,
-			//type = Structural.MaterialType.Steel,
+			materialType = Structural.MaterialType.Steel,
 			grade = materialAsset.Name,
 			designCode = null,
 			codeYear = null,
@@ -207,14 +207,14 @@ namespace Objects.Converter.Revit
 			density = materialAsset.Density, // kilograms per cubed feet 
 			thermalExpansivity = materialAsset.ThermalExpansionCoefficient.X, // inverse Kelvin
 			dampingRatio = 0
-			};
-			speckleMaterial = steelMaterial;
-			break;
+		  };
+		  speckleMaterial = steelMaterial;
+		  break;
 		case "Wood":
-			var timberMaterial = new Timber
-			{
+		  var timberMaterial = new Timber
+		  {
 			name = Doc.GetElement(structMaterial.StructuralAssetId).Name,
-			//type = Structural.MaterialType.Timber,
+			materialType = Structural.MaterialType.Timber,
 			grade = materialAsset.WoodGrade,
 			designCode = null,
 			codeYear = null,
@@ -225,38 +225,38 @@ namespace Objects.Converter.Revit
 			thermalExpansivity = materialAsset.ThermalExpansionCoefficient.X, // inverse Kelvin
 			species = materialAsset.WoodSpecies,
 			dampingRatio = 0
-			};
-			timberMaterial["bendingStrength"] = materialAsset.WoodBendingStrength;
-			timberMaterial["parallelCompressionStrength"] = materialAsset.WoodParallelCompressionStrength;
-			timberMaterial["parallelShearStrength"] = materialAsset.WoodParallelShearStrength;
-			timberMaterial["perpendicularCompressionStrength"] = materialAsset.WoodPerpendicularCompressionStrength;
-			timberMaterial["perpendicularShearStrength"] = materialAsset.WoodPerpendicularShearStrength;
-			speckleMaterial = timberMaterial;
-			break;
+		  };
+		  timberMaterial["bendingStrength"] = materialAsset.WoodBendingStrength;
+		  timberMaterial["parallelCompressionStrength"] = materialAsset.WoodParallelCompressionStrength;
+		  timberMaterial["parallelShearStrength"] = materialAsset.WoodParallelShearStrength;
+		  timberMaterial["perpendicularCompressionStrength"] = materialAsset.WoodPerpendicularCompressionStrength;
+		  timberMaterial["perpendicularShearStrength"] = materialAsset.WoodPerpendicularShearStrength;
+		  speckleMaterial = timberMaterial;
+		  break;
 		default:
-			var defaultMaterial = new Structural.Materials.Material
-			{
+		  var defaultMaterial = new Structural.Materials.Material
+		  {
 			name = Doc.GetElement(structMaterial.StructuralAssetId).Name
-			};
-			speckleMaterial = defaultMaterial;
-			break;
-		}
+		  };
+		  speckleMaterial = defaultMaterial;
+		  break;
+	  }
 
-		prop.material = speckleMaterial;
-		prop.name = Doc.GetElement(revitSurface.GetElementId()).Name;
-		//prop.type = memberType;
-		//prop.analysisType = Structural.AnalysisType2D.Shell;
-		prop.thickness = thickness;
+	  prop.material = speckleMaterial;
+	  prop.name = Doc.GetElement(revitSurface.GetElementId()).Name;
+	  prop["memberType"] = memberType;
+	  prop.type = Structural.PropertyType2D.Shell;
+	  prop.thickness = thickness;
 
-		speckleElement2D.property = prop;
+	  speckleElement2D.property = prop;
 
-		GetAllRevitParamsAndIds(speckleElement2D, revitSurface);
-		
-		//speckleElement2D.displayMesh = GetElementDisplayMesh(Doc.GetElement(revitSurface.GetElementId()),
+	  GetAllRevitParamsAndIds(speckleElement2D, revitSurface);
+	  
+	  //speckleElement2D.displayMesh = GetElementDisplayMesh(Doc.GetElement(revitSurface.GetElementId()),
 		 // new Options() { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false });
 
-		return speckleElement2D;
+	  return speckleElement2D;
 	}
-	}
+  }
 
 }

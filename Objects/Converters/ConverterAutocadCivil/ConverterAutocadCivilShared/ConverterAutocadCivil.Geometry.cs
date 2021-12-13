@@ -312,8 +312,6 @@ namespace Objects.Converter.AutocadCivil
       return new AcadDB.Ellipse(PointToNative(ellipse.plane.origin), normal, majorAxis, radiusRatio, 0, 2 * Math.PI);
     }
 
-    // Spiral
-
     // Polyline
     public Polyline PolylineToSpeckle(AcadDB.Polyline polyline) // AcadDB.Polylines can have linear or arc segments. This will convert to linear
     {

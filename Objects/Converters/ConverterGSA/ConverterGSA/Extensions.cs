@@ -190,13 +190,20 @@ namespace ConverterGSA
       }
     }
 
-    public static Section1dType ToNative(this Objects.Structural.Geometry.MemberType speckleElementType)
+    public static MemberType ToSpeckle(this GwaMemberType gsaMemberType)
     {
-      switch (speckleElementType)
+      switch (gsaMemberType)
       {
-        case Objects.Structural.Geometry.MemberType.Beam: return Section1dType.Beam;
-        case Objects.Structural.Geometry.MemberType.Column: return Section1dType.Column;
-        default: return Section1dType.Generic;
+        case GwaMemberType.Beam: return MemberType.Beam;
+        case GwaMemberType.Column: return MemberType.Column;
+        case GwaMemberType.Generic1d: return MemberType.Generic1D;
+        case GwaMemberType.Void1d: return MemberType.VoidCutter1D;
+        case GwaMemberType.Slab: return MemberType.Slab;
+        case GwaMemberType.Wall: return MemberType.Wall;
+        case GwaMemberType.Generic2d: return MemberType.Generic2D;
+        case GwaMemberType.Void2d: return MemberType.VoidCutter2D;
+        default:
+          throw new Exception(gsaMemberType.ToString() + " is not currently a supported member type.");
       }
     }
 
@@ -588,11 +595,23 @@ namespace ConverterGSA
     #endregion
 
     #region ToNative
+    
+
+    public static Section1dType ToNativeSection(this MemberType speckleElementType)
+    {
+      switch (speckleElementType)
+      {
+        case MemberType.Beam: return Section1dType.Beam;
+        case MemberType.Column: return Section1dType.Column;
+        default: return Section1dType.Generic;
+      }
+    }
     public static ElementType ToNative(this ElementType1D speckleType)
     {
       switch (speckleType)
       {
         case ElementType1D.Beam: return ElementType.Beam;
+        case ElementType1D.Column: return ElementType.Beam;          
         case ElementType1D.Bar: return ElementType.Bar;
         case ElementType1D.Cable: return ElementType.Cable;
         case ElementType1D.Damper: return ElementType.Damper;
@@ -611,6 +630,7 @@ namespace ConverterGSA
       switch (speckleType)
       {
         case ElementType1D.Beam:
+        case ElementType1D.Column:
         case ElementType1D.Bar:
         case ElementType1D.Cable:
         case ElementType1D.Damper:
@@ -941,36 +961,175 @@ namespace ConverterGSA
       }
     }
 
+    public static double? IsPositiveOrNull(this double v) => v > 0 ? (double?)v : null;
+    public static int? IsPositiveOrNull(this int v) => v > 0 ? (int?)v : null;
+
     #region ResolveIndices
-    public static List<int> GetIndicies<T>(this List<Base> speckleObject)
+    public static List<int> GetIndicies<T>(this List<Base> speckleObjects)
     {
-      if (speckleObject == null) return null;
+      if (speckleObjects == null) return null;
       var gsaIndices = new List<int>();
-      foreach (var o in speckleObject)
+      foreach (var o in speckleObjects)
       {
         var index = Instance.GsaModel.Cache.LookupIndex<T>(o.applicationId);
         if (index.HasValue) gsaIndices.Add(index.Value);
       }
       return (gsaIndices.Count() > 0) ? gsaIndices : null;
     }
-    public static List<int> GetIndicies(this List<Node> speckleObject)
+
+    public static int? GetIndex<T>(this Base speckleObject)
     {
-      if (speckleObject == null) return null;
-      var gsaIndices = new List<int>();
-      foreach (var o in speckleObject)
+      if (speckleObject == null || speckleObject.applicationId == null)
       {
-        var index = Instance.GsaModel.Cache.LookupIndex<GsaNode>(o.applicationId);
+        return null;
+      }
+      else
+      {
+        return Instance.GsaModel.Cache.ResolveIndex<T>(speckleObject.applicationId);
+      }
+    }
+
+    public static List<int> NodeAt(this List<Node> speckleNodes, UnitConversion factors)
+    {
+      if (speckleNodes == null) return null;
+      var gsaIndices = new List<int>();
+      foreach (var n in speckleNodes)
+      {
+        var index = n.NodeAt(factors);
         if (index.HasValue) gsaIndices.Add(index.Value);
       }
       return (gsaIndices.Count() > 0) ? gsaIndices : null;
     }
 
-    public static int? GetIndex<T>(this Base speckleObject) => (speckleObject == null) ? null : (int?)Instance.GsaModel.Cache.ResolveIndex<T>(speckleObject.applicationId);
+    public static List<int> NodeAt(this List<Point> specklePoints, UnitConversion factors)
+    {
+      if (specklePoints == null) return null;
+      var gsaIndices = new List<int>();
+      foreach (var p in specklePoints)
+      {
+        var index = p.NodeAt(factors);
+        if (index.HasValue) gsaIndices.Add(index.Value);
+      }
+      return (gsaIndices.Count() > 0) ? gsaIndices : null;
+    }
+
+    public static int? NodeAt(this Node speckleNode, UnitConversion factors)
+    {
+      if (speckleNode != null && speckleNode.basePoint != null)
+      {
+        if (string.IsNullOrEmpty(speckleNode.basePoint.units)) speckleNode.basePoint.units = speckleNode.units;
+        return speckleNode.basePoint.NodeAt(factors);
+      }
+      return null;
+    }
+
+    public static int? NodeAt(this Point specklePoint, UnitConversion factors)
+    {
+      if (specklePoint == null) return null;
+      var sf = specklePoint.GetScaleFactor(factors);
+      var index = Instance.GsaModel.Proxy.NodeAt(sf * specklePoint.x, sf * specklePoint.y, sf * specklePoint.z, sf * Instance.GsaModel.CoincidentNodeAllowance);
+      return index > 0 ? (int?)index : null;
+    }
+
+    public static double GetScaleFactor(this Node speckleNode, UnitConversion factors)
+    {
+      if (string.IsNullOrEmpty(speckleNode.basePoint.units)) speckleNode.basePoint.units = speckleNode.units;
+      return speckleNode.basePoint.GetScaleFactor(factors);
+    }
+
+    public static double GetScaleFactor(this Point specklePoint, UnitConversion factors)
+    {
+      return string.IsNullOrEmpty(specklePoint.units) ? factors.length : factors.ConversionFactorToNative(UnitDimension.Length, specklePoint.units);
+    }
+
+    public static double GetScaleFactor(this LoadBeam speckleLoad, UnitConversion factors)
+    {
+      double value = 1;
+      //TO DO: handle case where units are specified within the object (i.e. speckleLoad.units)
+      var forceFactor = factors.force;
+      var lengthFactor = factors.length;
+
+      switch (speckleLoad.direction)
+      {
+        case LoadDirection.X:
+        case LoadDirection.Y:
+        case LoadDirection.Z:
+          value = forceFactor;
+          break;
+        case LoadDirection.XX:
+        case LoadDirection.YY:
+        case LoadDirection.ZZ:
+          value = forceFactor * lengthFactor;
+          break;
+      }
+      switch (speckleLoad.loadType)
+      {
+        case BeamLoadType.Uniform:
+        case BeamLoadType.Linear:
+        case BeamLoadType.Patch:
+        case BeamLoadType.TriLinear:
+          value /= lengthFactor;
+          break;
+        case BeamLoadType.Point:
+          //do nothing
+          break;
+      }
+
+      return value;
+    }
+
+    public static double GetScaleFactor(this LoadFace speckleLoad, UnitConversion factors)
+    {
+      double value = 1;
+      //TO DO: handle case where units are specified within the object (i.e. speckleLoad.units)
+      var forceFactor = factors.force;
+      var lengthFactor = factors.length;
+
+      switch (speckleLoad.loadType)
+      {
+        case FaceLoadType.Constant:
+        case FaceLoadType.Variable:
+          value = forceFactor / Math.Pow(lengthFactor, 2);
+          break;
+        case FaceLoadType.Point:
+          value = forceFactor;
+          break;
+      }
+
+      return value;
+    }
+
+    public static double GetScaleFactor(this LoadNode speckleLoad, UnitConversion factors)
+    {
+      double value = 1;
+      //TO DO: handle case where units are specified within the object (i.e. speckleLoad.units)
+      var forceFactor = factors.force;
+      var lengthFactor = factors.length;
+
+      switch (speckleLoad.direction)
+      {
+        case LoadDirection.X:
+        case LoadDirection.Y:
+        case LoadDirection.Z:
+          value = forceFactor;
+          break;
+        case LoadDirection.XX:
+        case LoadDirection.YY:
+        case LoadDirection.ZZ:
+          value = forceFactor * lengthFactor;
+          break;
+      }
+
+      return value;
+    }
     #endregion
 
-    public static T GetDynamicValue<T>(this Base speckleObject, string member)
+    public static T GetDynamicValue<T>(this Base speckleObject, string member, Dictionary<string, object> members = null)
     {
-      var members = speckleObject.GetMembers();
+      if (members == null)
+      {
+        members = speckleObject.GetMembers();
+      }
       if (members.ContainsKey(member))
       {
         if (speckleObject[member] is T)
@@ -990,9 +1149,12 @@ namespace ConverterGSA
       return default(T);
     }
 
-    public static T GetDynamicEnum<T>(this Base speckleObject, string member) where T : struct
+    public static T GetDynamicEnum<T>(this Base speckleObject, string member, Dictionary<string, object> members = null) where T : struct
     {
-      var members = speckleObject.GetMembers();
+      if (members == null)
+      {
+        members = speckleObject.GetMembers();
+      }
       if (members.ContainsKey(member) && speckleObject[member] is string)
       {
         return Enum.TryParse(speckleObject[member] as string, true, out T v) ? v : default(T);
@@ -1079,6 +1241,14 @@ namespace ConverterGSA
         throw new ArgumentNullException(nameof(source));
       foreach (var element in source)
         target.Add(element);
+    }
+
+    public static void AddRangeIfNotNull<T>(this ICollection<T> target, IEnumerable<T> source)
+    {
+      if (target != null && source != null && source.Count() > 0)
+      {
+        target.AddRange(source);
+      }
     }
 
     public static void UpsertDictionary<T, U>(this Dictionary<T, List<U>> d, T key, U value)

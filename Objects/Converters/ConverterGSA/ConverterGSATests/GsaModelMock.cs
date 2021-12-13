@@ -10,6 +10,11 @@ namespace ConverterGSATests
     public override IGSACache Cache { get; set; } = new GsaCache();
     public override IGSAProxy Proxy { get; set; } = new GsaProxyMockForConverterTests();
 
+    public override List<List<Type>> SpeckleDependencyTree()
+    {
+      return null;
+    }
+
     //public override IGSAMessenger Messenger { get; set; } = new GsaMessengerMock();
   }
 }

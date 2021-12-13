@@ -322,13 +322,8 @@ namespace Objects.Converter.Revit
 
         // non revit built elems
         case BE.Alignment o:
-          if (o.curves is null) // TODO: remove after a few releases, this is for backwards compatibility
-          {
-            Report.Log($"Created Alignment {o.applicationId}");
-            return ModelCurveToNative(o.baseCurve);
-          }
-          Report.Log($"Created Alignment {o.applicationId} as Curves");
-          return AlignmentToNative(o);
+          Report.Log($"Created Alignment {o.applicationId}");
+          return ModelCurveToNative(o.baseCurve);
 
         case BE.Structure o:
           Report.Log($"Created Structure {o.applicationId}");

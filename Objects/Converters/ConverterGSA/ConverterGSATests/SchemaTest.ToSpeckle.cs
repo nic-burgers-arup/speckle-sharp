@@ -296,11 +296,11 @@ namespace ConverterGSATests
       Assert.Equal("node 2", speckleElement1d[1].topology[0].applicationId);
       Assert.Equal("node 3", speckleElement1d[1].topology[1].applicationId);
       Assert.Equal(0, speckleElement1d[1].end1Offset.x);
-      Assert.Equal(0, speckleElement1d[1].end1Offset.y);
-      Assert.Equal(0, speckleElement1d[1].end1Offset.z);
+      Assert.Equal(0.1, speckleElement1d[1].end1Offset.y);
+      Assert.Equal(-0.2, speckleElement1d[1].end1Offset.z);
       Assert.Equal(0, speckleElement1d[1].end2Offset.x);
-      Assert.Equal(0, speckleElement1d[1].end2Offset.y);
-      Assert.Equal(0, speckleElement1d[1].end2Offset.z);
+      Assert.Equal(0.1, speckleElement1d[1].end2Offset.y);
+      Assert.Equal(-0.2, speckleElement1d[1].end2Offset.z);
       Assert.Equal("FFFFFF", speckleElement1d[1].end1Releases.code);
       Assert.Equal("FFFFFF", speckleElement1d[1].end2Releases.code);
       Assert.Equal(1, speckleElement1d[1].localAxis.origin.x, 6);
@@ -464,8 +464,8 @@ namespace ConverterGSATests
       Assert.Null(speckleMember1d.units);
       Assert.Equal(gsaMembers[0].IsIntersector, speckleMember1d.intersectsWithOthers);
       Assert.Equal("section 1", speckleMember1d.property.applicationId);
-      Assert.Equal(0, speckleMember1d.orientationAngle);
-      Assert.True(speckleMember1d.localAxis.IsGlobal());
+      Assert.Equal(45, speckleMember1d.orientationAngle);
+      Assert.False(speckleMember1d.localAxis.IsGlobal());
       Assert.Equal(gsaMembers[0].Index.Value, speckleMember1d.nativeId);
       Assert.Equal(gsaMembers[0].Group.Value, speckleMember1d.group);
       Assert.Equal(gsaMembers[0].MeshSize.Value, speckleMember1d.targetMeshSize);
@@ -477,7 +477,7 @@ namespace ConverterGSATests
       Assert.Equal("prop 2D 1", speckleMember2d.property.applicationId);
       Assert.Equal(ElementType2D.Quad4, speckleMember2d.type);
       Assert.Equal(gsaMembers[1].Offset2dZ, speckleMember2d.offset);
-      Assert.Equal(0, speckleMember2d.orientationAngle);
+      Assert.Equal(90, speckleMember2d.orientationAngle);
       Assert.Null(speckleMember2d.parent); //not meaningful for member
       Assert.Equal(4, speckleMember2d.topology.Count());
       Assert.Equal("node 1", speckleMember2d.topology[0].applicationId);
@@ -741,7 +741,7 @@ namespace ConverterGSATests
       Assert.Equal(gsaPolylines[0].Index.Value, specklePolylines[0].nativeId);
       Assert.Equal(gsaPolylines[0].Colour.ToString(), specklePolylines[0].colour);
       Assert.Null(specklePolylines[0].gridPlane);
-      Assert.Equal(gsaPolylines[0].Units, specklePolylines[0].units);
+      Assert.Null(specklePolylines[0].units);
       Assert.Equal(new List<double>() { 1, 2, 0, 3, 4, 0, 5, 6, 0, 7, 8, 0 }, specklePolylines[0].value);
 
       //Checks - polyline 2
@@ -750,7 +750,7 @@ namespace ConverterGSATests
       Assert.Equal(gsaPolylines[1].Index.Value, specklePolylines[1].nativeId);
       Assert.Equal(gsaPolylines[1].Colour.ToString(), specklePolylines[1].colour);
       Assert.Equal("grid plane 1", specklePolylines[1].gridPlane.applicationId);
-      Assert.Equal(gsaPolylines[1].Units, specklePolylines[1].units);
+      Assert.Null(specklePolylines[1].units);
       Assert.Equal(gsaPolylines[1].Values, specklePolylines[1].value);
     }
     #endregion
@@ -1171,7 +1171,7 @@ namespace ConverterGSATests
       Assert.Single(speckleNodeLoads[1].nodes);
       Assert.Equal("node 2", speckleNodeLoads[1].nodes[0].applicationId); //assume conversion of node is tested elsewhere
       Assert.Equal("axis 1", speckleNodeLoads[1].loadAxis.applicationId); //assume conversion of axis is tested elsewhere
-      Assert.Equal(LoadDirection.X, speckleNodeLoads[1].direction);
+      Assert.Equal(LoadDirection.XX, speckleNodeLoads[1].direction);
       Assert.Equal(gsaLoadNodes[1].Value, speckleNodeLoads[1].value);
       Assert.Equal(gsaLoadNodes[1].Index.Value, speckleNodeLoads[1].nativeId);
     }
@@ -1959,10 +1959,14 @@ namespace ConverterGSATests
       Assert.Equal(PropertyType2D.Shell, speckleProperty2D.type);
       Assert.Equal(ReferenceSurface.Middle, speckleProperty2D.refSurface);
       Assert.Equal(gsaProp2d.RefZ, speckleProperty2D.zOffset);
-      Assert.Equal(gsaProp2d.InPlaneStiffnessPercentage.Value, speckleProperty2D.modifierInPlane);  //Check modifiers (currently no way to distinguish between value and percentage in speckle object)
-      Assert.Equal(gsaProp2d.BendingStiffnessPercentage.Value, speckleProperty2D.modifierBending);
-      Assert.Equal(gsaProp2d.ShearStiffnessPercentage.Value, speckleProperty2D.modifierShear);
-      Assert.Equal(gsaProp2d.VolumePercentage.Value, speckleProperty2D.modifierVolume);
+      if (gsaProp2d.InPlaneStiffnessPercentage.HasValue) Assert.Equal(-gsaProp2d.InPlaneStiffnessPercentage.Value / 100, speckleProperty2D.modifierInPlane);
+      else if (gsaProp2d.InPlane.HasValue) Assert.Equal(gsaProp2d.InPlane.Value, speckleProperty2D.modifierInPlane);
+      if (gsaProp2d.BendingStiffnessPercentage.HasValue) Assert.Equal(-gsaProp2d.BendingStiffnessPercentage.Value / 100, speckleProperty2D.modifierBending);
+      else if (gsaProp2d.Bending.HasValue) Assert.Equal(gsaProp2d.Bending.Value, speckleProperty2D.modifierBending);
+      if (gsaProp2d.ShearStiffnessPercentage.HasValue) Assert.Equal(-gsaProp2d.ShearStiffnessPercentage.Value / 100, speckleProperty2D.modifierShear);
+      else if (gsaProp2d.Shear.HasValue) Assert.Equal(gsaProp2d.Shear.Value, speckleProperty2D.modifierShear);
+      if (gsaProp2d.VolumePercentage.HasValue) Assert.Equal(-gsaProp2d.VolumePercentage.Value / 100, speckleProperty2D.modifierVolume);
+      else if (gsaProp2d.Volume.HasValue) Assert.Equal(gsaProp2d.Volume.Value, speckleProperty2D.modifierVolume);
       Assert.Equal(gsaProp2d.Mass, speckleProperty2D.additionalMass);
       Assert.Equal(gsaProp2d.Profile, speckleProperty2D.concreteSlabProp);
       Assert.Equal(gsaProp2d.Index.Value, speckleProperty2D.nativeId);
@@ -2009,9 +2013,9 @@ namespace ConverterGSATests
       Assert.Equal(gsaPropMass.Iyz, specklePropertyMass.inertiaYZ);
       Assert.Equal(gsaPropMass.Izx, specklePropertyMass.inertiaZX);
       Assert.True(specklePropertyMass.massModified);
-      Assert.Equal(gsaPropMass.ModXPercentage, specklePropertyMass.massModifierX);
-      Assert.Equal(gsaPropMass.ModYPercentage, specklePropertyMass.massModifierY);
-      Assert.Equal(gsaPropMass.ModZPercentage, specklePropertyMass.massModifierZ);
+      Assert.Equal(gsaPropMass.ModX, specklePropertyMass.massModifierX);
+      Assert.Equal(gsaPropMass.ModY, specklePropertyMass.massModifierY);
+      Assert.Equal(gsaPropMass.ModZ, specklePropertyMass.massModifierZ);
     }
 
     [Fact]
@@ -2067,6 +2071,7 @@ namespace ConverterGSATests
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
       gsaRecords.AddRange(GsaLoadCaseExamples(2, "load case 1", "load case 2"));
+      gsaRecords.AddRange(GsaAnalysisCaseExamples(2, "analysis case 1", "analysis case 2"));
 
       //Gen #2
       var gsaNodes = GsaNodeExamples(1, "node 1");
@@ -2098,11 +2103,11 @@ namespace ConverterGSATests
         var gsaResult = (CsvNode)nodeResults[i];
         var loadCase = (i + 1).ToString();
 
-        Assert.Equal("node 1_load case " + loadCase, speckleNodeResults[i].applicationId);
+        Assert.Equal("node 1_analysis case " + loadCase, speckleNodeResults[i].applicationId);
         Assert.Equal("node 1", speckleNodeResults[i].node.applicationId); //assume the conversion of the node is tested elsewhere
         Assert.Equal("", speckleNodeResults[i].description);
         Assert.Equal("", speckleNodeResults[i].permutation);
-        Assert.Equal("load case " + loadCase, speckleNodeResults[i].resultCase.applicationId);
+        Assert.Equal("analysis case " + loadCase, speckleNodeResults[i].resultCase.applicationId);
         Assert.Equal(gsaResult.Ux.Value, speckleNodeResults[i].dispX);
         Assert.Equal(gsaResult.Uy.Value, speckleNodeResults[i].dispY);
         Assert.Equal(gsaResult.Uz.Value, speckleNodeResults[i].dispZ);
@@ -2148,6 +2153,7 @@ namespace ConverterGSATests
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
       gsaRecords.Add(GsaLoadCaseExamples(1, "load case 1").First());
+      gsaRecords.AddRange(GsaAnalysisCaseExamples(2, "analysis case 1", "analysis case 2"));
 
       //Gen #2
       gsaRecords.AddRange(GsaNodeExamples(2, "node 1", "node 2"));
@@ -2182,12 +2188,12 @@ namespace ConverterGSATests
         var gsaResult = (CsvElem1d)gsaElement1dResults[i];
 
         //result description
-        Assert.Equal("element 1_load case 1_" + gsaResult.PosR, speckleElement1dResults[i].applicationId);
+        Assert.Equal("element 1_analysis case 1_" + gsaResult.PosR, speckleElement1dResults[i].applicationId);
         Assert.Equal("", speckleElement1dResults[i].permutation);
         Assert.Equal("", speckleElement1dResults[i].description);
         Assert.Equal("element 1", speckleElement1dResults[i].element.applicationId);
         Assert.Equal(float.Parse(gsaResult.PosR), speckleElement1dResults[i].position);
-        Assert.Equal("load case 1", speckleElement1dResults[i].resultCase.applicationId);
+        Assert.Equal("analysis case 1", speckleElement1dResults[i].resultCase.applicationId);
 
         //results
         Assert.Equal(gsaResult.Ux.Value, speckleElement1dResults[i].dispX);
@@ -2228,6 +2234,7 @@ namespace ConverterGSATests
       gsaRecords.Add(GsaPropMassExample("property mass 1"));
       gsaRecords.Add(GsaPropSprExample("property spring 1"));
       gsaRecords.Add(GsaLoadCaseExamples(1, "load case 1").First());
+      gsaRecords.AddRange(GsaAnalysisCaseExamples(2, "analysis case 1", "analysis case 2"));
 
       //Gen #2
       gsaRecords.AddRange(GsaNodeExamples(4, "node 1", "node 2", "node 3", "node 4"));
@@ -2262,11 +2269,11 @@ namespace ConverterGSATests
         var gsaResult = (CsvElem2d)gsaElement2dResults[i];
 
         //result description
-        Assert.Equal("element 1_load case 1_" + gsaResult.PosR.ToString() + "_" + gsaResult.PosS.ToString(), speckleElement2dResults[i].applicationId);
+        Assert.Equal("element 1_analysis case 1_" + gsaResult.PosR.ToString() + "_" + gsaResult.PosS.ToString(), speckleElement2dResults[i].applicationId);
         Assert.Equal("", speckleElement2dResults[i].permutation);
         Assert.Equal("", speckleElement2dResults[i].description);
         Assert.Equal("element 1", speckleElement2dResults[i].element.applicationId);
-        Assert.Equal("load case 1", speckleElement2dResults[i].resultCase.applicationId);
+        Assert.Equal("analysis case 1", speckleElement2dResults[i].resultCase.applicationId);
         Assert.Equal(2, speckleElement2dResults[i].position.Count());
         Assert.Equal(gsaResult.PosR.Value, speckleElement2dResults[i].position[0]);
         Assert.Equal(gsaResult.PosS.Value, speckleElement2dResults[i].position[1]);
@@ -2932,9 +2939,9 @@ namespace ConverterGSATests
           PropertyIndex = 1,
           Group = 1,
           NodeIndices = new List<int>() { 2, 3, 5 },
-          Angle = 0,
+          Angle = 10,
           ReleaseInclusion = ReleaseInclusion.NotIncluded,
-          OffsetZ = 0,
+          OffsetZ = 0.1,
           ParentIndex = 0,
           Dummy = false
         },
@@ -2991,8 +2998,8 @@ namespace ConverterGSATests
           NodeIndices = new List<int>() { 2, 3 },
           Angle = 90,
           ReleaseInclusion = ReleaseInclusion.NotIncluded,
-          OffsetY = 0,
-          OffsetZ = 0,
+          OffsetY = 0.1,
+          OffsetZ = -0.2,
           ParentIndex = 0,
           Dummy = false
         }
@@ -3161,7 +3168,7 @@ namespace ConverterGSATests
           //Polylines = null,
           //AdditionalAreas = null,
           //OrientationNodeIndex = null,
-          Angle = 0,
+          Angle = 45,
           MeshSize = 0.25,
           IsIntersector = true,
           AnalysisType = AnalysisType.BEAM,
@@ -3200,10 +3207,10 @@ namespace ConverterGSATests
           MemberHasOffsets = false,
           End1AutomaticOffset = false,
           End2AutomaticOffset = false,
-          End1OffsetX = 0,
+          End1OffsetX = 0.2,
           End2OffsetX = 0,
-          OffsetY = 0,
-          OffsetZ = 0,
+          OffsetY = -0.1,
+          OffsetZ = 0.2,
         },
         new GsaMemb()
         {
@@ -3220,7 +3227,7 @@ namespace ConverterGSATests
           //Polylines = null,
           //AdditionalAreas = null,
           //OrientationNodeIndex = null,
-          Angle = 0,
+          Angle = 90,
           MeshSize = 0.25,
           IsIntersector = true,
           AnalysisType = AnalysisType.LINEAR,
@@ -3231,7 +3238,7 @@ namespace ConverterGSATests
           AgeAtLoadingDays = 0,
           RemovedAtDays = 0,
           Dummy = false,
-          Offset2dZ = 0,
+          Offset2dZ = -0.1,
           OffsetAutomaticInternal = false,
         },
       };
@@ -3364,7 +3371,7 @@ namespace ConverterGSATests
           GridPlaneIndex = null,
           NumDim = 2,
           Values = new List<double>() { 1, 2, 3, 4, 5, 6, 7, 8 },
-          Units = "m",
+          //Units = "m",
         },
         new GsaPolyline()
         {
@@ -3374,7 +3381,7 @@ namespace ConverterGSATests
           GridPlaneIndex = 1,
           NumDim = 3,
           Values = new List<double>() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 },
-          Units = "m",
+          //Units = "m",
         }
       };
       for (int i = 0; i < appIds.Count(); i++)
@@ -3439,7 +3446,7 @@ namespace ConverterGSATests
           Desc = "1.2L1 + 1.5L2",
         },
       };
-      for (int i = 0; i < appIds.Count(); i++)
+      for (int i = 0; i < Math.Min(appIds.Count(), gsaAnals.Count()); i++)
       {
         gsaAnals[i].ApplicationId = appIds[i];
       }
@@ -3455,6 +3462,7 @@ namespace ConverterGSATests
           Index = 1,
           Name = "1",
           ElementIndices = new List<int>(){ 1 },
+          MemberIndices = new List<int>(),
           LoadCaseIndex = 1,
           AxisRefType = AxisRefType.Global,
           Type = Load2dFaceType.Uniform,
@@ -3467,6 +3475,7 @@ namespace ConverterGSATests
           Index = 2,
           Name  = "2",
           ElementIndices = new List<int>(){ 2 },
+          MemberIndices = new List<int>(),
           LoadCaseIndex = 1,
           AxisRefType = AxisRefType.Reference,
           AxisIndex = 1,
@@ -3482,6 +3491,7 @@ namespace ConverterGSATests
           Index = 3,
           Name  = "3",
           ElementIndices = new List<int>(){ 3 },
+          MemberIndices = new List<int>(),
           LoadCaseIndex = 1,
           AxisRefType = AxisRefType.Local,
           Type = Load2dFaceType.General,
@@ -3568,7 +3578,7 @@ namespace ConverterGSATests
           NodeIndices = new List<int>() { 2 },
           GlobalAxis = false,
           AxisIndex = 1,
-          LoadDirection = GwaAxisDirection6.X,
+          LoadDirection = GwaAxisDirection6.XX,
           Value = 1,
         }
       };
@@ -3756,6 +3766,7 @@ namespace ConverterGSATests
           Index = 1,
           Name = "1",
           ElementIndices = new List<int>(){ 1 },
+          MemberIndices = new List<int>(),
           LoadCaseIndex = 1,
           Type = Load2dThermalType.Uniform,
           Values = new List<double>(){ 1 },
@@ -3765,6 +3776,7 @@ namespace ConverterGSATests
           Index = 2,
           Name = "2",
           ElementIndices = new List<int>(){ 1 },
+          MemberIndices = new List<int>(),
           LoadCaseIndex = 2,
           Type = Load2dThermalType.Gradient,
           Values = new List<double>(){ 1, 2 },
@@ -3804,7 +3816,7 @@ namespace ConverterGSATests
             Rho = 2400,
             Alpha = 1e-5,
             G = 1.381364543e+10,
-            Damp = 0
+            Damp = null, //0
           },
           NumUC = 0,
           AbsUC = Dimension.NotSet,
@@ -3822,14 +3834,14 @@ namespace ConverterGSATests
           AbsST = Dimension.NotSet,
           OrdST = Dimension.NotSet,
           PtsST = null, //new double[0],
-          Eps = 0,
+          Eps = null, //0,
           Uls = new GsaMatCurveParam()
           {
             Model = new List<MatCurveParamType>() { MatCurveParamType.RECTANGLE, MatCurveParamType.NO_TENSION },
             StrainElasticCompression = 0.00039,
-            StrainElasticTension = 0,
+            StrainElasticTension = null, //0,
             StrainPlasticCompression = 0.00039,
-            StrainPlasticTension = 0,
+            StrainPlasticTension = null, //0,
             StrainFailureCompression = 0.003,
             StrainFailureTension = 1,
             GammaF = 1,
@@ -3839,15 +3851,15 @@ namespace ConverterGSATests
           {
             Model = new List<MatCurveParamType>() { MatCurveParamType.LINEAR, MatCurveParamType.INTERPOLATED },
             StrainElasticCompression = 0.003,
-            StrainElasticTension = 0,
+            StrainElasticTension = null, //0,
             StrainPlasticCompression = 0.003,
-            StrainPlasticTension = 0,
+            StrainPlasticTension = null, //0,
             StrainFailureCompression = 0.003,
             StrainFailureTension = 0.0001144620975,
             GammaF = 1,
             GammaE = 1
           },
-          Cost = 0,
+          Cost = null, //0,
           Type = MatType.CONCRETE
         },
         Type = MatConcreteType.CYLINDER,
@@ -3904,7 +3916,7 @@ namespace ConverterGSATests
             Rho = 7850,
             Alpha = 1.2e-5,
             G = 7.692307692e+10,
-            Damp = 0
+            Damp = null, //0
           },
           NumUC = 0,
           AbsUC = Dimension.NotSet,
@@ -3947,13 +3959,13 @@ namespace ConverterGSATests
             GammaF = 1,
             GammaE = 1
           },
-          Cost = 0,
+          Cost = null, //0,
           Type = MatType.STEEL
         },
         Fy = 360000000,
         Fu = 450000000,
-        EpsP = 0,
-        Eh = 0,
+        EpsP = null, //0,
+        Eh = null, //0,
       };
     }
     #endregion
@@ -4318,9 +4330,9 @@ namespace ConverterGSATests
         Iyz = 0,
         Izx = 0,
         Mod = MassModification.Modified,
-        ModXPercentage = 1,
-        ModYPercentage = 1,
-        ModZPercentage = 1
+        ModX = -1,
+        ModY = -1,
+        ModZ = -1
       };
     }
 
@@ -4609,11 +4621,11 @@ namespace ConverterGSATests
           Name = "1",
           Colour = Colour.NO_RGB,
           ElementIndices = new List<int>(){ 1 },
-          //MemberIndices = null,
+          MemberIndices = new List<int>(),
           Phi = 2,
           Days = 28,
           LockElementIndices = new List<int>() { 2 },
-          //LockMemberIndices = null,
+          LockMemberIndices = new List<int>(),
         },
         new GsaAnalStage()
         {

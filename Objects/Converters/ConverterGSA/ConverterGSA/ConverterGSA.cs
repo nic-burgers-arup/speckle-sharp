@@ -17,6 +17,8 @@ using Objects.Structural.Analysis;
 using Objects.Structural.GSA.Analysis;
 using Objects.Structural.GSA.Materials;
 using Objects.Structural.GSA.Bridge;
+using Objects.Structural.Loading;
+using System.Threading.Tasks;
 
 namespace ConverterGSA
 {
@@ -34,9 +36,11 @@ namespace ConverterGSA
     public string WebsiteOrEmail => "https://www.oasys-software.com/";
 
     public ProgressReport Report { get; private set; } = new ProgressReport();
-    public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
+    //public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
 
     #endregion ISpeckleConverter props
+
+    private UnitConversion conversionFactors = new UnitConversion();  //Default
 
     public List<ApplicationPlaceholderObject> ContextObjects { get; set; } = new List<ApplicationPlaceholderObject>();
     
@@ -46,6 +50,28 @@ namespace ConverterGSA
 
     //private Dictionary<GSALayer, HashSet<int>> meaningfulNodeIndices = new Dictionary<GSALayer, HashSet<int>>();
     private Dictionary<GSALayer, HashSet<string>> meaningfulNodesAppIds = new Dictionary<GSALayer, HashSet<string>>();
+    private readonly Dictionary<Type, Type> parallelisable = new Dictionary<Type, Type>()
+    {
+      { typeof(Element1D), typeof(GsaEl) },
+      { typeof(GSAElement1D), typeof(GsaEl) },
+      { typeof(GSAMember1D), typeof(GsaMemb) },
+      { typeof(Element2D), typeof(GsaEl) },
+      { typeof(GSAElement2D), typeof(GsaEl) },
+      { typeof(GSAMember2D), typeof(GsaMemb) },
+      { typeof(Node), typeof(GsaNode) },
+      { typeof(GSANode), typeof(GsaNode) },
+      { typeof(LoadNode), typeof(GsaLoadNode) },
+      { typeof(GSALoadNode), typeof(GsaLoadNode) },
+      { typeof(LoadFace), typeof(GsaLoad2dFace) },
+      { typeof(GSALoadFace), typeof(GsaLoad2dFace) },
+      { typeof(Property1D), typeof(GsaSection) },
+      { typeof(GSAProperty1D), typeof(GsaSection) },
+      { typeof(Property2D), typeof(GsaProp2d) },
+      { typeof(GSAProperty2D), typeof(GsaProp2d) },
+      { typeof(LoadCombination), typeof(GsaCombination) },
+      { typeof(GSALoadCombination), typeof(GsaCombination) },
+      { typeof(GSAAssembly), typeof(GsaAssembly) }
+    };
 
     #region model_group
     private enum ModelAspect
@@ -113,20 +139,165 @@ namespace ConverterGSA
       return retObj;
     }
 
+    /*
     //Assume that this is called when a Model object is desired, rather than loose Speckle objects.
     //The one thing that is needed here is an order, a set of generations ... 
     public List<object> ConvertToNative(List<Base> objects)
     {
       var retList = new List<object>();
+      var modelUnits = objects.FirstOrDefault(o => o is ModelUnits) as ModelUnits;
+
+      //ModelInfoToNative(modelUnits);
+
+      if (modelUnits != null)
+      {
+        conversionFactors = new UnitConversion(modelUnits);
+      }
+
       foreach (var obj in objects)
       {
-        var natives = ConvertToNative(obj);
+        var t = obj.GetType();
+        var natives = (ToNativeFns.ContainsKey(t)) ? ToNativeFns[t](obj) : null;
         if (natives != null)
         {
           if (natives is List<GsaRecord>)
           {
-            retList.AddRange(((List<GsaRecord>)natives).Cast<object>());
+            retList.AddRange(natives.Cast<object>());
           }
+        }
+        if (Instance.GsaModel.ConversionProgress != null)
+        {
+          Instance.GsaModel.ConversionProgress.Report(natives != null);
+        }
+      }
+
+      return retList;
+    }
+    */
+
+
+    public List<object> ConvertToNative(List<Base> objects)
+    {
+      var retList = new List<object>();
+
+      //Handle Model objects as a special case, essentially flatten them first
+      var models = objects.Where(o => o is Model).ToList();
+      if (models.Any())
+      {
+        foreach (var m in models)
+        {
+          var flattened = FlattenModel((Model)m);
+
+          retList.AddRange(ConvertToNative(flattened));
+        }
+      }
+
+      var objectsByType = objects.GroupBy(t => t.GetType()).ToDictionary(g => g.Key, g => g.ToList());
+
+      //Ensure the model info is done first - it's assumed that there is just one such object per batch of Base objects to be converted to native
+      var modelSpecTypes = new List<Type> { typeof(ModelInfo), typeof(ModelUnits) };
+      foreach (var t in modelSpecTypes)
+      {
+        if (objectsByType.ContainsKey(t) && ToNativeFns.ContainsKey(t))
+        {
+          ToNativeFns[t](objectsByType[t].First());
+          objectsByType.Remove(t);
+        }
+      }
+
+      var speckleDependencyTree = Instance.GsaModel.SpeckleDependencyTree();
+      if (speckleDependencyTree == null)
+      {
+        foreach (Base o in objects)
+        {
+          var t = o.GetType();
+          try
+          {
+            if (CanConvertToNative(o) && ToNativeFns.ContainsKey(t))
+            {
+              var natives = ToNativeFns[t](o);
+              retList.AddRangeIfNotNull(natives);
+              if (Instance.GsaModel.ConversionProgress != null)
+              {
+                Instance.GsaModel.ConversionProgress.Report(natives != null);
+              }
+            }
+          }
+          catch
+          {
+            Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (o.applicationId ?? o.id) + " - refer to logs for more information"));
+          }
+        }
+      }
+      else
+      {
+        foreach (var gen in speckleDependencyTree)
+        {
+//#if DEBUG
+          foreach (var t in gen)
+//#else
+          //Parallel.ForEach(gen, t =>
+//#endif
+          {
+            if (objectsByType.ContainsKey(t))
+            {
+#if !DEBUG
+              if (parallelisable.ContainsKey(t))
+              {
+                foreach (Base so in objectsByType[t].Where(o => !string.IsNullOrEmpty(o.applicationId)))
+                {
+                  Instance.GsaModel.Cache.ResolveIndex(parallelisable[t], so.applicationId);
+                }
+
+                Parallel.ForEach(objectsByType[t].Cast<Base>(), so =>
+                {
+                  try
+                  {
+                    if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
+                    {
+                      var natives = ToNativeFns[t](so);
+                      retList.AddRangeIfNotNull(natives);
+                      if (Instance.GsaModel.ConversionProgress != null)
+                      {
+                        Instance.GsaModel.ConversionProgress.Report(natives != null);
+                      }
+                    }
+                  }
+                  catch
+                  {
+                    Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
+                  }
+                }
+                );
+              }
+              else
+#endif
+              {
+                foreach (Base so in objectsByType[t])
+                {
+                  try
+                  {
+                    if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
+                    {
+                      var natives = ToNativeFns[t](so);
+                      retList.AddRangeIfNotNull(natives);
+                      if (Instance.GsaModel.ConversionProgress != null)
+                      {
+                        Instance.GsaModel.ConversionProgress.Report(natives != null);
+                      }
+                    }
+                  }
+                  catch
+                  {
+                    Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
+                  }
+                }
+              }
+            }
+          }
+//#if !DEBUG
+          //);
+//#endif
         }
       }
 

@@ -43,11 +43,11 @@ Global
 		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenRoadsShared\ConverterMicroStationOpenRoadsShared.projitems*{208b25e4-2d0e-4534-b197-4c5c96cc53ce}*SharedItemsImports = 13
 		ConnectorMicroStationOpenRoadsShared\ConnectorMicroStationOpenRoadsShared.projitems*{372d9f0f-ede9-4050-bf8c-758911c5c2e0}*SharedItemsImports = 13
 		ConnectorMicroStationOpenRoadsShared\ConnectorMicroStationOpenRoadsShared.projitems*{57bf94a8-8f73-4d1a-91d2-b10cc64178b6}*SharedItemsImports = 4
-		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{5c03ac5b-834e-48b4-ab7c-854bba3e872a}*SharedItemsImports = 5
-		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{7ad741dd-d4fd-4813-9970-09e4fd0a5ce2}*SharedItemsImports = 5
+		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenRoadsShared\ConverterMicroStationOpenRoadsShared.projitems*{5c03ac5b-834e-48b4-ab7c-854bba3e872a}*SharedItemsImports = 5
+		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenRoadsShared\ConverterMicroStationOpenRoadsShared.projitems*{7ad741dd-d4fd-4813-9970-09e4fd0a5ce2}*SharedItemsImports = 5
 		ConnectorMicroStationOpenRoadsShared\ConnectorMicroStationOpenRoadsShared.projitems*{a3a0ee09-6055-4009-ab8e-13fbc1a403a9}*SharedItemsImports = 4
-		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{d6bb2435-06ac-4c36-a8b4-73eaf8deb1c8}*SharedItemsImports = 5
-		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{f03177ce-31eb-42f1-9466-640bfe101f93}*SharedItemsImports = 5
+		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenRoadsShared\ConverterMicroStationOpenRoadsShared.projitems*{d6bb2435-06ac-4c36-a8b4-73eaf8deb1c8}*SharedItemsImports = 5
+		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenRoadsShared\ConverterMicroStationOpenRoadsShared.projitems*{f03177ce-31eb-42f1-9466-640bfe101f93}*SharedItemsImports = 5
 		ConnectorMicroStationOpenRoadsShared\ConnectorMicroStationOpenRoadsShared.projitems*{fc044d89-0ff3-441d-b35d-87454a693c16}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
