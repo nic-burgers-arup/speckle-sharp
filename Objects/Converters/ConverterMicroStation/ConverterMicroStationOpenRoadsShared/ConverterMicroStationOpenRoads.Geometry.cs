@@ -231,7 +231,7 @@ namespace Objects.Converter.MicroStationOpenRoads
       {
         CurveVector vec = q.GetCurveVector();
         if (vec != null)
-        {          
+        {
           vec.GetStartEnd(out DPoint3d startPoint, out DPoint3d endPoint);
           if (startPoint == endPoint)
             return Point3dToSpeckle(startPoint, true, units);
@@ -1830,207 +1830,207 @@ namespace Objects.Converter.MicroStationOpenRoads
       return element;
     }
 
-      private static Dictionary<string, object> GetValue(Dictionary<string, object> properties, IECPropertyValue propertyValue)
+    private static Dictionary<string, object> GetValue(Dictionary<string, object> properties, IECPropertyValue propertyValue)
+    {
+      string propertyName = propertyValue.Property.Name;
+      IECValueContainer containedValues = propertyValue.ContainedValues;
+      IECValueContainer container = propertyValue.Container;
+      IECProperty property = propertyValue.Property;
+      IECInstance instance = propertyValue.Instance;
+
+      string type = propertyValue.GetType().Name;
+
+      propertyValue.TryGetDoubleValue(out double doubleValue);
+      propertyValue.TryGetIntValue(out int intValue);
+      propertyValue.TryGetNativeValue(out object nativeValue);
+      propertyValue.TryGetStringValue(out string stringValue);
+
+      switch (type)
       {
-        string propertyName = propertyValue.Property.Name;
-        IECValueContainer containedValues = propertyValue.ContainedValues;
-        IECValueContainer container = propertyValue.Container;
-        IECProperty property = propertyValue.Property;
-        IECInstance instance = propertyValue.Instance;
-
-        string type = propertyValue.GetType().Name;
-
-        propertyValue.TryGetDoubleValue(out double doubleValue);
-        propertyValue.TryGetIntValue(out int intValue);
-        propertyValue.TryGetNativeValue(out object nativeValue);
-        propertyValue.TryGetStringValue(out string stringValue);
-
-        switch (type)
-        {
-          case "ECDBooleanValue":
-            if (nativeValue != null)
-            {
-              AddProperty(properties, propertyName, nativeValue);
-            }
-            break;
-
-          case "ECDIntegerValue":
-            if (nativeValue != null)
-            {
-              AddProperty(properties, propertyName, intValue);
-            }
-            break;
-
-          case "ECDLongValue":
-          case "ECDDoubleValue":
-            if (nativeValue != null)
-            {
-              AddProperty(properties, propertyName, doubleValue);
-            }
-            break;
-
-          case "ECDDateTimeValue":
-            if (stringValue != null)
-            {
-              AddProperty(properties, propertyName, stringValue);
-            }
-            break;
-
-          case "ECDArrayValue":
-            Dictionary<string, object> arrayProperties = GetArrayValues(propertyValue);
-            arrayProperties.ToList().ForEach(x => properties.Add(x.Key, x.Value));
-            break;
-
-          case "ECDStructValue":
-            if (nativeValue != null)
-            {
-              Dictionary<string, object> structProperties = GetStructValues((IECStructValue)nativeValue);
-              structProperties.ToList().ForEach(x => properties.Add(x.Key, x.Value));
-            }
-            break;
-
-          case "ECDStructArrayValue":
-            if (nativeValue != null)
-            {
-              Dictionary<string, object> structArrayProperties = GetStructArrayValues((IECPropertyValue)nativeValue);
-              structArrayProperties.ToList().ForEach(x => properties.Add(x.Key, x.Value));
-            }
-            break;
-
-          case "ECDStringValue":
-          case "ECDCalculatedStringValue":
-            if (stringValue != null)
-            {
-              AddProperty(properties, propertyName, stringValue);
-            }
-            break;
-
-          case "ECDDPoint3dValue":
-            if (nativeValue != null)
-            {
-              DPoint3d point = (DPoint3d)nativeValue;
-              AddProperty(properties, propertyName, point);
-            }
-            break;
-
-          case "ECDBinaryValue":
-            break;
-
-          default:
-            break;
-        }
-        return properties;
-      }
-
-      // see https://communities.bentley.com/products/programming/microstation_programming/b/weblog/posts/ec-properties-related-operations-with-native-and-managed-apis
-      private static Dictionary<string, object> GetArrayValues(IECPropertyValue container)
-      {
-        Dictionary<string, object> containedProperties = new Dictionary<string, object>();
-
-        IECArrayValue containedValues = container.ContainedValues as IECArrayValue;
-        if (containedValues != null)
-        {
-          for (int i = 0; i < containedValues.Count; i++)
+        case "ECDBooleanValue":
+          if (nativeValue != null)
           {
-            IECPropertyValue propertyValue = containedValues[i];
-
-            containedProperties = GetValue(containedProperties, propertyValue);
+            AddProperty(properties, propertyName, nativeValue);
           }
-        }
-        return containedProperties;
-      }
+          break;
 
-      private static Dictionary<string, object> GetStructValues(IECStructValue structValue)
-      {
-        Dictionary<string, object> containedProperties = new Dictionary<string, object>();
-
-        foreach (IECPropertyValue containedPropertyValue in structValue)
-        {
-          //IECPropertyValue containedPropertyValue = enumerator.Current;
-          string containedPropertyName = containedPropertyValue.Property.Name;
-
-          containedProperties = GetValue(containedProperties, containedPropertyValue);
-        }
-        return containedProperties;
-      }
-
-
-      private static Dictionary<string, object> GetStructArrayValues(IECPropertyValue container)
-      {
-        Dictionary<string, object> containedProperties = new Dictionary<string, object>();
-
-        IECStructArrayValue structArrayValue = (IECStructArrayValue)container;
-        if (structArrayValue != null)
-        {
-          foreach (IECStructValue structValue in structArrayValue.GetStructs())
+        case "ECDIntegerValue":
+          if (nativeValue != null)
           {
-            containedProperties = GetStructValues(structValue);
+            AddProperty(properties, propertyName, intValue);
           }
-        }
-        return containedProperties;
-      }
+          break;
 
-      private static Category FindCategory(string part)
-      {
-        Category category = Category.None;
-        if (part.Contains("CappingBeam"))
-        {
-          category = Category.CappingBeam;
-        }
-        else if (part.Contains("Beam"))
-        {
-          category = Category.Beams;
-        }
-        else if (part.Contains("Column"))
-        {
-          category = Category.Columns;
-        }
-        else if (part.Contains("Pile"))
-        {
-          category = Category.Piles;
-        }
-        else if (part.Contains("FoundationSlab"))
-        {
-          category = Category.FoundationSlab;
-        }
-        else if (part.Contains("Slab"))
-        {
-          category = Category.Slabs;
-        }
-        else if (part.Contains("Wall"))
-        {
-          category = Category.Walls;
-        }
-        return category;
-      }
+        case "ECDLongValue":
+        case "ECDDoubleValue":
+          if (nativeValue != null)
+          {
+            AddProperty(properties, propertyName, doubleValue);
+          }
+          break;
 
-      private static Dictionary<string, object> AddProperty(Dictionary<string, object> properties, string propertyName, object value)
-      {
-        if (properties.ContainsKey(propertyName))
-        {
-          throw new SpeckleException("Can´t convert duplicate property " + propertyName + " with key " + value + ".");
-        }
-        else
-        {
-          properties.Add(propertyName, value);
-        }
-        return properties;
-      }
+        case "ECDDateTimeValue":
+          if (stringValue != null)
+          {
+            AddProperty(properties, propertyName, stringValue);
+          }
+          break;
 
-      private static Object GetProperty(Dictionary<string, object> properties, string propertyName)
-      {
-        if (properties.TryGetValue(propertyName, out object value))
-        {
-          properties.Remove(propertyName);
-          return value;
-        }
-        return null;
-      }
+        case "ECDArrayValue":
+          Dictionary<string, object> arrayProperties = GetArrayValues(propertyValue);
+          arrayProperties.ToList().ForEach(x => properties.Add(x.Key, x.Value));
+          break;
 
-      public class Processor : ElementGraphicsProcessor
+        case "ECDStructValue":
+          if (nativeValue != null)
+          {
+            Dictionary<string, object> structProperties = GetStructValues((IECStructValue)nativeValue);
+            structProperties.ToList().ForEach(x => properties.Add(x.Key, x.Value));
+          }
+          break;
+
+        case "ECDStructArrayValue":
+          if (nativeValue != null)
+          {
+            Dictionary<string, object> structArrayProperties = GetStructArrayValues((IECPropertyValue)nativeValue);
+            structArrayProperties.ToList().ForEach(x => properties.Add(x.Key, x.Value));
+          }
+          break;
+
+        case "ECDStringValue":
+        case "ECDCalculatedStringValue":
+          if (stringValue != null)
+          {
+            AddProperty(properties, propertyName, stringValue);
+          }
+          break;
+
+        case "ECDDPoint3dValue":
+          if (nativeValue != null)
+          {
+            DPoint3d point = (DPoint3d)nativeValue;
+            AddProperty(properties, propertyName, point);
+          }
+          break;
+
+        case "ECDBinaryValue":
+          break;
+
+        default:
+          break;
+      }
+      return properties;
+    }
+
+    // see https://communities.bentley.com/products/programming/microstation_programming/b/weblog/posts/ec-properties-related-operations-with-native-and-managed-apis
+    private static Dictionary<string, object> GetArrayValues(IECPropertyValue container)
+    {
+      Dictionary<string, object> containedProperties = new Dictionary<string, object>();
+
+      IECArrayValue containedValues = container.ContainedValues as IECArrayValue;
+      if (containedValues != null)
       {
-        public DTransform3d _transform;
-        public List<CurveVector> curveVectors = new List<CurveVector>();
+        for (int i = 0; i < containedValues.Count; i++)
+        {
+          IECPropertyValue propertyValue = containedValues[i];
+
+          containedProperties = GetValue(containedProperties, propertyValue);
+        }
+      }
+      return containedProperties;
+    }
+
+    private static Dictionary<string, object> GetStructValues(IECStructValue structValue)
+    {
+      Dictionary<string, object> containedProperties = new Dictionary<string, object>();
+
+      foreach (IECPropertyValue containedPropertyValue in structValue)
+      {
+        //IECPropertyValue containedPropertyValue = enumerator.Current;
+        string containedPropertyName = containedPropertyValue.Property.Name;
+
+        containedProperties = GetValue(containedProperties, containedPropertyValue);
+      }
+      return containedProperties;
+    }
+
+
+    private static Dictionary<string, object> GetStructArrayValues(IECPropertyValue container)
+    {
+      Dictionary<string, object> containedProperties = new Dictionary<string, object>();
+
+      IECStructArrayValue structArrayValue = (IECStructArrayValue)container;
+      if (structArrayValue != null)
+      {
+        foreach (IECStructValue structValue in structArrayValue.GetStructs())
+        {
+          containedProperties = GetStructValues(structValue);
+        }
+      }
+      return containedProperties;
+    }
+
+    private static Category FindCategory(string part)
+    {
+      Category category = Category.None;
+      if (part.Contains("CappingBeam"))
+      {
+        category = Category.CappingBeam;
+      }
+      else if (part.Contains("Beam"))
+      {
+        category = Category.Beams;
+      }
+      else if (part.Contains("Column"))
+      {
+        category = Category.Columns;
+      }
+      else if (part.Contains("Pile"))
+      {
+        category = Category.Piles;
+      }
+      else if (part.Contains("FoundationSlab"))
+      {
+        category = Category.FoundationSlab;
+      }
+      else if (part.Contains("Slab"))
+      {
+        category = Category.Slabs;
+      }
+      else if (part.Contains("Wall"))
+      {
+        category = Category.Walls;
+      }
+      return category;
+    }
+
+    private static Dictionary<string, object> AddProperty(Dictionary<string, object> properties, string propertyName, object value)
+    {
+      if (properties.ContainsKey(propertyName))
+      {
+        throw new SpeckleException("Can´t convert duplicate property " + propertyName + " with key " + value + ".");
+      }
+      else
+      {
+        properties.Add(propertyName, value);
+      }
+      return properties;
+    }
+
+    private static Object GetProperty(Dictionary<string, object> properties, string propertyName)
+    {
+      if (properties.TryGetValue(propertyName, out object value))
+      {
+        properties.Remove(propertyName);
+        return value;
+      }
+      return null;
+    }
+
+    public class Processor : ElementGraphicsProcessor
+    {
+      public DTransform3d _transform;
+      public List<CurveVector> curveVectors = new List<CurveVector>();
       public List<CurvePrimitive> curvePrimitives = new List<CurvePrimitive>();
       public List<Base> elements = new List<Base>();
 
