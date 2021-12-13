@@ -334,7 +334,7 @@ namespace Objects.Converter.MicroStationOpenRoads
         case Curve _:
         case Box _:
         case Mesh _:
-        case RevitColumn _:
+          //case RevitColumn _:
           //case Surface _:
           //case Alignment _:                    ;
           return true;

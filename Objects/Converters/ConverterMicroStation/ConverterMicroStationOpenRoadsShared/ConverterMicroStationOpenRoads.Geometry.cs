@@ -231,9 +231,9 @@ namespace Objects.Converter.MicroStationOpenRoads
       {
         CurveVector vec = q.GetCurveVector();
         if (vec != null)
-        {          
+        {
           vec.GetStartEnd(out DPoint3d startPoint, out DPoint3d endPoint);
-          if (startPoint == endPoint) 
+          if (startPoint == endPoint)
             return Point3dToSpeckle(startPoint, true, units);
 
           double length = vec.SumOfLengths() / UoR;
