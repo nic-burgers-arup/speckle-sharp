@@ -7,8 +7,8 @@
     public double? XCoordinate;
     public double? YCoordinate;
     public double? Length;
-    public double? Theta1;
-    public double? Theta2;
+    public double? Theta1; //degrees
+    public double? Theta2; //degrees
 
     public GsaGridLine() : base()
     {

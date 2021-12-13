@@ -85,7 +85,7 @@ namespace ConverterETABSTests
       listTop.Add(pt2);
       listTop.Add(pt3);
       listTop.Add(pt4);
-      ETABSElement2D element2D = new ETABSElement2D(listTop);
+      ETABSElement2D element2D = new ETABSElement2D();
       converter.AreaToNative(element2D);
       int numberArea = 0;
       string[] AreasName = null;

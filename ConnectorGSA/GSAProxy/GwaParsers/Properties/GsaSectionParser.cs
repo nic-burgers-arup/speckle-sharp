@@ -50,7 +50,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
 
       var numComponents = 0;
       //SECTION.7 | ref | colour | name | memb | pool | point | refY | refZ | mass | fraction | cost | left | right | slab | num { < comp > } | 0 | 0 | NO_ENVIRON
-      if (!(FromGwaByFuncs(items, out var remainingItems, (v) => Enum.TryParse(v, true, out record.Colour), AddName, (v) => v.TryParseStringValue(out record.Type), 
+      if (!(FromGwaByFuncs(items, out var remainingItems, (v) => AddColour(v, out record.Colour), AddName, (v) => v.TryParseStringValue(out record.Type), 
           (v) => AddNullableIndex(v, out record.PoolIndex), (v) => v.TryParseStringValue(out record.ReferencePoint), (v) => AddNullableDoubleValue(v, out record.RefY), 
           (v) => AddNullableDoubleValue(v, out record.RefZ), (v) => AddNullableDoubleValue(v, out record.Mass), (v) => AddNullableDoubleValue(v, out record.Fraction), 
           (v) => AddNullableDoubleValue(v, out record.Cost), (v) => AddNullableDoubleValue(v, out record.Left), (v) => AddNullableDoubleValue(v, out record.Right), 

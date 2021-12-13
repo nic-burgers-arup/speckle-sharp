@@ -595,194 +595,81 @@ namespace Speckle.ConnectorGSA.Proxy
       }
 
       var retRecords = new List<GsaRecord>();
-      var dataLock = new object();
-      var setKeywords = new List<GwaKeyword>();
-      var setAtKeywords = new List<GwaKeyword>();
-      var setNoIndexKeywords = new List<GwaKeyword>();
-      var tempKeywordIndexCache = new Dictionary<GwaKeyword, List<int>>();
 
-      var keywords = typeInfo[layer].Select(d => d.TableKeyword).ToList();
-
-      foreach (var kw in keywords)
+      foreach (var gen in nativeTypeDependencyGenerations[layer])
       {
-        var tableParserType = typeInfo[layer][typeInfoIndicesByKeyword[layer][kw]].TableParserType;
-        var sct = Helper.GetGwaSetCommandType(tableParserType);
-        if (sct == GwaSetCommandType.Set)
+        var keywords = new List<GwaKeyword>();
+        foreach (var t in gen)
         {
-          setKeywords.Add(kw);
+          var ti = typeInfo[layer][typeInfoIndicesBySchemaType[layer][t]];
+          keywords.Add(ti.TableKeyword);
         }
-        else if (sct == GwaSetCommandType.SetAt)
-        {
-          setAtKeywords.Add(kw);
-        }
-        else
-        {
-          setNoIndexKeywords.Add(kw);
-        }
-      }
+      
+        var dataLock = new object();
+        var setKeywords = new List<GwaKeyword>();
+        var setAtKeywords = new List<GwaKeyword>();
+        var setNoIndexKeywords = new List<GwaKeyword>();
+        var tempKeywordIndexCache = new Dictionary<GwaKeyword, List<int>>();
 
-      for (int i = 0; i < setNoIndexKeywords.Count(); i++)
-      {
-        var newCommand = "GET_ALL" + GwaDelimiter + setNoIndexKeywords[i];
+        //var keywords = typeInfo[layer].Select(d => d.TableKeyword).ToList();
 
-        string[] gwaLines;
-
-        try
+        foreach (var kw in keywords)
         {
-          lock (syncLock)
+          var tableParserType = typeInfo[layer][typeInfoIndicesByKeyword[layer][kw]].TableParserType;
+          var sct = Helper.GetGwaSetCommandType(tableParserType);
+          if (sct == GwaSetCommandType.Set)
           {
-            gwaLines = ((string)GSAObject.GwaCommand(newCommand)).Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            setKeywords.Add(kw);
+          }
+          else if (sct == GwaSetCommandType.SetAt)
+          {
+            setAtKeywords.Add(kw);
+          }
+          else
+          {
+            setNoIndexKeywords.Add(kw);
           }
         }
-        catch
-        {
-          gwaLines = new string[0];
-        }
 
-          foreach (var gwa in gwaLines)
+        for (int i = 0; i < setNoIndexKeywords.Count(); i++)
+        {
+          var newCommand = "GET_ALL" + GwaDelimiter + setNoIndexKeywords[i];
+
+          string[] gwaLines;
+
+          try
           {
-            var pieces = gwa.ListSplit(_GwaDelimiter).ToList();
-            if (pieces[0].StartsWith("set", StringComparison.InvariantCultureIgnoreCase))
+            lock (syncLock)
             {
-              pieces = pieces.Skip(1).ToList();
+              gwaLines = ((string)GSAObject.GwaCommand(newCommand)).Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
             }
-            var keywordAndVersion = pieces.First();
-            var keywordPieces = keywordAndVersion.Split('.');
-            if (keywordPieces.Count() == 2 && keywordPieces.Last().All(c => char.IsDigit(c))
-              && int.TryParse(keywordPieces.Last(), out int ver)
-              && keywordPieces.First().TryParseStringValue(out GwaKeyword kw))
+          }
+          catch
+          {
+            gwaLines = new string[0];
+          }
+
+            foreach (var gwa in gwaLines)
             {
-              var ktd = typeInfo[layer][typeInfoIndicesByKeyword[layer][kw]];
-              if (ktd != null)
+              var pieces = gwa.ListSplit(_GwaDelimiter).ToList();
+              if (pieces[0].StartsWith("set", StringComparison.InvariantCultureIgnoreCase))
               {
-                var schemaType = ktd.GetSchemaType(kw);
-                var parser = (IGwaParser)Activator.CreateInstance(ktd.GetParserType(schemaType));
-                if (parser.FromGwa(gwa))
-                {
-                  retRecords.Add(parser.Record);
-                }
-                else if (loggingProgress != null)
-                {
-                  loggingProgress.Report(FormulateParsingErrorContext(parser.Record, schemaType.Name));
-                }
+                pieces = pieces.Skip(1).ToList();
               }
-            }
-          }
-      }
-
-
-      #region read_set_keyword_records
-      for (int i = 0; i < setKeywords.Count(); i++)
-      {
-        var newCommand = "GET_ALL" + GwaDelimiter + setKeywords[i];
-        var isNode = (setKeywords[i] == GwaKeyword.NODE);
-        var isElement = (setKeywords[i] == GwaKeyword.EL);
-
-        string[] gwaLines;
-
-        try
-        {
-          lock(syncLock)
-          {
-            gwaLines = ((string)GSAObject.GwaCommand(newCommand)).Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
-          }
-        }
-        catch
-        {
-          gwaLines = new string[0];
-        }
-
-        Parallel.ForEach(gwaLines, gwa =>
-        {
-          if (ParseGeneralGwa(gwa, out GwaKeyword? keyword, out int? version, out int? index, out string streamId, out string appId, out string gwaWithoutSet, out string keywordAndVersion)
-            && keyword.HasValue)
-          {
-            var ktd = typeInfo[layer][typeInfoIndicesByKeyword[layer][keyword.Value]];
-            if (ktd != null)
-            {
-              index = index ?? 0;
-              var originalSid = "";
-              var kwStr = keyword.Value.GetStringValue();
-
-              //For some GET_ALL calls, records with other keywords are returned, too.  Example: GET_ALL TASK returns TASK, TASK_TAG and ANAL records
-              if (keyword.Value == setKeywords[i])
+              var keywordAndVersion = pieces.First();
+              var keywordPieces = keywordAndVersion.Split('.');
+              if (keywordPieces.Count() == 2 && keywordPieces.Last().All(c => char.IsDigit(c))
+                && int.TryParse(keywordPieces.Last(), out int ver)
+                && keywordPieces.First().TryParseStringValue(out GwaKeyword kw))
               {
-                if (string.IsNullOrEmpty(streamId))
+                var ktd = typeInfo[layer][typeInfoIndicesByKeyword[layer][kw]];
+                if (ktd != null)
                 {
-                  //Slight hardcoding for optimisation here: the biggest source of GetSidTagValue calls would be from nodes, and knowing
-                  //(at least in GSA v10 build 63) that GET_ALL NODE does return SID tags, the call is avoided for NODE keyword
-                  if (!isNode && !isElement)
-                  {
-                    try
-                    {
-                      lock (syncLock) {streamId = GSAObject.GetSidTagValue(kwStr, index.Value, SID_STRID_TAG); }
-                    }
-                    catch { }
-                  }
-                }
-                else
-                {
-                  originalSid += FormatStreamIdSidTag(streamId);
-                }
-
-                if (string.IsNullOrEmpty(appId))
-                {
-                  //Again, the same optimisation as explained above
-                  if (!isNode && !isElement)
-                  {
-                    try
-                    {
-                      lock (syncLock)
-                      {
-                        appId = GSAObject.GetSidTagValue(kwStr, index.Value, SID_APPID_TAG);
-                      }
-                    }
-                    catch { }
-                  }
-                }
-                else
-                {
-                  originalSid += FormatStreamIdSidTag(appId);
-                }
-
-                var newSid = FormatStreamIdSidTag(streamId) + FormatApplicationIdSidTag(appId);
-                if (!string.IsNullOrEmpty(newSid))
-                {
-                  if (string.IsNullOrEmpty(originalSid))
-                  {
-                    gwaWithoutSet = gwaWithoutSet.Replace(keywordAndVersion, keywordAndVersion + ":" + newSid);
-                  }
-                  else
-                  {
-                    gwaWithoutSet = gwaWithoutSet.Replace(originalSid, newSid);
-                  }
-                }
-
-                var schemaType = ktd.GetSchemaType(keyword.Value);
-                var t = ktd.GetParserType(schemaType);
-                {
-                  var parser = (IGwaParser)Activator.CreateInstance(t);
+                  var schemaType = ktd.GetSchemaType(kw);
+                  var parser = (IGwaParser)Activator.CreateInstance(ktd.GetParserType(schemaType));
                   if (parser.FromGwa(gwa))
                   {
-                    if (!parser.Record.Index.HasValue && index.HasValue)
-                    {
-                      parser.Record.Index = index.Value;
-                    }
-                    parser.Record.StreamId = streamId;
-                    parser.Record.ApplicationId = appId;
-
-                    lock (dataLock)
-                    {
-                      if (!tempKeywordIndexCache.ContainsKey(keyword.Value))
-                      {
-                        tempKeywordIndexCache.Add(keyword.Value, new List<int>());
-                      }
-                      if (!tempKeywordIndexCache[keyword.Value].Contains(index.Value))
-                      {
-                        retRecords.Add(parser.Record);
-                        tempKeywordIndexCache[keyword.Value].Add(index.Value);
-                      }
-                    }
+                    retRecords.Add(parser.Record);
                   }
                   else if (loggingProgress != null)
                   {
@@ -791,122 +678,246 @@ namespace Speckle.ConnectorGSA.Proxy
                 }
               }
             }
-          }
-        });
-
-        if (incrementProgress != null)
-        {
-          incrementProgress.Report(1);
-        }
-      }
-      #endregion
-
-      #region read_set_at_keyword_records
-      for (int i = 0; i < setAtKeywords.Count(); i++)
-      {
-        int highestIndex = 0;
-        lock(syncLock)
-        {
-          highestIndex = GSAObject.GwaCommand("HIGHEST" + GwaDelimiter + setAtKeywords[i]);
         }
 
-        for (int j = 1; j <= highestIndex; j++)
-        {
-          var newCommand = string.Join(GwaDelimiter.ToString(), new[] { "GET", setAtKeywords[i].GetStringValue(), j.ToString() });
 
-          string gwaLine = "";
+        #region read_set_keyword_records
+        for (int i = 0; i < setKeywords.Count(); i++)
+        {
+          var newCommand = "GET_ALL" + GwaDelimiter + setKeywords[i];
+          var isNode = (setKeywords[i] == GwaKeyword.NODE);
+          var isElement = (setKeywords[i] == GwaKeyword.EL);
+
+          string[] gwaLines;
+
           try
           {
-            lock (syncLock)
+            lock(syncLock)
             {
-              gwaLine = GSAObject.GwaCommand(newCommand);
+              gwaLines = ((string)GSAObject.GwaCommand(newCommand)).Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
             }
           }
-          catch { }
-
-          if ((gwaLine != "") 
-            && ParseGeneralGwa(gwaLine, out GwaKeyword? keyword, out int? version, out int? index, out string streamId, out string appId, out string gwaWithoutSet,
-              out string keywordAndVersion) && keyword.HasValue)
+          catch
           {
-            var ktd = typeInfo[layer][typeInfoIndicesByKeyword[layer][keyword.Value]];
-            if (ktd != null)
+            gwaLines = new string[0];
+          }
+
+          Parallel.ForEach(gwaLines, gwa =>
+          {
+            if (ParseGeneralGwa(gwa, out GwaKeyword? keyword, out int? version, out int? index, out string streamId, out string appId, out string gwaWithoutSet, out string keywordAndVersion)
+              && keyword.HasValue)
             {
-              var kwStr = keyword.Value.GetStringValue();
-              var originalSid = "";
-              if (string.IsNullOrEmpty(streamId))
+              var ktd = typeInfo[layer][typeInfoIndicesByKeyword[layer][keyword.Value]];
+              if (ktd != null)
               {
-                try
+                index = index ?? 0;
+                var originalSid = "";
+                var kwStr = keyword.Value.GetStringValue();
+
+                //For some GET_ALL calls, records with other keywords are returned, too.  Example: GET_ALL TASK returns TASK, TASK_TAG and ANAL records
+                if (keyword.Value == setKeywords[i])
+                {
+                  if (string.IsNullOrEmpty(streamId))
+                  {
+                    //Slight hardcoding for optimisation here: the biggest source of GetSidTagValue calls would be from nodes, and knowing
+                    //(at least in GSA v10 build 63) that GET_ALL NODE does return SID tags, the call is avoided for NODE keyword
+                    if (!isNode && !isElement)
+                    {
+                      try
+                      {
+                        lock (syncLock) {streamId = GSAObject.GetSidTagValue(kwStr, index.Value, SID_STRID_TAG); }
+                      }
+                      catch { }
+                    }
+                  }
+                  else
+                  {
+                    originalSid += FormatStreamIdSidTag(streamId);
+                  }
+
+                  if (string.IsNullOrEmpty(appId))
+                  {
+                    //Again, the same optimisation as explained above
+                    if (!isNode && !isElement)
+                    {
+                      try
+                      {
+                        lock (syncLock)
+                        {
+                          appId = GSAObject.GetSidTagValue(kwStr, index.Value, SID_APPID_TAG);
+                        }
+                      }
+                      catch { }
+                    }
+                  }
+                  else
+                  {
+                    originalSid += FormatStreamIdSidTag(appId);
+                  }
+
+                  var newSid = FormatStreamIdSidTag(streamId) + FormatApplicationIdSidTag(appId);
+                  if (!string.IsNullOrEmpty(newSid))
+                  {
+                    if (string.IsNullOrEmpty(originalSid))
+                    {
+                      gwaWithoutSet = gwaWithoutSet.Replace(keywordAndVersion, keywordAndVersion + ":" + newSid);
+                    }
+                    else
+                    {
+                      gwaWithoutSet = gwaWithoutSet.Replace(originalSid, newSid);
+                    }
+                  }
+
+                  var schemaType = ktd.GetSchemaType(keyword.Value);
+                  var t = ktd.GetParserType(schemaType);
+                  {
+                    var parser = (IGwaParser)Activator.CreateInstance(t);
+                    if (parser.FromGwa(gwa))
+                    {
+                      if (!parser.Record.Index.HasValue && index.HasValue)
+                      {
+                        parser.Record.Index = index.Value;
+                      }
+                      parser.Record.StreamId = streamId;
+                      parser.Record.ApplicationId = appId;
+
+                      lock (dataLock)
+                      {
+                        if (!tempKeywordIndexCache.ContainsKey(keyword.Value))
+                        {
+                          tempKeywordIndexCache.Add(keyword.Value, new List<int>());
+                        }
+                        if (!tempKeywordIndexCache[keyword.Value].Contains(index.Value))
+                        {
+                          retRecords.Add(parser.Record);
+                          tempKeywordIndexCache[keyword.Value].Add(index.Value);
+                        }
+                      }
+                    }
+                    else if (loggingProgress != null)
+                    {
+                      loggingProgress.Report(FormulateParsingErrorContext(parser.Record, schemaType.Name));
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          if (incrementProgress != null)
+          {
+            incrementProgress.Report(1);
+          }
+        }
+        #endregion
+
+        #region read_set_at_keyword_records
+        for (int i = 0; i < setAtKeywords.Count(); i++)
+        {
+          int highestIndex = 0;
+          lock(syncLock)
+          {
+            highestIndex = GSAObject.GwaCommand("HIGHEST" + GwaDelimiter + setAtKeywords[i]);
+          }
+
+          for (int j = 1; j <= highestIndex; j++)
+          {
+            var newCommand = string.Join(GwaDelimiter.ToString(), new[] { "GET", setAtKeywords[i].GetStringValue(), j.ToString() });
+
+            string gwaLine = "";
+            try
+            {
+              lock (syncLock)
+              {
+                gwaLine = GSAObject.GwaCommand(newCommand);
+              }
+            }
+            catch { }
+
+            if ((gwaLine != "") 
+              && ParseGeneralGwa(gwaLine, out GwaKeyword? keyword, out int? version, out int? index, out string streamId, out string appId, out string gwaWithoutSet,
+                out string keywordAndVersion) && keyword.HasValue)
+            {
+              var ktd = typeInfo[layer][typeInfoIndicesByKeyword[layer][keyword.Value]];
+              if (ktd != null)
+              {
+                var kwStr = keyword.Value.GetStringValue();
+                var originalSid = "";
+                if (string.IsNullOrEmpty(streamId))
+                {
+                  try
+                  {
+                    lock (syncLock)
+                    {
+                      streamId = GSAObject.GetSidTagValue(kwStr, j, SID_STRID_TAG);
+                    }
+                  }
+                  catch { }
+                }
+                else
+                {
+                  originalSid += FormatStreamIdSidTag(streamId);
+                }
+                if (string.IsNullOrEmpty(appId))
                 {
                   lock (syncLock)
                   {
-                    streamId = GSAObject.GetSidTagValue(kwStr, j, SID_STRID_TAG);
+                    appId = GSAObject.GetSidTagValue(kwStr, j, SID_APPID_TAG);
                   }
                 }
-                catch { }
-              }
-              else
-              {
-                originalSid += FormatStreamIdSidTag(streamId);
-              }
-              if (string.IsNullOrEmpty(appId))
-              {
-                lock (syncLock)
+                else
                 {
-                  appId = GSAObject.GetSidTagValue(kwStr, j, SID_APPID_TAG);
+                  originalSid += FormatStreamIdSidTag(appId);
                 }
-              }
-              else
-              {
-                originalSid += FormatStreamIdSidTag(appId);
-              }
 
-              var newSid = FormatStreamIdSidTag(streamId) + FormatApplicationIdSidTag(appId);
-              if (!string.IsNullOrEmpty(originalSid) && !string.IsNullOrEmpty(newSid))
-              {
-                gwaWithoutSet.Replace(originalSid, newSid);
-              }
+                var newSid = FormatStreamIdSidTag(streamId) + FormatApplicationIdSidTag(appId);
+                if (!string.IsNullOrEmpty(originalSid) && !string.IsNullOrEmpty(newSid))
+                {
+                  gwaWithoutSet.Replace(originalSid, newSid);
+                }
               
-              var kw = ktd.HasDifferentatedKeywords ? (GwaKeyword)Enum.Parse(typeof(GwaKeyword), keywordAndVersion.Split('.')[0]) : keyword.Value;
+                var kw = ktd.HasDifferentatedKeywords ? (GwaKeyword)Enum.Parse(typeof(GwaKeyword), keywordAndVersion.Split('.')[0]) : keyword.Value;
 
-              var schemaType = ktd.GetSchemaType(kw);
-              var t = ktd.GetParserType(schemaType);
+                var schemaType = ktd.GetSchemaType(kw);
+                var t = ktd.GetParserType(schemaType);
 
-              var parser = (IGwaParser)Activator.CreateInstance(t);
-              if (parser.FromGwa(gwaLine))
-              {
-                if (!parser.Record.Index.HasValue)
+                var parser = (IGwaParser)Activator.CreateInstance(t);
+                if (parser.FromGwa(gwaLine))
                 {
-                  parser.Record.Index = j;
-                }
-                parser.Record.StreamId = streamId;
-                parser.Record.ApplicationId = appId;
+                  if (!parser.Record.Index.HasValue)
+                  {
+                    parser.Record.Index = j;
+                  }
+                  parser.Record.StreamId = streamId;
+                  parser.Record.ApplicationId = appId;
 
-                lock (dataLock)
-                {
-                  if (!tempKeywordIndexCache.ContainsKey(setAtKeywords[i]))
+                  lock (dataLock)
                   {
-                    tempKeywordIndexCache.Add(setAtKeywords[i], new List<int>());
-                  }
-                  if (!tempKeywordIndexCache[setAtKeywords[i]].Contains(j))
-                  {
-                    retRecords.Add(parser.Record);
-                    tempKeywordIndexCache[setAtKeywords[i]].Add(j);
+                    if (!tempKeywordIndexCache.ContainsKey(setAtKeywords[i]))
+                    {
+                      tempKeywordIndexCache.Add(setAtKeywords[i], new List<int>());
+                    }
+                    if (!tempKeywordIndexCache[setAtKeywords[i]].Contains(j))
+                    {
+                      retRecords.Add(parser.Record);
+                      tempKeywordIndexCache[setAtKeywords[i]].Add(j);
+                    }
                   }
                 }
-              }
-              else if (loggingProgress != null)
-              {
-                loggingProgress.Report(FormulateParsingErrorContext(parser.Record, schemaType.Name));
+                else if (loggingProgress != null)
+                {
+                  loggingProgress.Report(FormulateParsingErrorContext(parser.Record, schemaType.Name));
+                }
               }
             }
           }
+          if (incrementProgress != null)
+          {
+            incrementProgress.Report(1);
+          }
         }
-        if (incrementProgress != null)
-        {
-          incrementProgress.Report(1);
-        }
+        #endregion
       }
-      #endregion
 
       records = retRecords;
       return true; 
@@ -1298,7 +1309,7 @@ namespace Speckle.ConnectorGSA.Proxy
       return specs;
     }
 
-    private bool ProcessLoadCaseCombinationSpec(string spec, out List<string> aParts, out List<string> cParts)
+    public static bool ProcessLoadCaseCombinationSpec(string spec, out List<string> aParts, out List<string> cParts)
     {
       aParts = new List<string>();
       cParts = new List<string>();

@@ -175,8 +175,20 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       }
       else if (record.PointDefn == PointDefinition.Storey)
       {
-        //So far only specific numbers are recognised
-        record.StoreyIndices = StringToIntList(v);
+        if (v.Equals("all", StringComparison.InvariantCultureIgnoreCase))
+        {
+          Instance.GsaModel.Cache.GetNatives(typeof(GsaGridPlane), out var gsaPlaneRecords);
+          if (gsaPlaneRecords != null)
+          {
+            record.StoreyIndices = gsaPlaneRecords.Where(p => (((GsaGridPlane)p).Type == GridPlaneType.Storey) && (p.Index.HasValue))
+              .Select(gp => gp.Index.Value).ToList();
+          }
+        }
+        else
+        {
+          //So far only specific numbers are recognised
+          record.StoreyIndices = StringToIntList(v);
+        }
         return record.StoreyIndices.Count() > 0;
       }
       else if (record.PointDefn == PointDefinition.Explicit)

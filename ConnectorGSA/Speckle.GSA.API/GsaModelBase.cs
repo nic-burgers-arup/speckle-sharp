@@ -56,13 +56,15 @@ namespace Speckle.GSA.API
     public virtual int LoggingMinimumLevel { get; set; }
     public bool SendOnlyMeaningfulNodes { get; set; }
     public IProgress<bool> ConversionProgress { get; set; }
+    public IProgress<int> NumberToConvertProgress { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
     //public object KitManager { get; private set; }
 
     public virtual GsaRecord GetNative<T>(int value) => Cache.GetNative<T>(value);
-    public virtual List<int> LookupIndices<T>() => Cache.LookupIndices<T>();
+    //public virtual List<int> LookupIndices<T>() => Cache.LookupIndices<T>();
     public virtual List<int> ConvertGSAList(string v, GSAEntity e) => Proxy.ConvertGSAList(v, e);
     public virtual string GetApplicationId<T>(int value) => Cache.GetApplicationId<T>(value);
 
-    //public abstract List<List<Type>> SpeckleDependencyTree();
+    public abstract List<List<Type>> SpeckleDependencyTree();
   }
 }
