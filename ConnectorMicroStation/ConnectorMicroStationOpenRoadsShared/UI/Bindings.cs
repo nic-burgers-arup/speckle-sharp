@@ -642,7 +642,6 @@ namespace Speckle.ConnectorMicroStationOpenRoads.UI
         {
           var levelCache = Model.GetFileLevelCache();
           var objLevel = levelCache.GetLevel(obj.LevelId);
-
           var layerName = "Unknown";
           if (objLevel != null)
           {

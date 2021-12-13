@@ -46,7 +46,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(IsDesktopBuild)' == true">
+  <ItemGroup Condition="'$(IsDesktopBuild)' == true" >
     <Reference Include="Bentley.Building.Api">
       <HintPath>$(ProgramW6432)\Bentley\OpenBuildings CONNECT Edition\OpenBuildingsDesigner\Assemblies\Bentley.Building.Api.dll</HintPath>
     </Reference>
