@@ -154,9 +154,9 @@ namespace Objects.Converter.MicroStationOpenRoads
           switch (placementPoint)
           {
             case (1):
-              // bottom right
+              // bottom left
               zJustification.value = 3;
-              yJustification.value = 3;
+              yJustification.value = 0;
               break;
 
             case (2):
@@ -166,13 +166,13 @@ namespace Objects.Converter.MicroStationOpenRoads
               break;
 
             case (3):
-              // bottom left
+              // bottom right
               zJustification.value = 3;
-              yJustification.value = 0;
+              yJustification.value = 3;
               break;
 
             case (4):
-              // center right
+              // center left
               zJustification.value = 1;
               yJustification.value = 0;
               break;
@@ -190,15 +190,15 @@ namespace Objects.Converter.MicroStationOpenRoads
               break;
 
             case (6):
-              // center left
+              // center right
               zJustification.value = 1;
-              yJustification.value = 0;
+              yJustification.value = 3;
               break;
 
             case (7):
-              // top right
+              // top left
               zJustification.value = 0;
-              yJustification.value = 3;
+              yJustification.value = 0;
               break;
 
             case (8):
@@ -208,9 +208,9 @@ namespace Objects.Converter.MicroStationOpenRoads
               break;
 
             case (9):
-              // top left
+              // top right
               zJustification.value = 0;
-              yJustification.value = 0;
+              yJustification.value = 3;
               break;
 
             default:
