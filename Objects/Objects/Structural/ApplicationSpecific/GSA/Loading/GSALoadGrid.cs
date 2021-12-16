@@ -7,13 +7,13 @@ namespace Objects.Structural.GSA.Loading
 {
   public abstract class GSALoadGrid : Load
   {
-    public int nativeId { get; set; }
+    public int? nativeId { get; set; }
     public GSAGridSurface gridSurface { get; set; }
     public Axis loadAxis { get; set; }
     public LoadDirection2D direction { get; set; }
     public GSALoadGrid() { }
 
-    public GSALoadGrid(int nativeId, GSAGridSurface gridSurface, Axis loadAxis, LoadDirection2D direction)
+    public GSALoadGrid(LoadCase loadCase, GSAGridSurface gridSurface, Axis loadAxis, LoadDirection2D direction, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;

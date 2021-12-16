@@ -8,13 +8,13 @@ namespace Objects.Structural.GSA.Loading
 {
   public class GSALoadCombination : LoadCombination
   {
-    public int nativeId { get; set; }
+    public int? nativeId { get; set; }
     public GSALoadCombination() { }
 
     [SchemaInfo("GSALoadCombination", "Creates a Speckle load combination for GSA", "GSA", "Loading")]
-    public GSALoadCombination(int nativeId, string name,
+    public GSALoadCombination(string name,
         [SchemaParamInfo("A list of load cases")] List<Base> loadCases,
-        [SchemaParamInfo("A list of load factors (to be mapped to provided load cases)")] List<double> loadFactors)
+        [SchemaParamInfo("A list of load factors (to be mapped to provided load cases)")] List<double> loadFactors, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;

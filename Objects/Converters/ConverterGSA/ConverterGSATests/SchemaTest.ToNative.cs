@@ -3041,19 +3041,19 @@ namespace ConverterGSATests
     private GSAAlignment GetGsaAlignment()
     {
       var axis = SpeckleGlobalAxis();
-      var gsaGridPlane = new GSAGridPlane(1, "myGsaGridPlane", axis, 1);
-      var gsaAlignment = new GSAAlignment(2, "myGsaAlignment",
-        new GSAGridSurface("myGsaGridSurface", 1, gsaGridPlane, 1, 2,
+      var gsaGridPlane = new GSAGridPlane("myGsaGridPlane", axis, 1, 1);
+      var gsaAlignment = new GSAAlignment("myGsaAlignment",
+        new GSAGridSurface("myGsaGridSurface", gsaGridPlane, 1, 2,
           LoadExpansion.PlaneCorner, GridSurfaceSpanType.OneWay,
-          new List<Base>()),
+          new List<Base>(), 1),
         new List<double>() { 0, 1 },
-        new List<double>() { 3, 3 });
+        new List<double>() { 3, 3 }, 2);
       return gsaAlignment;
     }
 
     private static GSAElement1D GetElement1d1()
     {
-      return new GSAElement1D(1, null, null, ElementType1D.Bar, orientationAngle: 0D){applicationId = "appl1dforGsaElement1d"};
+      return new GSAElement1D(null, null, ElementType1D.Bar, orientationAngle: 0D){applicationId = "appl1dforGsaElement1d"};
     }
 
     #endregion

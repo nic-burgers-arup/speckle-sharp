@@ -8,14 +8,14 @@ namespace Objects.Structural.GSA.Loading
 {
   public class GSALoadBeam : LoadBeam
   {
-    public int nativeId { get; set; }
+    public int? nativeId { get; set; }
     public GSALoadBeam() { }
 
     [SchemaInfo("GSALoadBeam", "Creates a Speckle structural beam (1D elem/member) load for GSA", "GSA", "Loading")]
-    public GSALoadBeam(int nativeId, LoadCase loadCase, List<Base> elements, BeamLoadType loadType, LoadDirection direction, LoadAxisType loadAxisType = LoadAxisType.Global,
+    public GSALoadBeam(LoadCase loadCase, List<Base> elements, BeamLoadType loadType, LoadDirection direction, LoadAxisType loadAxisType = LoadAxisType.Global,
         [SchemaParamInfo("A list that represents load magnitude (number of values varies based on load type - Point: 1, Uniform: 1, Linear: 2, Patch: 2, Tri-linear:2)")] List<double> values = null,
         [SchemaParamInfo("A list that represents load locations (number of values varies based on load type - Point: 1, Uniform: null, Linear: null, Patch: 2, Tri-linear: 2)")] List<double> positions = null,
-        bool isProjected = false)
+        bool isProjected = false, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.loadCase = loadCase;
@@ -26,13 +26,14 @@ namespace Objects.Structural.GSA.Loading
       this.values = values;
       this.positions = positions;
       this.isProjected = isProjected;
+      this.name = name;
     }
 
     [SchemaInfo("GSALoadBeam (user-defined axis)", "Creates a Speckle structural beam (1D elem/member) load (specified for a user-defined axis) for GSA", "GSA", "Loading")]
-    public GSALoadBeam(int nativeId, LoadCase loadCase, List<Base> elements, BeamLoadType loadType, LoadDirection direction, Axis loadAxis,
+    public GSALoadBeam(LoadCase loadCase, List<Base> elements, BeamLoadType loadType, LoadDirection direction, Axis loadAxis,
         [SchemaParamInfo("A list that represents load magnitude (number of values varies based on load type - Point: 1, Uniform: 1, Linear: 2, Patch: 2, Tri-linear:2)")] List<double> values = null,
         [SchemaParamInfo("A list that represents load locations (number of values varies based on load type - Point: 1, Uniform: null, Linear: null, Patch: 2, Tri-linear: 2)")] List<double> positions = null,
-        bool isProjected = false)
+        bool isProjected = false, string name = null, int ? nativeId = null)
     {
       this.nativeId = nativeId;
       this.loadCase = loadCase;
@@ -43,6 +44,7 @@ namespace Objects.Structural.GSA.Loading
       this.positions = positions;
       this.isProjected = isProjected;
       this.nativeId = nativeId;
+      this.name = name;
     }
   }
 

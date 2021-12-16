@@ -47,7 +47,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
 
       //LOAD_TITLE.2 | case | title | type | source | category | dir | include | bridge
       //Note: case will be serialised from the Index field
-      AddItems(ref items, record.Title, LoadCaseTypeToString(record.CaseType), record.Source ?? 0, record.Category.GetStringValue(), 
+      AddItems(ref items, record.Title, LoadCaseTypeToString(record.CaseType), record.Source ?? 1, record.Category.GetStringValue(), 
         AddDirection(), record.Include.GetStringValue());
       if (record.Bridge != null) AddItems(ref items, AddBridge());
 
