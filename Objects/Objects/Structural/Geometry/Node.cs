@@ -9,7 +9,7 @@ namespace Objects.Structural.Geometry
 {
   public class Node : Base
   {
-    //public int nativeId { get; set; } //equivalent to num record in GWA keyword, can be used as a unique identifier for other software
+    //public int? nativeId { get; set; } //equivalent to num record in GWA keyword, can be used as a unique identifier for other software
     public string name { get; set; }
     public Point basePoint { get; set; }
 
