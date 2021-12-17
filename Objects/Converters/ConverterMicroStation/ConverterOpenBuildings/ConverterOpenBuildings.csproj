@@ -99,6 +99,12 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Bentley.ECObjects.MixedMode3">
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Bentley\OpenBuildings CONNECT Edition\OpenBuildingsDesigner\Assemblies\ECFramework\Bentley.ECObjects.MixedMode3.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="if '$(IsDesktopBuild)' == true OR  $(IsDesktopBuild) == '' (&#xA;&#xA;&#xD;&#xA;&#xD;&#xA;xcopy /Y /S &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;$(AppData)\Speckle\Kits\Objects\&quot;&#xD;&#xA;&#xD;&#xA;)" />
   </Target>

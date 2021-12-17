@@ -4,6 +4,7 @@ using Bentley.DgnPlatformNET.Elements;
 using Bentley.ECObjects;
 using Bentley.ECObjects.Instance;
 using Bentley.ECObjects.Schema;
+using Bentley.ECObjects.XML;
 using Bentley.GeometryNET;
 using Bentley.MstnPlatformNET;
 using Objects.Geometry;
@@ -367,62 +368,41 @@ namespace Objects.Converter.MicroStationOpenRoads
 
     public Element RevitColumnToNative(RevitColumn revitColumn)
     {
-#if (OPENBUILDINGS)
-      DgnFile File = Session.Instance.GetActiveDgnFile();
-      DgnECManager Manager = DgnECManager.Manager;
-
-      string schemaName = "someName";
-
-      IList<ItemTypeLibrary> itemTypeLibraries = GetItemTypeLibraries();
-
-
-      IQueryable<IDgnECInstance> instances = GetInstances(schemaName);
-      IECSchema schema = GetItemTypeSchema(schemaName);
-
-      IECClass[] classes = GetSearchClasses(schema);
-
-
       Line baseLine = revitColumn.baseLine as Line;
-      LineElement lineElement = LineToNative(baseLine);
+      LineElement element = LineToNative(baseLine);
+#if (OPENBUILDINGS)
+      DgnFile file = Session.Instance.GetActiveDgnFile();
+      DgnECManager manager = DgnECManager.Manager;
+
+      string schemaName = "BuildingDataGroup";
+      IECSchema schema = GetItemTypeSchema(schemaName); 
 
 
 
+      //Type2Element element = new Type2Element()
 
-      ECSchema newSchema = new ECSchema(schemaName, 1, 0, schemaName);
-      ECClass streamStateClass = new ECClass(className);
-      ECProperty streamIdProp = new ECProperty("Id", ECObjects.StringType);
-      ECProperty streamDataProp = new ECProperty("StreamData", ECObjects.StringType);
-      streamStateClass.Add(streamIdProp);
-      streamStateClass.Add(streamDataProp);
-      newSchema.AddClass(streamStateClass);
 
-      var status = Manager.ImportSchema(newSchema, File, new ImportSchemaOptions());
-
-      if (status != SchemaImportStatus.Success)
-        return null;
+      string className = "Concrete__x0020__Column";
+      IECClass ecClass = schema.GetClass(className);
 
 
 
-      // Locate Schema using schema locator
-      IECSchema ecSimpleSchema;
+      //ECProperty testProperty = new ECProperty("Id", ECObjects.StringType);
+      //ecClass.Add(testProperty);
 
-      // schemaSearchPath is the path of schema file
-      IECSchemaLocater searchLocater = new SearchPathSchemaFileLocater(schemaSearchPath);
-      ECObjects.AddSchemaLocater(searchLocater);
-      ecSimpleSchema = ECObjects.LocateSchema(schemaName, SchemaMatchType.Exact, null, null);
 
-      // Get a ECClass by name within the context of this schema.
-      IECClass ecClass = ecSimpleSchema.GetClass(schema_widget);
 
-      // Enable the creation of ECInstances of a particular ECClass within a dgn file
-      DgnECInstanceEnabler widgetEnabler = dgnECManager.ObtainInstanceEnabler(activeDgnFile, ecClass);
-      ECDInstance widgetWipInstance = widgetEnabler.SharedWipInstance;
+      // enable the creation of ECInstances of a particular ECClass within a dgn file
+      DgnECInstanceEnabler instanceEnabler = manager.ObtainInstanceEnabler(file, ecClass);
+      ECDInstance wipInstance = instanceEnabler.SharedWipInstance;
 
-      // Set a value to property of ECInstance.
-      widgetWipInstance.SetAsString(property_Name, "ACME Engineering");
+      // set a value to property of ECInstance.
+      string propertyName = "RotationZ";
+      wipInstance.SetAsString(propertyName, "0");
 
-      // Creates an ECInstance on a line element.
-      widgetInstance = widgetEnabler.CreateInstanceOnElement(s_widgetLine, widgetWipInstance, false);
+      // creates an ECInstance on a line element.
+      IDgnECInstance instance = instanceEnabler.CreateInstanceOnElement(element, wipInstance, false);
+#endif
 
 
       if (baseLine is Line)
@@ -437,8 +417,7 @@ namespace Objects.Converter.MicroStationOpenRoads
       {
         throw new SpeckleException("Only lines as base lines supported.");
       }
-#endif
-      throw new NotImplementedException();
+      return element;
     }
 
     public RevitFloor SlabToSpeckle(Dictionary<string, object> properties, List<ICurve> segments, string units = null)

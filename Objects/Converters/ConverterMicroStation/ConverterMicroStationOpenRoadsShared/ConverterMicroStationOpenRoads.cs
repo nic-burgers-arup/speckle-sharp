@@ -334,9 +334,9 @@ namespace Objects.Converter.MicroStationOpenRoads
         case Curve _:
         case Box _:
         case Mesh _:
-          //case RevitColumn _:
+        case RevitColumn _:
           //case Surface _:
-          //case Alignment _:                    ;
+          //case Alignment _:
           return true;
 
         //TODO: This types are not supported in Bentley connectors!
