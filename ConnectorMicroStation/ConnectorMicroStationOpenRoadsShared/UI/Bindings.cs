@@ -645,7 +645,10 @@ namespace Speckle.ConnectorMicroStationOpenRoads.UI
           var layerName = "Unknown";
           if (objLevel != null)
           {
-            layerName = objLevel.Name;
+            if (objLevel.Name != null)
+            {
+              layerName = objLevel.Name;
+            }
           }
 
 #if (OPENROADS || OPENRAIL)
