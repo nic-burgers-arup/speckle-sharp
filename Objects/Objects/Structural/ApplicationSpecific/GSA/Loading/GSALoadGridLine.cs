@@ -15,7 +15,7 @@ namespace Objects.Structural.GSA.Loading
     public GSALoadGridLine() { }
 
     [SchemaInfo("GSALoadGridLine", "Creates a Speckle structural grid line load for GSA", "GSA", "Loading")]
-    public GSALoadGridLine(int nativeId, GSAGridSurface gridSurface, Axis loadAxis, LoadDirection2D direction, Polyline polyline, bool isProjected, List<double> values)
+    public GSALoadGridLine(LoadCase loadCase, GSAGridSurface gridSurface, Axis loadAxis, LoadDirection2D direction, Polyline polyline, bool isProjected, List<double> values, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;

@@ -1146,7 +1146,7 @@ namespace ConverterGSA
       var gsaRecords = LoadCaseToNative(speckleObject);
       var gsaLoadCase = (GsaLoadCase)gsaRecords.First(o => o is GsaLoadCase);
       var speckleLoadCase = (GSALoadCase)speckleObject;
-      gsaLoadCase.Direction = speckleLoadCase.direction.ToNative();
+      //if (speckleLoadCase.direction != null) gsaLoadCase.Direction = speckleLoadCase.direction.ToNative(); //TO DO: figure out if direction keyword is actually used in GSA?
       gsaLoadCase.Include = speckleLoadCase.include.IncludeOptionToNative();
       if (speckleLoadCase.bridge) gsaLoadCase.Bridge = true;
       return gsaRecords;
