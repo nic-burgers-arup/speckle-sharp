@@ -23,7 +23,6 @@ using Plane = Objects.Geometry.Plane;
 using Point = Objects.Geometry.Point;
 using Polyline = Objects.Geometry.Polyline;
 using View3D = Objects.BuiltElements.View3D;
-using RevitColumn = Objects.BuiltElements.Revit.RevitColumn;
 using Station = Objects.BuiltElements.Station;
 using Surface = Objects.Geometry.Surface;
 using Vector = Objects.Geometry.Vector;
@@ -260,9 +259,6 @@ namespace Objects.Converter.MicroStationOpenRoads
         case Mesh o:
           return MeshToNative(o);
 
-        case RevitColumn o:
-          return RevitColumnToNative(o);
-
 #if (OPENROADS || OPENRAIL)
         case Alignment o:
           return AlignmentToNative(o);
@@ -334,7 +330,6 @@ namespace Objects.Converter.MicroStationOpenRoads
         case Curve _:
         case Box _:
         case Mesh _:
-        case RevitColumn _:
           //case Surface _:
           //case Alignment _:
           return true;
