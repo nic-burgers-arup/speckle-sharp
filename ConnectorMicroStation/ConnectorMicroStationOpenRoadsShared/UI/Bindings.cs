@@ -640,12 +640,12 @@ namespace Speckle.ConnectorMicroStationOpenRoads.UI
         string containerName = string.Empty;
         try
         {
-          var levelCache = Model.GetFileLevelCache();
-          var objLevel = levelCache.GetLevel(obj.LevelId);
-          var layerName = "Unknown";
+          FileLevelCache levelCache = Model.GetFileLevelCache();
+          LevelHandle objLevel = levelCache.GetLevel(obj.LevelId);
+          string layerName = "Unknown";
           if (objLevel != null)
           {
-            if (objLevel.Name != null)
+            if (objLevel.Status != LevelCacheErrorCode.CannotFindLevel)
             {
               layerName = objLevel.Name;
             }
