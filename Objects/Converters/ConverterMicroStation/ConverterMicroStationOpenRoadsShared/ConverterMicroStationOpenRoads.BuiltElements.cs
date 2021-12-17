@@ -374,50 +374,76 @@ namespace Objects.Converter.MicroStationOpenRoads
       DgnFile file = Session.Instance.GetActiveDgnFile();
       DgnECManager manager = DgnECManager.Manager;
 
-      string schemaName = "BuildingDataGroup";
-      IECSchema schema = GetItemTypeSchema(schemaName); 
+
+
+      //CellHeaderElement element = new CellHeaderElement();
 
 
 
-      //Type2Element element = new Type2Element()
 
 
-      string className = "Concrete__x0020__Column";
-      IECClass ecClass = schema.GetClass(className);
+      //IEnumerable<IECProperty> properties = ecClass.Properties(false);
+      //properties = ecClass.Properties(true);
 
+      //foreach (IECProperty property in properties)
+      //{
+      //  IECType type = property.Type;
 
+      //}
+
+      //IECClass[] baseClasses = ecClass.BaseClasses;
 
       //ECProperty testProperty = new ECProperty("Id", ECObjects.StringType);
       //ecClass.Add(testProperty);
 
 
 
+      string schemaName = "BuildingDataGroup";
+      IECSchema schema = GetItemTypeSchema(schemaName);
+
+      string className = "Concrete__x0020__Column";
+      IECClass ecClass = schema.GetClass(className);
+
       // enable the creation of ECInstances of a particular ECClass within a dgn file
       DgnECInstanceEnabler instanceEnabler = manager.ObtainInstanceEnabler(file, ecClass);
       ECDInstance wipInstance = instanceEnabler.SharedWipInstance;
 
+
       // set a value to property of ECInstance.
-      string propertyName = "RotationZ";
+      string propertyName = "ROTATION";
       wipInstance.SetAsString(propertyName, "0");
+      //wipInstance.SetAsString("ElementID", "143085");
+      wipInstance.SetAsString("TYPE", "Column");
+      wipInstance.SetAsString("GRADE", "C40");
+
+
+
+
+      IEnumerator<IECPropertyValue> enumerator = wipInstance.GetEnumerator(true, true);
+      while (enumerator.MoveNext())
+      {
+        IECPropertyValue v = enumerator.Current;
+      }
 
       // creates an ECInstance on a line element.
+      bool foo = instanceEnabler.SupportsCreateInstanceOnElement;
       IDgnECInstance instance = instanceEnabler.CreateInstanceOnElement(element, wipInstance, false);
 #endif
 
-
-      if (baseLine is Line)
-      {
-        Point start = ((Line)baseLine).start;
-        Point end = ((Line)baseLine).end;
-        string type = revitColumn.type;
-
-        throw new NotImplementedException();
-      }
-      else
-      {
-        throw new SpeckleException("Only lines as base lines supported.");
-      }
       return element;
+
+      //if (baseLine is Line)
+      //{
+      //  Point start = ((Line)baseLine).start;
+      //  Point end = ((Line)baseLine).end;
+      //  string type = revitColumn.type;
+
+      //  throw new NotImplementedException();
+      //}
+      //else
+      //{
+      //  throw new SpeckleException("Only lines as base lines supported.");
+      //}
     }
 
     public RevitFloor SlabToSpeckle(Dictionary<string, object> properties, List<ICurve> segments, string units = null)
