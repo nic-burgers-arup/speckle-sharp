@@ -1309,7 +1309,7 @@ namespace Speckle.ConnectorGSA.Proxy
       return specs;
     }
 
-    private bool ProcessLoadCaseCombinationSpec(string spec, out List<string> aParts, out List<string> cParts)
+    public static bool ProcessLoadCaseCombinationSpec(string spec, out List<string> aParts, out List<string> cParts)
     {
       aParts = new List<string>();
       cParts = new List<string>();

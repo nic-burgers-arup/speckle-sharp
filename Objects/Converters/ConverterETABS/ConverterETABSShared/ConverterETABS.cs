@@ -12,6 +12,7 @@ using Objects.Converter.ETABS;
 using Speckle.Core.Logging;
 using Objects.Structural.Analysis;
 using Objects.Structural.Results;
+using Objects.Structural.ETABS.Geometry;
 
 namespace Objects.Converter.ETABS
 {
@@ -47,8 +48,7 @@ namespace Objects.Converter.ETABS
 
         public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
 
-
-        public ProgressReport Report { get; private set; } = new ProgressReport();
+    public ProgressReport Report { get; private set; } = new ProgressReport();
 
         public bool CanConvertToNative(Base @object)
         {
@@ -90,7 +90,7 @@ namespace Objects.Converter.ETABS
                     return FrameToNative(o);
                     Report.Log($"Created Element1D {o.id}");
                 case OSG.Element2D o:
-                    return AreaToNative(o);
+          return AreaToNative((ETABSElement2D)o);
                     Report.Log($"Created Element2D {o.id}");
                 case Model o:
                     return ModelToNative(o);
