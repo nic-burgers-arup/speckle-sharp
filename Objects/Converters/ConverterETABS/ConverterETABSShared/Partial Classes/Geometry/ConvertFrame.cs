@@ -4,6 +4,8 @@ using Objects.Geometry;
 using Objects.Structural.Geometry;
 using Objects.Structural.Analysis;
 using Speckle.Core.Models;
+using Objects.Structural.ETABS.Geometry;
+using Objects.Structural.ETABS.Properties;
 using System.Linq;
 using ETABSv1;
 
@@ -11,6 +13,7 @@ namespace Objects.Converter.ETABS
 {
   public partial class ConverterETABS
   {
+  
     public object FrameToNative(Element1D element1D)
     {
       if (GetAllFrameNames(Model).Contains(element1D.name))
@@ -76,35 +79,51 @@ namespace Objects.Converter.ETABS
 
       bool[] end1Release = null;
       bool[] end2Release = null;
+      double[] startV, endV;
+      startV = null;
+      endV = null;
       if (element1D.end1Releases != null && element1D.end2Releases != null)
       {
         end1Release = RestraintToNative(element1D.end1Releases);
         end2Release = RestraintToNative(element1D.end2Releases);
+        startV = PartialRestraintToNative(element1D.end1Releases);
+        endV = PartialRestraintToNative(element1D.end2Releases);
       }
 
-      double[] startV, endV;
-      startV = new double[] { };
-      endV = new double[] { };
 
       if (element1D.orientationAngle != null)
       {
         Model.FrameObj.SetLocalAxes(newFrame, element1D.orientationAngle);
       }
-
+      end1Release = end1Release.Select(b => !b).ToArray();
+      end2Release = end2Release.Select(b => !b).ToArray();
 
       Model.FrameObj.SetReleases(newFrame, ref end1Release, ref end2Release, ref startV, ref endV);
       if (element1D.name != null)
       {
         Model.FrameObj.ChangeName(newFrame, element1D.name);
       }
+      else{
+        Model.FrameObj.ChangeName(newFrame, element1D.id);
+      }
+      if(element1D is ETABSElement1D){ 
+      
+        var ETABSelement1D = (ETABSElement1D)element1D;
+        if (ETABSelement1D.SpandrelAssignment != null) { Model.FrameObj.SetSpandrel(ETABSelement1D.name, ETABSelement1D.SpandrelAssignment); }
+        if (ETABSelement1D.PierAssignment != null) { Model.FrameObj.SetPier(ETABSelement1D.name, ETABSelement1D.PierAssignment); }
+        if (ETABSelement1D.ETABSLinearSpring != null) { Model.FrameObj.SetSpringAssignment(ETABSelement1D.name, ETABSelement1D.ETABSLinearSpring.name); }
+      }
+
+
+
       return element1D.name;
     }
 
-    public Element1D FrameToSpeckle(string name)
+    public ETABSElement1D FrameToSpeckle(string name)
     {
       string units = ModelUnits();
 
-      var speckleStructFrame = new Element1D();
+      var speckleStructFrame = new ETABSElement1D();
 
       speckleStructFrame.name = name;
       string pointI, pointJ;
@@ -189,6 +208,25 @@ namespace Objects.Converter.ETABS
       speckleStructFrame.end1Offset = end1Offset;
       speckleStructFrame.end2Offset = end2Offset;
 
+      string springLineName = null;
+      Model.FrameObj.GetSpringAssignment(name, ref springLineName);
+      if(springLineName!= null){
+        speckleStructFrame.ETABSLinearSpring = LinearSpringToSpeckle(springLineName);
+      }
+
+      string pierAssignment = null;
+      Model.FrameObj.GetPier(name, ref pierAssignment);
+      if(pierAssignment != null){
+        speckleStructFrame.PierAssignment = pierAssignment;
+      }
+
+      string spandrelAssignment = null;
+      Model.FrameObj.GetSpandrel(name, ref spandrelAssignment);
+      if (spandrelAssignment != null)
+      {
+        speckleStructFrame.SpandrelAssignment = spandrelAssignment;
+      }
+
       var GUID = "";
       Model.FrameObj.GetGUID(name, ref GUID);
       speckleStructFrame.applicationId = GUID;
@@ -196,7 +234,6 @@ namespace Objects.Converter.ETABS
       List<string> application_Id = elements.Select(o => o.applicationId).ToList();
       if (!application_Id.Contains(speckleStructFrame.applicationId))
       {
-
         SpeckleModel.elements.Add(speckleStructFrame);
       }
 

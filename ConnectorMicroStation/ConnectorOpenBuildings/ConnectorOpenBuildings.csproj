@@ -38,7 +38,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <IsDesktopBuild Condition="'$(IsDesktopBuild)' == ''">true</IsDesktopBuild>
-  </PropertyGroup>  
+  </PropertyGroup>
   <ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(IsDesktopBuild)' == false">
     <PackageReference Include="Speckle.Bentley.API">
       <Version>1.0.0</Version>
@@ -95,7 +95,7 @@
       <Private>False</Private>
     </Reference>	
   </ItemGroup> 
-  <ItemGroup>  
+  <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -118,7 +118,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="SpeckleOpenBuildings2.cfg">
+    <None Include="Speckle2OpenBuildings.cfg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -140,11 +140,11 @@
       <Version>1.3.6</Version>
     </PackageReference>
   </ItemGroup>
-  <Import Project="..\ConnectorMicroStationOpenRoadsShared\ConnectorMicroStationOpenRoadsShared.projitems" Label="Shared" />
+  <Import Project="..\ConnectorMicroStationOpenShared\ConnectorMicroStationOpenShared.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- POST BUILD EVENTS START -->
   <Target Name="Clean">
-    <RemoveDir Directories="$(TargetDir);$(AppData)\Bentley\OpenBuildingsDesigner\Addins\SpeckleOpenBuildings2" />
+    <RemoveDir Directories="$(TargetDir);$(AppData)\Bentley\OpenBuildingsDesigner\Addins\Speckle2OpenBuildings" />
   </Target>
   <Target Name="AfterBuild">
     <CallTarget Condition="'$(Configuration)' == 'Debug' AND '$(IsDesktopBuild)' == true" Targets="AfterBuildDebug" />
@@ -154,7 +154,8 @@
     <ItemGroup>
       <SourceDLLs Include="$(TargetDir)\**\*.*" />
     </ItemGroup>
-    <Copy DestinationFolder="$(AppData)\Bentley\OpenBuildingsDesigner\Addins\SpeckleOpenBuildings2\%(RecursiveDir)" SourceFiles="@(SourceDLLs)" />
-    <Copy DestinationFolder="$(ProgramData)\Bentley\OpenBuildings CONNECT Edition\Configuration\Organization" SourceFiles="$(TargetDir)\SpeckleOpenBuildings2.cfg" />
+    <Copy DestinationFolder="$(AppData)\Bentley\OpenBuildingsDesigner\Addins\Speckle2OpenBuildings\%(RecursiveDir)" SourceFiles="@(SourceDLLs)" />
+    <Copy DestinationFolder="$(AppData)\Bentley\OpenBuildingsDesigner\Addins\Speckle2OpenBuildings" SourceFiles="$(TargetDir)\ConnectorOpenBuildingsRibbon.xml" />
+    <Copy DestinationFolder="$(ProgramData)\Bentley\OpenBuildings CONNECT Edition\Configuration\Organization" SourceFiles="$(TargetDir)\Speckle2OpenBuildings.cfg" />
   </Target>
 </Project>

@@ -63,7 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="SpeckleMicrostation2.cfg">
+    <None Include="Speckle2MicroStation.cfg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -86,7 +86,7 @@
     <PackageReference Include="Speckle.Bentley.API">
       <Version>1.0.0</Version>
 	  <IncludeAssets>compile</IncludeAssets>
-	  <PrivateAssets>all</PrivateAssets>
+      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>  
   <ItemGroup Condition="'$(IsDesktopBuild)' == true">
@@ -148,11 +148,11 @@
       <Version>1.3.6</Version>
     </PackageReference>
   </ItemGroup>
-  <Import Project="..\ConnectorMicroStationOpenRoadsShared\ConnectorMicroStationOpenRoadsShared.projitems" Label="Shared" />
+  <Import Project="..\ConnectorMicroStationOpenShared\ConnectorMicroStationOpenShared.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- POST BUILD EVENTS START -->
   <Target Name="Clean">
-    <RemoveDir Directories="$(TargetDir);$(AppData)\Bentley\MicroStation\Addins\SpeckleMicroStation2" />
+    <RemoveDir Directories="$(TargetDir);$(AppData)\Bentley\MicroStation\Addins\Speckle2MicroStation" />
   </Target>
   <Target Name="AfterBuild">
     <CallTarget Condition="'$(Configuration)' == 'Debug' AND '$(IsDesktopBuild)' == true" Targets="AfterBuildDebug" />
@@ -162,7 +162,8 @@
     <ItemGroup>
       <SourceDLLs Include="$(TargetDir)\**\*.*" />
     </ItemGroup>
-    <Copy DestinationFolder="$(AppData)\Bentley\MicroStation\Addins\SpeckleMicroStation2\%(RecursiveDir)" SourceFiles="@(SourceDLLs)" />
-    <Copy DestinationFolder="$(ProgramData)\Bentley\Microstation CONNECT Edition\Configuration\Organization" SourceFiles="$(TargetDir)\SpeckleMicrostation2.cfg" />
+    <Copy DestinationFolder="$(AppData)\Bentley\MicroStation\Addins\Speckle2MicroStation\%(RecursiveDir)" SourceFiles="@(SourceDLLs)" />
+    <Copy DestinationFolder="$(AppData)\Bentley\MicroStation\Addins\Speckle2MicroStation" SourceFiles="$(TargetDir)\ConnectorMicroStationRibbon.xml" />
+    <Copy DestinationFolder="$(ProgramData)\Bentley\Microstation CONNECT Edition\Configuration\Organization" SourceFiles="$(TargetDir)\Speckle2MicroStation.cfg" />
   </Target>
 </Project>

@@ -28,6 +28,11 @@ namespace ConverterSNAP
 
     public ProgressReport Report => new ProgressReport();
 
+    public void SetConverterSettings(object settings)
+    {
+      throw new NotImplementedException("This converter does not have any settings.");
+    }
+
     private Dictionary<Type, Func<Base, List<object>>> ToNativeFns;
     private Dictionary<Type, Func<object, bool>> ToSpeckleFns;
 

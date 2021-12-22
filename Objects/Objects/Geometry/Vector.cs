@@ -3,11 +3,12 @@ using Speckle.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Objects.Other;
 using Speckle.Newtonsoft.Json;
 
 namespace Objects.Geometry
 {
-  public class Vector : Base, IHasBoundingBox
+  public class Vector : Base, IHasBoundingBox, ITransformable<Vector>
   {
     /// <summary>
     /// OBSOLETE - This is just here for backwards compatibility.
@@ -112,5 +113,11 @@ namespace Objects.Geometry
     }
     public static Vector operator *(double s, Vector a) => new Vector(s * a.x, s * a.y, s * a.z, a.units);
     public static Vector operator *(Vector a, double s) => s * a;
+
+    public bool TransformTo(Transform transform, out Vector vector)
+    {
+      vector = transform.ApplyToVector(this);
+      return true;
+    }
   }
 }
