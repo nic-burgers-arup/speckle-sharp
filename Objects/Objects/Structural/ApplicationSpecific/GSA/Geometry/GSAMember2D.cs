@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Objects.Geometry;
 using Objects.Structural.Geometry;
 using Objects.Structural.Properties;
+using System.Linq;
 
 namespace Objects.Structural.GSA.Geometry
 {
@@ -18,6 +19,7 @@ namespace Objects.Structural.GSA.Geometry
     public double targetMeshSize { get; set; }
     public List<List<Node>> voids { get; set; }
     public MemberType2D memberType { get; set; }
+    
 
     public GSAMember2D() { }
 
@@ -33,6 +35,10 @@ namespace Objects.Structural.GSA.Geometry
       this.voids = voids; //needs to be ordered properly (ie. matching the point order of a valid polyline)
       this.offset = offset;
       this.orientationAngle = orientationAngle;
+
+      var coordinates = perimeter.SelectMany(x => x.basePoint.ToList()).ToList();
+      coordinates.AddRange(perimeter[0].basePoint.ToList());
+      this.outline = new Polyline(coordinates);
     }
   }
 }
