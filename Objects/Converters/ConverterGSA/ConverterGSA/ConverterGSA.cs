@@ -36,7 +36,11 @@ namespace ConverterGSA
     public string WebsiteOrEmail => "https://www.oasys-software.com/";
 
     public ProgressReport Report { get; private set; } = new ProgressReport();
-    //public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
+
+    public void SetConverterSettings(object settings)
+    {
+      throw new NotImplementedException("This converter does not have any settings.");
+    }
 
     #endregion ISpeckleConverter props
 

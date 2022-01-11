@@ -62,14 +62,14 @@
   </Groups>
   <Buttons>
     <Button Name="Speckle.ShowUI" Priority="100">
-      <Label>Connector</Label>
-      <Description>Launches the SpeckleOpenRoads Connector</Description>
+      <Label>Connector OpenRoads</Label>
+      <Description>Launches the Speckle OpenRoads Connector</Description>
       <ButtonParams CollapseToSmall="WhenGroupIsSmall" Size="Large">
       </ButtonParams>
       <ButtonData>
         <CommandData Type="UserKeyinCommand">
           <UserKeyinCommand>
-            <Keyin>speckle start</Keyin>
+            <Keyin>speckle speckle</Keyin>
             <Icon Type="NamedIcon">
               <NamedIcon>s2block</NamedIcon>
             </Icon>

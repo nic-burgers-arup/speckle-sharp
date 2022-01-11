@@ -530,7 +530,7 @@ namespace ConverterGSA
       {
         //-- App agnostic --
         name = gsaMemb.Name,
-        type = gsaMemb.Type.ToSpeckle2d(),
+        //type = gsaMemb.Type.ToSpeckle2d(),
         displayMesh = DisplayMeshPolygon(gsaMemb.NodeIndices, color),
         orientationAngle = gsaMemb.Angle ?? 0,
         offset = gsaMemb.Offset2dZ ?? 0,
@@ -543,7 +543,7 @@ namespace ConverterGSA
         colour = gsaMemb.Colour.ToString(),
         isDummy = gsaMemb.Dummy,
         intersectsWithOthers = gsaMemb.IsIntersector,
-        memberType = gsaMemb.Type.ToSpeckle(),
+        memberType = gsaMemb.Type.ToSpeckle2dMember(),
       };
 
       //-- App agnostic --
@@ -2650,8 +2650,8 @@ namespace ConverterGSA
         _faces.Add(new int[] { 0, faceIndices[0], faceIndices[1], faceIndices[2] });
       }
 
-      var faces = _faces.SelectMany(o => o).ToArray();
-      var mesh = new Mesh(vertices.ToArray(), faces);
+      var faces = _faces.SelectMany(o => o).ToList();
+      var mesh = new Mesh(vertices, faces);
 
       return mesh;
     }

@@ -18,7 +18,7 @@
     <DefineConstants>TRACE;OPENBUILDINGS</DefineConstants>
   </PropertyGroup>
 
-  <Import Project="..\ConverterMicroStationOpenRoadsShared\ConverterMicroStationOpenRoadsShared.projitems" Label="Shared" />
+  <Import Project="..\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems" Label="Shared" />
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Core\Core\Core.csproj" />

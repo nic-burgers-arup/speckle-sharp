@@ -208,7 +208,7 @@ namespace ConnectorGSA
       return ((GsaProxy)Instance.GsaModel.Proxy).Clear();
     }
 
-    public static bool LoadDataFromFile(IProgress<string> gwaLoggingProgress = null, IEnumerable<ResultGroup> resultGroups = null, IEnumerable<ResultType> resultTypes = null)
+    public static bool LoadDataFromFile(IProgress<string> gwaLoggingProgress = null, IEnumerable<ResultGroup> resultGroups = null, IEnumerable<ResultType> resultTypes = null, List<string> cases = null, List<int> elemIds = null)
     {
       ((GsaProxy)Instance.GsaModel.Proxy).Clear();
       var loadedCache = UpdateCache(gwaLoggingProgress);
@@ -222,7 +222,7 @@ namespace ConnectorGSA
         }
         foreach (var g in resultGroups)
         {
-          if (!((GsaProxy)Instance.GsaModel.Proxy).LoadResults(g, out int numErrorRows) || numErrorRows > 0)
+          if (!((GsaProxy)Instance.GsaModel.Proxy).LoadResults(g, out int numErrorRows, cases, elemIds) || numErrorRows > 0)
           {
             return false;
           }

@@ -39,14 +39,9 @@ namespace ConnectorGSA
     public bool RunCLI(params string[] args)
     {
       CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-      CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
-
-      Instance.GsaModel = new GsaModel();
+      CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;      
 
       var argPairs = new Dictionary<string, string>();
-
-      var kit = KitManager.GetDefaultKit();
-      var converter = kit.LoadConverter(Applications.GSA);
 
       IProgress<MessageEventArgs> loggingProgress = new Progress<MessageEventArgs>();
       //TO DO: add logging to console
@@ -76,46 +71,6 @@ namespace ConnectorGSA
 
       var sendReceive = (cliMode == "receiver") ? SendReceive.Receive : SendReceive.Send;
 
-      #region display_h_info
-      if (sendReceive == SendReceive.Receive && argPairs.ContainsKey("h"))
-      {
-        Console.WriteLine("\n");
-        Console.WriteLine("Usage: ConnectorGSA.exe receiver\n");
-        Console.WriteLine("\n");
-        Console.Write("Required arguments:\n");
-        Console.Write("--server <server>\t\tAddress of Speckle server\n");
-        Console.Write("--email <email>\t\t\tEmail of account\n");
-        Console.Write("--token <token>\t\tJWT token\n");
-        Console.Write("--file <path>\t\t\tFile to save to. If file does not exist, a new one will be created\n");
-        Console.Write("--streamIDs <streamIDs>\t\tComma-delimited ID of streams to be received\n");
-        Console.WriteLine("\n");
-        Console.Write("Optional arguments:\n");
-        Console.Write("--nodeAllowance <distance>\tMax distance before nodes are not merged\n");
-        return true;
-      }
-      else if (sendReceive == SendReceive.Send && argPairs.ContainsKey("h"))
-      {
-        Console.WriteLine("\n");
-        Console.WriteLine("Usage: ConnectorGSA.exe sender\n");
-        Console.WriteLine("\n");
-        Console.Write("Required arguments:\n");
-        Console.Write("--server <server>\t\tAddress of Speckle server\n");
-        Console.Write("--email <email>\t\t\tEmail of account\n");
-        Console.Write("--token <token>\t\tJWT token\n");
-        Console.Write("--file <path>\t\t\tFile path to open\n");        
-        Console.WriteLine("\n");
-        Console.Write("Optional arguments:\n");
-        Console.Write("--saveAs <path>\t\t\tFile path to save file with stream information.  Default is to use file\n");
-        Console.Write("--designLayerOnly\t\tIgnores analysis information.  Default is to send all data from both layers\n");
-        Console.Write("--sendAllNodes\t\t\tSend all nodes in model. Default is to send only 'meaningful' nodes\n");
-        Console.Write("--result <options>\t\tType of result to send. Each input should be in quotation marks. Comma-delimited\n");
-        Console.Write("--resultCases <cases>\t\tCases to extract results from. Comma-delimited\n");
-        Console.Write("--resultInLocalAxis\t\tSend results calculated at the local axis. Default is global\n");
-        Console.Write("--result1DNumPosition <num>\tNumber of additional result points within 1D elements\n");
-        return true;
-      }
-      #endregion
-
       #region create_argpairs
       for (int index = 1; index < args.Length; index += 2)
       {
@@ -131,7 +86,45 @@ namespace ConnectorGSA
         }
       }
 
-      foreach (var a in (new [] { "server", "file" }))
+      #region display_h_info
+      if (sendReceive == SendReceive.Receive && argPairs.ContainsKey("h"))
+      {
+        Console.WriteLine("\n");
+        Console.WriteLine("Usage: ConnectorGSA.exe receiver\n");
+        Console.WriteLine("\n");
+        Console.Write("Required arguments:\n");
+        Console.Write("--file <path>\t\t\tFile to save to. If file does not exist, a new one will be created\n");
+        Console.Write("--streamIDs <streamIDs>\t\tComma-delimited ID of streams to be received\n");
+        Console.WriteLine("\n");
+        Console.Write("Optional arguments:\n");
+        Console.Write("--server <server>\t\tSpeckle server url. Default is to use the server associated with environment's default account. If a server and token are provided, the associated account is used instead\n");
+        Console.Write("--token <token>\t\t\tAPI token of the account on the provided Speckle server. Default is to use the environment's default account. If server and token are provided, the associated account is used\n");
+        Console.Write("--nodeAllowance <distance>\tMax distance before nodes are not merged\n");
+        return true;
+      }
+      else if (sendReceive == SendReceive.Send && argPairs.ContainsKey("h"))
+      {
+        Console.WriteLine("\n");
+        Console.WriteLine("Usage: ConnectorGSA.exe sender\n");
+        Console.WriteLine("\n");
+        Console.Write("Required arguments:\n");
+        Console.Write("--file <path>\t\t\tFile path of model to open\n");
+        Console.WriteLine("\n");
+        Console.Write("Optional arguments:\n");
+        Console.Write("--server <server>\t\tSpeckle server url. Default is to use the server associated with environment's default account. If a server and token are provided, the associated account is used instead\n");
+        Console.Write("--token <token>\t\t\tAPI token of the account on the provided Speckle server. Default is to use the environment's default account. If server and token are provided, the associated account is used\n");
+        Console.Write("--saveAs <path>\t\t\tFile path to save file with stream information. Default is to use the provided model file\n");
+        Console.Write("--designLayerOnly\t\tIgnores analysis information.  Default is to send all data from both layers\n");
+        Console.Write("--sendAllNodes\t\t\tSend all nodes in model. Default is to send only 'meaningful' nodes\n");
+        Console.Write("--result <options>\t\tType of result to send. Each input should be in quotation marks. Comma-delimited\n");
+        Console.Write("--resultCases <cases>\t\tCases to extract results from. Comma-delimited\n");
+        Console.Write("--resultInLocalAxis\t\tSend results calculated at the local axis. Default is global\n");
+        Console.Write("--result1DNumPosition <num>\tNumber of additional result points within 1D elements\n");
+        return true;
+      }
+      #endregion
+
+      foreach (var a in (new[] { "file" }))
       {
         if (!argPairs.ContainsKey(a))
         {
@@ -142,10 +135,6 @@ namespace ConnectorGSA
       #endregion
 
       // Login
-      if (argPairs.ContainsKey("email"))
-      {
-        EmailAddress = argPairs["email"];
-      }
       if (argPairs.ContainsKey("server"))
       {
         RestApi = argPairs["server"];
@@ -160,20 +149,21 @@ namespace ConnectorGSA
       {
         account = AccountManager.GetDefaultAccount();
         userInfo = account.userInfo;
+        RestApi = account.serverInfo.url;
       }
       else
       {
         userInfo = AccountManager.GetUserInfo(ApiToken, RestApi).Result;
         account = AccountManager.GetAccounts().FirstOrDefault(a => a.userInfo.id == userInfo.id);
       }
-      
+
       var client = new Client(account);
 
       #region file
       // GSA File
       var fileArg = argPairs["file"];
       var filePath = fileArg.StartsWith(".") ? Path.Combine(AssemblyDirectory, fileArg) : fileArg;
-      
+
       //If receiving, then it's valid for a file name not to exist - in this case, it's the file name that a new file should be saved as
       if (!File.Exists(filePath) && sendReceive == SendReceive.Send)
       {
@@ -183,6 +173,8 @@ namespace ConnectorGSA
       }
 
       var saveAsFilePath = (argPairs.ContainsKey("saveAs")) ? argPairs["saveAs"] : filePath;
+
+      Instance.GsaModel = new GsaModel();
 
       if (sendReceive == SendReceive.Receive)
       {
@@ -207,6 +199,9 @@ namespace ConnectorGSA
         return false;
       }
 
+      var kit = KitManager.GetDefaultKit();
+      var converter = kit.LoadConverter(Applications.GSA);
+
       var streamStates = new List<StreamState>();
       bool cliResult = false;
       if (sendReceive == SendReceive.Receive)
@@ -223,10 +218,10 @@ namespace ConnectorGSA
 
           foreach (var streamId in streamIds)
           {
-            var streamState = new StreamState(userInfo.id, RestApi) 
-            { 
-              Stream = new Speckle.Core.Api.Stream() { id = streamId }, 
-              IsReceiving = true 
+            var streamState = new StreamState(userInfo.id, RestApi)
+            {
+              Stream = new Speckle.Core.Api.Stream() { id = streamId },
+              IsReceiving = true
             };
             streamState.RefreshStream(loggingProgress).Wait();
             streamState.Stream.branch = client.StreamGetBranches(streamId, 1).Result.First();
@@ -267,6 +262,7 @@ namespace ConnectorGSA
           }
 
           Console.WriteLine("Receiving complete");
+          Console.WriteLine($"New model file created: {saveAsFilePath}");
 
           return true;
         }).Result;
@@ -276,16 +272,7 @@ namespace ConnectorGSA
         //There seem to be some issues with HTTP requests down the line if this is run on the initial (UI) thread, so this ensures it runs on another thread
         cliResult = Task.Run(() =>
         {
-          if (Instance.GsaModel.SendResults)
-          {
-            Instance.GsaModel.Proxy.PrepareResults(Instance.GsaModel.ResultTypes);
-            foreach (var rg in Instance.GsaModel.ResultGroups)
-            {
-              ((GsaProxy)Instance.GsaModel.Proxy).LoadResults(rg, out int numErrorRows);
-            }
-          }
-
-          Commands.LoadDataFromFile(proxyLoggingProgress); //Ensure all nodes
+          Commands.LoadDataFromFile(proxyLoggingProgress, Instance.GsaModel.ResultGroups, Instance.GsaModel.ResultTypes, Instance.GsaModel.ResultCases); //Ensure all nodes
 
           var objs = Commands.ConvertToSpeckle(converter);
 
@@ -315,7 +302,7 @@ namespace ConnectorGSA
               name = "Results";
             }
 
-            commitObj[name] = obj;
+            commitObj['@' + name] = obj;
           }
 
 
@@ -327,6 +314,8 @@ namespace ConnectorGSA
           var sent = Commands.SendCommit(commitObj, streamState, "", serverTransport).Result;
 
           Console.WriteLine("Sending complete");
+          Console.WriteLine($"New stream created: {streamState.Stream.id}");
+
           return true;
         }).Result;
       }
