@@ -849,7 +849,7 @@ namespace ConnectorGSA
           {
             analIndices.AddRange(analRecords.Select(r => r.Index.Value));
           }
-          if (((GsaCache)Instance.GsaModel.Cache).GetNatives<GsaAnal>(out var comboRecords) && comboRecords != null && comboRecords.Count() > 0)
+          if (((GsaCache)Instance.GsaModel.Cache).GetNatives<GsaCombination>(out var comboRecords) && comboRecords != null && comboRecords.Count() > 0)
           {
             comboIndices.AddRange(comboRecords.Select(r => r.Index.Value));
           }
@@ -883,7 +883,7 @@ namespace ConnectorGSA
           Instance.GsaModel.Proxy.PrepareResults(Instance.GsaModel.ResultTypes);
           foreach (var rg in Instance.GsaModel.ResultGroups)
           {
-            ((GsaProxy)Instance.GsaModel.Proxy).LoadResults(rg, out int numErrorRows);
+            ((GsaProxy)Instance.GsaModel.Proxy).LoadResults(rg, out int numErrorRows, Instance.GsaModel.ResultCases);
           }
 
           percentage += 20;

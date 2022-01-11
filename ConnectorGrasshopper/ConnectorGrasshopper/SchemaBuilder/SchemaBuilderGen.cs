@@ -21,6 +21,336 @@ public class AdaptiveComponentSchemaComponent: CreateSchemaObjectBase {
 }
 
 // This is generated code:
+public class AdSecBarBundleSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecBarBundleSchemaComponent(): base("AdSecBarBundle", "AdSecBarBundle", "Creates a Speckle bar bundle object for AdSec", "Speckle 2 AdSec", "Reinforcement") { }
+    
+    public override Guid ComponentGuid => new Guid("bd50ba54-21cb-01c7-19a9-8af74c7c5b9c");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Reinforcement.AdSecBarBundle.ctor(System.String,System.Int32,System.Double,Objects.Structural.Materials.Material)","Objects.Structural.AdSec.Properties.Reinforcement.AdSecBarBundle");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecCircleGroupSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecCircleGroupSchemaComponent(): base("AdSecCircleGroup", "AdSecCircleGroup", "Creates a Speckle reinforcement group with a circle of bars for AdSec", "Speckle 2 AdSec", "Reinforcement") { }
+    
+    public override Guid ComponentGuid => new Guid("6f7a05ee-452e-916a-4a1d-bf96109a88d8");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Reinforcement.Groups.AdSecCircleGroup.ctor(System.String,Objects.Structural.AdSec.Properties.Reinforcement.AdSecPoint,System.Double,System.Double,Objects.Structural.AdSec.Properties.Reinforcement.Layers.AdSecReinforcementLayer)","Objects.Structural.AdSec.Properties.Reinforcement.Groups.AdSecCircleGroup");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecCruciformSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecCruciformSchemaComponent(): base("Cruciform", "Cruciform", "Creates a Speckle structural cruciform section profile", "Speckle 2 AdSec", "Section Profile") { }
+    
+    public override Guid ComponentGuid => new Guid("8ce71f53-b28f-edde-6578-31980df70d86");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Profiles.AdSecCruciform.ctor(System.String,System.Double,System.Double,System.Double,System.Double)","Objects.Structural.AdSec.Properties.Profiles.AdSecCruciform");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecCSectionSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecCSectionSchemaComponent(): base("General C", "General C", "Creates a Speckle structural C section profile", "Speckle 2 AdSec", "Section Profile") { }
+    
+    public override Guid ComponentGuid => new Guid("21250042-a8c9-09fa-1f36-6ceafd959ffe");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Profiles.AdSecCSection.ctor(System.String,System.Double,System.Double,System.Double,System.Double)","Objects.Structural.AdSec.Properties.Profiles.AdSecCSection");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecEllipseSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecEllipseSchemaComponent(): base("Ellipse", "Ellipse", "Creates a Speckle structural ellipse section profile", "Speckle 2 AdSec", "Section Profile") { }
+    
+    public override Guid ComponentGuid => new Guid("cc008963-9882-3baf-5e86-a0eed4256c87");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Profiles.AdSecEllipse.ctor(System.String,System.Double,System.Double,System.Double)","Objects.Structural.AdSec.Properties.Profiles.AdSecEllipse");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecIAssymetricSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecIAssymetricSchemaComponent(): base("Assymetric I", "Assymetric I", "Creates a Speckle structural assymetric I section profile", "Speckle 2 AdSec", "Section Profile") { }
+    
+    public override Guid ComponentGuid => new Guid("e47cc2e6-2cd3-0831-5e3b-dd617157dbcf");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Profiles.AdSecIAssymetric.ctor(System.String,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double)","Objects.Structural.AdSec.Properties.Profiles.AdSecIAssymetric");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecLayerSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecLayerSchemaComponent(): base("AdSecLayer", "AdSecLayer", "Creates a Speckle reinforcement layer based on a bar bundle for AdSec", "Speckle 2 AdSec", "Reinforcement") { }
+    
+    public override Guid ComponentGuid => new Guid("a76bccec-d69c-44a8-9723-5a8833aa3863");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Reinforcement.Layers.AdSecLayer.ctor(System.String,Objects.Structural.AdSec.Properties.Reinforcement.AdSecBarBundle)","Objects.Structural.AdSec.Properties.Reinforcement.Layers.AdSecLayer");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecLayerByBarCountSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecLayerByBarCountSchemaComponent(): base("AdSecLayerByBarCount", "AdSecLayerByBarCount", "Creates a Speckle reinforcement layer based on a number of bars for AdSec", "Speckle 2 AdSec", "Reinforcement") { }
+    
+    public override Guid ComponentGuid => new Guid("e0cdf35d-a2b4-9ff3-de85-70ac3edbac35");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Reinforcement.Layers.AdSecLayerByBarCount.ctor(System.String,System.Int32,Objects.Structural.AdSec.Properties.Reinforcement.AdSecBarBundle)","Objects.Structural.AdSec.Properties.Reinforcement.Layers.AdSecLayerByBarCount");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecLineGroupSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecLineGroupSchemaComponent(): base("AdSecLineGroup", "AdSecLineGroup", "Creates a Speckle reinforcement group with a line of bars for AdSec", "Speckle 2 AdSec", "Reinforcement") { }
+    
+    public override Guid ComponentGuid => new Guid("6e2727d8-fe13-ff19-2563-8be1992ae307");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Reinforcement.Groups.AdSecLineGroup.ctor(System.String,Objects.Structural.AdSec.Properties.Reinforcement.AdSecPoint,Objects.Structural.AdSec.Properties.Reinforcement.AdSecPoint,Objects.Structural.AdSec.Properties.Reinforcement.Layers.AdSecReinforcementLayer)","Objects.Structural.AdSec.Properties.Reinforcement.Groups.AdSecLineGroup");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecPointSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecPointSchemaComponent(): base("AdSecPoint", "AdSecPoint", "Creates a Speckle reinforcement point object for AdSec", "Speckle 2 AdSec", "Reinforcement") { }
+    
+    public override Guid ComponentGuid => new Guid("e49aad5f-8ce5-f9ff-b1d9-ef6aac2e84bc");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Reinforcement.AdSecPoint.ctor(System.Double,System.Double)","Objects.Structural.AdSec.Properties.Reinforcement.AdSecPoint");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecRectoEllipseSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecRectoEllipseSchemaComponent(): base("Recto Ellipse", "Recto Ellipse", "Creates a Speckle structural rectangular profile with elliptical corners", "Speckle 2 AdSec", "Section Profile") { }
+    
+    public override Guid ComponentGuid => new Guid("786763ef-5676-b6d7-e3fa-15bf7b7839d1");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Profiles.AdSecRectoEllipse.ctor(System.String,System.Double,System.Double,System.Double,System.Double)","Objects.Structural.AdSec.Properties.Profiles.AdSecRectoEllipse");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecReinforcementGroupSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecReinforcementGroupSchemaComponent(): base("AdSecReinforcementGroup", "AdSecReinforcementGroup", "Creates a Speckle reinforcement group for AdSec", "Speckle 2 AdSec", "Reinforcement") { }
+    
+    public override Guid ComponentGuid => new Guid("3fae92f4-152f-2a27-6dc1-fdc5f314cb43");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Reinforcement.Groups.AdSecReinforcementGroup.ctor(System.String)","Objects.Structural.AdSec.Properties.Reinforcement.Groups.AdSecReinforcementGroup");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecReinforcementLayerSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecReinforcementLayerSchemaComponent(): base("AdSecReinforcementLayer", "AdSecReinforcementLayer", "Creates a Speckle reinforcement layer for AdSec", "Speckle 2 AdSec", "Reinforcement") { }
+    
+    public override Guid ComponentGuid => new Guid("af69ec4e-80bc-cc0e-66cf-71eec955e6c8");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Reinforcement.Layers.AdSecReinforcementLayer.ctor(System.String)","Objects.Structural.AdSec.Properties.Reinforcement.Layers.AdSecReinforcementLayer");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecSecantPileSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecSecantPileSchemaComponent(): base("Secant Pile", "Secant Pile", "Creates a Speckle structural secant pile section profile", "Speckle 2 AdSec", "Section Profile") { }
+    
+    public override Guid ComponentGuid => new Guid("6c654e15-2401-7f68-e670-70403440e132");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Profiles.AdSecSecantPile.ctor(System.String,System.Double,System.Double,System.Int32,System.Boolean)","Objects.Structural.AdSec.Properties.Profiles.AdSecSecantPile");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecSectionSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecSectionSchemaComponent(): base("AdSecSection", "AdSecSection", "Creates a Speckle section for AdSec", "Speckle 2 AdSec", "Geometry") { }
+    
+    public override Guid ComponentGuid => new Guid("5efbbd87-116e-7b6d-f053-f3f0f62d0116");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Geometry.AdSecSection.ctor(System.String,Objects.Structural.Materials.Material,Objects.Structural.Properties.Profiles.SectionProfile,Objects.Structural.AdSec.Properties.AdSecSectionProperties,System.Collections.Generic.List`1[Objects.Structural.AdSec.Properties.Reinforcement.Groups.AdSecReinforcementGroup])","Objects.Structural.AdSec.Geometry.AdSecSection");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecSectionPropertiesSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecSectionPropertiesSchemaComponent(): base("AdSecSectionProperties", "AdSecSectionProperties", "Creates Speckle structural section properties for AdSec", "Speckle 2 AdSec", "Section Properties") { }
+    
+    public override Guid ComponentGuid => new Guid("89f78379-8616-8162-969d-6380717d1789");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.AdSecSectionProperties.ctor(System.Double,System.Double,System.Double,System.Double,System.Double,System.Double)","Objects.Structural.AdSec.Properties.AdSecSectionProperties");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecSectionPropertiesSteelSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecSectionPropertiesSteelSchemaComponent(): base("AdSecSectionPropertiesSteel", "AdSecSectionPropertiesSteel", "Creates Speckle structural steel section properties", "Speckle 2 AdSec", "Section Properties") { }
+    
+    public override Guid ComponentGuid => new Guid("fb02ac6c-b6c8-c995-24be-37df6c7fba89");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.AdSecSectionPropertiesSteel.ctor(System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double)","Objects.Structural.AdSec.Properties.AdSecSectionPropertiesSteel");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecSheetPileSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecSheetPileSchemaComponent(): base("Sheet Pile", "Sheet Pile", "Creates a Speckle structural sheet pile section profile", "Speckle 2 AdSec", "Section Profile") { }
+    
+    public override Guid ComponentGuid => new Guid("5140bcf0-70a9-9468-db58-3771d13dbe0e");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Profiles.AdSecSheetPile.ctor(System.String,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double)","Objects.Structural.AdSec.Properties.Profiles.AdSecSheetPile");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecSingleBarsSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecSingleBarsSchemaComponent(): base("AdSecSingleBars", "AdSecSingleBars", "Creates a Speckle reinforcement group with single bars for AdSec", "Speckle 2 AdSec", "Reinforcement") { }
+    
+    public override Guid ComponentGuid => new Guid("c36c1d13-6c12-a185-2604-8bed001f79bc");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Reinforcement.Groups.AdSecSingleBars.ctor(System.String,Objects.Structural.AdSec.Properties.Reinforcement.AdSecBarBundle,System.Collections.Generic.List`1[Objects.Structural.AdSec.Properties.Reinforcement.AdSecPoint])","Objects.Structural.AdSec.Properties.Reinforcement.Groups.AdSecSingleBars");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecStadiumSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecStadiumSchemaComponent(): base("Stadium", "Stadium", "Creates a Speckle structural stadium section profile. It is a profile consisting of a rectangle whose ends are capped off with semicircles", "Speckle 2 AdSec", "Section Profile") { }
+    
+    public override Guid ComponentGuid => new Guid("f28a55dd-d952-d789-9236-8084e0536436");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Profiles.AdSecStadium.ctor(System.String,System.Double,System.Double)","Objects.Structural.AdSec.Properties.Profiles.AdSecStadium");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecTrapezoidSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecTrapezoidSchemaComponent(): base("Trapezoid", "Trapezoid", "Creates a Speckle structural trapezoidal section profile", "Speckle 2 AdSec", "Section Profile") { }
+    
+    public override Guid ComponentGuid => new Guid("9b078e26-f643-1e65-894a-4ced7b9e6e73");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Profiles.AdSecTrapezoid.ctor(System.String,System.Double,System.Double,System.Double)","Objects.Structural.AdSec.Properties.Profiles.AdSecTrapezoid");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class AdSecZSectionSchemaComponent: CreateSchemaObjectBase {
+     
+    public AdSecZSectionSchemaComponent(): base("General Z", "General Z", "Creates a Speckle structural Z section profile", "Speckle 2 AdSec", "Section Profile") { }
+    
+    public override Guid ComponentGuid => new Guid("4e082331-0777-d8d8-56d6-97430a1b2ecf");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.AdSec.Properties.Profiles.AdSecZSection.ctor(System.String,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double)","Objects.Structural.AdSec.Properties.Profiles.AdSecZSection");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
 public class AngleSchemaComponent: CreateSchemaObjectBase {
      
     public AngleSchemaComponent(): base("Angle", "Angle", "Creates a Speckle structural angle section profile", "Speckle 2 Structural", "Section Profile") { }
@@ -435,7 +765,7 @@ public class GSAAlignmentSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Bridge.GSAAlignment.ctor(System.Int32,System.String,Objects.Structural.GSA.Geometry.GSAGridSurface,System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double])","Objects.Structural.GSA.Bridge.GSAAlignment");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Bridge.GSAAlignment.ctor(System.String,Objects.Structural.GSA.Geometry.GSAGridSurface,System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double],System.Nullable`1[System.Int32])","Objects.Structural.GSA.Bridge.GSAAlignment");
         base.AddedToDocument(document);
     }
 }
@@ -450,7 +780,7 @@ public class GSAAnalysisCaseSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Analysis.GSAAnalysisCase.ctor(System.Int32,System.String,Objects.Structural.GSA.Analysis.GSATask,System.Collections.Generic.List`1[Objects.Structural.Loading.LoadCase],System.Collections.Generic.List`1[System.Double])","Objects.Structural.GSA.Analysis.GSAAnalysisCase");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Analysis.GSAAnalysisCase.ctor(System.String,Objects.Structural.GSA.Analysis.GSATask,System.Collections.Generic.List`1[Objects.Structural.Loading.LoadCase],System.Collections.Generic.List`1[System.Double],System.Nullable`1[System.Int32])","Objects.Structural.GSA.Analysis.GSAAnalysisCase");
         base.AddedToDocument(document);
     }
 }
@@ -465,7 +795,7 @@ public class GSAAssemblySchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAAssembly.ctor(System.Int32,System.String,System.Collections.Generic.List`1[Speckle.Core.Models.Base],Objects.Structural.GSA.Geometry.GSANode,Objects.Structural.GSA.Geometry.GSANode,Objects.Structural.GSA.Geometry.GSANode,System.Double,System.Double,System.String,System.Int32,System.String,System.Collections.Generic.List`1[System.Double])","Objects.Structural.GSA.Geometry.GSAAssembly");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAAssembly.ctor(System.String,System.Collections.Generic.List`1[Speckle.Core.Models.Base],Objects.Structural.GSA.Geometry.GSANode,Objects.Structural.GSA.Geometry.GSANode,Objects.Structural.GSA.Geometry.GSANode,System.Double,System.Double,System.String,System.Int32,System.String,System.Collections.Generic.List`1[System.Double],System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSAAssembly");
         base.AddedToDocument(document);
     }
 }
@@ -480,7 +810,7 @@ public class GSAConcreteSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Materials.GSAConcrete.ctor(System.Int32,System.String,System.String,System.String,System.String,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Boolean,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.String)","Objects.Structural.GSA.Materials.GSAConcrete");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Materials.GSAConcrete.ctor(System.String,System.String,System.String,System.String,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Boolean,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Materials.GSAConcrete");
         base.AddedToDocument(document);
     }
 }
@@ -495,7 +825,7 @@ public class GSAElement1DSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAElement1D.ctor(System.Int32,Objects.Geometry.Line,Objects.Structural.Properties.Property1D,Objects.Structural.Geometry.ElementType1D,Objects.Structural.Geometry.Restraint,Objects.Structural.Geometry.Restraint,Objects.Geometry.Vector,Objects.Geometry.Vector,Objects.Geometry.Plane)","Objects.Structural.GSA.Geometry.GSAElement1D");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAElement1D.ctor(Objects.Geometry.Line,Objects.Structural.Properties.Property1D,Objects.Structural.Geometry.ElementType1D,System.String,Objects.Structural.Geometry.Restraint,Objects.Structural.Geometry.Restraint,Objects.Geometry.Vector,Objects.Geometry.Vector,Objects.Geometry.Plane,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSAElement1D");
         base.AddedToDocument(document);
     }
 }
@@ -510,7 +840,7 @@ public class GSAElement1D1SchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAElement1D.ctor(System.Int32,Objects.Geometry.Line,Objects.Structural.Properties.Property1D,Objects.Structural.Geometry.ElementType1D,Objects.Structural.Geometry.Restraint,Objects.Structural.Geometry.Restraint,Objects.Geometry.Vector,Objects.Geometry.Vector,Objects.Structural.Geometry.Node,System.Double)","Objects.Structural.GSA.Geometry.GSAElement1D");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAElement1D.ctor(Objects.Geometry.Line,Objects.Structural.Properties.Property1D,Objects.Structural.Geometry.ElementType1D,System.String,Objects.Structural.Geometry.Restraint,Objects.Structural.Geometry.Restraint,Objects.Geometry.Vector,Objects.Geometry.Vector,Objects.Structural.Geometry.Node,System.Double,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSAElement1D");
         base.AddedToDocument(document);
     }
 }
@@ -525,7 +855,7 @@ public class GSAElement2DSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAElement2D.ctor(System.Int32,System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],Objects.Structural.Properties.Property2D,Objects.Structural.Geometry.ElementType2D,System.String,System.Double,System.Double,System.Int32,System.String,System.Boolean)","Objects.Structural.GSA.Geometry.GSAElement2D");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAElement2D.ctor(System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],Objects.Structural.Properties.Property2D,Objects.Structural.Geometry.ElementType2D,System.String,System.Double,System.Double,System.Int32,System.String,System.Boolean,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSAElement2D");
         base.AddedToDocument(document);
     }
 }
@@ -540,7 +870,7 @@ public class GSAElement3DSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAElement3D.ctor(System.Int32,Objects.Geometry.Mesh,Objects.Structural.Properties.Property3D,Objects.Structural.Geometry.ElementType3D,System.String,System.Double,System.Int32,System.String,System.Boolean)","Objects.Structural.GSA.Geometry.GSAElement3D");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAElement3D.ctor(Objects.Geometry.Mesh,Objects.Structural.Properties.Property3D,Objects.Structural.Geometry.ElementType3D,System.String,System.Double,System.Int32,System.String,System.Boolean,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSAElement3D");
         base.AddedToDocument(document);
     }
 }
@@ -555,7 +885,7 @@ public class GSAGeneralisedRestraintSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAGeneralisedRestraint.ctor(System.Int32,System.String,Objects.Structural.Geometry.Restraint,System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],System.Collections.Generic.List`1[Objects.Structural.GSA.Analysis.GSAStage])","Objects.Structural.GSA.Geometry.GSAGeneralisedRestraint");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAGeneralisedRestraint.ctor(System.String,Objects.Structural.Geometry.Restraint,System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],System.Collections.Generic.List`1[Objects.Structural.GSA.Analysis.GSAStage],System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSAGeneralisedRestraint");
         base.AddedToDocument(document);
     }
 }
@@ -570,7 +900,7 @@ public class GSAGridLineSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAGridLine.ctor(System.Int32,System.String,Objects.ICurve)","Objects.Structural.GSA.Geometry.GSAGridLine");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAGridLine.ctor(System.String,Objects.ICurve,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSAGridLine");
         base.AddedToDocument(document);
     }
 }
@@ -585,7 +915,7 @@ public class GSAGridPlaneSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAGridPlane.ctor(System.Int32,System.String,Objects.Structural.Geometry.Axis,System.Double)","Objects.Structural.GSA.Geometry.GSAGridPlane");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAGridPlane.ctor(System.String,Objects.Structural.Geometry.Axis,System.Double,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSAGridPlane");
         base.AddedToDocument(document);
     }
 }
@@ -600,7 +930,7 @@ public class GSAGridSurfaceSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAGridSurface.ctor(System.String,System.Int32,Objects.Structural.GSA.Geometry.GSAGridPlane,System.Double,System.Double,Objects.Structural.GSA.Geometry.LoadExpansion,Objects.Structural.GSA.Geometry.GridSurfaceSpanType,System.Collections.Generic.List`1[Speckle.Core.Models.Base])","Objects.Structural.GSA.Geometry.GSAGridSurface");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAGridSurface.ctor(System.String,Objects.Structural.GSA.Geometry.GSAGridPlane,System.Double,System.Double,Objects.Structural.GSA.Geometry.LoadExpansion,Objects.Structural.GSA.Geometry.GridSurfaceSpanType,System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSAGridSurface");
         base.AddedToDocument(document);
     }
 }
@@ -615,7 +945,7 @@ public class GSAInfluenceBeamSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Bridge.GSAInfluenceBeam.ctor(System.Int32,System.String,System.Double,Objects.Structural.GSA.Bridge.InfluenceType,Objects.Structural.Loading.LoadDirection,Objects.Structural.GSA.Geometry.GSAElement1D,System.Double)","Objects.Structural.GSA.Bridge.GSAInfluenceBeam");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Bridge.GSAInfluenceBeam.ctor(System.String,System.Double,Objects.Structural.GSA.Bridge.InfluenceType,Objects.Structural.Loading.LoadDirection,Objects.Structural.GSA.Geometry.GSAElement1D,System.Double,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Bridge.GSAInfluenceBeam");
         base.AddedToDocument(document);
     }
 }
@@ -623,14 +953,14 @@ public class GSAInfluenceBeamSchemaComponent: CreateSchemaObjectBase {
 // This is generated code:
 public class GSAInfluenceNodeSchemaComponent: CreateSchemaObjectBase {
      
-    public GSAInfluenceNodeSchemaComponent(): base("GSAInfluenceBeam", "GSAInfluenceBeam", "Creates a Speckle structural node influence effect for GSA (for an influence analysis)", "Speckle 2 GSA", "Bridge") { }
+    public GSAInfluenceNodeSchemaComponent(): base("GSAInfluenceNode", "GSAInfluenceNode", "Creates a Speckle structural node influence effect for GSA (for an influence analysis)", "Speckle 2 GSA", "Bridge") { }
     
     public override Guid ComponentGuid => new Guid("61efde90-bb48-abf4-e69a-87376cab33bd");
     
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Bridge.GSAInfluenceNode.ctor(System.Int32,System.String,System.Double,Objects.Structural.GSA.Bridge.InfluenceType,Objects.Structural.Loading.LoadDirection,Objects.Structural.Geometry.Node,Objects.Structural.Geometry.Axis)","Objects.Structural.GSA.Bridge.GSAInfluenceNode");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Bridge.GSAInfluenceNode.ctor(System.String,System.Double,Objects.Structural.GSA.Bridge.InfluenceType,Objects.Structural.Loading.LoadDirection,Objects.Structural.Geometry.Node,Objects.Structural.Geometry.Axis,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Bridge.GSAInfluenceNode");
         base.AddedToDocument(document);
     }
 }
@@ -645,7 +975,7 @@ public class GSALoadBeamSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadBeam.ctor(System.Int32,Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Speckle.Core.Models.Base],Objects.Structural.Loading.BeamLoadType,Objects.Structural.Loading.LoadDirection,Objects.Structural.LoadAxisType,System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double],System.Boolean)","Objects.Structural.GSA.Loading.GSALoadBeam");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadBeam.ctor(Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Speckle.Core.Models.Base],Objects.Structural.Loading.BeamLoadType,Objects.Structural.Loading.LoadDirection,Objects.Structural.LoadAxisType,System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double],System.Boolean,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadBeam");
         base.AddedToDocument(document);
     }
 }
@@ -660,7 +990,7 @@ public class GSALoadBeam1SchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadBeam.ctor(System.Int32,Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Speckle.Core.Models.Base],Objects.Structural.Loading.BeamLoadType,Objects.Structural.Loading.LoadDirection,Objects.Structural.Geometry.Axis,System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double],System.Boolean)","Objects.Structural.GSA.Loading.GSALoadBeam");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadBeam.ctor(Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Speckle.Core.Models.Base],Objects.Structural.Loading.BeamLoadType,Objects.Structural.Loading.LoadDirection,Objects.Structural.Geometry.Axis,System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double],System.Boolean,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadBeam");
         base.AddedToDocument(document);
     }
 }
@@ -675,7 +1005,7 @@ public class GSALoadCaseSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadCase.ctor(System.Int32,System.String,Objects.Structural.Loading.LoadType,Objects.Structural.Loading.LoadDirection2D,System.String,Objects.Structural.Loading.ActionType,System.String,System.String,System.Boolean)","Objects.Structural.GSA.Loading.GSALoadCase");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadCase.ctor(System.String,Objects.Structural.Loading.LoadType,System.String,Objects.Structural.Loading.ActionType,System.String,System.String,System.Boolean,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadCase");
         base.AddedToDocument(document);
     }
 }
@@ -690,7 +1020,7 @@ public class GSALoadCombinationSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadCombination.ctor(System.Int32,System.String,System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Collections.Generic.List`1[System.Double])","Objects.Structural.GSA.Loading.GSALoadCombination");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadCombination.ctor(System.String,System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Collections.Generic.List`1[System.Double],System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadCombination");
         base.AddedToDocument(document);
     }
 }
@@ -705,7 +1035,7 @@ public class GSALoadFaceSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadFace.ctor(System.Int32,Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Speckle.Core.Models.Base],Objects.Structural.Loading.FaceLoadType,Objects.Structural.Loading.LoadDirection2D,Objects.Structural.LoadAxisType,System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double],System.Boolean)","Objects.Structural.GSA.Loading.GSALoadFace");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadFace.ctor(Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Speckle.Core.Models.Base],Objects.Structural.Loading.FaceLoadType,Objects.Structural.Loading.LoadDirection2D,Objects.Structural.LoadAxisType,System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double],System.Boolean,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadFace");
         base.AddedToDocument(document);
     }
 }
@@ -720,7 +1050,7 @@ public class GSALoadGravitySchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadGravity.ctor(System.Int32,System.String,Objects.Structural.Loading.LoadCase,Objects.Geometry.Vector)","Objects.Structural.GSA.Loading.GSALoadGravity");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadGravity.ctor(Objects.Structural.Loading.LoadCase,Objects.Geometry.Vector,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadGravity");
         base.AddedToDocument(document);
     }
 }
@@ -735,7 +1065,7 @@ public class GSALoadGravity1SchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadGravity.ctor(System.Int32,System.String,Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Speckle.Core.Models.Base],Objects.Geometry.Vector)","Objects.Structural.GSA.Loading.GSALoadGravity");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadGravity.ctor(Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Speckle.Core.Models.Base],Objects.Geometry.Vector,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadGravity");
         base.AddedToDocument(document);
     }
 }
@@ -750,7 +1080,52 @@ public class GSALoadGravity2SchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadGravity.ctor(System.Int32,System.String,Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Collections.Generic.List`1[Speckle.Core.Models.Base],Objects.Geometry.Vector,System.String)","Objects.Structural.GSA.Loading.GSALoadGravity");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadGravity.ctor(Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Collections.Generic.List`1[Speckle.Core.Models.Base],Objects.Geometry.Vector,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadGravity");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class GSALoadGridAreaSchemaComponent: CreateSchemaObjectBase {
+     
+    public GSALoadGridAreaSchemaComponent(): base("GSALoadGridArea", "GSALoadGridArea", "Creates a Speckle structural grid area load for GSA", "Speckle 2 GSA", "Loading") { }
+    
+    public override Guid ComponentGuid => new Guid("241a756f-0a76-4174-91d5-c2e68f458e30");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadGridArea.ctor(Objects.Structural.Loading.LoadCase,Objects.Structural.GSA.Geometry.GSAGridSurface,Objects.Structural.Geometry.Axis,Objects.Structural.Loading.LoadDirection2D,Objects.Geometry.Polyline,System.Boolean,System.Double,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadGridArea");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class GSALoadGridLineSchemaComponent: CreateSchemaObjectBase {
+     
+    public GSALoadGridLineSchemaComponent(): base("GSALoadGridLine", "GSALoadGridLine", "Creates a Speckle structural grid line load for GSA", "Speckle 2 GSA", "Loading") { }
+    
+    public override Guid ComponentGuid => new Guid("eb8b87ac-b3e2-1fae-0522-d46bf681965d");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadGridLine.ctor(Objects.Structural.Loading.LoadCase,Objects.Structural.GSA.Geometry.GSAGridSurface,Objects.Structural.Geometry.Axis,Objects.Structural.Loading.LoadDirection2D,Objects.Geometry.Polyline,System.Boolean,System.Collections.Generic.List`1[System.Double],System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadGridLine");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class GSALoadGridPointSchemaComponent: CreateSchemaObjectBase {
+     
+    public GSALoadGridPointSchemaComponent(): base("GSALoadGridPoint", "GSALoadGridPoint", "Creates a Speckle structural grid point load for GSA", "Speckle 2 GSA", "Loading") { }
+    
+    public override Guid ComponentGuid => new Guid("71ddf41d-e50f-734b-48d6-ce3ca61787a4");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadGridPoint.ctor(Objects.Structural.Loading.LoadCase,Objects.Structural.GSA.Geometry.GSAGridSurface,Objects.Structural.Geometry.Axis,Objects.Structural.Loading.LoadDirection2D,Objects.Geometry.Point,System.Double,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadGridPoint");
         base.AddedToDocument(document);
     }
 }
@@ -765,7 +1140,7 @@ public class GSALoadNodeSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadNode.ctor(System.Int32,System.String,Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Objects.Structural.GSA.Geometry.GSANode],Objects.Structural.Loading.LoadDirection,System.Double)","Objects.Structural.GSA.Loading.GSALoadNode");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadNode.ctor(Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Objects.Structural.GSA.Geometry.GSANode],Objects.Structural.Loading.LoadDirection,System.Double,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadNode");
         base.AddedToDocument(document);
     }
 }
@@ -780,7 +1155,22 @@ public class GSALoadNode1SchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadNode.ctor(System.Int32,System.String,Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],Objects.Structural.Geometry.Axis,Objects.Structural.Loading.LoadDirection,System.Double)","Objects.Structural.GSA.Loading.GSALoadNode");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadNode.ctor(Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],Objects.Structural.Geometry.Axis,Objects.Structural.Loading.LoadDirection,System.Double,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadNode");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class GSALoadThermal2dSchemaComponent: CreateSchemaObjectBase {
+     
+    public GSALoadThermal2dSchemaComponent(): base("GSALoadThermal2d ", "GSALoadThermal2d ", "Creates a Speckle 2d thermal load for GSA", "Speckle 2 GSA", "Loading") { }
+    
+    public override Guid ComponentGuid => new Guid("bd1c82a1-675e-da5f-4fd9-8ebe3459dabe");
+    
+    public override bool Obsolete => false;
+
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadThermal2d.ctor(Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Objects.Structural.Geometry.Element2D],Objects.Structural.GSA.Loading.Thermal2dLoadType,System.Collections.Generic.List`1[System.Double],System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadThermal2d");
         base.AddedToDocument(document);
     }
 }
@@ -795,7 +1185,7 @@ public class GSAMaterialSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Materials.GSAMaterial.ctor(System.Int32,System.String,Objects.Structural.MaterialType,System.String,System.String,System.String,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.String)","Objects.Structural.GSA.Materials.GSAMaterial");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Materials.GSAMaterial.ctor(System.String,Objects.Structural.MaterialType,System.String,System.String,System.String,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Materials.GSAMaterial");
         base.AddedToDocument(document);
     }
 }
@@ -810,7 +1200,7 @@ public class GSAMember1DSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAMember1D.ctor(System.Int32,Objects.Geometry.Line,Objects.Structural.Properties.Property1D,Objects.Structural.Geometry.ElementType1D,Objects.Structural.Geometry.Restraint,Objects.Structural.Geometry.Restraint,Objects.Geometry.Vector,Objects.Geometry.Vector,Objects.Geometry.Plane)","Objects.Structural.GSA.Geometry.GSAMember1D");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAMember1D.ctor(Objects.Geometry.Line,Objects.Structural.Properties.Property1D,Objects.Structural.Geometry.ElementType1D,Objects.Structural.Geometry.Restraint,Objects.Structural.Geometry.Restraint,Objects.Geometry.Vector,Objects.Geometry.Vector,Objects.Geometry.Plane,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSAMember1D");
         base.AddedToDocument(document);
     }
 }
@@ -825,7 +1215,7 @@ public class GSAMember1D1SchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAMember1D.ctor(System.Int32,Objects.Geometry.Line,Objects.Structural.Properties.Property1D,Objects.Structural.Geometry.ElementType1D,Objects.Structural.Geometry.Restraint,Objects.Structural.Geometry.Restraint,Objects.Geometry.Vector,Objects.Geometry.Vector,Objects.Structural.GSA.Geometry.GSANode,System.Double)","Objects.Structural.GSA.Geometry.GSAMember1D");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAMember1D.ctor(Objects.Geometry.Line,Objects.Structural.Properties.Property1D,Objects.Structural.Geometry.ElementType1D,Objects.Structural.Geometry.Restraint,Objects.Structural.Geometry.Restraint,Objects.Geometry.Vector,Objects.Geometry.Vector,Objects.Structural.GSA.Geometry.GSANode,System.Double,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSAMember1D");
         base.AddedToDocument(document);
     }
 }
@@ -840,7 +1230,7 @@ public class GSAMember2DSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAMember2D.ctor(System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],Objects.Structural.Properties.Property2D,Objects.Structural.Geometry.ElementType2D,System.Collections.Generic.List`1[System.Collections.Generic.List`1[Objects.Structural.Geometry.Node]],System.Double,System.Double)","Objects.Structural.GSA.Geometry.GSAMember2D");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAMember2D.ctor(System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],Objects.Structural.Properties.Property2D,Objects.Structural.Geometry.ElementType2D,System.Collections.Generic.List`1[System.Collections.Generic.List`1[Objects.Structural.Geometry.Node]],System.Double,System.Double,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSAMember2D");
         base.AddedToDocument(document);
     }
 }
@@ -855,7 +1245,7 @@ public class GSANodeSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSANode.ctor(System.Int32,Objects.Geometry.Point,Objects.Structural.Geometry.Restraint,Objects.Structural.Geometry.Axis,Objects.Structural.Properties.PropertySpring,Objects.Structural.Properties.PropertyMass,Objects.Structural.Properties.PropertyDamper,System.Double,System.String)","Objects.Structural.GSA.Geometry.GSANode");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSANode.ctor(Objects.Geometry.Point,Objects.Structural.Geometry.Restraint,Objects.Structural.Geometry.Axis,Objects.Structural.Properties.PropertySpring,Objects.Structural.Properties.PropertyMass,Objects.Structural.Properties.PropertyDamper,System.Double,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSANode");
         base.AddedToDocument(document);
     }
 }
@@ -870,7 +1260,7 @@ public class GSAPathSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Bridge.GSAPath.ctor(System.Int32,System.String,Objects.Structural.GSA.Bridge.PathType,System.Int32,Objects.Structural.GSA.Bridge.GSAAlignment,System.Double,System.Double,System.Double,System.Int32)","Objects.Structural.GSA.Bridge.GSAPath");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Bridge.GSAPath.ctor(System.String,Objects.Structural.GSA.Bridge.PathType,System.Int32,Objects.Structural.GSA.Bridge.GSAAlignment,System.Double,System.Double,System.Double,System.Int32,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Bridge.GSAPath");
         base.AddedToDocument(document);
     }
 }
@@ -885,7 +1275,7 @@ public class GSAPolylineSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSAPolyline.ctor(System.String,System.Int32,System.Collections.Generic.IEnumerable`1[System.Double],System.String,Objects.Structural.GSA.Geometry.GSAGridPlane)","Objects.Structural.GSA.Loading.GSAPolyline");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSAPolyline.ctor(System.String,System.Collections.Generic.IEnumerable`1[System.Double],System.String,Objects.Structural.GSA.Geometry.GSAGridPlane,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSAPolyline");
         base.AddedToDocument(document);
     }
 }
@@ -900,7 +1290,7 @@ public class GSAProperty1DSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Properties.GSAProperty1D.ctor(System.Int32,System.String,Objects.Structural.Materials.Material,Objects.Structural.Properties.Profiles.SectionProfile,System.Double,System.Double)","Objects.Structural.GSA.Properties.GSAProperty1D");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Properties.GSAProperty1D.ctor(System.String,Objects.Structural.Materials.Material,Objects.Structural.Properties.Profiles.SectionProfile,System.Double,System.Double,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Properties.GSAProperty1D");
         base.AddedToDocument(document);
     }
 }
@@ -915,7 +1305,7 @@ public class GSAProperty2DSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Properties.GSAProperty2D.ctor(System.Int32,System.String,Objects.Structural.Materials.Material,System.Double)","Objects.Structural.GSA.Properties.GSAProperty2D");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Properties.GSAProperty2D.ctor(System.String,Objects.Structural.Materials.Material,System.Double,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Properties.GSAProperty2D");
         base.AddedToDocument(document);
     }
 }
@@ -930,7 +1320,7 @@ public class GSARigidConstraintSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSARigidConstraint.ctor(System.String,System.Int32,Objects.Structural.Geometry.Node,System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],Speckle.Core.Models.Base,System.Collections.Generic.List`1[Objects.Structural.GSA.Analysis.GSAStage],Objects.Structural.GSA.Geometry.LinkageType,System.Collections.Generic.Dictionary`2[Objects.Structural.GSA.Geometry.AxisDirection6,System.Collections.Generic.List`1[Objects.Structural.GSA.Geometry.AxisDirection6]])","Objects.Structural.GSA.Geometry.GSARigidConstraint");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSARigidConstraint.ctor(System.String,Objects.Structural.Geometry.Node,System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],Speckle.Core.Models.Base,System.Collections.Generic.List`1[Objects.Structural.GSA.Analysis.GSAStage],Objects.Structural.GSA.Geometry.LinkageType,System.Collections.Generic.Dictionary`2[Objects.Structural.GSA.Geometry.AxisDirection6,System.Collections.Generic.List`1[Objects.Structural.GSA.Geometry.AxisDirection6]],System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSARigidConstraint");
         base.AddedToDocument(document);
     }
 }
@@ -945,7 +1335,7 @@ public class GSAStageSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Analysis.GSAStage.ctor(System.Int32,System.String,System.String,System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Double,System.Int32,System.Collections.Generic.List`1[Speckle.Core.Models.Base])","Objects.Structural.GSA.Analysis.GSAStage");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Analysis.GSAStage.ctor(System.String,System.String,System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Double,System.Int32,System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Nullable`1[System.Int32])","Objects.Structural.GSA.Analysis.GSAStage");
         base.AddedToDocument(document);
     }
 }
@@ -953,14 +1343,14 @@ public class GSAStageSchemaComponent: CreateSchemaObjectBase {
 // This is generated code:
 public class GSASteelSchemaComponent: CreateSchemaObjectBase {
      
-    public GSASteelSchemaComponent(): base("Steel", "Steel", "Creates a Speckle structural material for steel (to be used in structural analysis models)", "Speckle 2 Structural", "Materials") { }
+    public GSASteelSchemaComponent(): base("GSASteel", "GSASteel", "Creates a Speckle structural material for steel (to be used in structural analysis models)", "Speckle 2 Structural", "Materials") { }
     
     public override Guid ComponentGuid => new Guid("073f9f26-2cfb-9f2d-fbcd-67ce9904872e");
     
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Materials.GSASteel.ctor(System.Int32,System.String,System.String,System.String,System.String,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.String)","Objects.Structural.GSA.Materials.GSASteel");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Materials.GSASteel.ctor(System.String,System.String,System.String,System.String,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Materials.GSASteel");
         base.AddedToDocument(document);
     }
 }
@@ -975,7 +1365,7 @@ public class GSAStoreySchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAStorey.ctor(System.Int32,System.String,Objects.Structural.Geometry.Axis,System.Double,System.Double,System.Double)","Objects.Structural.GSA.Geometry.GSAStorey");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAStorey.ctor(System.String,Objects.Structural.Geometry.Axis,System.Double,System.Double,System.Double,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSAStorey");
         base.AddedToDocument(document);
     }
 }
@@ -990,7 +1380,7 @@ public class GSATaskSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Analysis.GSATask.ctor(System.Int32,System.String)","Objects.Structural.GSA.Analysis.GSATask");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Analysis.GSATask.ctor(System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Analysis.GSATask");
         base.AddedToDocument(document);
     }
 }
@@ -1005,7 +1395,7 @@ public class GSAUserVehicleSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Bridge.GSAUserVehicle.ctor(System.Int32,System.String,System.Double,System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double])","Objects.Structural.GSA.Bridge.GSAUserVehicle");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Bridge.GSAUserVehicle.ctor(System.String,System.Double,System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[System.Double],System.Nullable`1[System.Int32])","Objects.Structural.GSA.Bridge.GSAUserVehicle");
         base.AddedToDocument(document);
     }
 }
@@ -1350,7 +1740,7 @@ public class ParameterSchemaComponent: CreateSchemaObjectBase {
     public override bool Obsolete => false;
 
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.BuiltElements.Revit.Parameter.ctor(System.String,System.Object)","Objects.BuiltElements.Revit.Parameter");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.BuiltElements.Revit.Parameter.ctor(System.String,System.Object,System.String)","Objects.BuiltElements.Revit.Parameter");
         base.AddedToDocument(document);
     }
 }

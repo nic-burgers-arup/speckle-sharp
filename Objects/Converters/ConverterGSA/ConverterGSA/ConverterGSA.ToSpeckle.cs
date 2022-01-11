@@ -303,7 +303,7 @@ namespace ConverterGSA
       {
         Report.ConversionErrors.Add(new Exception("GsaElement1dToSpeckle: "
           + "Error converting 1D element with application id (" + speckleElement1d.applicationId + "). "
-          + "There must be atleast 2 nodes to define the element"));
+          + "There must be at least 2 nodes to define the element"));
         return null;
       }
       speckleElement1d.baseLine = new Line(speckleElement1d.end1Node.basePoint, speckleElement1d.end2Node.basePoint);
@@ -362,7 +362,7 @@ namespace ConverterGSA
       {
         Report.ConversionErrors.Add(new Exception("GsaElement2dToSpeckle: "
           + "Error converting 2D element with application id (" + speckleElement2d.applicationId + "). "
-          + "There must be atleast 3 nodes to define the element"));
+          + "There must be at least 3 nodes to define the element"));
         return null;
       }
       if (gsaEl.Index.IsIndex()) speckleElement2d.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaEl>(gsaEl.Index.Value);
@@ -445,7 +445,7 @@ namespace ConverterGSA
       {
         Report.ConversionErrors.Add(new Exception("GsaMember1dToSpeckle: "
           + "Error converting 1D member with application id (" + speckleMember1d.applicationId + "). "
-          + "There must be atleast 2 nodes to define the member"));
+          + "There must be at least 2 nodes to define the member"));
         return null;
       }
       speckleMember1d.baseLine = GetBaseLine(speckleMember1d.topology.Select(n => n.basePoint).ToList());
@@ -556,7 +556,7 @@ namespace ConverterGSA
       {
         Report.ConversionErrors.Add(new Exception("GsaMember2dToSpeckle: "
           + "Error converting 2D member with application id (" + speckleMember2d.applicationId + "). "
-          + "There must be atleast 3 nodes to define the member"));
+          + "There must be at least 3 nodes to define the member"));
         return null;
       }
       if (gsaMemb.Index.IsIndex()) speckleMember2d.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaMemb>(gsaMemb.Index.Value);
@@ -1593,11 +1593,20 @@ namespace ConverterGSA
           var result = new ResultNode()
           {
             description = "",
-            permutation = "",
             node = speckleNode,
           };
 
-          var gsaCaseIndex = Convert.ToInt32(gsaResult.CaseId.Substring(1));
+          var indexString = gsaResult.CaseId.Substring(1);
+          if (!int.TryParse(indexString, out int gsaCaseIndex))
+          {
+            if(indexString.Any(x => char.IsLetter(x))){
+              var id = new string(indexString.TakeWhile(Char.IsDigit).ToArray());
+              if (!int.TryParse(id, out gsaCaseIndex))
+                return false;
+              result.permutation = indexString.Replace(id, "");
+            }
+          }
+
           if (gsaResult.CaseId[0] == 'A')
           {
             result.resultCase = GetAnalysisCaseFromIndex(gsaCaseIndex);
@@ -2650,7 +2659,7 @@ namespace ConverterGSA
     private Mesh DisplayMeshPolygon(List<int> gsaNodeIndicies, System.Drawing.Color color = default)
     {      
       var edgeVertices = new List<double>();
-      var topology = gsaNodeIndicies.Select(i => GetNodeFromIndex(i)).ToList();
+      var topology = gsaNodeIndicies.Distinct().Select(i => GetNodeFromIndex(i)).ToList();
       foreach (var node in topology)
       {
         edgeVertices.AddRange(new double[] { node.basePoint.x, node.basePoint.y, node.basePoint.z });
@@ -3629,6 +3638,7 @@ namespace ConverterGSA
         { Section1dStandardProfileType.Circular, GetProfileStandardCircular },
         { Section1dStandardProfileType.CircularHollow, GetProfileStandardCHS },
         { Section1dStandardProfileType.ISection, GetProfileStandardISection },
+        { Section1dStandardProfileType.GeneralI, GetProfileStandardGeneralISection },
         { Section1dStandardProfileType.Tee, GetProfileStandardTee },
         { Section1dStandardProfileType.Angle, GetProfileStandardAngle },
         { Section1dStandardProfileType.Channel, GetProfileStandardChannel },
@@ -3701,6 +3711,25 @@ namespace ConverterGSA
       if (p.tf.HasValue) speckleProfile.flangeThickness = p.tf.Value;
       return speckleProfile;
     }
+
+    private SectionProfile GetProfileStandardGeneralISection(ProfileDetailsStandard gsaProfile)
+    {
+      var p = (ProfileDetailsGeneralI)gsaProfile;
+      var speckleProfile = new SectionProfile()
+      {
+        name = "",
+        shapeType = ShapeType.I,
+      };
+      if (p.d.HasValue) speckleProfile["depth"] = p.d.Value;
+      if (p.bt.HasValue) speckleProfile["topFlangeWidth"] = p.bb.Value;
+      if (p.bb.HasValue) speckleProfile["botFlangeWidth"] = p.bb.Value;
+      if (p.tft.HasValue) speckleProfile["topFlangeThickness"] = p.tft.Value;
+      if (p.tfb.HasValue) speckleProfile["botFlangeThickness"] = p.tfb.Value;
+      if (p.tw.HasValue) speckleProfile["webThickness"] = p.tw.Value;
+
+      return speckleProfile;
+    }
+
     private SectionProfile GetProfileStandardTee(ProfileDetailsStandard gsaProfile)
     {
       var p = (ProfileDetailsTwoThickness)gsaProfile;

@@ -210,9 +210,12 @@ namespace Speckle.ConnectorRevit
     }
 
 
-    //list of currently supported Categories
+    //list of currently supported Categories (for sending only)
+    //exact copy of the one in the ConverterRevitShared.Categories
+    //until issue https://github.com/specklesystems/speckle-sharp/issues/392 is resolved
     private static List<BuiltInCategory> SupportedBuiltInCategories = new List<BuiltInCategory>{
 
+      BuiltInCategory.OST_Areas,
       BuiltInCategory.OST_AnalyticalNodes,
       BuiltInCategory.OST_BeamAnalytical,
       BuiltInCategory.OST_ColumnAnalytical,
@@ -254,6 +257,7 @@ namespace Speckle.ConnectorRevit
       BuiltInCategory.OST_StairsRailing,
       BuiltInCategory.OST_RailingSupport,
       BuiltInCategory.OST_RailingTermination,
+      BuiltInCategory.OST_Rebar,
       BuiltInCategory.OST_Roads,
       BuiltInCategory.OST_RoofSoffit,
       BuiltInCategory.OST_Roofs,

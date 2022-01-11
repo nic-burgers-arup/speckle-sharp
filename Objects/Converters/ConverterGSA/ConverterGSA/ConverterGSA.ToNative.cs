@@ -541,7 +541,7 @@ namespace ConverterGSA
         Type = ToNative(speckleMember.memberType, 1),
         Colour = speckleMember.colour?.ColourToNative() ?? Colour.NotSet,
         Dummy = speckleMember.isDummy,
-        IsIntersector = speckleMember.intersectsWithOthers,
+        IsIntersector = true,
         OrientationNodeIndex = speckleMember.orientationNode.NodeAt(conversionFactors),
         //TaperOffsetPercentageEnd1 - currently not supported
         //TaperOffsetPercentageEnd2 - currently not supported
@@ -683,7 +683,7 @@ namespace ConverterGSA
         Type = ToNative(speckleMember.memberType, 2),
         Colour = speckleMember.colour?.ColourToNative() ?? Colour.NotSet,
         Dummy = speckleMember.isDummy,
-        IsIntersector = speckleMember.intersectsWithOthers,
+        IsIntersector = true,
 
         //Dynamic properties
         Fire = speckleMember.GetDynamicEnum<FireResistance>("Fire", dynamicMembers),
@@ -1146,7 +1146,7 @@ namespace ConverterGSA
       var gsaRecords = LoadCaseToNative(speckleObject);
       var gsaLoadCase = (GsaLoadCase)gsaRecords.First(o => o is GsaLoadCase);
       var speckleLoadCase = (GSALoadCase)speckleObject;
-      gsaLoadCase.Direction = speckleLoadCase.direction.ToNative();
+      //if (speckleLoadCase.direction != null) gsaLoadCase.Direction = speckleLoadCase.direction.ToNative(); //TO DO: figure out if direction keyword is actually used in GSA?
       gsaLoadCase.Include = speckleLoadCase.include.IncludeOptionToNative();
       if (speckleLoadCase.bridge) gsaLoadCase.Bridge = true;
       return gsaRecords;
@@ -1731,7 +1731,13 @@ namespace ConverterGSA
       var dynamicMembers = speckleConcrete.GetMembers();
 
       //Get dynamic properties from base object
-      gsaConcrete.Mat = GetMat(speckleConcrete.GetDynamicValue<Base>("Mat", dynamicMembers));
+
+      //The speckle object could have its own override of the material properties
+      var speckleMat = GetMat(speckleConcrete.GetDynamicValue<Base>("Mat", dynamicMembers));
+      if (speckleMat != null)
+      {
+        gsaConcrete.Mat = speckleMat;
+      }
       gsaConcrete.Type = speckleConcrete.GetDynamicEnum<MatConcreteType>("Type", dynamicMembers);
       gsaConcrete.Cement = speckleConcrete.GetDynamicEnum<MatConcreteCement>("Cement", dynamicMembers);
       gsaConcrete.XdMin = speckleConcrete.GetDynamicValue<double>("XdMin", dynamicMembers);
@@ -2015,6 +2021,7 @@ namespace ConverterGSA
         {
           sectionComp.MaterialType = Section1dMaterialType.STEEL;
           sectionComp.MaterialIndex = IndexByConversionOrLookup<GsaMatSteel>(speckleProperty.material, ref retList);
+          //var steelMaterial = (Steel)speckleProperty.material;
           var gsaSectionSteel = new SectionSteel()
           {
             //GradeIndex = 0,
@@ -2188,9 +2195,18 @@ namespace ConverterGSA
         }
         else if (sectionProfile.shapeType == ShapeType.I)
         {
-          var p = (ISection)sectionProfile;
-          gsaProfileDetails = new ProfileDetailsTwoThickness() { ProfileType = Section1dStandardProfileType.ISection };
-          ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth * lengthFactor, p.width * lengthFactor, p.webThickness * lengthFactor, p.flangeThickness * lengthFactor);
+          var p = sectionProfile as ISection;
+          if (p != null)
+          {
+            gsaProfileDetails = new ProfileDetailsTwoThickness() { ProfileType = Section1dStandardProfileType.ISection };
+            ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth * lengthFactor, p.width * lengthFactor, p.webThickness * lengthFactor, p.flangeThickness * lengthFactor);
+          }
+          else
+          {
+            gsaProfileDetails = new ProfileDetailsGeneralI() { ProfileType = Section1dStandardProfileType.GeneralI };
+            ((ProfileDetailsStandard)gsaProfileDetails).SetValues(sectionProfile["depth"].ToDouble() * lengthFactor, sectionProfile["topFlangeWidth"].ToDouble() * lengthFactor, sectionProfile["botFlangeWidth"].ToDouble() * lengthFactor,
+              sectionProfile["topFlangeThickness"].ToDouble() * lengthFactor, sectionProfile["botFlangeThickness"].ToDouble() * lengthFactor, sectionProfile["webThickness"].ToDouble() * lengthFactor);
+          }
         }
         else if (sectionProfile.shapeType == ShapeType.Tee)
         {
@@ -2278,7 +2294,19 @@ namespace ConverterGSA
         VolumePercentage = speckleProperty.modifierVolume < 0 ? -(double?)speckleProperty.modifierVolume * 100 : null,
       };
 
-      if (speckleProperty.orientationAxis == null)
+      if (speckleProperty.material != null)
+      {
+        if (speckleProperty.material.materialType == MaterialType.Concrete)
+        {
+          gsaProp2d.MatType = Property2dMaterialType.Concrete;
+        }
+        else if (speckleProperty.material.materialType == MaterialType.Steel)
+        {
+          gsaProp2d.MatType = Property2dMaterialType.Steel;
+        }
+      }
+
+      if (speckleProperty.orientationAxis != null)
       {
         gsaProp2d.AxisRefType = AxisRefType.Local;
       }
@@ -2641,27 +2669,25 @@ namespace ConverterGSA
       gsaAxisIndex = null;
       if (speckleAxis == null)
       {
-        return false;
+        gsaAxisRefType = NodeAxisRefType.Global;
+        return true;
       }
-      else if (speckleAxis.definition != null)
+      if (speckleAxis.definition.IsGlobal())
       {
-        if (speckleAxis.definition.IsGlobal())
-        {
-          gsaAxisRefType = NodeAxisRefType.Global;
-        }
-        else if (speckleAxis.definition.IsXElevation())
-        {
-          gsaAxisRefType = NodeAxisRefType.XElevation;
-        }
-        else if (speckleAxis.definition.IsYElevation())
-        {
-          gsaAxisRefType = NodeAxisRefType.YElevation;
-        }
-        else if (speckleAxis.definition.IsVertical())
-        {
-          gsaAxisRefType = NodeAxisRefType.Vertical;
-        }
+        gsaAxisRefType = NodeAxisRefType.Global;
       }
+      else if (speckleAxis.definition.IsXElevation())
+      {
+        gsaAxisRefType = NodeAxisRefType.XElevation;
+      }
+      else if (speckleAxis.definition.IsYElevation())
+      {
+        gsaAxisRefType = NodeAxisRefType.YElevation;
+      }
+      else if (speckleAxis.definition.IsVertical())
+      {
+        gsaAxisRefType = NodeAxisRefType.Vertical;
+      }      
       else if (speckleAxis.applicationId != null)
       {
         gsaAxisRefType = NodeAxisRefType.Reference;
