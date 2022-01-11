@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30011.22
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Objects", "Objects\Objects.csproj", "{95C2153A-642E-4779-90C0-BFF56FC561A9}"
 EndProject
@@ -85,6 +85,8 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ConverterMicroStationOpenRo
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ConverterETABS", "ConverterETABS", "{A1573A36-5261-4461-AD58-4EDEBEA1BE5C}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ConverterMicroStationOpenShared", "Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.shproj", "{FD80778B-3327-45DF-A343-CA476650D8A6}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Converters\ConverterRevit\ConverterRevitShared\ConverterRevitShared.projitems*{0bcb32cf-a3cf-4a6a-a9f8-dfe5d85d608c}*SharedItemsImports = 5
@@ -95,7 +97,7 @@ Global
 		Converters\ConverterAutocadCivil\ConverterAutocadCivilShared\ConverterAutocadCivilShared.projitems*{2d0f9f8a-2e89-4780-978a-cd92d6d7b843}*SharedItemsImports = 13
 		Converters\ConverterRevit\ConverterRevitShared\ConverterRevitShared.projitems*{2dcd648d-dca5-4d2a-8b14-ad2cb85d24b0}*SharedItemsImports = 13
 		Converters\ConverterETABS\ConverterETABSShared\ConverterETABSShared.projitems*{46d1f214-59d9-40d2-9c0c-464941be5de0}*SharedItemsImports = 5
-		Converters\ConverterMicroStation\ConverterMicroStationOpenRoadsShared\ConverterMicroStationOpenRoadsShared.projitems*{49cf9c22-dbc2-45b0-b119-36f0bfa7da44}*SharedItemsImports = 5
+		Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{49cf9c22-dbc2-45b0-b119-36f0bfa7da44}*SharedItemsImports = 5
 		Converters\ConverterDynamo\ConverterDynamoShared\ConverterDynamoShared.projitems*{4f16a993-7d11-4565-a2a5-910899919e00}*SharedItemsImports = 5
 		Converters\ConverterRevit\ConverterRevitShared\ConverterRevitShared.projitems*{4f16a993-7d11-4565-a2a5-910899919e00}*SharedItemsImports = 5
 		Converters\ConverterDynamo\ConverterDynamoShared\ConverterDynamoShared.projitems*{5bab09dc-b0fc-4004-9fd5-6496a9634071}*SharedItemsImports = 13
@@ -103,15 +105,16 @@ Global
 		Converters\ConverterRhinoGh\ConverterRhinoGhShared\ConverterRhinoGhShared.projitems*{63b3f901-7c14-4530-8a6f-ccad68586664}*SharedItemsImports = 5
 		Converters\ConverterETABS\ConverterETABSShared\ConverterETABSShared.projitems*{7f5a5e2b-d74f-483d-8983-97dc049c6d28}*SharedItemsImports = 13
 		Converters\ConverterRevit\ConverterRevitShared\ConverterRevitShared.projitems*{90362309-466a-482b-814a-adb1ce227607}*SharedItemsImports = 5
-		Converters\ConverterMicroStation\ConverterMicroStationOpenRoadsShared\ConverterMicroStationOpenRoadsShared.projitems*{9db60d21-02ce-4dd9-9e15-42ee736587da}*SharedItemsImports = 5
-		Converters\ConverterMicroStation\ConverterMicroStationOpenRoadsShared\ConverterMicroStationOpenRoadsShared.projitems*{af05c676-fe37-476e-8ea6-e89d9e5e63db}*SharedItemsImports = 5
+		Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{9db60d21-02ce-4dd9-9e15-42ee736587da}*SharedItemsImports = 5
+		Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{af05c676-fe37-476e-8ea6-e89d9e5e63db}*SharedItemsImports = 5
 		Converters\ConverterRhinoGh\ConverterRhinoGhShared\ConverterRhinoGhShared.projitems*{b74cb8c1-187b-46a6-b20b-92b8c129f3ee}*SharedItemsImports = 13
 		Converters\ConverterRhinoGh\ConverterRhinoGhShared\ConverterRhinoGhShared.projitems*{b9649e07-f7b4-4fcc-9e44-076993621d0a}*SharedItemsImports = 5
 		Converters\ConverterDynamo\ConverterDynamoShared\ConverterDynamoShared.projitems*{bc110327-3c61-4c15-ae4c-daae7ca82a7b}*SharedItemsImports = 5
 		Converters\ConverterRevit\ConverterRevitShared\ConverterRevitShared.projitems*{bf5515b4-c97c-4fb9-9f93-1740d2b615b3}*SharedItemsImports = 5
 		Converters\ConverterAutocadCivil\ConverterAutocadCivilShared\ConverterAutocadCivilShared.projitems*{dd4add16-65f9-46e0-a610-2b7908a966b3}*SharedItemsImports = 5
 		Converters\ConverterRevit\ConverterRevitShared\ConverterRevitShared.projitems*{e4006179-462f-4133-9481-219279138b93}*SharedItemsImports = 5
-		Converters\ConverterMicroStation\ConverterMicroStationOpenRoadsShared\ConverterMicroStationOpenRoadsShared.projitems*{fd82a10c-f6b6-4ff7-b1ee-e5bac22e7f2a}*SharedItemsImports = 5
+		Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{fd80778b-3327-45df-a343-ca476650d8a6}*SharedItemsImports = 13
+		Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{fd82a10c-f6b6-4ff7-b1ee-e5bac22e7f2a}*SharedItemsImports = 5
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -259,6 +262,7 @@ Global
 		{AF05C676-FE37-476E-8EA6-E89D9E5E63DB} = {EF152AF0-ABAD-438B-A68E-2ED10D4A5854}
 		{208B25E4-2D0E-4534-B197-4C5C96CC53CE} = {EF152AF0-ABAD-438B-A68E-2ED10D4A5854}
 		{A1573A36-5261-4461-AD58-4EDEBEA1BE5C} = {CCC09288-CE76-4FDB-B0C9-220112F88CD9}
+		{FD80778B-3327-45DF-A343-CA476650D8A6} = {EF152AF0-ABAD-438B-A68E-2ED10D4A5854}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DA57EC2E-0A9E-4F59-B1F7-A65F76A74B74}

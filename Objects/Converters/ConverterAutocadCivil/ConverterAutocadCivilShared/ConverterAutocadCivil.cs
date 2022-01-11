@@ -72,6 +72,10 @@ public static string AutocadAppName = Applications.Autocad2022;
     public void SetContextObjects(List<ApplicationPlaceholderObject> objects) => ContextObjects = objects;
 
     public void SetPreviousContextObjects(List<ApplicationPlaceholderObject> objects) => throw new NotImplementedException();
+    public void SetConverterSettings(object settings)
+    {
+      throw new NotImplementedException("This converter does not have any settings.");
+    }
 
     public void SetContextDocument(object doc)
     {
@@ -372,10 +376,22 @@ public static string AutocadAppName = Applications.Autocad2022;
           Report.Log($"Created Text {o.id}");
           break;
 
-        // TODO: add Civil3D directive to convert to alignment instead of curve
         case Alignment o:
-          acadObj = CurveToNativeDB(o.baseCurve);
-          Report.Log($"Created Alignment {o.id} as Curve");
+          string fallback = " as Polyline";
+          if (o.curves is null) // TODO: remove after a few releases, this is for backwards compatibility
+          {
+            acadObj = CurveToNativeDB(o.baseCurve);
+            Report.Log($"Created Alignment {o.id} as Curve");
+            break;
+          }
+#if (CIVIL2020 || CIVIL2021)
+          acadObj = AlignmentToNative(o);
+          if (acadObj != null)
+            fallback = string.Empty;
+#endif
+          if (acadObj == null)
+            acadObj = PolylineToNativeDB(o.displayValue);
+          Report.Log($"Created Alignment {o.id}{fallback}");
           break;
 
         case ModelCurve o:

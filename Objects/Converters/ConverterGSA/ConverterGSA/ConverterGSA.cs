@@ -704,6 +704,11 @@ namespace ConverterGSA
       throw new NotImplementedException();
     }
 
+    public void SetConverterSettings(object settings)
+    {
+      throw new NotImplementedException("This converter does not have any settings.");
+    }
+
     #region private_classes
     internal class ToSpeckleResult
     {
