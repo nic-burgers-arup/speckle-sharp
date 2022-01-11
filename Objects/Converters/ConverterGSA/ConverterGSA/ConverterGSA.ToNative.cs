@@ -1731,7 +1731,13 @@ namespace ConverterGSA
       var dynamicMembers = speckleConcrete.GetMembers();
 
       //Get dynamic properties from base object
-      gsaConcrete.Mat = GetMat(speckleConcrete.GetDynamicValue<Base>("Mat", dynamicMembers));
+
+      //The speckle object could have its own override of the material properties
+      var speckleMat = GetMat(speckleConcrete.GetDynamicValue<Base>("Mat", dynamicMembers));
+      if (speckleMat != null)
+      {
+        gsaConcrete.Mat = speckleMat;
+      }
       gsaConcrete.Type = speckleConcrete.GetDynamicEnum<MatConcreteType>("Type", dynamicMembers);
       gsaConcrete.Cement = speckleConcrete.GetDynamicEnum<MatConcreteCement>("Cement", dynamicMembers);
       gsaConcrete.XdMin = speckleConcrete.GetDynamicValue<double>("XdMin", dynamicMembers);
