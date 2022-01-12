@@ -2066,13 +2066,13 @@ namespace ConverterGSA
       return retList;
     }
 
-    private bool CurveToGsaOutline(ICurve outline, ref List<double?> Y, ref List<double?> Z, ref List<string> actions)
+    private bool CurveToGsaOutline(Polyline outline, ref List<double?> Y, ref List<double?> Z, ref List<string> actions)
     {
-      if (!(outline is Curve))
+      if (!(outline is Polyline))
       {
         return false;
       }
-      var pointCoords = ((Curve)outline).points.GroupBy(3).Select(g => g.ToList()).ToList();
+      var pointCoords = ((Polyline)outline).value.GroupBy(3).Select(g => g.ToList()).ToList();
       foreach (var coords in pointCoords)
       {
         Y.Add(coords[1]);
@@ -2117,7 +2117,7 @@ namespace ConverterGSA
         List<string> actions = null;
         List<double?> y = null, z = null;
 
-        if (p.outline is Curve && (p.voids == null || (p.voids.All(v => v is Curve))))
+        if (p.outline is Polyline && (p.voids == null || (p.voids.All(v => v is Polyline))))
         {
           actions = new List<string>();
           y = new List<double?>();
@@ -2132,16 +2132,18 @@ namespace ConverterGSA
               CurveToGsaOutline(v, ref y, ref z, ref actions);
             }
           }
+
+
         }
         gsaProfileGroup = Section1dProfileGroup.Perimeter;
         gsaProfileDetails = new ProfileDetailsPerimeter()
         {
-          Type = "P",
-          Actions = actions,
-          Y = y.Select(v => v * lengthFactor).ToList(),
-          Z = z.Select(v => v * lengthFactor).ToList(),
+            Type = "P",
+            Actions = actions,
+            Y = y.Select(v => v * lengthFactor).ToList(),
+            Z = z.Select(v => v * lengthFactor).ToList(),
         };
-      }
+            }
       else
       {
         gsaProfileGroup = Section1dProfileGroup.Standard;

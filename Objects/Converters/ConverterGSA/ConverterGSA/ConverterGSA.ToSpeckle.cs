@@ -3589,7 +3589,7 @@ namespace ConverterGSA
       var speckleProfile = new Perimeter()
       {
         shapeType = ShapeType.Perimeter,
-        voids = new List<Objects.ICurve>(),
+        voids = new List<Polyline>(),
       };
 
       if (gsaProfilePerimeter.Type[0] == 'P') //Perimeter
@@ -3618,8 +3618,8 @@ namespace ConverterGSA
             }
           }
         }
-        speckleProfile.outline = new Curve() { points = outline };
-        foreach (var v in voids) speckleProfile.voids.Add(new Curve() { points = v });
+        speckleProfile.outline = new Polyline() { value = outline };
+        foreach (var v in voids) speckleProfile.voids.Add(new Polyline() { value = v });
       }
       else if (gsaProfilePerimeter.Type[0] == 'L') //Line Segment
       {

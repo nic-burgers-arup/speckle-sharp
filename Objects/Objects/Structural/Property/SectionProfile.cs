@@ -4,6 +4,7 @@ using Speckle.Core.Models;
 using System.Collections.Generic;
 using Objects.Structural.Geometry;
 using Objects.Structural.Materials;
+using Objects.Geometry;
 
 namespace Objects.Structural.Properties.Profiles
 {
@@ -158,13 +159,13 @@ namespace Objects.Structural.Properties.Profiles
     }
     public class Perimeter : SectionProfile
     {
-        public ICurve outline { get; set; }
-        public List<ICurve> voids { get; set; } = new List<ICurve>();
+        public Polyline outline { get; set; }
+        public List<Polyline> voids { get; set; } = new List<Polyline>();
 
         public Perimeter() { }
 
         [SchemaInfo("Perimeter", "Creates a Speckle structural section profile defined by a perimeter curve and, if applicable, a list of void curves", "Structural", "Section Profile")]
-        public Perimeter(string name, ICurve outline, List<ICurve> voids = null)
+        public Perimeter(string name, Polyline outline, List<Polyline> voids = null)
         {
             this.name = name;
             this.outline = outline;
