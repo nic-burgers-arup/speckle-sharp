@@ -4,7 +4,7 @@
 
 ## Introduction
 
-This repo holds Speckle's MicroStation, OpenRail, OpenRoads and OpenBuildings Connectors as built and managed by Arup, and it is currently released as ⚠ **ALPHA** ⚠, please use at your own risk!
+This is the ⚠ALPHA⚠ version of the Speckle 2.0 Bentley MicroStation, OpenBuildings, OpenRail, and OpenRoads Connectors, as built and managed by Arup. 
 
 ## Documentation
 

@@ -16,63 +16,63 @@ using Objects.Structural.ETABS.Geometry;
 
 namespace Objects.Converter.ETABS
 {
-    public partial class ConverterETABS : ISpeckleConverter
-    {
+  public partial class ConverterETABS : ISpeckleConverter
+  {
 #if ETABSV18
-        public static string ETABSAppName = Applications.ETABSv18;
+    public static string ETABSAppName = Applications.ETABSv18;
 #elif ETABSV19
-        public static string ETABSAppName = Applications.ETABSv19;
-#else 
+    public static string ETABSAppName = Applications.ETABSv19;
+#else
         public static string ETABSAppName = Applications.ETABS;
 #endif
-        public string Description => "Default Speckle Kit for ETABS";
+    public string Description => "Default Speckle Kit for ETABS";
 
-        public string Name => nameof(ConverterETABS);
+    public string Name => nameof(ConverterETABS);
 
-        public string Author => "Speckle";
+    public string Author => "Speckle";
 
-        public string WebsiteOrEmail => "https://speckle.systems";
+    public string WebsiteOrEmail => "https://speckle.systems";
 
-        public cSapModel Model { get; private set; }
+    public cSapModel Model { get; private set; }
 
-        public Model SpeckleModel { get; set; }
+    public Model SpeckleModel { get; set; }
 
-        public ResultSetAll AnalysisResults { get; set; }
+    public ResultSetAll AnalysisResults { get; set; }
 
-        public void SetContextDocument(object doc)
-        {
-            Model = (cSapModel)doc;
-            SpeckleModel = ModelToSpeckle();
-            AnalysisResults = ResultsToSpeckle();
-        }
+    public void SetContextDocument(object doc)
+    {
+      Model = (cSapModel)doc;
+      SpeckleModel = ModelToSpeckle();
+      AnalysisResults = ResultsToSpeckle();
+    }
 
-        public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
+    public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
 
     public ProgressReport Report { get; private set; } = new ProgressReport();
 
-        public bool CanConvertToNative(Base @object)
+    public bool CanConvertToNative(Base @object)
+    {
+      foreach (var type in Enum.GetNames(typeof(ConverterETABS.ETABSConverterSupported)))
+      {
+        if (type == @object.ToString().Split('.').Last())
         {
-            foreach (var type in Enum.GetNames(typeof(ConverterETABS.ETABSConverterSupported)))
-            {
-                if (type == @object.ToString().Split('.').Last())
-                {
-                    return true;
-                }
-            }
-            return false;
+          return true;
         }
+      }
+      return false;
+    }
 
-        public bool CanConvertToSpeckle(object @object)
+    public bool CanConvertToSpeckle(object @object)
+    {
+      foreach (var type in Enum.GetNames(typeof(ConverterETABS.ETABSAPIUsableTypes)))
+      {
+        if (type == @object.ToString())
         {
-            foreach (var type in Enum.GetNames(typeof(ConverterETABS.ETABSAPIUsableTypes)))
-            {
-                if (type == @object.ToString())
-                {
-                    return true;
-                }
-            }
-            return false;
+          return true;
         }
+      }
+      return false;
+    }
 
     public object ConvertToNative(Base @object)
     {
@@ -91,20 +91,20 @@ namespace Objects.Converter.ETABS
           Report.Log($"Created Element1D {o.id}");
         case OSG.Element2D o:
           return AreaToNative((ETABSElement2D)o);
-                    Report.Log($"Created Element2D {o.id}");
-                case Model o:
-                    return ModelToNative(o);
-                    Report.Log($"Created Model {o.id}");
-                default:
-                    Report.Log($"Skipped not supported type: {@object.GetType()} {@object.id}");
-                    throw new NotSupportedException();
-            }
-        }
+          Report.Log($"Created Element2D {o.id}");
+        case Model o:
+          return ModelToNative(o);
+          Report.Log($"Created Model {o.id}");
+        default:
+          Report.Log($"Skipped not supported type: {@object.GetType()} {@object.id}");
+          throw new NotSupportedException();
+      }
+    }
 
-        public List<object> ConvertToNative(List<Base> objects)
-        {
-            return objects.Select(x => ConvertToNative(x)).ToList();
-        }
+    public List<object> ConvertToNative(List<Base> objects)
+    {
+      return objects.Select(x => ConvertToNative(x)).ToList();
+    }
 
     public Base ConvertToSpeckle(object @object)
     {
@@ -176,6 +176,9 @@ namespace Objects.Converter.ETABS
           returnObject = ETABSTendonToSpeckle(name);
           Report.Log($"Created Tendons");
           break;
+        //case "Diaphragm":
+        //  returnObject = diaphragmToSpeckle(name);
+        //  Report.Log($"Created Diaphragm");
         case "Links":
           returnObject = LinkToSpeckle(name);
           break;
@@ -280,18 +283,18 @@ namespace Objects.Converter.ETABS
       return returnObject;
     }
 
-        public List<Base> ConvertToSpeckle(List<object> objects)
-        {
-                return objects.Select(x => ConvertToSpeckle(x)).ToList();
-        }
+    public List<Base> ConvertToSpeckle(List<object> objects)
+    {
+      return objects.Select(x => ConvertToSpeckle(x)).ToList();
+    }
 
-        public IEnumerable<string> GetServicedApplications() => new string[] { ETABSAppName };
+    public IEnumerable<string> GetServicedApplications() => new string[] { ETABSAppName };
 
 
-        public void SetContextObjects(List<ApplicationPlaceholderObject> objects)
-        {
-            throw new NotImplementedException();
-        }
+    public void SetContextObjects(List<ApplicationPlaceholderObject> objects)
+    {
+      throw new NotImplementedException();
+    }
 
     public void SetPreviousContextObjects(List<ApplicationPlaceholderObject> objects)
     {

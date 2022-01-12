@@ -2650,8 +2650,8 @@ namespace ConverterGSA
         _faces.Add(new int[] { 0, faceIndices[0], faceIndices[1], faceIndices[2] });
       }
 
-      var faces = _faces.SelectMany(o => o).ToArray();
-      var mesh = new Mesh(vertices.ToArray(), faces);
+      var faces = _faces.SelectMany(o => o).ToList();
+      var mesh = new Mesh(vertices, faces);
 
       return mesh;
     }

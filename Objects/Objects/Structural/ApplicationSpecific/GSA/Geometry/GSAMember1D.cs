@@ -21,30 +21,30 @@ namespace Objects.Structural.GSA.Geometry //GSA.Geometry?
     public GSAMember1D() { }
 
     [SchemaInfo("GSAMember1D (from local axis)", "Creates a Speckle structural 1D member for GSA (from local axis)", "GSA", "Geometry")]
-    public GSAMember1D(Line baseLine, Property1D property, ElementType1D type, Restraint end1Releases, Restraint end2Releases, Vector end1Offset, Vector end2Offset, Plane localAxis, int? nativeId = null)
+    public GSAMember1D(Line baseLine, Property1D property, ElementType1D type, string name = null, Restraint end1Releases = null, Restraint end2Releases = null, Vector end1Offset = null, Vector end2Offset = null, Plane localAxis = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
-      this.baseLine = (Line)baseLine;
+      this.baseLine = baseLine;
       this.property = property;
       this.type = type;
-      this.end1Releases = end1Releases;
-      this.end2Releases = end2Releases;
-      this.end1Offset = end1Offset;
-      this.end2Offset = end2Offset;
+      this.end1Releases = end1Releases == null ? new Restraint("FFFFFF") : end1Releases;
+      this.end2Releases = end2Releases == null ? new Restraint("FFFFFF") : end2Releases;
+      this.end1Offset = end1Offset == null ? new Vector(0, 0, 0) : end1Offset;
+      this.end2Offset = end2Offset == null ? new Vector(0, 0, 0) : end2Offset;
       this.localAxis = localAxis;
     }
 
     [SchemaInfo("GSAMember1D (from orientation node and angle)", "Creates a Speckle structural 1D member for GSA (from orientation node and angle)", "GSA", "Geometry")]
-    public GSAMember1D(Line baseLine, Property1D property, ElementType1D type, Restraint end1Releases, Restraint end2Releases, Vector end1Offset, Vector end2Offset, GSANode orientationNode, double orientationAngle, int? nativeId = null)
+    public GSAMember1D(Line baseLine, Property1D property, ElementType1D type, string name = null, Restraint end1Releases = null, Restraint end2Releases = null, Vector end1Offset = null, Vector end2Offset = null, GSANode orientationNode = null, double orientationAngle = 0, int? nativeId = null)
     {
       this.nativeId = nativeId;
-      this.baseLine = (Line)baseLine;
+      this.baseLine = baseLine;
       this.property = property;
       this.type = type;
-      this.end1Releases = end1Releases;
-      this.end2Releases = end2Releases;
-      this.end1Offset = end1Offset;
-      this.end2Offset = end2Offset;
+      this.end1Releases = end1Releases == null ? new Restraint("FFFFFF") : end1Releases;
+      this.end2Releases = end2Releases == null ? new Restraint("FFFFFF") : end2Releases;
+      this.end1Offset = end1Offset == null ? new Vector(0, 0, 0) : end1Offset;
+      this.end2Offset = end2Offset == null ? new Vector(0, 0, 0) : end2Offset;
       this.orientationNode = orientationNode;
       this.orientationAngle = orientationAngle;
     }
