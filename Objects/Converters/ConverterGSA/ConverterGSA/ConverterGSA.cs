@@ -225,7 +225,14 @@ namespace ConverterGSA
           if (SafeConvertToNative(o, out List<GsaRecord> newList))
           {
             retList.AddRange(newList);
-            retList.AddRange(ConvertEmbedded(speckleDependencyTree));
+          }
+          if (embeddedToBeConverted.Any())
+          {
+            retList.AddRange(ConvertToNative(embeddedToBeConverted.Values.ToList()));
+            foreach (var k in embeddedToBeConverted.Keys)
+            {
+              embeddedToBeConverted[k] = null;
+            }
           }
         }
       }
@@ -278,7 +285,15 @@ namespace ConverterGSA
           lock(retListLock)
           {
 #endif
-          retList.AddRange(ConvertEmbedded(speckleDependencyTree));
+
+          if (embeddedToBeConverted.Any())
+          {
+            retList.AddRange(ConvertToNative(embeddedToBeConverted.Values.ToList()));
+            foreach (var k in embeddedToBeConverted.Keys)
+            {
+              embeddedToBeConverted[k] = null;
+            }
+          }
 #if !DEBUG
           }
           );
@@ -322,86 +337,7 @@ namespace ConverterGSA
       return true;
     }
 
-    //Convert all the objects embedded in objects but not also part of the Model object
-    //This is intended to be done in serial so no need to apply the lock for the embedded objects
-    //This could be refactored out by merging this functionality into the main ConvertToNative() method - so far, one key difference is the choice to not ever be in parallel
-    private List<GsaRecord> ConvertEmbedded(List<List<Type>> speckleDependencyTree = null)
-    {
-      if (embeddedToBeConverted == null || !embeddedToBeConverted.Any())
-      {
-        return new List<GsaRecord>();
-      }
-
-      //Process these in serial for now (it's slower but this should be relatively rare case in which there are many embedded objects that also aren't included
-      //in the Model collections of objects - but in dependency order if possible
-      var retList = new List<GsaRecord>();
-      
-      if (speckleDependencyTree == null)
-      {
-        var allEmbeddedIds = embeddedToBeConverted.Keys.ToList();
-        //var converted = new Dictionary<string, List<Base>>();
-        foreach (var id in allEmbeddedIds)
-        {
-          if (SafeConvertToNative(embeddedToBeConverted[id], out List<GsaRecord> newList))
-          {
-            retList.AddRange(newList);
-            embeddedToBeConverted[id] = null;
-          }
-          /*
-          var embeddedObjectsWithId = embeddedToBeConverted[id].ToList(); //Copy of the list to enable embeddedToBeConverted[id] to be altered in the loop
-          foreach (var o in embeddedObjectsWithId)
-          {
-            if (SafeConvertToNative(o, out List<GsaRecord> newList))
-            {
-              retList.AddRange(newList);
-              embeddedToBeConverted[id].Remove(o);
-              if (embeddedToBeConverted[id].Count == 0)
-              {
-                embeddedToBeConverted.Remove(id);
-              }
-            }
-          }
-          */
-        }
-      }
-      else
-      {
-        //var embeddedObjectsByType = embeddedToBeConverted.Values.SelectMany(g => g).GroupBy(o => o.GetType()).ToDictionary(g => g.Key, g => g.ToList());
-        var embeddedObjectsByType = embeddedToBeConverted.Values.Where(v => v != null).GroupBy(o => o.GetType()).ToDictionary(g => g.Key, g => g.ToList());
-
-        foreach (var gen in speckleDependencyTree)
-        {
-          foreach (var t in gen)
-          {
-            if (embeddedObjectsByType.ContainsKey(t))
-            {
-              var embeddedObjects = embeddedObjectsByType[t].ToList();  //Copy of the list to enable embeddedToBeConverted[id] & embeddedObjectsByType[t] to be altered in the loop
-              foreach (var o in embeddedObjects)
-              {
-                if (SafeConvertToNative(o, out List<GsaRecord> newList, t))
-                {
-                  retList.AddRange(newList);
-                  embeddedObjectsByType[t].Remove(o);
-                  if (embeddedObjectsByType[t].Count == 0)
-                  {
-                    embeddedObjectsByType.Remove(t);
-                  }
-                  embeddedToBeConverted[o.applicationId] = null;
-                  //embeddedToBeConverted[o.applicationId].Remove(o);
-                  //if (embeddedToBeConverted[o.applicationId].Count == 0)
-                  //{
-                  //  embeddedToBeConverted.Remove(o.applicationId);
-                  //}
-                }
-              }
-            }
-          }
-        }
-      }
-      return retList;
-    }
-
-    public Base ConvertToSpeckle(object @object)
+        public Base ConvertToSpeckle(object @object)
     {
       if (@object is List<GsaRecord>)
       {
