@@ -619,6 +619,7 @@ namespace ConverterGSATests
       //Checks
       var gsaConvertedLoadCases = gsaConvertedRecords.FindAll(r => r is GsaLoadCase).Select(r => (GsaLoadCase)r).ToList();
       var compareLogic = new CompareLogic();
+      compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaLoadCase x) => x.Direction)); //Ignore app specific data
       var result = compareLogic.Compare(gsaLoadCases, gsaConvertedLoadCases);
       Assert.Empty(result.Differences);
     }

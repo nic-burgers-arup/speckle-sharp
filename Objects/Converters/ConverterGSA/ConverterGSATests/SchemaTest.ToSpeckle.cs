@@ -2105,8 +2105,8 @@ namespace ConverterGSATests
 
         Assert.Equal("node 1_analysis case " + loadCase, speckleNodeResults[i].applicationId);
         Assert.Equal("node 1", speckleNodeResults[i].node.applicationId); //assume the conversion of the node is tested elsewhere
-        Assert.Equal("", speckleNodeResults[i].description);
-        Assert.Equal("", speckleNodeResults[i].permutation);
+        Assert.True(string.IsNullOrEmpty(speckleNodeResults[i].description));
+        Assert.True(string.IsNullOrEmpty(speckleNodeResults[i].permutation));
         Assert.Equal("analysis case " + loadCase, speckleNodeResults[i].resultCase.applicationId);
         Assert.Equal(gsaResult.Ux.Value, speckleNodeResults[i].dispX);
         Assert.Equal(gsaResult.Uy.Value, speckleNodeResults[i].dispY);
