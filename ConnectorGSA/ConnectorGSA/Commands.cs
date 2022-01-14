@@ -5,7 +5,6 @@ using Newtonsoft.Json;
 using Speckle.ConnectorGSA.Proxy;
 using Speckle.ConnectorGSA.Proxy.Cache;
 using Speckle.Core.Api;
-using Speckle.Core.Api.SubscriptionModels;
 using Speckle.Core.Credentials;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
@@ -18,7 +17,6 @@ using System.Collections.Generic;
 using System.Deployment.Application;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace ConnectorGSA
@@ -248,24 +246,6 @@ namespace ConnectorGSA
 
         loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ex, "Converion error"));
       }
-      /*
-      foreach (var tlo in TopLevelObjects)
-      {
-        try
-        {
-          if (converter.CanConvertToNative(tlo))
-          {
-            var nativeObjects = converter.ConvertToNative(new List<Base> { tlo }).Cast<GsaRecord>().ToList();
-            Instance.GsaModel.Cache.Upsert(nativeObjects);
-          }
-        }
-        catch (Exception ex)
-        {
-          loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "Unable to convert one or more received objects.  Refer to logs for more information"));
-          loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ex, "Converion error"));
-        }
-      }
-      */
 
       return true;
     }
