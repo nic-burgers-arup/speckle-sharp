@@ -435,7 +435,7 @@ namespace Speckle.ConnectorGSA.Proxy
     private bool Initialise(GSALayer layer)
     {
       var assembly = GetType().Assembly; //This assembly
-      var assemblyTypes = assembly.GetTypes().ToList();
+      var assemblyTypes = assembly.GetTypes().Where(t => t.IsClass).ToList();
 
       var gsaBaseType = typeof(GwaParser<GsaRecord>);
       var gsaAttributeType = typeof(GsaType);

@@ -303,7 +303,7 @@ namespace ConverterGSA
       {
         Report.ConversionErrors.Add(new Exception("GsaElement1dToSpeckle: "
           + "Error converting 1D element with application id (" + speckleElement1d.applicationId + "). "
-          + "There must be atleast 2 nodes to define the element"));
+          + "There must be at least 2 nodes to define the element"));
         return null;
       }
       speckleElement1d.baseLine = new Line(speckleElement1d.end1Node.basePoint, speckleElement1d.end2Node.basePoint);
@@ -362,7 +362,7 @@ namespace ConverterGSA
       {
         Report.ConversionErrors.Add(new Exception("GsaElement2dToSpeckle: "
           + "Error converting 2D element with application id (" + speckleElement2d.applicationId + "). "
-          + "There must be atleast 3 nodes to define the element"));
+          + "There must be at least 3 nodes to define the element"));
         return null;
       }
       if (gsaEl.Index.IsIndex()) speckleElement2d.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaEl>(gsaEl.Index.Value);
@@ -445,7 +445,7 @@ namespace ConverterGSA
       {
         Report.ConversionErrors.Add(new Exception("GsaMember1dToSpeckle: "
           + "Error converting 1D member with application id (" + speckleMember1d.applicationId + "). "
-          + "There must be atleast 2 nodes to define the member"));
+          + "There must be at least 2 nodes to define the member"));
         return null;
       }
       speckleMember1d.baseLine = GetBaseLine(speckleMember1d.topology.Select(n => n.basePoint).ToList());
@@ -556,7 +556,7 @@ namespace ConverterGSA
       {
         Report.ConversionErrors.Add(new Exception("GsaMember2dToSpeckle: "
           + "Error converting 2D member with application id (" + speckleMember2d.applicationId + "). "
-          + "There must be atleast 3 nodes to define the member"));
+          + "There must be at least 3 nodes to define the member"));
         return null;
       }
       if (gsaMemb.Index.IsIndex()) speckleMember2d.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaMemb>(gsaMemb.Index.Value);

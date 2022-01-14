@@ -10,8 +10,6 @@ using Speckle.GSA.API.GwaSchema;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Objects.Structural.GSA.Loading;
 using Objects.Structural.GSA.Analysis;
 using Objects.Structural.GSA.Bridge;
@@ -24,7 +22,6 @@ using Objects.Structural;
 using Objects.Structural.Materials;
 using Objects;
 using Objects.Structural.Properties.Profiles;
-using Objects.BuiltElements;
 using Objects.Structural.Analysis;
 
 namespace ConverterGSA
@@ -122,101 +119,6 @@ namespace ConverterGSA
       speckleObjects.AddRangeIfNotNull(model.materials);
       return speckleObjects;
     }
-
-    /*
-    private List<GsaRecord> ModelToNative(Base speckleObject)
-    {
-      var model = (Model)speckleObject;
-      var retList = new List<GsaRecord>();
-
-      if (model.specs != null && model.specs.settings != null && model.specs.settings.modelUnits != null)
-      {
-        conversionFactors = new UnitConversion(model.specs.settings.modelUnits);
-      }
-      
-      var speckleObjects = new List<Base>();
-      speckleObjects.AddRangeIfNotNull(model.nodes);
-      speckleObjects.AddRangeIfNotNull(model.elements);
-      speckleObjects.AddRangeIfNotNull(model.loads);
-      speckleObjects.AddRangeIfNotNull(model.restraints);
-      speckleObjects.AddRangeIfNotNull(model.properties);
-      speckleObjects.AddRangeIfNotNull(model.materials);
-
-      var speckleDependencyTree = Instance.GsaModel.SpeckleDependencyTree();
-      var objectsByType = speckleObjects.GroupBy(t => t.GetType()).ToDictionary(g => g.Key, g => g.ToList());
-
-      foreach (var gen in speckleDependencyTree)
-      {
-#if DEBUG
-        foreach (var t in gen)
-#else
-        Parallel.ForEach(gen, t =>
-#endif
-        {
-          if (objectsByType.ContainsKey(t))
-          {
-#if !DEBUG
-            if (parallelisable.ContainsKey(t))
-            {
-              foreach (Base so in objectsByType[t].Where(o => !string.IsNullOrEmpty(o.applicationId)))
-              {
-                Instance.GsaModel.Cache.ResolveIndex(parallelisable[t], so.applicationId);
-              }
-
-              Parallel.ForEach(objectsByType[t].Cast<Base>(), so =>
-              {
-                try
-                {
-                  if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
-                  {
-                    var natives = ToNativeFns[t](so);
-                    retList.AddRangeIfNotNull(natives);
-                    if (Instance.GsaModel.ConversionProgress != null)
-                    {
-                      Instance.GsaModel.ConversionProgress.Report(natives != null);
-                    }
-                  }
-                }
-                catch
-                {
-                  ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
-                }
-              }
-              );
-            }
-            else
-#endif
-            {
-              foreach (Base so in objectsByType[t])
-              {
-                try
-                {
-                  if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
-                  {
-                    var natives = ToNativeFns[t](so);
-                    retList.AddRangeIfNotNull(natives);
-                    if (Instance.GsaModel.ConversionProgress != null)
-                    {
-                      Instance.GsaModel.ConversionProgress.Report(natives != null);
-                    }
-                  }
-                }
-                catch
-                {
-                  Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
-                }
-              }
-            }
-          }
-        }
-#if !DEBUG
-        );
-#endif
-      }
-
-      return retList;
-    }
-    */
 
     private List<GsaRecord> ModelInfoToNative(Base speckleObject)
     {
@@ -489,42 +391,41 @@ namespace ConverterGSA
 
     private int? IndexByConversionOrLookup<N>(Base obj, ref List<GsaRecord> extra)
     {
-      if (obj == null)
+      if (obj == null || string.IsNullOrEmpty(obj.applicationId))
       {
         return null;
       }
-      int? index = null;
-      if (!string.IsNullOrEmpty(obj.applicationId))
+
+      //if it's somehow been converted or provisioned by the usual conversion code block (i.e. not through embeddedToBeConverted)
+      int? index = Instance.GsaModel.Cache.LookupIndex<N>(obj.applicationId);
+      var alreadyConverted = (index != null);
+      if (index == null)
       {
-        //index = Instance.GsaModel.Cache.LookupIndex<N>(obj.applicationId);
         index = Instance.GsaModel.Cache.ResolveIndex<N>(obj.applicationId);
-        if (index != null) return index;
       }
-      if (!ConvertedObjectsList.Contains(obj.id))
+      if (index == null) 
       {
-        if (!index.IsIndex())
-        {
-          var nt = typeof(N);
-          var st = obj.GetType();
-          if (ToNativeFns.ContainsKey(st))
-          {
-            var gsaRecords = ToNativeFns[st](obj);
-            var gsaRecord = gsaRecords.FirstOrDefault(r => r.GetType() == nt);
-            if (gsaRecord != null && gsaRecord.Index.IsIndex())
-            {
-              index = gsaRecord.Index;
-              extra.AddRange(gsaRecords);
-              ConvertedObjectsList.Add(obj.id);
-            }
-          }
-        }
-      }
-      else
-      {
-        //index = Instance.GsaModel.Cache.LookupIndex<N>(obj.id);
-        index = Instance.GsaModel.Cache.ResolveIndex<N>(obj.id);
+        return null;
       }
 
+#if !DEBUG
+      lock (embeddedToBeConvertedLock)
+      {
+#endif
+      /*
+      if (!embeddedToBeConverted.ContainsKey(obj.applicationId))
+      {
+        embeddedToBeConverted.Add(obj.applicationId, new List<Base>());
+      }
+      embeddedToBeConverted[obj.applicationId].Add(obj);
+      */
+      if (!alreadyConverted && !embeddedToBeConverted.ContainsKey(obj.applicationId))
+      {
+        embeddedToBeConverted[obj.applicationId] = obj;
+      }
+#if !DEBUG
+      }
+#endif
 
       return index;
     }
@@ -1138,9 +1039,9 @@ namespace ConverterGSA
       return gsaRecords;
     }
 
-    #endregion
+#endregion
 
-    #region Loading
+#region Loading
     private List<GsaRecord> GSALoadCaseToNative(Base speckleObject)
     {
       var gsaRecords = LoadCaseToNative(speckleObject);
@@ -1213,7 +1114,7 @@ namespace ConverterGSA
       return gsaRecords;
     }
 
-    #region LoadBeam
+#region LoadBeam
     private List<GsaRecord> GSALoadBeamToNative(Base speckleObject)
     {
       var gsaRecords = LoadBeamToNative(speckleObject);
@@ -1352,7 +1253,7 @@ namespace ConverterGSA
       gsaRecords.Add(gsaLoad);
       return gsaRecords;
     }
-    #endregion
+#endregion
 
     private List<GsaRecord> GSALoadFaceToNative(Base speckleObject)
     {
@@ -1601,9 +1502,9 @@ namespace ConverterGSA
       gsaRecords.Add(gsaLoad);
       return gsaRecords;
     }
-    #endregion
+#endregion
 
-    #region Materials
+#region Materials
     private List<GsaRecord> GSASteelToNative(Base speckleObject)
     {
       var gsaRecords = SteelToNative(speckleObject);
@@ -1731,7 +1632,13 @@ namespace ConverterGSA
       var dynamicMembers = speckleConcrete.GetMembers();
 
       //Get dynamic properties from base object
-      gsaConcrete.Mat = GetMat(speckleConcrete.GetDynamicValue<Base>("Mat", dynamicMembers));
+
+      //The speckle object could have its own override of the material properties
+      var speckleMat = GetMat(speckleConcrete.GetDynamicValue<Base>("Mat", dynamicMembers));
+      if (speckleMat != null)
+      {
+        gsaConcrete.Mat = speckleMat;
+      }
       gsaConcrete.Type = speckleConcrete.GetDynamicEnum<MatConcreteType>("Type", dynamicMembers);
       gsaConcrete.Cement = speckleConcrete.GetDynamicEnum<MatConcreteCement>("Cement", dynamicMembers);
       gsaConcrete.XdMin = speckleConcrete.GetDynamicValue<double>("XdMin", dynamicMembers);
@@ -1909,9 +1816,9 @@ namespace ConverterGSA
       //  double flexuralStrength
       return new List<GsaRecord>() { gsaConcrete };
     }
-    #endregion
+#endregion
 
-    #region Properties
+#region Properties
     private List<GsaRecord> GsaProperty1dToNative(Base speckleObject)
     {
       var retList = new List<GsaRecord>();
@@ -2303,28 +2210,21 @@ namespace ConverterGSA
         }
       }
 
-      if (speckleProperty.orientationAxis != null)
+      if (speckleProperty.orientationAxis == null || speckleProperty.orientationAxis.definition == null || speckleProperty.orientationAxis.definition.IsGlobal())
       {
-        gsaProp2d.AxisRefType = AxisRefType.Local;
+        gsaProp2d.AxisRefType = AxisRefType.Global;
       }
       else
       {
-        if (speckleProperty.orientationAxis.definition != null && speckleProperty.orientationAxis.definition.IsGlobal())
+        var axisIndex = IndexByConversionOrLookup<GsaAxis>(speckleProperty.orientationAxis, ref retList);
+        if (axisIndex.IsIndex())
         {
-          gsaProp2d.AxisRefType = AxisRefType.Global;
+          gsaProp2d.AxisIndex = axisIndex;
+          gsaProp2d.AxisRefType = AxisRefType.Reference;
         }
         else
         {
-          var axisIndex = IndexByConversionOrLookup<GsaAxis>(speckleProperty.orientationAxis, ref retList);
-          if (axisIndex.IsIndex())
-          {
-            gsaProp2d.AxisIndex = axisIndex;
-            gsaProp2d.AxisRefType = AxisRefType.Reference;
-          }
-          else
-          {
-            gsaProp2d.AxisRefType = AxisRefType.Local;
-          }
+          gsaProp2d.AxisRefType = AxisRefType.Local;
         }
       }
       retList.Add(gsaProp2d);
@@ -2460,9 +2360,9 @@ namespace ConverterGSA
       return true;
     }
 
-    #endregion
+#endregion
 
-    #region Constraints
+#region Constraints
     private List<GsaRecord> GSAGeneralisedRestraintToNative(Base speckleObject)
     {
       var gsaRecords = new List<GsaRecord>();
@@ -2507,9 +2407,9 @@ namespace ConverterGSA
       gsaRecords.Add(gsaRigid);
       return gsaRecords;
     }
-    #endregion
+#endregion
 
-    #region Bridge
+#region Bridge
 
     private List<GsaRecord> AlignToNative(Base speckleObject)
     {
@@ -2616,9 +2516,9 @@ namespace ConverterGSA
       return gsaRecords;
     }
 
-    #endregion
+#endregion
 
-    #region Analysis Stage
+#region Analysis Stage
     public List<GsaRecord> AnalStageToNative(Base speckleObject)
     {
       var gsaRecords = new List<GsaRecord>();
@@ -2652,14 +2552,14 @@ namespace ConverterGSA
       gsaRecords.Add(gsaAnalStage);
       return gsaRecords;
     }
-    #endregion
+#endregion
 
-    #endregion
+#endregion
 
-    #region Helper
-    #region ToNative
-    #region Geometry
-    #region Axis
+#region Helper
+#region ToNative
+#region Geometry
+#region Axis
     private bool GetAxis(Axis speckleAxis, out NodeAxisRefType gsaAxisRefType, out int? gsaAxisIndex, ref List<GsaRecord> gsaRecords)
     {
       gsaAxisRefType = NodeAxisRefType.NotSet;
@@ -2722,9 +2622,9 @@ namespace ConverterGSA
 
       return true;
     }
-    #endregion
+#endregion
 
-    #region Node
+#region Node
     private bool GetRestraint(Restraint speckleRestraint, out NodeRestraint gsaNodeRestraint, out List<GwaAxisDirection6> gsaRestraint)
     {
       gsaRestraint = null; //default
@@ -2761,9 +2661,9 @@ namespace ConverterGSA
       }
       return true;
     }
-    #endregion
+#endregion
 
-    #region Element
+#region Element
     public Speckle.GSA.API.GwaSchema.MemberType ToNative(Objects.Structural.Geometry.MemberType speckleMemberType, int dimension)
     {
       if (dimension == 1)
@@ -2858,10 +2758,10 @@ namespace ConverterGSA
       }
       return true;
     }
-    #endregion
-    #endregion
+#endregion
+#endregion
 
-    #region Loading
+#region Loading
     private bool GetLoadAxis(Axis speckleAxis, out LoadBeamAxisRefType gsaAxisRefType, out int? gsaAxisIndex, ref List<GsaRecord> gsaRecords)
     {
       gsaAxisIndex = null;
@@ -3050,9 +2950,9 @@ namespace ConverterGSA
       else gsaOption = LoadAreaOption.Polygon;
       return true;
     }
-    #endregion
+#endregion
 
-    #region Materials
+#region Materials
     private GsaMatSteel GsaMatSteelExample(Steel speckleSteel)
     {
       return new GsaMatSteel()
@@ -3340,9 +3240,9 @@ namespace ConverterGSA
       fy = Math.Abs(fy) * StressUnits.GetConversionFactor(conversionFactors.speckleModelUnits.stress, StressUnits.Pascal);
       return LinearInterp(200e6, 450e6, 0.001, 0.00225, fy);
     }
-    #endregion
+#endregion
 
-    #region Properties
+#region Properties
     private GsaSection GsaSectionExample(GSAProperty1D speckleProperty)
     {
       return new GsaSection()
@@ -3411,9 +3311,9 @@ namespace ConverterGSA
         return speckleMassModifier; //percentage
       }
     }
-    #endregion
+#endregion
 
-    #region Constraint
+#region Constraint
     private Dictionary<GwaAxisDirection6, List<GwaAxisDirection6>> GetRigidConstraint(Dictionary<AxisDirection6, List<AxisDirection6>> speckleConstraint)
     {
       if (speckleConstraint == null) return null;
@@ -3430,9 +3330,9 @@ namespace ConverterGSA
       }
       return gsaConstraint;
     }
-    #endregion
+#endregion
 
-    #region Other
+#region Other
     private List<int> IndexByConversionOrLookup<N>(List<Base> speckleObjects, ref List<GsaRecord> extra)
     {
       if (speckleObjects == null) return null;
@@ -3446,9 +3346,9 @@ namespace ConverterGSA
     }
 
     private double LinearInterp(double x1, double x2, double y1, double y2, double x) => (y2 - y1) / (x2 - x1) * (x - x1) + y1;
-    #endregion
+#endregion
 
-    #endregion
-    #endregion
+#endregion
+#endregion
   }
 }
