@@ -72,6 +72,9 @@ jobs:
         for %%x in (Objects, ConnectorRhino, ConnectorGrasshopper) do (
           cd %%x && msbuild %%x.sln /t:Restore /p:Configuration=Release /p:WarningLevel=0 /p:IsDesktopBuild=false && cd ../ 
         )
+      env:
+        GH_PKG_USER: ${{ secrets.GH_PKG_USER }} 
+        GH_PKG_TOKEN: ${{ secrets.GH_PKG_TOKEN }}              
         
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Build all Solutions
