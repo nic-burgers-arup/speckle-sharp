@@ -2196,6 +2196,7 @@ namespace ConverterGSA
         BendingStiffnessPercentage = speckleProperty.modifierBending < 0 ? -(double?)speckleProperty.modifierBending * 100 : null,
         ShearStiffnessPercentage = speckleProperty.modifierShear < 0 ? -(double?)speckleProperty.modifierShear * 100 : null,
         VolumePercentage = speckleProperty.modifierVolume < 0 ? -(double?)speckleProperty.modifierVolume * 100 : null,
+        Units = speckleProperty.units
       };
 
       if (speckleProperty.material != null)

@@ -1692,7 +1692,7 @@ public class PerimeterSchemaComponent: CreateSchemaObjectBase {
     public override Guid ComponentGuid => new Guid("63b41dcc-8f2e-b900-be8a-82a661e56f19");
     
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.Properties.Profiles.Perimeter.ctor(System.String,Objects.ICurve,System.Collections.Generic.List`1[Objects.ICurve])","Objects.Structural.Properties.Profiles.Perimeter");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.Properties.Profiles.Perimeter.ctor(System.String,Objects.Geometry.Polyline,System.Collections.Generic.List`1[Objects.Geometry.Polyline])","Objects.Structural.Properties.Profiles.Perimeter");
         base.AddedToDocument(document);
     }
 }
