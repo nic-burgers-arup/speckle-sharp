@@ -240,36 +240,36 @@ namespace ConverterGSA
       {
         foreach (var gen in speckleDependencyTree)
         {
-#if DEBUG
+//#if DEBUG
           foreach (var t in gen)
-#else
+//#else
           //Parallel.ForEach(gen, t =>
-#endif
+//#endif
           {
             if (objectsByType.ContainsKey(t))
             {
-#if !DEBUG
-              if (parallelisable.ContainsKey(t))
-              {
-                foreach (Base so in objectsByType[t].Where(o => !string.IsNullOrEmpty(o.applicationId)))
-                {
-                  Instance.GsaModel.Cache.ResolveIndex(parallelisable[t], so.applicationId);
-                }
+//#if !DEBUG
+//              if (parallelisable.ContainsKey(t))
+//              {
+//                foreach (Base so in objectsByType[t].Where(o => !string.IsNullOrEmpty(o.applicationId)))
+//                {
+//                  Instance.GsaModel.Cache.ResolveIndex(parallelisable[t], so.applicationId);
+//                }
 
-                Parallel.ForEach(objectsByType[t].Cast<Base>(), so =>
-                {
-                  if (SafeConvertToNative(o, out List<GsaRecord> newList, t))
-                  {
-                    lock(retListLock)
-                    {
-                      retList.AddRange(newList);
-                    }
-                  }
-                }
-                );
-              }
-              else
-#endif
+//                Parallel.ForEach(objectsByType[t].Cast<Base>(), so =>
+//                {
+//                  if (SafeConvertToNative(o, out List<GsaRecord> newList, t))
+//                  {
+//                    lock(retListLock)
+//                    {
+//                      retList.AddRange(newList);
+//                    }
+//                  }
+//                }
+//                );
+//              }
+//              else
+//#endif
               {
                 foreach (Base so in objectsByType[t])
                 {
@@ -281,11 +281,10 @@ namespace ConverterGSA
               }
             }
           }
-#if !DEBUG
-          lock(retListLock)
-          {
-#endif
-
+//#if !DEBUG
+//          lock(retListLock)
+//          {
+//#endif
           if (embeddedToBeConverted.Any())
           {
             retList.AddRange(ConvertToNative(embeddedToBeConverted.Values.ToList()));
@@ -294,10 +293,10 @@ namespace ConverterGSA
               embeddedToBeConverted[k] = null;
             }
           }
-#if !DEBUG
-          }
-          );
-#endif
+//#if !DEBUG
+//          }
+//          );
+//#endif
         }
       }
 
