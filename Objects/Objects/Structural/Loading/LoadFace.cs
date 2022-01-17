@@ -11,7 +11,7 @@ namespace Objects.Structural.Loading
     {
         [DetachProperty]
         [Chunkable(5000)]
-        public List<Base> elements { get; set; } 
+        public List<Element2D> elements { get; set; } 
         public FaceLoadType loadType { get; set; }
         public LoadDirection2D direction { get; set; }
 
