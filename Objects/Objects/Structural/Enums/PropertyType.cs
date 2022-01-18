@@ -8,10 +8,10 @@ namespace Objects.Structural
 {
     public enum PropertyType2D
     {
+        Shell,
         Stress,
         Fabric,
         Plate,
-        Shell,
         Curved,
         Wall,
         Strain,

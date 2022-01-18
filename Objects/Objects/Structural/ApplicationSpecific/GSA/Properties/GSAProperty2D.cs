@@ -18,12 +18,13 @@ namespace Objects.Structural.GSA.Properties
     public GSAProperty2D() { }
 
     [SchemaInfo("GSAProperty2D", "Creates a Speckle structural 2D element property for GSA", "GSA", "Properties")]
-    public GSAProperty2D(string name, Material material, double thickness, int? nativeId = null)
+    public GSAProperty2D(string name, Material material, double thickness, PropertyType2D type, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;
       this.material = material;
       this.thickness = thickness;
+      this.type = type;
     }
   }
 }
