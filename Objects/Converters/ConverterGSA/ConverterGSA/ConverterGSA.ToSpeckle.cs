@@ -531,7 +531,7 @@ namespace ConverterGSA
         //-- App agnostic --
         name = gsaMemb.Name,
         //type = gsaMemb.Type.ToSpeckle2d(),
-        displayMesh = DisplayMeshPolygon(gsaMemb.NodeIndices, color),
+        //displayMesh = DisplayMeshPolygon(gsaMemb.NodeIndices, color),
         orientationAngle = gsaMemb.Angle ?? 0,
         offset = gsaMemb.Offset2dZ ?? 0,
         parent = null, //no meaning for member, only for element
@@ -549,7 +549,11 @@ namespace ConverterGSA
       //-- App agnostic --
       if (gsaMemb.NodeIndices.Count >= 3)
       {
-        speckleMember2d.topology = gsaMemb.NodeIndices.Select(i => GetNodeFromIndex(i)).ToList();
+        var topology = gsaMemb.NodeIndices.Select(i => GetNodeFromIndex(i)).ToList();
+        speckleMember2d.topology = topology;
+        var coordinates = topology.SelectMany(x => x.basePoint.ToList()).ToList();
+        coordinates.AddRange(topology[0].basePoint.ToList());
+        speckleMember2d.outline = new Polyline(coordinates);
         AddToMeaningfulNodeIndices(speckleMember2d.topology.Select(n => n.applicationId), GSALayer.Design);
       }
       else
