@@ -51,7 +51,7 @@ namespace ConnectorGSATests
         { typeof(GsaPropSpr), 8 },
         { typeof(GsaSection), 1 },
         { typeof(GsaProp2d), 1 },
-        { typeof(GsaNode), 3486 },
+        { typeof(GsaNode), 95 },
         { typeof(GsaLoadCase), 3 },
       };
 

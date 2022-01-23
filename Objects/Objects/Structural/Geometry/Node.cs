@@ -34,7 +34,7 @@ namespace Objects.Structural.Geometry
     {
       this.basePoint = basePoint;
     }
-    [SchemaInfo("Node with properties", "Creates a Speckle structural node with spring, mass and/or damper properties", "Structural", "Geometry")]
+    [SchemaInfo("Node", "Creates a Speckle structural node with spring, mass and/or damper properties", "Structural", "Geometry")]
     public Node(Point basePoint,
         string name = null,
         [SchemaParamInfo("If null, restraint condition defaults to free/fully released")] Restraint restraint = null,

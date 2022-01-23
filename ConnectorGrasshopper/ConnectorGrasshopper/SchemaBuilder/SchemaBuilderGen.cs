@@ -593,7 +593,7 @@ public class Element3DSchemaComponent: CreateSchemaObjectBase {
 // This is generated code:
 public class ETABSAreaSpringSchemaComponent: CreateSchemaObjectBase {
      
-    public ETABSAreaSpringSchemaComponent(): base("LinearSpring", "LinearSpring", "Create an ETABS AreaSpring", "Speckle 2 ETABS", "Properties") { }
+    public ETABSAreaSpringSchemaComponent(): base("AreaSpring", "AreaSpring", "Create an ETABS AreaSpring", "Speckle 2 ETABS", "Properties") { }
     
     public override Guid ComponentGuid => new Guid("7a20a21e-e90a-3059-3f54-54b157240410");
     
@@ -710,7 +710,7 @@ public class ETABSOpeningSchemaComponent: CreateSchemaObjectBase {
 // This is generated code:
 public class ETABSSpringPropertySchemaComponent: CreateSchemaObjectBase {
      
-    public ETABSSpringPropertySchemaComponent(): base("PointSpring", "PointSpring", "Create an ETABS PointSpring from Link", "Speckle 2 ETABS", "Properties") { }
+    public ETABSSpringPropertySchemaComponent(): base("PointSpring (link)", "PointSpring (link)", "Create an ETABS PointSpring from Link", "Speckle 2 ETABS", "Properties") { }
     
     public override Guid ComponentGuid => new Guid("83812607-cf77-2b4e-44ce-ccf4349a227f");
     
@@ -723,7 +723,7 @@ public class ETABSSpringPropertySchemaComponent: CreateSchemaObjectBase {
 // This is generated code:
 public class ETABSSpringProperty1SchemaComponent: CreateSchemaObjectBase {
      
-    public ETABSSpringProperty1SchemaComponent(): base("PointSpring", "PointSpring", "Create an ETABS PointSpring from Soil Profile", "Speckle 2 ETABS", "Properties") { }
+    public ETABSSpringProperty1SchemaComponent(): base("PointSpring (soil profile)", "PointSpring (soil profile)", "Create an ETABS PointSpring from Soil Profile", "Speckle 2 ETABS", "Properties") { }
     
     public override Guid ComponentGuid => new Guid("7ff9c658-f671-8a85-9842-a9f20346bd69");
     
@@ -790,7 +790,7 @@ public class FreeformElementSchemaComponent: CreateSchemaObjectBase {
 // This is generated code:
 public class FreeformElement1SchemaComponent: CreateSchemaObjectBase {
      
-    public FreeformElement1SchemaComponent(): base("Freeform element", "Freeform element", "Creates a Revit Freeform element using a list of Brep or Meshes.", "Speckle 2 Revit", "Families") { }
+    public FreeformElement1SchemaComponent(): base("Freeform element (from list)", "Freeform element (from list)", "Creates a Revit Freeform element using a list of Brep or Meshes.", "Speckle 2 Revit", "Families") { }
     
     public override Guid ComponentGuid => new Guid("d1bb3f50-6abc-9f34-acf3-297e82bbd8ac");
     
@@ -1289,7 +1289,7 @@ public class GSAProperty2DSchemaComponent: CreateSchemaObjectBase {
     public override Guid ComponentGuid => new Guid("562e2664-bdf3-8b98-6e09-cc6584cf2146");
     
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Properties.GSAProperty2D.ctor(System.String,Objects.Structural.Materials.Material,System.Double,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Properties.GSAProperty2D");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Properties.GSAProperty2D.ctor(System.String,Objects.Structural.Materials.Material,System.Double,Objects.Structural.PropertyType2D,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Properties.GSAProperty2D");
         base.AddedToDocument(document);
     }
 }
@@ -1648,7 +1648,7 @@ public class ModelUnits1SchemaComponent: CreateSchemaObjectBase {
 // This is generated code:
 public class NodeSchemaComponent: CreateSchemaObjectBase {
      
-    public NodeSchemaComponent(): base("Node with properties", "Node with properties", "Creates a Speckle structural node with spring, mass and/or damper properties", "Speckle 2 Structural", "Geometry") { }
+    public NodeSchemaComponent(): base("Node", "Node", "Creates a Speckle structural node with spring, mass and/or damper properties", "Speckle 2 Structural", "Geometry") { }
     
     public override Guid ComponentGuid => new Guid("dacc1582-c084-4685-981a-6f8f8d8663c8");
     
@@ -1692,7 +1692,7 @@ public class PerimeterSchemaComponent: CreateSchemaObjectBase {
     public override Guid ComponentGuid => new Guid("63b41dcc-8f2e-b900-be8a-82a661e56f19");
     
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.Properties.Profiles.Perimeter.ctor(System.String,Objects.ICurve,System.Collections.Generic.List`1[Objects.ICurve])","Objects.Structural.Properties.Profiles.Perimeter");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.Properties.Profiles.Perimeter.ctor(System.String,Objects.Geometry.Polyline,System.Collections.Generic.List`1[Objects.Geometry.Polyline])","Objects.Structural.Properties.Profiles.Perimeter");
         base.AddedToDocument(document);
     }
 }

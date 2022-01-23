@@ -47,8 +47,12 @@ namespace ConverterGSA
     private UnitConversion conversionFactors = new UnitConversion();  //Default
 
     public List<ApplicationPlaceholderObject> ContextObjects { get; set; } = new List<ApplicationPlaceholderObject>();
-    
-    public List<string> ConvertedObjectsList { get; set; } = new List<string>();
+
+    //public List<string> ConvertedObjectsList { get; set; } = new List<string>();
+    //The presence of a key (application ID) and non-null speckle object means it's an embedded object yet to be converted to native
+    //The presence of a key and null speckle object means there was an embedded object with that application ID that's already converted
+    private Dictionary<string, Base> embeddedToBeConverted = new Dictionary<string, Base>();
+    private object embeddedToBeConvertedLock = new object();
 
     private delegate ToSpeckleResult ToSpeckleMethodDelegate(GsaRecord gsaRecord, GSALayer layer = GSALayer.Both);
 
@@ -183,6 +187,10 @@ namespace ConverterGSA
     public List<object> ConvertToNative(List<Base> objects)
     {
       var retList = new List<object>();
+#if !DEBUG
+      var retListLock = new object();
+#endif
+      embeddedToBeConverted.Clear();
 
       //Handle Model objects as a special case, essentially flatten them first
       var models = objects.Where(o => o is Model).ToList();
@@ -214,22 +222,17 @@ namespace ConverterGSA
       {
         foreach (Base o in objects)
         {
-          var t = o.GetType();
-          try
+          if (SafeConvertToNative(o, out List<GsaRecord> newList))
           {
-            if (CanConvertToNative(o) && ToNativeFns.ContainsKey(t))
-            {
-              var natives = ToNativeFns[t](o);
-              retList.AddRangeIfNotNull(natives);
-              if (Instance.GsaModel.ConversionProgress != null)
-              {
-                Instance.GsaModel.ConversionProgress.Report(natives != null);
-              }
-            }
+            retList.AddRange(newList);
           }
-          catch
+          if (embeddedToBeConverted.Any())
           {
-            Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (o.applicationId ?? o.id) + " - refer to logs for more information"));
+            retList.AddRange(ConvertToNative(embeddedToBeConverted.Values.ToList()));
+            foreach (var k in embeddedToBeConverted.Keys)
+            {
+              embeddedToBeConverted[k] = null;
+            }
           }
         }
       }
@@ -245,62 +248,54 @@ namespace ConverterGSA
           {
             if (objectsByType.ContainsKey(t))
             {
-#if !DEBUG
-              if (parallelisable.ContainsKey(t))
-              {
-                foreach (Base so in objectsByType[t].Where(o => !string.IsNullOrEmpty(o.applicationId)))
-                {
-                  Instance.GsaModel.Cache.ResolveIndex(parallelisable[t], so.applicationId);
-                }
+//#if !DEBUG
+//              if (parallelisable.ContainsKey(t))
+//              {
+//                foreach (Base so in objectsByType[t].Where(o => !string.IsNullOrEmpty(o.applicationId)))
+//                {
+//                  Instance.GsaModel.Cache.ResolveIndex(parallelisable[t], so.applicationId);
+//                }
 
-                Parallel.ForEach(objectsByType[t].Cast<Base>(), so =>
-                {
-                  try
-                  {
-                    if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
-                    {
-                      var natives = ToNativeFns[t](so);
-                      retList.AddRangeIfNotNull(natives);
-                      if (Instance.GsaModel.ConversionProgress != null)
-                      {
-                        Instance.GsaModel.ConversionProgress.Report(natives != null);
-                      }
-                    }
-                  }
-                  catch
-                  {
-                    Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
-                  }
-                }
-                );
-              }
-              else
-#endif
+//                Parallel.ForEach(objectsByType[t].Cast<Base>(), so =>
+//                {
+//                  if (SafeConvertToNative(o, out List<GsaRecord> newList, t))
+//                  {
+//                    lock(retListLock)
+//                    {
+//                      retList.AddRange(newList);
+//                    }
+//                  }
+//                }
+//                );
+//              }
+//              else
+//#endif
               {
                 foreach (Base so in objectsByType[t])
                 {
-                  try
+                  if (SafeConvertToNative(so, out List<GsaRecord> newList, t))
                   {
-                    if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
-                    {
-                      var natives = ToNativeFns[t](so);
-                      retList.AddRangeIfNotNull(natives);
-                      if (Instance.GsaModel.ConversionProgress != null)
-                      {
-                        Instance.GsaModel.ConversionProgress.Report(natives != null);
-                      }
-                    }
-                  }
-                  catch
-                  {
-                    Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
+                    retList.AddRange(newList);
                   }
                 }
               }
             }
           }
 //#if !DEBUG
-          //);
+//          lock(retListLock)
+//          {
+//#endif
+          if (embeddedToBeConverted.Any())
+          {
+            retList.AddRange(ConvertToNative(embeddedToBeConverted.Values.ToList()));
+            foreach (var k in embeddedToBeConverted.Keys)
+            {
+              embeddedToBeConverted[k] = null;
+            }
+          }
+//#if !DEBUG
+//          }
+//          );
 //#endif
         }
       }
@@ -308,7 +303,40 @@ namespace ConverterGSA
       return retList;
     }
 
-    public Base ConvertToSpeckle(object @object)
+    private bool SafeConvertToNative(Base so, out List<GsaRecord> retList, Type t = null)
+    {
+      retList = new List<GsaRecord>();
+      if (so == null)
+      {
+        return false;
+      }
+      if (t == null)
+      {
+        t = so.GetType();
+      }
+
+      try
+      {
+        if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
+        {
+          var natives = ToNativeFns[t](so);
+
+          retList.AddRange(natives);
+          if (Instance.GsaModel.ConversionProgress != null)
+          {
+            Instance.GsaModel.ConversionProgress.Report(natives != null);
+          }
+        }
+      }
+      catch
+      {
+        Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
+        return false;
+      }
+      return true;
+    }
+
+        public Base ConvertToSpeckle(object @object)
     {
       if (@object is List<GsaRecord>)
       {
@@ -708,7 +736,7 @@ namespace ConverterGSA
       throw new NotImplementedException();
     }
 
-    #region private_classes
+#region private_classes
     internal class ToSpeckleResult
     {
       public bool Success = true;
@@ -765,6 +793,6 @@ namespace ConverterGSA
         }
       }
     }
-    #endregion
+#endregion
   }
 }

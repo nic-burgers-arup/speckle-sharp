@@ -38,7 +38,7 @@ namespace Objects.Structural.GSA.Geometry
 
       var coordinates = perimeter.SelectMany(x => x.basePoint.ToList()).ToList();
       coordinates.AddRange(perimeter[0].basePoint.ToList());
-      this.outline = new Polyline(coordinates);
+      this.outline = new Polyline(coordinates, this.units != null ? this.units : perimeter.FirstOrDefault().units);
     }
   }
 }

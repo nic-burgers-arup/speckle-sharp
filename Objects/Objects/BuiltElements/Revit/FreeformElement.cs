@@ -52,7 +52,7 @@ namespace Objects.BuiltElements.Revit
       this.parameters = parameters.ToBase();
     }
     
-    [SchemaInfo("Freeform element", "Creates a Revit Freeform element using a list of Brep or Meshes.", "Revit", "Families")]
+    [SchemaInfo("Freeform element (from list)", "Creates a Revit Freeform element using a list of Brep or Meshes.", "Revit", "Families")]
     public FreeformElement(List<Base> baseGeometries, List<Parameter> parameters = null)
     {
       this.baseGeometries = baseGeometries;
