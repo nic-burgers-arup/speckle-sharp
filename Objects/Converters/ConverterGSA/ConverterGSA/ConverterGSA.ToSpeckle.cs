@@ -291,6 +291,11 @@ namespace ConverterGSA
         action = "NORMAL", //TODO: update if interim schema is updated
       };
 
+      if (gsaEl.Index.IsIndex())
+      {
+        speckleElement1d.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaEl>(gsaEl.Index.Value);
+      }
+
       //-- App agnostic --
       if (gsaEl.NodeIndices.Count >= 2)
       {
@@ -307,7 +312,6 @@ namespace ConverterGSA
         return null;
       }
       speckleElement1d.baseLine = new Line(speckleElement1d.end1Node.basePoint, speckleElement1d.end2Node.basePoint);
-      if (gsaEl.Index.IsIndex()) speckleElement1d.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaEl>(gsaEl.Index.Value);
       if (gsaEl.PropertyIndex.IsIndex()) speckleElement1d.property = GetProperty1dFromIndex(gsaEl.PropertyIndex.Value);
       if (gsaEl.OrientationNodeIndex.IsIndex())
       {

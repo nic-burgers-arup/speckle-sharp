@@ -1279,8 +1279,8 @@ namespace ConverterGSA
         Values = speckleLoad.values.Select(v => factor * v).ToList(),
         LoadDirection = speckleLoad.direction.ToNative(),
         Projected = speckleLoad.isProjected,
-        ElementIndices = IndexByConversionOrLookup<GsaEl>(speckleLoad.elements.FindAll(o => o is Base), ref gsaRecords) ?? new List<int>(),
-        MemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleLoad.elements.FindAll(o => o is Base), ref gsaRecords) ?? new List<int>(),
+        ElementIndices = IndexByConversionOrLookup<GsaEl>(speckleLoad.elements.FindAll(o => o is Element2D), ref gsaRecords) ?? new List<int>(),
+        MemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleLoad.elements.FindAll(o => o is GSAMember2D), ref gsaRecords) ?? new List<int>(),
       };
       if (GetLoadAxis(speckleLoad.loadAxis, speckleLoad.loadAxisType, out var gsaAxisRefType, out var gsaAxisIndex, ref gsaRecords))
       {
@@ -2143,16 +2143,16 @@ namespace ConverterGSA
         gsaProp2d.Colour = (Enum.TryParse(speckleProperty.colour, true, out Colour gsaColour) ? gsaColour : Colour.NO_RGB);
         gsaProp2d.Mass = speckleProperty.additionalMass * conversionFactors.mass / Math.Pow(conversionFactors.length, 2);
         gsaProp2d.Profile = speckleProperty.concreteSlabProp;
-        if (speckleProperty.material != null)
+        if (speckleProperty.designMaterial != null)
         {
-          if ((speckleProperty.material.materialType == MaterialType.Steel) && (speckleProperty.material is GSASteel || speckleProperty.material is Steel))
+          if (speckleProperty.designMaterial.materialType == MaterialType.Steel && speckleProperty.designMaterial is GSASteel)
           {
-            gsaProp2d.GradeIndex = IndexByConversionOrLookup<GsaMatSteel>(speckleProperty.material, ref retList);
+            gsaProp2d.GradeIndex = IndexByConversionOrLookup<GsaMatSteel>(speckleProperty.designMaterial, ref retList);
             gsaProp2d.MatType = Property2dMaterialType.Steel;
           }
-          else if ((speckleProperty.material.materialType == MaterialType.Concrete) && (speckleProperty.material is GSAConcrete || speckleProperty.material is Concrete))
+          else if (speckleProperty.designMaterial.materialType == MaterialType.Concrete && speckleProperty.designMaterial is GSAConcrete)
           {
-            gsaProp2d.GradeIndex = IndexByConversionOrLookup<GsaMatConcrete>(speckleProperty.material, ref retList);
+            gsaProp2d.GradeIndex = IndexByConversionOrLookup<GsaMatConcrete>(speckleProperty.designMaterial, ref retList);
             gsaProp2d.MatType = Property2dMaterialType.Concrete;
           }
           else
@@ -2195,10 +2195,13 @@ namespace ConverterGSA
         InPlaneStiffnessPercentage = speckleProperty.modifierInPlane < 0 ? -(double?)speckleProperty.modifierInPlane * 100 : null,
         BendingStiffnessPercentage = speckleProperty.modifierBending < 0 ? -(double?)speckleProperty.modifierBending * 100 : null,
         ShearStiffnessPercentage = speckleProperty.modifierShear < 0 ? -(double?)speckleProperty.modifierShear * 100 : null,
-        VolumePercentage = speckleProperty.modifierVolume < 0 ? -(double?)speckleProperty.modifierVolume * 100 : null,
-        Units = speckleProperty.units
+        VolumePercentage = speckleProperty.modifierVolume < 0 ? -(double?)speckleProperty.modifierVolume * 100 : null
       };
 
+      if (!string.IsNullOrEmpty(speckleProperty.units))
+      {
+        gsaProp2d.Units = speckleProperty.units;
+      }
       if (speckleProperty.material != null)
       {
         if (speckleProperty.material.materialType == MaterialType.Concrete)
