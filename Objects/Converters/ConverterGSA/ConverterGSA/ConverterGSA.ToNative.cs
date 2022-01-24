@@ -1718,6 +1718,7 @@ namespace ConverterGSA
         Name = speckleConcrete.name,
         Mat = new GsaMat()
         {
+          Name = speckleConcrete.name,
           E = e,
           F = fc,
           Nu = nu,
