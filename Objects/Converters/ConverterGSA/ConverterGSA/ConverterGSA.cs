@@ -105,8 +105,8 @@ namespace ConverterGSA
         typeof(GSARigidConstraint), typeof(GSAGeneralisedRestraint), //Constraints
         typeof(GSAAlignment), typeof(GSAInfluenceBeam), typeof(GSAInfluenceNode), typeof(GSAPath), typeof(GSAUserVehicle) } }, //Bridge
       { ModelAspect.Loads, new List<Type>()
-        { typeof(GSAAnalysisCase), typeof(GSATask), typeof(GSALoadCase), typeof(GSALoadBeam), typeof(GSALoadFace), typeof(GSALoadGravity), 
-        typeof(GSALoadCase), typeof(GSALoadCombination), typeof(GSALoadNode), typeof(GSALoadThermal2d), typeof(GSALoadGridArea), typeof(GSALoadGridLine), 
+        { typeof(GSAAnalysisCase), typeof(GSATask), typeof(GSALoadCase), typeof(GSALoadBeam), typeof(GSALoadFace), typeof(GSALoadGravity),
+        typeof(GSALoadCase), typeof(GSALoadCombination), typeof(GSALoadNode), typeof(GSALoadThermal2d), typeof(GSALoadGridArea), typeof(GSALoadGridLine),
         typeof(GSALoadGridPoint) } },
       { ModelAspect.Restraints, new List<Type>() { typeof(Objects.Structural.Geometry.Restraint) } },
       { ModelAspect.Properties, new List<Type>()
@@ -240,36 +240,36 @@ namespace ConverterGSA
       {
         foreach (var gen in speckleDependencyTree)
         {
-//#if DEBUG
+#if DEBUG
           foreach (var t in gen)
-//#else
-          //Parallel.ForEach(gen, t =>
-//#endif
+#else
+          Parallel.ForEach(gen, t =>
+#endif
           {
             if (objectsByType.ContainsKey(t))
             {
-//#if !DEBUG
-//              if (parallelisable.ContainsKey(t))
-//              {
-//                foreach (Base so in objectsByType[t].Where(o => !string.IsNullOrEmpty(o.applicationId)))
-//                {
-//                  Instance.GsaModel.Cache.ResolveIndex(parallelisable[t], so.applicationId);
-//                }
+#if !DEBUG
+              if (parallelisable.ContainsKey(t))
+              {
+                foreach (Base so in objectsByType[t].Where(o => !string.IsNullOrEmpty(o.applicationId)))
+                {
+                  Instance.GsaModel.Cache.ResolveIndex(parallelisable[t], so.applicationId);
+                }
 
-//                Parallel.ForEach(objectsByType[t].Cast<Base>(), so =>
-//                {
-//                  if (SafeConvertToNative(o, out List<GsaRecord> newList, t))
-//                  {
-//                    lock(retListLock)
-//                    {
-//                      retList.AddRange(newList);
-//                    }
-//                  }
-//                }
-//                );
-//              }
-//              else
-//#endif
+                Parallel.ForEach(objectsByType[t].Cast<Base>(), so =>
+                {
+                  if (SafeConvertToNative(so, out List<GsaRecord> newList, t))
+                  {
+                    lock (retListLock)
+                    {
+                      retList.AddRange(newList);
+                    }
+                  }
+                }
+                );
+              }
+              else
+#endif
               {
                 foreach (Base so in objectsByType[t])
                 {
@@ -281,10 +281,11 @@ namespace ConverterGSA
               }
             }
           }
-//#if !DEBUG
-//          lock(retListLock)
-//          {
-//#endif
+#if !DEBUG
+        );
+          lock (retListLock)
+          {
+#endif
           if (embeddedToBeConverted.Any())
           {
             retList.AddRange(ConvertToNative(embeddedToBeConverted.Values.ToList()));
@@ -293,10 +294,9 @@ namespace ConverterGSA
               embeddedToBeConverted[k] = null;
             }
           }
-//#if !DEBUG
-//          }
-//          );
-//#endif
+#if !DEBUG
+          }
+#endif
         }
       }
 
@@ -336,7 +336,7 @@ namespace ConverterGSA
       return true;
     }
 
-        public Base ConvertToSpeckle(object @object)
+    public Base ConvertToSpeckle(object @object)
     {
       if (@object is List<GsaRecord>)
       {
@@ -408,7 +408,7 @@ namespace ConverterGSA
 
       foreach (var ud in unitDataRecords)
       {
-        switch(ud.Option)
+        switch (ud.Option)
         {
           case UnitDimension.Length: ms.modelUnits.length = ud.Name; break;
           case UnitDimension.Sections: ms.modelUnits.sections = ud.Name; break;
@@ -736,7 +736,7 @@ namespace ConverterGSA
       throw new NotImplementedException();
     }
 
-#region private_classes
+    #region private_classes
     internal class ToSpeckleResult
     {
       public bool Success = true;
@@ -793,6 +793,6 @@ namespace ConverterGSA
         }
       }
     }
-#endregion
+    #endregion
   }
 }
