@@ -18,7 +18,7 @@ namespace Objects.Structural.GSA.Bridge
 
     [SchemaInfo("GSAAlignment", "Creates a Speckle structural alignment for GSA (as a setting out feature for bridge models)", "GSA", "Bridge")]
 
-    public GSAAlignment(string name, GSAGridSurface gridSurface, List<double> chainage, List<double> curvature, int? nativeId = null)
+    public GSAAlignment(GSAGridSurface gridSurface, List<double> chainage, List<double> curvature, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;

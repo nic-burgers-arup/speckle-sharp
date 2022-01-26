@@ -12,10 +12,10 @@ namespace Objects.Structural.GSA.Geometry
     public GSAGridLine() { }
 
     [SchemaInfo("GSAGridLine", "Creates a Speckle structural grid line for GSA", "GSA", "Geometry")]
-    public GSAGridLine(string name, ICurve line, int? nativeId = null)
+    public GSAGridLine(string label, ICurve line, int? nativeId = null)
     {
       this.nativeId = nativeId;
-      this.label = name;
+      this.label = label;
       this.baseLine = line;
     }
   }

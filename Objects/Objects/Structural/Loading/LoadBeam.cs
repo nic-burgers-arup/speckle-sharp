@@ -9,7 +9,7 @@ namespace Objects.Structural.Loading
     public class LoadBeam : Load
     {
         [DetachProperty]
-        [Chunkable(5000)]
+        [Chunkable(1000)]
         public List<Base> elements { get; set; } 
         public BeamLoadType loadType { get; set; }
         public LoadDirection direction { get; set; }
