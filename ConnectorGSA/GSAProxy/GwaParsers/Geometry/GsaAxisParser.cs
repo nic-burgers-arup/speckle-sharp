@@ -65,7 +65,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       }
 
       //AXIS.1 | num | name | type | Ox | Oy | Oz | Xx | Xy | Xz | XYx | XYy | Xyz
-      AddItems(ref items, record.Name, "CART", record.OriginX, record.OriginY, record.OriginZ, 
+      AddItems(ref items, record.Name ?? $"Axis {record.Index}", "CART", record.OriginX, record.OriginY, record.OriginZ, 
         record.XDirX ?? 0, record.XDirY ?? 0, record.XDirZ ?? 0, record.XYDirX ?? 0, record.XYDirY ?? 0, record.XYDirZ ?? 0);
 
       gwa = (Join(items, out var gwaLine)) ? new List<string>() { gwaLine } : new List<string>();
