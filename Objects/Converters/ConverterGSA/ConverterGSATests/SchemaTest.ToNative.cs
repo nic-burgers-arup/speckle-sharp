@@ -52,7 +52,7 @@ namespace ConverterGSATests
 
       //Checks
       var gsaConvertedAxis = gsaConvertedRecords.FindAll(r => r is GsaAxis).Select(r => (GsaAxis)r).First();
-      
+
       var compareLogic = new CompareLogic();
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaAxis x) => x.XDirX));
       compareLogic.Config.MembersToIgnore.Add(GetPropertyName((GsaAxis x) => x.XDirY));
@@ -71,10 +71,10 @@ namespace ConverterGSATests
     }
 
     [Theory]
-    [InlineData("m","mm")]
-    [InlineData("mm","mm")]
+    [InlineData("m", "mm")]
+    [InlineData("mm", "mm")]
     [InlineData("mm", "m")]
-    [InlineData("","m")]
+    [InlineData("", "m")]
     [InlineData("m", "")]
     [InlineData(null, null)]
     public void NodeToNative(string gsaLengthUnit, string speckleLengthUnit)
@@ -366,7 +366,7 @@ namespace ConverterGSATests
       gsaRecords.AddRange(gsaGridLines);
       Instance.GsaModel.Cache.Upsert(gsaRecords);
 
-        Assert.Empty(converter.Report.ConversionErrors);
+      Assert.Empty(converter.Report.ConversionErrors);
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
@@ -427,7 +427,7 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-        Assert.Empty(converter.Report.ConversionErrors);
+      Assert.Empty(converter.Report.ConversionErrors);
       var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
@@ -580,7 +580,7 @@ namespace ConverterGSATests
         {
           Assert.Equal(factor * gsaPolylines[i].Values[j], gsaConvertedPolylines[i].Values[j]);
         }
-        
+
       }
     }
     #endregion
@@ -1102,7 +1102,7 @@ namespace ConverterGSATests
       gsaRecords.AddRange(GsaNodeExamples(2, "node 1", "node 2"));
       var gsaLoadNodes = GsaLoadNodeExamples(2, "load node 1", "load node 2");
       gsaRecords.AddRange(gsaLoadNodes);
-      
+
       Instance.GsaModel.Cache.Upsert(gsaRecords);
 
       //Convert
@@ -1274,7 +1274,7 @@ namespace ConverterGSATests
           Assert.Equal(TemperatureUnits.Convert(gsaLoadThermals[i].Values[j], speckleTemperatureUnit, gsaTemperatureUnit), gsaConvertedLoadThermals[i].Values[j]);
         }
       }
-      
+
     }
 
     [Theory]
@@ -1449,7 +1449,7 @@ namespace ConverterGSATests
     [InlineData("m", "kg", "oC", "Pa", "ε", "mm", "t", "oF", "MPa", "%ε")]
     [InlineData("m", null, null, null, null, "mm", null, null, null, null)]
     [InlineData(null, null, null, null, null, null, null, null, null, null)]
-    public void GSASteelToNative(string gsaLengthUnit, string gsaMassUnit, string gsaTemperatureUnit, string gsaStressUnit, string gsaStrainUnit, 
+    public void GSASteelToNative(string gsaLengthUnit, string gsaMassUnit, string gsaTemperatureUnit, string gsaStressUnit, string gsaStrainUnit,
       string speckleLengthUnit, string speckleMassUnit, string speckleTemperatureUnit, string speckleStressUnit, string speckleStrainUnit)
     {
       # region unit conversion factors
@@ -1908,7 +1908,7 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-        Assert.Empty(converter.Report.ConversionErrors);
+      Assert.Empty(converter.Report.ConversionErrors);
       var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(r => (object)r).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
@@ -2101,7 +2101,7 @@ namespace ConverterGSATests
     [InlineData("m", "m", "m", "kg", "mm", "cm", "m", "g")]
     [InlineData("m", null, null, null, "mm", null, null, null)]
     [InlineData(null, null, null, null, null, null, null, null)]
-    public void Property2dToNative(string gsaLengthUnits, string gsaDisplacementUnits, string gsaSectionUnits, string gsaMassUnits, 
+    public void Property2dToNative(string gsaLengthUnits, string gsaDisplacementUnits, string gsaSectionUnits, string gsaMassUnits,
       string speckleLengthUnits, string speckleDisplacementUnits, string speckleSectionUnits, string speckleMassUnits)
     {
       # region unit conversion factors
@@ -2144,7 +2144,7 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-        Assert.Empty(converter.Report.ConversionErrors);
+      Assert.Empty(converter.Report.ConversionErrors);
       var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
@@ -2213,7 +2213,7 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-        Assert.Empty(converter.Report.ConversionErrors);
+      Assert.Empty(converter.Report.ConversionErrors);
       var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
@@ -2283,7 +2283,7 @@ namespace ConverterGSATests
       //Convert
       Instance.GsaModel.StreamLayer = GSALayer.Both;
       Instance.GsaModel.StreamSendConfig = StreamContentConfig.ModelOnly;
-        Assert.Empty(converter.Report.ConversionErrors);
+      Assert.Empty(converter.Report.ConversionErrors);
       var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
@@ -3042,25 +3042,23 @@ namespace ConverterGSATests
     private GSAAlignment GetGsaAlignment()
     {
       var axis = SpeckleGlobalAxis();
-      var gsaGridPlane = new GSAGridPlane("myGsaGridPlane", axis, 1, 1);
-      var gsaAlignment = new GSAAlignment("myGsaAlignment",
-        new GSAGridSurface("myGsaGridSurface", gsaGridPlane, 1, 2,
-          LoadExpansion.PlaneCorner, GridSurfaceSpanType.OneWay,
-          new List<Base>(), 1),
+      var gsaGridPlane = new GSAGridPlane(axis, 1, "myGsaGridPlane", 1);
+      var gsaAlignment = new GSAAlignment(new GSAGridSurface(gsaGridPlane, new List<Base>(), 10, GridSurfaceElementType.TwoD, 
+        GridSurfaceSpanType.OneWay, 0, LoadExpansion.PlaneCorner, "myGsaGridSurface", 1),
         new List<double>() { 0, 1 },
-        new List<double>() { 3, 3 }, 2);
+        new List<double>() { 3, 3 }, "myGsaAlignment", 2);
       return gsaAlignment;
     }
 
     private static GSAElement1D GetElement1d1()
     {
-      return new GSAElement1D(null, null, ElementType1D.Bar, orientationAngle: 0D){applicationId = "appl1dforGsaElement1d"};
+      return new GSAElement1D(null, null, ElementType1D.Bar, orientationAngle: 0D) { applicationId = "appl1dforGsaElement1d" };
     }
 
     #endregion
 
     #region Other
-    
+
     private static T GenericTestForList<T>(List<GsaRecord> gsaRecord)
     {
       Assert.NotEmpty(gsaRecord);
@@ -3069,7 +3067,7 @@ namespace ConverterGSATests
       var obj = (T)(object)(gsaRecord.First());
       return obj;
     }
-    
+
     private Axis SpeckleGlobalAxis()
     {
       return new Axis()
@@ -3087,10 +3085,10 @@ namespace ConverterGSATests
       };
     }
 
-    private bool Map<T,U>(List<T> source, out List<U> destination) where T : Base
+    private bool Map<T, U>(List<T> source, out List<U> destination) where T : Base
     {
       destination = new List<U>();
-      var config = new MapperConfiguration(cfg => { cfg.CreateMap< T, U >(); });
+      var config = new MapperConfiguration(cfg => { cfg.CreateMap<T, U>(); });
       var mapper = new Mapper(config);
       foreach (var s in source)
       {
