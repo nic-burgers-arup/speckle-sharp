@@ -26,8 +26,9 @@ namespace Objects.Structural.GSA.Geometry
     /// <param name="damperProperty"></param>
     /// <param name="localElementSize"></param>
     [SchemaInfo("GSANode", "Creates a Speckle structural node for GSA", "GSA", "Geometry")]
-    public GSANode(Point basePoint, Restraint restraint, Axis constraintAxis = null, PropertySpring springProperty = null, PropertyMass massProperty = null, PropertyDamper damperProperty = null, double localElementSize = 0, string colour = "NO_RGB", int? nativeId = null)
+    public GSANode(Point basePoint, Restraint restraint, Axis constraintAxis = null, PropertySpring springProperty = null, PropertyMass massProperty = null, PropertyDamper damperProperty = null, double localElementSize = 0, string colour = "NO_RGB", string name = null, int? nativeId = null)
     {
+      this.name = name;
       this.nativeId = nativeId;
       this.basePoint = basePoint;
       this.restraint = restraint;
@@ -36,7 +37,7 @@ namespace Objects.Structural.GSA.Geometry
       this.massProperty = massProperty;
       this.damperProperty = damperProperty;
       this.localElementSize = localElementSize;
-      this.colour = colour;
+      this.colour = colour;      
     }
   }
 }

@@ -15,7 +15,7 @@ namespace Objects.Structural.GSA.Bridge
     public GSAInfluenceNode() { }
 
     [SchemaInfo("GSAInfluenceNode", "Creates a Speckle structural node influence effect for GSA (for an influence analysis)", "GSA", "Bridge")]
-    public GSAInfluenceNode(string name, double factor, InfluenceType type, LoadDirection direction, Node node, Axis axis, int? nativeId = null)
+    public GSAInfluenceNode(double factor, InfluenceType type, LoadDirection direction, Node node, Axis axis, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;

@@ -34,7 +34,7 @@ namespace Objects.Structural.GSA.Geometry
     public GSAAssembly() { }
 
     [SchemaInfo("GSAAssembly", "Creates a Speckle structural assembly (ie. a way to define an entity that is formed from a collection of elements or members) for GSA", "GSA", "Bridge")]
-    public GSAAssembly(string name, List<Base> entities, GSANode end1Node, GSANode end2Node, GSANode orientationNode, double sizeY, double sizeZ, string curveType, int curveOrder, string pointDefinition, List<double> points, int? nativeId = null)
+    public GSAAssembly(List<Base> entities, GSANode end1Node, GSANode end2Node, GSANode orientationNode, double sizeY, double sizeZ, string curveType, int curveOrder, string pointDefinition, List<double> points, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;

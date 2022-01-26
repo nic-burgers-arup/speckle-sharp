@@ -741,8 +741,8 @@ namespace ConverterGSATests
       Assert.Equal(gsaPolylines[0].Index.Value, specklePolylines[0].nativeId);
       Assert.Equal(gsaPolylines[0].Colour.ToString(), specklePolylines[0].colour);
       Assert.Null(specklePolylines[0].gridPlane);
-      Assert.Null(specklePolylines[0].units);
-      Assert.Equal(new List<double>() { 1, 2, 0, 3, 4, 0, 5, 6, 0, 7, 8, 0 }, specklePolylines[0].value);
+      Assert.Null(specklePolylines[0].description.units);
+      Assert.Equal(new List<double>() { 1, 2, 0, 3, 4, 0, 5, 6, 0, 7, 8, 0 }, specklePolylines[0].description.value);
 
       //Checks - polyline 2
       Assert.Equal("polyline 2", specklePolylines[1].applicationId);
@@ -750,8 +750,8 @@ namespace ConverterGSATests
       Assert.Equal(gsaPolylines[1].Index.Value, specklePolylines[1].nativeId);
       Assert.Equal(gsaPolylines[1].Colour.ToString(), specklePolylines[1].colour);
       Assert.Equal("grid plane 1", specklePolylines[1].gridPlane.applicationId);
-      Assert.Null(specklePolylines[1].units);
-      Assert.Equal(gsaPolylines[1].Values, specklePolylines[1].value);
+      Assert.Null(specklePolylines[1].description.units);
+      Assert.Equal(gsaPolylines[1].Values, specklePolylines[1].description.value);
     }
     #endregion
 
@@ -2105,8 +2105,8 @@ namespace ConverterGSATests
 
         Assert.Equal("node 1_analysis case " + loadCase, speckleNodeResults[i].applicationId);
         Assert.Equal("node 1", speckleNodeResults[i].node.applicationId); //assume the conversion of the node is tested elsewhere
-        Assert.Equal("", speckleNodeResults[i].description);
-        Assert.Equal("", speckleNodeResults[i].permutation);
+        Assert.True(string.IsNullOrEmpty(speckleNodeResults[i].description));
+        Assert.True(string.IsNullOrEmpty(speckleNodeResults[i].permutation));
         Assert.Equal("analysis case " + loadCase, speckleNodeResults[i].resultCase.applicationId);
         Assert.Equal(gsaResult.Ux.Value, speckleNodeResults[i].dispX);
         Assert.Equal(gsaResult.Uy.Value, speckleNodeResults[i].dispY);

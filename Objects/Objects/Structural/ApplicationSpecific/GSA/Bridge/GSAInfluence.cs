@@ -14,7 +14,7 @@ namespace Objects.Structural.GSA.Bridge
     public LoadDirection direction { get; set; }
     public GSAInfluence() { }
 
-    public GSAInfluence(string name, double factor, InfluenceType type, LoadDirection direction, int? nativeId = null)
+    public GSAInfluence(double factor, InfluenceType type, LoadDirection direction, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;

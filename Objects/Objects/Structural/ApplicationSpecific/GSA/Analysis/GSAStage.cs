@@ -12,18 +12,18 @@ namespace Objects.Structural.GSA.Analysis
     public string colour { get; set; }
 
     [DetachProperty]
-    [Chunkable(5000)]
+    [Chunkable(1000)]
     public List<Base> elements { get; set; }
     public double creepFactor { get; set; } //Phi
     public int stageTime { get; set; } //number of days
 
     [DetachProperty]
-    [Chunkable(5000)]
+    [Chunkable(1000)]
     public List<Base> lockedElements { get; set; } //elements not part of the current analysis stage
     public GSAStage() { }
 
     [SchemaInfo("GSAStage", "Creates a Speckle structural analysis stage for GSA", "GSA", "Analysis")]
-    public GSAStage(string name, string colour, List<Base> elements, double creepFactor, int stageTime, List<Base> lockedElements, int? nativeId = null)
+    public GSAStage(string colour, List<Base> elements, double creepFactor, int stageTime, List<Base> lockedElements, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;

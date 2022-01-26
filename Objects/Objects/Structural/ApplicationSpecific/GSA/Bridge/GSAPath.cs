@@ -19,7 +19,7 @@ namespace Objects.Structural.GSA.Bridge
     public GSAPath() { }
 
     [SchemaInfo("GSAPath", "Creates a Speckle structural path for GSA (a path defines traffic lines along a bridge relative to an alignments, for influence analysis)", "GSA", "Bridge")]
-    public GSAPath(string name, PathType type, int group, GSAAlignment alignment, double left, double right, double factor, int numMarkedLanes, int? nativeId = null)
+    public GSAPath(PathType type, int group, GSAAlignment alignment, double left, double right, double factor, int numMarkedLanes, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;

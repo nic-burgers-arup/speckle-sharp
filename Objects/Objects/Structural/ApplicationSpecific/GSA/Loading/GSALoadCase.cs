@@ -13,7 +13,7 @@ namespace Objects.Structural.GSA.Loading
     public GSALoadCase() { }
 
     [SchemaInfo("GSALoadCase", "Creates a Speckle structural load case for GSA", "GSA", "Loading")]
-    public GSALoadCase(string name, LoadType loadType, string source = null, ActionType actionType = ActionType.None, string description = "notset", string include = "undefined", bool bridge = false, int? nativeId = null)
+    public GSALoadCase(LoadType loadType, string source = null, ActionType actionType = ActionType.None, string description = "notset", string include = "undefined", bool bridge = false, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;

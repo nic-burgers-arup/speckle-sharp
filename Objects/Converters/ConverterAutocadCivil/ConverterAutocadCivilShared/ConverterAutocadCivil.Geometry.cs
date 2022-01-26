@@ -6,6 +6,7 @@ using System.Drawing;
 using Autodesk.AutoCAD.Geometry;
 using AcadGeo = Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.DatabaseServices;
+using Objects.Utils;
 using AcadBRep = Autodesk.AutoCAD.BoundaryRepresentation;
 using AcadDB = Autodesk.AutoCAD.DatabaseServices;
 
@@ -311,6 +312,8 @@ namespace Objects.Converter.AutocadCivil
       var radiusRatio = (double)ellipse.secondRadius / (double)ellipse.firstRadius;
       return new AcadDB.Ellipse(PointToNative(ellipse.plane.origin), normal, majorAxis, radiusRatio, 0, 2 * Math.PI);
     }
+
+    // Spiral
 
     // Polyline
     public Polyline PolylineToSpeckle(AcadDB.Polyline polyline) // AcadDB.Polylines can have linear or arc segments. This will convert to linear
@@ -1372,6 +1375,8 @@ namespace Objects.Converter.AutocadCivil
     // Polyface mesh vertex indexing starts at 1. Add 1 to face vertex index when converting to native
     public PolyFaceMesh MeshToNativeDB(Mesh mesh)
     {
+      mesh.TriangulateMesh(true);
+      
       // get vertex points
       var vertices = new Point3dCollection();
       var points = mesh.GetPoints().Select(o => PointToNative(o)).ToList();
@@ -1414,8 +1419,8 @@ namespace Objects.Converter.AutocadCivil
         int j = 0;
         while (j < mesh.faces.Count)
         {
-          FaceRecord face = null;
-          if (mesh.faces[j] == 0) // triangle
+          FaceRecord face;
+          if (mesh.faces[j] == 3) // triangle
           {
             face = new FaceRecord((short)(mesh.faces[j + 1] + 1), (short)(mesh.faces[j + 2] + 1), (short)(mesh.faces[j + 3] + 1), 0);
             j += 4;
@@ -1425,14 +1430,13 @@ namespace Objects.Converter.AutocadCivil
             face = new FaceRecord((short)(mesh.faces[j + 1] + 1), (short)(mesh.faces[j + 2] + 1), (short)(mesh.faces[j + 3] + 1), (short)(mesh.faces[j + 4] + 1));
             j += 5;
           }
-          if (face != null)
+          
+          if (face.IsNewObject)
           {
-            if (face.IsNewObject)
-            {
-              _mesh.AppendFaceRecord(face);
-              tr.AddNewlyCreatedDBObject(face, true);
-            }
+            _mesh.AppendFaceRecord(face);
+            tr.AddNewlyCreatedDBObject(face, true);
           }
+          
         }
 
         tr.Commit();
