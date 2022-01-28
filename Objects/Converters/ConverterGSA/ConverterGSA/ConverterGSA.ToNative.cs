@@ -967,6 +967,7 @@ namespace ConverterGSA
             if (gsaPlane != null && gsaPlane.Index.IsIndex())
             {
               gsaGridSurface.PlaneIndex = gsaPlane.Index;
+              gsaGridSurface.PlaneRefType = GridPlaneAxisRefType.Reference;
               retList.Add(gsaPlane);
             }
           }
