@@ -14,7 +14,7 @@ namespace Objects.Structural.GSA.Loading
     public GSALoadGridArea() { }
 
     [SchemaInfo("GSALoadGridArea (explicit polyline)", "Creates a Speckle structural grid area load (by polyline) for GSA", "GSA", "Loading")]
-    public GSALoadGridArea(LoadCase loadCase, GSAGridSurface gridSurface, Polyline polyline, double value, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, bool isProjected = false, string name = null, int? nativeId = null)
+    public GSALoadGridArea(LoadCase loadCase, GSAGridSurface gridSurface, Polyline polyline, double value, string units, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, bool isProjected = false, string name = null, int? nativeId = null)
     {
       this.name = name;
       this.loadCase = loadCase;
@@ -25,10 +25,11 @@ namespace Objects.Structural.GSA.Loading
       this.polyline = polyline;
       this.isProjected = isProjected;
       this.value = value;
+      this.units = units;
     }
 
     [SchemaInfo("GSALoadGridArea (GSAPolyline)", "Creates a Speckle structural grid area load (by GSAPolyline) for GSA", "GSA", "Loading")]
-    public GSALoadGridArea(LoadCase loadCase, GSAGridSurface gridSurface, GSAPolyline polyline, double value, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, bool isProjected = false, string name = null, int? nativeId = null)
+    public GSALoadGridArea(LoadCase loadCase, GSAGridSurface gridSurface, GSAPolyline polyline, double value, string units, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, bool isProjected = false, string name = null, int? nativeId = null)
     {
       this.name = name;
       this.loadCase = loadCase;
@@ -39,10 +40,12 @@ namespace Objects.Structural.GSA.Loading
       this.polyline = polyline.description;
       this.isProjected = isProjected;
       this.value = value;
+      this.units = units;
+
     }
 
-    [SchemaInfo("GSALoadGridArea (whole plane)", "Creates a Speckle structural grid area load for GSA", "GSA", "Loading")]
-    public GSALoadGridArea(LoadCase loadCase, GSAGridSurface gridSurface, double value, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, bool isProjected = false, string name = null, int? nativeId = null)
+        [SchemaInfo("GSALoadGridArea (whole plane)", "Creates a Speckle structural grid area load for GSA", "GSA", "Loading")]
+    public GSALoadGridArea(LoadCase loadCase, GSAGridSurface gridSurface, double value, string units, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, bool isProjected = false, string name = null, int? nativeId = null)
     {
       this.name = name;
       this.loadCase = loadCase;
@@ -52,6 +55,7 @@ namespace Objects.Structural.GSA.Loading
       this.direction = direction;
       this.isProjected = isProjected;
       this.value = value;
+      this.units = units;
     }
-  }
+   }
 }
