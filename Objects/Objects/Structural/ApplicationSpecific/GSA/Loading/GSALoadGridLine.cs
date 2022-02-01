@@ -15,7 +15,7 @@ namespace Objects.Structural.GSA.Loading
     public GSALoadGridLine() { }
 
     [SchemaInfo("GSALoadGridLine (explicit polyline)", "Creates a Speckle structural grid line load (based on an explicit polyline) for GSA", "GSA", "Loading")]
-    public GSALoadGridLine(LoadCase loadCase, GSAGridSurface gridSurface, Polyline polyline, List<double> values, string units, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, bool isProjected = false, string name = null, int? nativeId = null)
+    public GSALoadGridLine(LoadCase loadCase, GSAGridSurface gridSurface, Polyline polyline, List<double> values, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, bool isProjected = false, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;
@@ -26,11 +26,10 @@ namespace Objects.Structural.GSA.Loading
       this.polyline = polyline;
       this.isProjected = isProjected;
       this.values = values;
-            this.units = units;
     }
 
     [SchemaInfo("GSALoadGridLine (GSAPolyline)", "Creates a Speckle structural grid line load (based on a GSAPolyline) for GSA", "GSA", "Loading")]
-    public GSALoadGridLine(LoadCase loadCase, GSAGridSurface gridSurface, GSAPolyline polyline, List<double> values, string units, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, bool isProjected = false, string name = null, int? nativeId = null)
+    public GSALoadGridLine(LoadCase loadCase, GSAGridSurface gridSurface, GSAPolyline polyline, List<double> values, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, bool isProjected = false, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;
@@ -41,7 +40,6 @@ namespace Objects.Structural.GSA.Loading
       this.polyline = polyline.description;
       this.isProjected = isProjected;
       this.values = values;
-            this.units = units;
     }
   }
 }

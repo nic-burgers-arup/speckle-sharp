@@ -13,7 +13,7 @@ namespace Objects.Structural.GSA.Loading
     public GSALoadGridPoint() { }
 
     [SchemaInfo("GSALoadGridPoint", "Creates a Speckle structural grid point load for GSA", "GSA", "Loading")]
-    public GSALoadGridPoint(LoadCase loadCase, GSAGridSurface gridSurface, Point position, double value, string units, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, string name = null, int? nativeId = null)
+    public GSALoadGridPoint(LoadCase loadCase, GSAGridSurface gridSurface, Point position, double value, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;
@@ -23,7 +23,6 @@ namespace Objects.Structural.GSA.Loading
       this.direction = direction;
       this.position = position;
       this.value = value;
-            this.units = units;
     }
   }
 }
