@@ -1419,8 +1419,9 @@ namespace ConverterGSA
       };
       if (speckleLoad.value != 0)
       {
-        var factor = string.IsNullOrEmpty(speckleLoad.units) ? conversionFactors.force : conversionFactors.ConversionFactorToNative(UnitDimension.Force, speckleLoad.units);
-        gsaLoad.Value = factor * speckleLoad.value;
+        //var factor = string.IsNullOrEmpty(speckleLoad.units) ? conversionFactors.force : conversionFactors.ConversionFactorToNative(UnitDimension.Force, speckleLoad.units);
+        //gsaLoad.Value = factor * speckleLoad.value;
+                gsaLoad.Value = conversionFactors.force * speckleLoad.value;
       }
       if (GetLoadAxis(speckleLoad.loadAxis, out AxisRefType gsaAxisRefType, out var gsaAxisIndex, ref gsaRecords))
       {
