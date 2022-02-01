@@ -403,7 +403,7 @@ namespace ConverterGSA
       {
         case "n":
         case "newton":
-        case "newtowns":
+        case "newtons":
           return Newton;
         case "kn":
         case "kilonewton":

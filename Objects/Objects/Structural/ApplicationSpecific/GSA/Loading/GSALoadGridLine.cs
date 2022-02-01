@@ -26,6 +26,7 @@ namespace Objects.Structural.GSA.Loading
       this.polyline = polyline;
       this.isProjected = isProjected;
       this.values = values;
+            this.units = "kN/m";
     }
 
     [SchemaInfo("GSALoadGridLine (GSAPolyline)", "Creates a Speckle structural grid line load (based on a GSAPolyline) for GSA", "GSA", "Loading")]
@@ -40,6 +41,7 @@ namespace Objects.Structural.GSA.Loading
       this.polyline = polyline.description;
       this.isProjected = isProjected;
       this.values = values;
+            this.units = "kN/m";
+      }
     }
-  }
 }

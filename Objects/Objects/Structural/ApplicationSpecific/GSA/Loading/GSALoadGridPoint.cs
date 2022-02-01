@@ -23,6 +23,7 @@ namespace Objects.Structural.GSA.Loading
       this.direction = direction;
       this.position = position;
       this.value = value;
+            this.units = "kN";
     }
   }
 }
