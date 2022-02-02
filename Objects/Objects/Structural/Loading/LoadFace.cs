@@ -10,7 +10,7 @@ namespace Objects.Structural.Loading
     public class LoadFace : Load
     {
         [DetachProperty]
-        [Chunkable(5000)]
+        [Chunkable(1000)]
         public List<Base> elements { get; set; } 
         public FaceLoadType loadType { get; set; }
         public LoadDirection2D direction { get; set; }

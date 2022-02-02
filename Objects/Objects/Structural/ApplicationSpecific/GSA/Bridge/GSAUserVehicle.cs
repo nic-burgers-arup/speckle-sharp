@@ -20,7 +20,7 @@ namespace Objects.Structural.GSA.Bridge
     public GSAUserVehicle() { }
 
     [SchemaInfo("GSAUserVehicle", "Creates a Speckle structural user-defined vehicle (as a pattern of loading based on axle and wheel positions, for influence analysis) for GSA", "GSA", "Bridge")]
-    public GSAUserVehicle(string name, double width, List<double> axlePositions, List<double> axleOffsets, List<double> axleLeft, List<double> axleRight, int? nativeId = null)
+    public GSAUserVehicle(double width, List<double> axlePositions, List<double> axleOffsets, List<double> axleLeft, List<double> axleRight, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;

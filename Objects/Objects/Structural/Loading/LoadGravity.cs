@@ -8,11 +8,11 @@ namespace Objects.Structural.Loading
     public class LoadGravity : Load
     {
         [DetachProperty]
-        [Chunkable(5000)]
+        [Chunkable(1000)]
         public List<Base> elements { get; set; } 
 
         [DetachProperty]
-        [Chunkable(5000)]
+        [Chunkable(1000)]
         public List<Base> nodes { get; set; } 
         public Vector gravityFactors { get; set; } // a normal vertical gravity load is Z = -1
         public LoadGravity(){}

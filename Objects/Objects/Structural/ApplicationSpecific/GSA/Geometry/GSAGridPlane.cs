@@ -18,7 +18,7 @@ namespace Objects.Structural.GSA.Geometry
     public GSAGridPlane() { }
 
     [SchemaInfo("GSAGridPlane", "Creates a Speckle structural grid plane for GSA", "GSA", "Geometry")]
-    public GSAGridPlane(string name, Axis axis, double elevation, int? nativeId = null)
+    public GSAGridPlane(Axis axis, double elevation = 0, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;

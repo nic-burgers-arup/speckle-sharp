@@ -726,9 +726,9 @@ namespace ConverterGSA
       };
       if (gsaPolyline.Index.IsIndex()) specklePolyline.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaPolyline>(gsaPolyline.Index.Value);
       if (gsaPolyline.GridPlaneIndex.IsIndex()) specklePolyline.gridPlane = GetGridPlaneFromIndex(gsaPolyline.GridPlaneIndex.Value);
-      if (gsaPolyline.NumDim == 2) specklePolyline.value = gsaPolyline.Values.Insert(0.0, 3); //convert from list of x,y values to x,y,z values
-      else specklePolyline.value = gsaPolyline.Values;
-
+      var values = gsaPolyline.Values;
+      if (gsaPolyline.NumDim == 2) values = values.Insert(0.0, 3); //convert from list of x,y values to x,y,z values
+      specklePolyline.description = new Polyline(values);
       return new ToSpeckleResult(specklePolyline);
     }
     #endregion
@@ -2872,7 +2872,7 @@ namespace ConverterGSA
       }
       else if (gsaType == LoadLineOption.PolyRef && gsaPolygonIndex.HasValue)
       {
-        specklePolyline = GetPolygonFromIndex(gsaPolygonIndex.Value);
+        specklePolyline = GetPolygonFromIndex(gsaPolygonIndex.Value).description;
       }
       else
       {
@@ -2890,7 +2890,7 @@ namespace ConverterGSA
       }
       else if (gsaType == LoadAreaOption.PolyRef && gsaPolygonIndex.HasValue)
       {
-        specklePolyline = GetPolygonFromIndex(gsaPolygonIndex.Value);
+        specklePolyline = GetPolygonFromIndex(gsaPolygonIndex.Value).description;
       }
       else
       {

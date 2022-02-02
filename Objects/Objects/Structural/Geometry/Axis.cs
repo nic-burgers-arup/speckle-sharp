@@ -14,7 +14,7 @@ namespace Objects.Structural.Geometry
     public Axis() { }
 
     [SchemaInfo("Axis", "Creates a Speckle structural axis (a user-defined axis)", "Structural", "Geometry")]
-    public Axis(string name, AxisType axisType = AxisType.Cartesian, Plane definition = null)
+    public Axis(string name = null, AxisType axisType = AxisType.Cartesian, Plane definition = null)
     {
       this.name = name;
       this.axisType = axisType;

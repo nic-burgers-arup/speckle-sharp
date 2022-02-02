@@ -3,14 +3,14 @@ using Speckle.Core.Models;
 using Speckle.Core.Kits;
 using System.Collections.Generic;
 using System.Linq;
-using Objects.Structural.GSA.Geometry;
 
-namespace Objects.Structural.GSA.Loading
+namespace Objects.Structural.GSA.Geometry
 {
-  public class GSAPolyline : Polyline
+  public class GSAPolyline : Base
   {
     public string name { get; set; }
-    public int? nativeId { get; set; }
+    public int? nativeId { get; set; }    
+    public Polyline description { get; set; }
     public string colour { get; set; }
 
     [DetachProperty]
@@ -18,13 +18,24 @@ namespace Objects.Structural.GSA.Loading
     public GSAPolyline() { }
 
     [SchemaInfo("GSAPolyline", "Creates a Speckle structural polyline for GSA", "GSA", "Geometry")]
-    public GSAPolyline(string name, IEnumerable<double> coordinatesArray, string colour, GSAGridPlane gridPlane, int? nativeId = null)
+    public GSAPolyline(Polyline description, string colour = "NO_RGB", GSAGridPlane gridPlane = null, string name = null, int? nativeId = null)
     {
       this.name = name;
       this.nativeId = nativeId;
-      this.value = coordinatesArray.ToList();
+      this.description = description;
       this.colour = colour;
       this.gridPlane = gridPlane;
+    }
+
+    [SchemaInfo("GSAPolyline (from coordinates)", "Creates a Speckle structural polyline from coordinates for GSA", "GSA", "Geometry")]
+    public GSAPolyline(List<double> coordinatesArray, string colour = "NO_RGB", GSAGridPlane gridPlane = null, string name = null, int? nativeId = null)
+    {
+      this.name = name;
+      this.nativeId = nativeId;
+      this.description = new Polyline(coordinatesArray);
+      this.colour = colour;
+      this.gridPlane = gridPlane;
+
     }
   }
 }

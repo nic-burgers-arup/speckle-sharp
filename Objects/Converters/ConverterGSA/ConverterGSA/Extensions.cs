@@ -739,7 +739,7 @@ namespace ConverterGSA
         case "traffic": return LoadCategory.Traffic;
         case "roofs": return LoadCategory.Roofs;
         case "notset": return LoadCategory.NotSet;
-        default: throw new Exception(category + " speckle string can not be converted into native enum");
+        default: return LoadCategory.NotSet;
       }
     }
 
