@@ -63,9 +63,10 @@ namespace ConverterGSA
         { typeof(GSAPolyline), GSAPolylineToNative },
         //Loading
         { typeof(GSALoadCase), GSALoadCaseToNative },
-        { typeof(LoadCase), LoadCaseToNative },
+        { typeof(LoadCase), LoadCaseToNative },        
+        { typeof(GSAAnalysisTask), GSAAnalysisTaskToNative },
         { typeof(GSAAnalysisCase), GSAAnalysisCaseToNative },
-        { typeof(GSALoadCombination), GSALoadCombinationToNative },
+        { typeof(GSACombinationCase), GSACombinationCaseToNative },
         { typeof(LoadCombination), LoadCombinationToNative },
         { typeof(GSALoadBeam), GSALoadBeamToNative },
         { typeof(LoadBeam), LoadBeamToNative },
@@ -1075,29 +1076,83 @@ namespace ConverterGSA
       return gsaRecords;
     }
 
+    private List<GsaRecord> GSAAnalysisTaskToNative(Base speckleObject)
+    {
+      var gsaRecords = new List<GsaRecord>();
+      var speckleTask = (GSAAnalysisTask)speckleObject;
+      var gsaTask = new GsaTask()
+      {
+        ApplicationId = speckleTask.applicationId,
+        Index = speckleTask.GetIndex<GsaTask>(),
+        Name = speckleTask.name,
+        StageIndex = IndexByConversionOrLookup<GSAStage>(speckleTask.stage, ref gsaRecords),
+        Solver = speckleTask.solutionType.ToNativeSolver(),
+        Solution = speckleTask.solutionType.ToNative(),
+        Mode1 = speckleTask.modeParameter1,
+        Mode2 = speckleTask.modeParameter2,
+        NumIter = speckleTask.numIterations,
+        PDelta = speckleTask.PDeltaOption,
+        PDeltaCase = speckleTask.PDeltaCase,
+        Prestress = speckleTask.PrestressCase,
+        Result = speckleTask.resultSyntax,
+        Prune = speckleTask.prune.ToNative(),
+        Geometry = speckleTask.geometry.ToNative(),
+        Lower = speckleTask.lower,
+        Upper = speckleTask.upper,
+        Raft = speckleTask.raft.ToNative(),
+        Residual = speckleTask.residual.ToNative(),
+        Shift = speckleTask.shift,
+        Stiff = speckleTask.stiff,
+        MassFilter = speckleTask.massFilter,
+        MaxCycle = speckleTask.maxCycle
+      };
+
+      if (speckleTask.analysisCases != null)
+      {
+        foreach (var speckleLoadCase in speckleTask.analysisCases)
+        {
+          var gsaLoadCase = new GsaAnal()
+          {
+            ApplicationId = speckleLoadCase.applicationId,
+            Index = speckleLoadCase.GetIndex<GsaAnal>(),
+            Name = speckleLoadCase.name,
+            TaskIndex = gsaTask.Index,
+            Desc = GetAnalysisCaseDescription(speckleLoadCase.loadCases, speckleLoadCase.loadFactors, ref gsaRecords),
+          };
+          gsaRecords.Add(gsaLoadCase);
+        }
+      }
+      gsaRecords.Add(gsaTask);
+      return gsaRecords;
+    }
+
     private List<GsaRecord> GSAAnalysisCaseToNative(Base speckleObject)
     {
       var gsaRecords = new List<GsaRecord>();
       var speckleCase = (GSAAnalysisCase)speckleObject;
-      var gsaCase = new GsaAnal()
+      var caseIndex = IndexByConversionOrLookup<GsaAnal>(speckleCase, ref gsaRecords);
+      if(caseIndex == null)
       {
-        ApplicationId = speckleCase.applicationId,
-        Index = speckleCase.GetIndex<GsaAnal>(),
-        Name = speckleCase.name,
-        //TaskIndex = IndexByConversionOrLookup<GsaTask>(speckleCase.task, ref gsaRecords), //TODO:
-        Desc = GetAnalysisCaseDescription(speckleCase.loadCases, speckleCase.loadFactors, ref gsaRecords),
-      };
-      gsaRecords.Add(gsaCase);
+        var gsaCase = new GsaAnal()
+        {
+          ApplicationId = speckleCase.applicationId,
+          Index = speckleCase.GetIndex<GsaAnal>(),
+          Name = speckleCase.name,
+          Desc = GetAnalysisCaseDescription(speckleCase.loadCases, speckleCase.loadFactors, ref gsaRecords),
+        };
+        if ((GSAAnalysisTask)speckleCase["@task"] != null) gsaCase.TaskIndex = IndexByConversionOrLookup<GsaTask>((GSAAnalysisTask)speckleCase["@task"], ref gsaRecords);
+        gsaRecords.Add(gsaCase);
+      }      
       return gsaRecords;
     }
 
-    private List<GsaRecord> GSALoadCombinationToNative(Base speckleObject)
+    private List<GsaRecord> GSACombinationCaseToNative(Base speckleObject)
     {
       var gsaRecords = LoadCombinationToNative(speckleObject);
-      var gsaLoadCombination = (GsaCombination)gsaRecords.First(o => o is GsaCombination);
-      var speckleLoadCombination = (GSALoadCombination)speckleObject;
-      gsaLoadCombination.Bridge = speckleLoadCombination.GetDynamicValue<bool?>("bridge");
-      gsaLoadCombination.Note = speckleLoadCombination.GetDynamicValue<string>("note");
+      var GSACombinationCase = (GsaCombination)gsaRecords.First(o => o is GsaCombination);
+      var speckleLoadCombination = (GSACombinationCase)speckleObject;
+      GSACombinationCase.Bridge = speckleLoadCombination.GetDynamicValue<bool?>("bridge");
+      GSACombinationCase.Note = speckleLoadCombination.GetDynamicValue<string>("note");
       return gsaRecords;
     }
 
@@ -1105,14 +1160,14 @@ namespace ConverterGSA
     {
       var gsaRecords = new List<GsaRecord>();
       var speckleLoadCombination = (LoadCombination)speckleObject;
-      var gsaLoadCombination = new GsaCombination()
+      var GSACombinationCase = new GsaCombination()
       {
         ApplicationId = speckleLoadCombination.applicationId,
         Index = speckleLoadCombination.GetIndex<GsaCombination>(),
         Name = speckleLoadCombination.name,
         Desc = GetLoadCombinationDescription(speckleLoadCombination.combinationType, speckleLoadCombination.loadCases, speckleLoadCombination.loadFactors, ref gsaRecords),
       };
-      gsaRecords.Add(gsaLoadCombination);
+      gsaRecords.Add(GSACombinationCase);
       return gsaRecords;
     }
 
@@ -2920,7 +2975,7 @@ namespace ConverterGSA
         {
           desc += loadFactors[i].ToString();
         }
-        if (loadCases[i].GetType() == typeof(GSALoadCombination))
+        if (loadCases[i].GetType() == typeof(GSACombinationCase))
         {
           desc += "C" + IndexByConversionOrLookup<GsaCombination>(loadCases[i], ref gsaRecords);
         }

@@ -108,5 +108,24 @@ namespace Objects.Structural.Geometry
       this.orientationNode = orientationNode;
       this.orientationAngle = orientationAngle;
     }
+
+    [SchemaInfo("Element1D (from nodes)", "Creates a Speckle structural 1D element (from nodes)", "Structural", "Geometry")]
+    public Element1D(Node node1, Node node2, Property1D property, ElementType1D type,
+        string name = null,
+        [SchemaParamInfo("If null, restraint condition defaults to unreleased (fully fixed translations and rotations)")] Restraint end1Releases = null,
+        [SchemaParamInfo("If null, restraint condition defaults to unreleased (fully fixed translations and rotations)")] Restraint end2Releases = null,
+        [SchemaParamInfo("If null, defaults to no offsets")] Vector end1Offset = null,
+        [SchemaParamInfo("If null, defaults to no offsets")] Vector end2Offset = null, Plane localAxis = null)
+    {
+      this.baseLine = new Line(node1.basePoint, node2.basePoint);
+      this.property = property;
+      this.type = type;
+      this.name = name;
+      this.end1Releases = end1Releases == null ? new Restraint("FFFFFF") : end1Releases;
+      this.end2Releases = end2Releases == null ? new Restraint("FFFFFF") : end2Releases;
+      this.end1Offset = end1Offset == null ? new Vector(0, 0, 0) : end1Offset;
+      this.end2Offset = end2Offset == null ? new Vector(0, 0, 0) : end2Offset;
+      this.localAxis = localAxis;
+    }
   }
 }

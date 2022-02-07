@@ -77,7 +77,11 @@ namespace ConnectorGSA
       var baseType = typeof(Base);
       foreach (var t in structuralTypes)
       {
+        var fullName = t.FullName;
+        var b = t.GetBaseClasses();
         var baseClasses = t.GetBaseClasses().Where(bc => structuralTypes.Any(st => st == bc) && bc.InheritsOrImplements(baseType) && bc != baseType);
+        var z = t.GetBaseClasses();
+        //t.FullName == Objects.Structural.GSA.Analysis.GSATask
         foreach (var p in baseClasses)
         {
           typeChildren.UpsertDictionary(p, t);
@@ -86,9 +90,10 @@ namespace ConnectorGSA
 
       foreach (var t in structuralTypes)
       {
+        var fullName = t.FullName;
         var referencedStructuralTypes = new List<Type>();
         var propertyInfos = t.GetProperties();
-
+    
         foreach (var pi in propertyInfos)
         {
           Type typeToAdd = null;
@@ -121,6 +126,9 @@ namespace ConnectorGSA
             }
           }
         }
+
+        var k = referencedStructuralTypes.ToList().Any(x => x.FullName == "Objects.Structural.GSA.Analysis.GSAAnalysisTask" || x.FullName == "Objects.Structural.GSA.Analysis.GSAAnalysisCase");
+        
         tree.Integrate(t, referencedStructuralTypes.ToArray());
       }
       return tree.Generations();

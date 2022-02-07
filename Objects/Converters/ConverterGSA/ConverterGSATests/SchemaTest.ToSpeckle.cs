@@ -849,7 +849,7 @@ namespace ConverterGSATests
       Assert.Equal("load case 1", speckleAnalysisCases[0].loadCases[0].applicationId);
       Assert.Equal(1, speckleAnalysisCases[0].loadFactors.Count());
       Assert.Equal(1, speckleAnalysisCases[0].loadFactors[0]);
-      Assert.Null(speckleAnalysisCases[0].task); //TODO: update once TASK keyword is added to interim schema
+      //Assert.Null(speckleAnalysisCases[0].task); //TODO: update once TASK keyword is added to interim schema
 
       //Checks - Analysis case 2
       Assert.Equal("analysis case 2", speckleAnalysisCases[1].applicationId);
@@ -861,7 +861,7 @@ namespace ConverterGSATests
       Assert.Equal(2, speckleAnalysisCases[1].loadFactors.Count());
       Assert.Equal(1.2, speckleAnalysisCases[1].loadFactors[0]);
       Assert.Equal(1.5, speckleAnalysisCases[1].loadFactors[1]);
-      Assert.Null(speckleAnalysisCases[1].task); //TODO: update once TASK keyword is added to interim schema
+     // Assert.Null(speckleAnalysisCases[1].task); //TODO: update once TASK keyword is added to interim schema
     }
 
     [Fact]
@@ -894,9 +894,9 @@ namespace ConverterGSATests
       Assert.True(Instance.GsaModel.Cache.GetSpeckleObjects(out var structuralObjects));
 
       Assert.NotEmpty(structuralObjects);
-      Assert.Contains(structuralObjects, so => so is GSALoadCombination);
+      Assert.Contains(structuralObjects, so => so is GSACombinationCase);
 
-      var speckleLoadCombination = structuralObjects.FindAll(so => so is GSALoadCombination).Select(so => (GSALoadCombination)so).ToList();
+      var speckleLoadCombination = structuralObjects.FindAll(so => so is GSACombinationCase).Select(so => (GSACombinationCase)so).ToList();
 
       //Checks - Combination 1
       Assert.Equal("combo 1", speckleLoadCombination[0].applicationId);

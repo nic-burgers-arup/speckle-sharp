@@ -47,8 +47,9 @@ namespace ConverterGSA
         { typeof(GsaPolyline), GsaPolylineToSpeckle },
         //Loading
         { typeof(GsaLoadCase), GsaLoadCaseToSpeckle },
+        { typeof(GsaTask), GsaAnalysisTaskToSpeckle },
         { typeof(GsaAnal), GsaAnalysisCaseToSpeckle },
-        { typeof(GsaCombination), GsaLoadCombinationToSpeckle },
+        { typeof(GsaCombination), GSACombinationCaseToSpeckle },
         { typeof(GsaLoad2dFace), GsaLoadFaceToSpeckle },
         { typeof(GsaLoadBeamPoint), GsaLoadBeamToSpeckle },
         { typeof(GsaLoadBeamUdl), GsaLoadBeamToSpeckle },
@@ -754,6 +755,37 @@ namespace ConverterGSA
       return new ToSpeckleResult(speckleLoadCase);
     }
 
+    private ToSpeckleResult GsaAnalysisTaskToSpeckle(GsaRecord nativeObject, GSALayer layer = GSALayer.Both)
+    {
+      var gsaAnalysisTask = (GsaTask)nativeObject;
+      var speckleAnalysisTask = new GSAAnalysisTask()
+      {
+        nativeId = gsaAnalysisTask.Index ?? 0,
+        name = gsaAnalysisTask.Name,
+        stage = GetStageFromIndex(gsaAnalysisTask.StageIndex.Value),
+        solver = gsaAnalysisTask.Solver,
+        solutionType = gsaAnalysisTask.Solution.ToSpeckle(),
+        modeParameter1 = gsaAnalysisTask.Mode1,
+        modeParameter2 = gsaAnalysisTask.Mode2,
+        numIterations = gsaAnalysisTask.NumIter,
+        PDeltaCase = gsaAnalysisTask.PDelta,
+        PDeltaOption = gsaAnalysisTask.PDeltaCase,
+        resultSyntax = gsaAnalysisTask.Result,
+        prune = gsaAnalysisTask.Prune.ToSpeckle(),
+        geometry = gsaAnalysisTask.Geometry.ToSpeckle(),
+        lower = gsaAnalysisTask.Lower,
+        upper = gsaAnalysisTask.Upper,
+        raft = gsaAnalysisTask.Raft.ToSpeckle(),
+        residual = gsaAnalysisTask.Residual.ToSpeckle(),
+        shift = gsaAnalysisTask.Shift,
+        stiff = gsaAnalysisTask.Stiff,
+        massFilter = gsaAnalysisTask.MassFilter,
+        maxCycle = gsaAnalysisTask.MaxCycle
+      };
+      if (gsaAnalysisTask.Index.IsIndex()) speckleAnalysisTask.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaTask>(gsaAnalysisTask.Index.Value);
+      return new ToSpeckleResult(speckleAnalysisTask);
+    }
+
     private ToSpeckleResult GsaAnalysisCaseToSpeckle(GsaRecord nativeObject, GSALayer layer = GSALayer.Both)
     {
       var gsaAnalysisCase = (GsaAnal)nativeObject;
@@ -763,7 +795,11 @@ namespace ConverterGSA
         name = gsaAnalysisCase.Name,
       };
       if (gsaAnalysisCase.Index.IsIndex()) speckleAnalysisCase.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaAnal>(gsaAnalysisCase.Index.Value);
-      if (gsaAnalysisCase.TaskIndex.IsIndex()) speckleAnalysisCase.task = GetTaskFromIndex(gsaAnalysisCase.TaskIndex.Value);
+      if (gsaAnalysisCase.TaskIndex.IsIndex())
+      {
+        speckleAnalysisCase["@task"] = GetTaskFromIndex(gsaAnalysisCase.TaskIndex.Value);
+      }
+      
       if (GetAnalysisCaseFactors(gsaAnalysisCase.Desc, out var loadCases, out var loadFactors))
       {
         speckleAnalysisCase.loadCases = loadCases;
@@ -772,10 +808,10 @@ namespace ConverterGSA
       return new ToSpeckleResult(speckleAnalysisCase);
     }
 
-    private ToSpeckleResult GsaLoadCombinationToSpeckle(GsaRecord nativeObject, GSALayer layer = GSALayer.Both)
+    private ToSpeckleResult GSACombinationCaseToSpeckle(GsaRecord nativeObject, GSALayer layer = GSALayer.Both)
     {
       var gsaCombination = (GsaCombination)nativeObject;
-      var speckleLoadCombination = new GSALoadCombination()
+      var speckleLoadCombination = new GSACombinationCase()
       {
         nativeId = gsaCombination.Index ?? 0,
         name = gsaCombination.Name,
@@ -2977,13 +3013,9 @@ namespace ConverterGSA
       return (Instance.GsaModel.Cache.GetSpeckleObjects<GsaAnal, GSAAnalysisCase>(index, out var speckleObjects)) ? speckleObjects.First() : null;
     }
 
-    private GSATask GetTaskFromIndex(int index)
+    private GSAAnalysisTask GetTaskFromIndex(int index)
     {
-      //Report.ConversionErrors.Add(new Exception("GetTaskFromIndex: TASK keyword not currently supported"));
-      return null;
-
-      //TODO: when TASK is included in interim schema
-      //return (Instance.GsaModel.Cache.GetSpeckleObjects<GsaTask, GSATask>(index, out var speckleObjects)) ? speckleObjects.First() : null;
+      return (Instance.GsaModel.Cache.GetSpeckleObjects<GsaTask, GSAAnalysisTask>(index, out var speckleObjects)) ? speckleObjects.First() : null;
     }
 
     private List<double> GetLoadBeamPositions(GsaLoadBeam gsaLoadBeam)
@@ -3078,9 +3110,9 @@ namespace ConverterGSA
       return true;
     }
 
-    private GSALoadCombination GetLoadCombinationFromIndex(int index)
+    private GSACombinationCase GetLoadCombinationFromIndex(int index)
     {
-      return (Instance.GsaModel.Cache.GetSpeckleObjects<GsaCombination, GSALoadCombination>(index, out var speckleObjects)) ? speckleObjects.First() : null;
+      return (Instance.GsaModel.Cache.GetSpeckleObjects<GsaCombination, GSACombinationCase>(index, out var speckleObjects)) ? speckleObjects.First() : null;
     }
 
     /// <summary>
