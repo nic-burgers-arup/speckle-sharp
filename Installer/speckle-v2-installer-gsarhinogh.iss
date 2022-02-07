@@ -1,6 +1,11 @@
 ;defining variables
 #define AppName      "Speckle@Arup v2 GSA Connector + Rhino/Gh Connectors"
 #define AppVersion  GetFileVersion("..\ConnectorGSA\ConnectorGSA\bin\Release\ConnectorGSA.exe")
+
+#define Rhino6Version  GetFileVersion("..\ConnectorRhino\ConnectorRhino6\bin\Release\SpeckleConnectorRhino.rhp")
+#define Rhino7Version  GetFileVersion("..\ConnectorRhino\ConnectorRhino7\bin\Release\SpeckleConnectorRhino.rhp")
+#define GrasshopperVersion  GetFileVersion("..\ConnectorGrasshopper\ConnectorGrasshopper\bin\SpeckleConnectorGrasshopper.dll")
+
 #define AppPublisher "Speckle@Arup"
 #define AppURL       "https://speckle.arup.com"
 #define SpeckleFolder "{localappdata}\Speckle"
