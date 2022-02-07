@@ -906,6 +906,49 @@
     Thermal
   }
 
+  public enum StructuralSolutionType
+  {
+    UNDEF,
+    STATIC,
+    MODAL,
+    RITZ,
+    BUCKLING,
+    STATIC_P_DELTA,
+    MODAL_P_DELTA,
+    RITZ_P_DELTA,
+    MASS,
+    STABILITY,
+    STABILITY_P_DELTA,
+    //STATIC_NL_P_DELTA,
+    BUCKLING_NL,
+    //INFLUENCE
+  }
+
+  public enum StructuralPruningOption
+  {
+    NONE,
+    INFL_YES
+  }
+
+  public enum StructuralGeometryChecksOption
+  {
+    FATAL, //ERROR
+    SEVERE
+  }
+
+  public enum StructuralRaftPrecisionOption
+  {    
+    RAFT_LO,
+    RAFT_HI
+  }
+
+  public enum StructuralResidualSaveOption
+  {
+    RESID_NO,
+    RESID_NOCONV,
+    RESID_YES
+  }
+
   public enum StructuralSpringPropertyType
   {
     NotSet = 0,

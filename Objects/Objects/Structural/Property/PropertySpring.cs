@@ -41,6 +41,15 @@ namespace Objects.Structural.Properties
       this.name = name;
     }
 
+    [SchemaInfo("PropertySpring (compression-only)", "Creates a Speckle structural spring property (compression-only spring)", "Structural", "Properties")]
+    public PropertySpring(string name, double stiffness = 0, double dampingRatio = 0)
+    {
+      this.name = name;
+      this.springType = PropertyTypeSpring.CompressionOnly;
+      this.stiffnessX = stiffness;
+      this.dampingRatio = dampingRatio;
+    }
+
     [SchemaInfo("PropertySpring (linear/elastic)", "Creates a Speckle structural spring property (linear/elastic spring)", "Structural", "Properties")]
     public PropertySpring(string name, double stiffnessX = 0, double stiffnessY = 0, double stiffnessZ = 0, double stiffnessXX = 0, double stiffnessYY = 0, double stiffnessZZ = 0, double dampingRatio = 0)
     {

@@ -4,15 +4,15 @@ using Objects.Structural.Loading;
 using System;
 using Speckle.Core.Models;
 
-namespace Objects.Structural.GSA.Loading
+namespace Objects.Structural.GSA.Analysis
 {
-  public class GSALoadCombination : LoadCombination
+  public class GSACombinationCase : LoadCombination
   {
     public int? nativeId { get; set; }
-    public GSALoadCombination() { }
+    public GSACombinationCase() { }
 
-    [SchemaInfo("GSALoadCombination", "Creates a Speckle load combination for GSA", "GSA", "Loading")]
-    public GSALoadCombination(string name,
+    [SchemaInfo("GSACombinationCase", "Creates a GSA combination case", "GSA", "Loading")]
+    public GSACombinationCase(string name,
         [SchemaParamInfo("A list of load cases")] List<Base> loadCases,
         [SchemaParamInfo("A list of load factors (to be mapped to provided load cases)")] List<double> loadFactors, int? nativeId = null)
     {
