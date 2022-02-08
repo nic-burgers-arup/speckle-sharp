@@ -320,7 +320,7 @@ namespace ConverterGSA
         default: return GridExpansion.NotSet;
       }
     }
-
+    
     public static LoadType ToSpeckle(this StructuralLoadCaseType gsaLoadType)
     {
       switch (gsaLoadType)
@@ -885,12 +885,15 @@ namespace ConverterGSA
       {
         case LoadType.Dead: return StructuralLoadCaseType.Dead;
         case LoadType.SeismicStatic: return StructuralLoadCaseType.Earthquake;
+        case LoadType.SeismicAccTorsion: return StructuralLoadCaseType.EarthquakeAccTors;
+        case LoadType.SeismicRSA: return StructuralLoadCaseType.EarthquakeRSA;
         case LoadType.Live: return StructuralLoadCaseType.Live;
         case LoadType.Rain: return StructuralLoadCaseType.Rain;
         case LoadType.Snow: return StructuralLoadCaseType.Snow;
         case LoadType.Soil: return StructuralLoadCaseType.Soil;
         case LoadType.Thermal: return StructuralLoadCaseType.Thermal;
         case LoadType.Wind: return StructuralLoadCaseType.Wind;
+        case LoadType.Accidental: return StructuralLoadCaseType.Accidental;
         case LoadType.None: return StructuralLoadCaseType.NotSet;
         default: return StructuralLoadCaseType.Generic;
       }
