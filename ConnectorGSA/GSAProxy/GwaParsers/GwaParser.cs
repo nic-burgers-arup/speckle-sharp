@@ -163,15 +163,8 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
     #endregion
 
     #region common_to_gwa_fns
-
-    protected string AddEntities(List<int> memberIndices, List<int> elementIndices)
+    protected string AddNonEmptyEntities(List<int> memberIndices, List<int> elementIndices)
     {
-      //For now assume that an empty list means "all"
-      if ((memberIndices == null || memberIndices.Count() == 0) && (elementIndices == null || elementIndices.Count() == 0))
-      {
-        return "all";
-      }
-
       var entityLists = new List<string>();
       if (memberIndices != null && memberIndices.Count > 0)
       {
@@ -190,6 +183,27 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
         }
       }
       return string.Join(" ", entityLists);
+    }
+
+    protected string AddEntities(List<int> memberIndices, List<int> elementIndices)
+    {
+      //For now assume that an empty list means "all"
+      if ((memberIndices == null || memberIndices.Count() == 0) && (elementIndices == null || elementIndices.Count() == 0))
+      {
+        return "all";
+      }
+
+      return AddNonEmptyEntities(memberIndices, elementIndices);
+    }
+
+    protected string AddLockedEntities(List<int> memberIndices, List<int> elementIndices)
+    {
+      //For now assume that an empty list means "none"
+      if ((memberIndices == null || memberIndices.Count() == 0) && (elementIndices == null || elementIndices.Count() == 0))
+      {
+        return "none";
+      }
+      return AddNonEmptyEntities(memberIndices, elementIndices);
     }
 
     private string AddEntities(List<int> entities, GSALayer layer)

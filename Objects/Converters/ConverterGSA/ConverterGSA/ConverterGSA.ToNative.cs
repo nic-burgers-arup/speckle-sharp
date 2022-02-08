@@ -63,7 +63,7 @@ namespace ConverterGSA
         { typeof(GSAPolyline), GSAPolylineToNative },
         //Loading
         { typeof(GSALoadCase), GSALoadCaseToNative },
-        { typeof(LoadCase), LoadCaseToNative },        
+        { typeof(LoadCase), LoadCaseToNative },
         { typeof(GSAAnalysisTask), GSAAnalysisTaskToNative },
         { typeof(GSAAnalysisCase), GSAAnalysisCaseToNative },
         { typeof(GSACombinationCase), GSACombinationCaseToNative },
@@ -413,17 +413,17 @@ namespace ConverterGSA
       lock (embeddedToBeConvertedLock)
       {
 #endif
-      /*
-      if (!embeddedToBeConverted.ContainsKey(obj.applicationId))
-      {
-        embeddedToBeConverted.Add(obj.applicationId, new List<Base>());
-      }
-      embeddedToBeConverted[obj.applicationId].Add(obj);
-      */
-      if (!alreadyConverted && !embeddedToBeConverted.ContainsKey(obj.applicationId))
-      {
-        embeddedToBeConverted[obj.applicationId] = obj;
-      }
+        /*
+        if (!embeddedToBeConverted.ContainsKey(obj.applicationId))
+        {
+          embeddedToBeConverted.Add(obj.applicationId, new List<Base>());
+        }
+        embeddedToBeConverted[obj.applicationId].Add(obj);
+        */
+        if (!alreadyConverted && !embeddedToBeConverted.ContainsKey(obj.applicationId))
+        {
+          embeddedToBeConverted[obj.applicationId] = obj;
+        }
 #if !DEBUG
       }
 #endif
@@ -1122,6 +1122,13 @@ namespace ConverterGSA
           gsaRecords.Add(gsaLoadCase);
         }
       }
+
+      if (speckleTask.stage != null)
+      {
+        var speckleStage = speckleTask.stage;
+        var gsaStage = AnalStageToNative(speckleStage);
+        gsaRecords.AddRange(gsaStage);
+      }
       gsaRecords.Add(gsaTask);
       return gsaRecords;
     }
@@ -1131,7 +1138,7 @@ namespace ConverterGSA
       var gsaRecords = new List<GsaRecord>();
       var speckleCase = (GSAAnalysisCase)speckleObject;
       var caseIndex = IndexByConversionOrLookup<GsaAnal>(speckleCase, ref gsaRecords);
-      if(caseIndex == null)
+      if (caseIndex == null)
       {
         var gsaCase = new GsaAnal()
         {
@@ -1142,7 +1149,7 @@ namespace ConverterGSA
         };
         if ((GSAAnalysisTask)speckleCase["@task"] != null) gsaCase.TaskIndex = IndexByConversionOrLookup<GsaTask>((GSAAnalysisTask)speckleCase["@task"], ref gsaRecords);
         gsaRecords.Add(gsaCase);
-      }      
+      }
       return gsaRecords;
     }
 
@@ -1476,7 +1483,7 @@ namespace ConverterGSA
       {
         //var factor = string.IsNullOrEmpty(speckleLoad.units) ? conversionFactors.force : conversionFactors.ConversionFactorToNative(UnitDimension.Force, speckleLoad.units);
         //gsaLoad.Value = factor * speckleLoad.value;
-                gsaLoad.Value = conversionFactors.force * speckleLoad.value;
+        gsaLoad.Value = conversionFactors.force * speckleLoad.value;
       }
       if (GetLoadAxis(speckleLoad.loadAxis, out AxisRefType gsaAxisRefType, out var gsaAxisIndex, ref gsaRecords))
       {
@@ -2204,7 +2211,7 @@ namespace ConverterGSA
         gsaProp2d.Mass = speckleProperty.additionalMass * conversionFactors.mass / Math.Pow(conversionFactors.length, 2);
         gsaProp2d.Profile = speckleProperty.concreteSlabProp;
         if (speckleProperty.designMaterial != null)
-        {          
+        {
           if (speckleProperty.designMaterial.materialType == MaterialType.Steel && (speckleProperty.designMaterial is GSASteel || speckleProperty.designMaterial is Steel))
           {
             gsaProp2d.GradeIndex = IndexByConversionOrLookup<GsaMatSteel>(speckleProperty.designMaterial, ref retList);
@@ -2220,7 +2227,8 @@ namespace ConverterGSA
             //Not supported yet
             gsaProp2d.MatType = Property2dMaterialType.Generic;
           }
-        } else if (speckleProperty.material != null)
+        }
+        else if (speckleProperty.material != null)
         {
           if (speckleProperty.material.materialType == MaterialType.Steel && (speckleProperty.material is GSASteel || speckleProperty.designMaterial is Steel))
           {
@@ -2237,7 +2245,7 @@ namespace ConverterGSA
             //Not supported yet
             gsaProp2d.MatType = Property2dMaterialType.Generic;
           }
-        } 
+        }
       }
       return retList;
     }

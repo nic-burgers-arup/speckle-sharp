@@ -53,12 +53,13 @@ namespace Objects.Structural.GSA.Analysis
     //}
 
     [SchemaInfo("GSAAnalysisTask", "Creates a Speckle structural analysis task for GSA", "GSA", "Analysis")]
-    public GSAAnalysisTask(SolutionType solutionType, List<GSAAnalysisCase> analysisCases, string name = null, int? nativeId = null)
+    public GSAAnalysisTask(SolutionType solutionType, List<GSAAnalysisCase> analysisCases, GSAStage stage = null, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;
       this.solutionType = solutionType;
       this.analysisCases = analysisCases;
+      this.stage = stage;
     }
   }
 

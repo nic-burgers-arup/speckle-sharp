@@ -860,7 +860,7 @@ public class GSAAnalysisTaskSchemaComponent: CreateSchemaObjectBase {
     public override Guid ComponentGuid => new Guid("0d08ee5e-9cd2-94cf-c511-5e6919fb66dd");
     
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Analysis.GSAAnalysisTask.ctor(Objects.Structural.GSA.Analysis.SolutionType,System.Collections.Generic.List`1[Objects.Structural.GSA.Analysis.GSAAnalysisCase],System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Analysis.GSAAnalysisTask");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Analysis.GSAAnalysisTask.ctor(Objects.Structural.GSA.Analysis.SolutionType,System.Collections.Generic.List`1[Objects.Structural.GSA.Analysis.GSAAnalysisCase],Objects.Structural.GSA.Analysis.GSAStage,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Analysis.GSAAnalysisTask");
         base.AddedToDocument(document);
     }
 }
@@ -1393,7 +1393,7 @@ public class GSAStageSchemaComponent: CreateSchemaObjectBase {
     public override Guid ComponentGuid => new Guid("0f7bf991-1225-1cea-5543-7dea926b1089");
     
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Analysis.GSAStage.ctor(System.String,System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Double,System.Int32,System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Analysis.GSAStage");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Analysis.GSAStage.ctor(System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Double,System.Int32,System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.String,System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Analysis.GSAStage");
         base.AddedToDocument(document);
     }
 }
