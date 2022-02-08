@@ -110,10 +110,10 @@ namespace ConverterGSA
 
     public static bool IsGlobal(this Plane p)
     {
-      return (p.origin.x == 0 && p.origin.y == 0 && p.origin.z == 0 &&
+      return ((p == null) || ((p.origin.x == 0 && p.origin.y == 0 && p.origin.z == 0 &&
         p.xdir.x == 1 && p.xdir.y == 0 && p.xdir.z == 0 &&
         p.ydir.x == 0 && p.ydir.y == 1 && p.ydir.z == 0 &&
-        p.normal.x == 0 && p.normal.y == 0 && p.normal.z == 1);
+        p.normal.x == 0 && p.normal.y == 0 && p.normal.z == 1)));
     }
 
     public static bool IsXElevation(this Plane p)

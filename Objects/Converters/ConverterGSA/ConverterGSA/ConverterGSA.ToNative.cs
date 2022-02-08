@@ -1388,7 +1388,7 @@ namespace ConverterGSA
         var factor = speckleLoad.GetScaleFactor(conversionFactors);
         gsaLoad.Value = factor * speckleLoad.value;
       }
-      if (speckleLoad.loadAxis.definition.IsGlobal())
+      if ((speckleLoad.loadAxis == null) || (speckleLoad.loadAxis.definition.IsGlobal()))
       {
         gsaLoad.GlobalAxis = true;
       }
@@ -2653,7 +2653,7 @@ namespace ConverterGSA
     {
       gsaAxisRefType = NodeAxisRefType.NotSet;
       gsaAxisIndex = null;
-      if (speckleAxis == null)
+      if (speckleAxis == null || speckleAxis.definition == null)
       {
         gsaAxisRefType = NodeAxisRefType.Global;
         return true;
