@@ -65,7 +65,7 @@ namespace ConverterGSA
         { typeof(GSALoadCase), GSALoadCaseToNative },
         { typeof(LoadCase), LoadCaseToNative },
         { typeof(GSAAnalysisTask), GSAAnalysisTaskToNative },
-        { typeof(GSAAnalysisCase), GSAAnalysisCaseToNative },
+        //{ typeof(GSAAnalysisCase), GSAAnalysisCaseToNative },
         { typeof(GSACombinationCase), GSACombinationCaseToNative },
         { typeof(LoadCombination), LoadCombinationToNative },
         { typeof(GSALoadBeam), GSALoadBeamToNative },
@@ -358,6 +358,8 @@ namespace ConverterGSA
       var gsaRecords = Element2dToNative(speckleObject);
       var gsaElement = (GsaEl)gsaRecords.First(o => o is GsaEl);
       var speckleElement = (GSAElement2D)speckleObject;
+
+      gsaElement.Type = speckleElement.type.ToNative();
       gsaElement.Colour = speckleElement.colour?.ColourToNative() ?? Colour.NotSet;
       gsaElement.Dummy = speckleElement.isDummy;
       gsaElement.Group = speckleElement.group.IsPositiveOrNull();
@@ -367,13 +369,17 @@ namespace ConverterGSA
     private List<GsaRecord> Element2dToNative(Base speckleObject)
     {
       var retList = new List<GsaRecord>();
+
+      var dynamicMembers = speckleObject.GetMembers();
+      if (dynamicMembers.ContainsKey("memberType")) return GSAMember2dToNative(speckleObject);
+
       var speckleElement = (Element2D)speckleObject;
       var gsaElement = new GsaEl()
       {
         ApplicationId = speckleElement.applicationId,
         Index = speckleElement.GetIndex<GsaEl>(),
         Name = speckleElement.name,
-        Type = speckleElement.type.ToNative(),
+        //Type = speckleElement.type.ToNative(),
         PropertyIndex = IndexByConversionOrLookup<GsaProp2d>(speckleElement.property, ref retList),
         ReleaseInclusion = ReleaseInclusion.NotIncluded,
         ParentIndex = IndexByConversionOrLookup<GsaMemb>(speckleElement.parent, ref retList)
@@ -413,17 +419,17 @@ namespace ConverterGSA
       lock (embeddedToBeConvertedLock)
       {
 #endif
-        /*
-        if (!embeddedToBeConverted.ContainsKey(obj.applicationId))
-        {
-          embeddedToBeConverted.Add(obj.applicationId, new List<Base>());
-        }
-        embeddedToBeConverted[obj.applicationId].Add(obj);
-        */
-        if (!alreadyConverted && !embeddedToBeConverted.ContainsKey(obj.applicationId))
-        {
-          embeddedToBeConverted[obj.applicationId] = obj;
-        }
+      /*
+      if (!embeddedToBeConverted.ContainsKey(obj.applicationId))
+      {
+        embeddedToBeConverted.Add(obj.applicationId, new List<Base>());
+      }
+      embeddedToBeConverted[obj.applicationId].Add(obj);
+      */
+      if (!alreadyConverted && !embeddedToBeConverted.ContainsKey(obj.applicationId))
+      {
+        embeddedToBeConverted[obj.applicationId] = obj;
+      }
 #if !DEBUG
       }
 #endif
@@ -1343,9 +1349,12 @@ namespace ConverterGSA
         Values = speckleLoad.values.Select(v => factor * v).ToList(),
         LoadDirection = speckleLoad.direction.ToNative(),
         Projected = speckleLoad.isProjected,
-        ElementIndices = IndexByConversionOrLookup<GsaEl>(speckleLoad.elements.FindAll(o => o is Element2D), ref gsaRecords) ?? new List<int>(),
-        MemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleLoad.elements.FindAll(o => o is GSAMember2D), ref gsaRecords) ?? new List<int>(),
       };
+      if (speckleLoad.elements != null)
+      {
+        gsaLoad.ElementIndices = IndexByConversionOrLookup<GsaEl>(speckleLoad.elements.FindAll(o => o is Element1D || o is Element2D), ref gsaRecords) ?? new List<int>();
+        gsaLoad.MemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleLoad.elements.FindAll(o => o is GSAMember1D || o is GSAMember2D), ref gsaRecords) ?? new List<int>();
+      }
       if (GetLoadAxis(speckleLoad.loadAxis, speckleLoad.loadAxisType, out var gsaAxisRefType, out var gsaAxisIndex, ref gsaRecords))
       {
         gsaLoad.AxisRefType = gsaAxisRefType;

@@ -14,6 +14,7 @@ namespace Objects.Structural.GSA.Geometry
     public int group { get; set; }
     public string colour { get; set; }
     public bool isDummy { get; set; }
+    public ElementType2D type { get; set; } //analysis formulation - Quad4
     public GSAElement2D() { }
 
     [SchemaInfo("GSAElement2D", "Creates a Speckle structural 2D element for GSA", "GSA", "Geometry")]

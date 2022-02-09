@@ -14,7 +14,7 @@ namespace Objects.Structural.Geometry
 
     [DetachProperty]
     public Property2D property { get; set; }
-    public ElementType2D type { get; set; }
+    //public ElementType2D type { get; set; }
     public double offset { get; set; } //z direction (normal)
     public double orientationAngle { get; set; }
 

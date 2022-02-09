@@ -2,6 +2,7 @@
 using Speckle.Core.Models;
 using Objects.Structural.Properties;
 using Objects.Structural.Materials;
+using Objects.Structural.Geometry;
 
 namespace Objects.Structural.GSA.Properties
 {
@@ -15,6 +16,8 @@ namespace Objects.Structural.GSA.Properties
     public double additionalMass { get; set; }
     public string concreteSlabProp { get; set; }
     public string colour { get; set; }
+    
+    public PropertyType2D type { get; set; }
     public GSAProperty2D() { }
 
     [SchemaInfo("GSAProperty2D", "Creates a Speckle structural 2D element property for GSA", "GSA", "Properties")]
