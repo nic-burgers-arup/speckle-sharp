@@ -144,6 +144,9 @@ namespace Objects.Converter.Revit
       //(mesh.faces, mesh.vertices) = GetFaceVertexArrFromSolids(solidGeom);
       //speckleElement2D.baseMesh = mesh;	  
 
+      //speckleElement2D.displayMesh = GetElementDisplayMesh(Doc.GetElement(revitSurface.GetElementId()),
+      // new Options() { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false });
+
       var prop = new Property2D();
 
       // Material
@@ -257,9 +260,6 @@ namespace Objects.Converter.Revit
       speckleElement2D.property = prop;
 
       GetAllRevitParamsAndIds(speckleElement2D, revitSurface);
-
-      //speckleElement2D.displayMesh = GetElementDisplayMesh(Doc.GetElement(revitSurface.GetElementId()),
-      // new Options() { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false });
 
       return speckleElement2D;
     }

@@ -598,12 +598,14 @@ namespace ConverterGSA
       var speckleMember = (GSAMember2D)speckleObject;
       //Dynamic properties
       var dynamicMembers = speckleMember.GetMembers();
+      var memberType = Enum.Parse(typeof(Objects.Structural.Geometry.MemberType2D), speckleMember.memberType.ToString());
+
       var gsaMember = new GsaMemb()
       {
         ApplicationId = speckleMember.applicationId,
         Index = speckleMember.GetIndex<GsaMemb>(),
         Name = speckleMember.name,
-        Type = ToNative((MemberType2D)speckleMember.memberType),
+        Type = ToNative((MemberType2D)memberType),
         Colour = speckleMember.colour?.ColourToNative() ?? Colour.NotSet,
         Dummy = speckleMember.isDummy,
         IsIntersector = true,
@@ -2818,7 +2820,7 @@ namespace ConverterGSA
         case Objects.Structural.Geometry.MemberType2D.VoidCutter2D: return Speckle.GSA.API.GwaSchema.MemberType.Void2d;
         default:
           Report.ConversionErrors.Add(new Exception(speckleMemberType.ToString() + " is not currently a supported member type for a 2D element."));
-          return Speckle.GSA.API.GwaSchema.MemberType.NotSet;
+          return Speckle.GSA.API.GwaSchema.MemberType.Generic2d;
       }
     }
 
