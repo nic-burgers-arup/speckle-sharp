@@ -369,11 +369,26 @@ namespace ConverterGSA
     private List<GsaRecord> Element2dToNative(Base speckleObject)
     {
       var retList = new List<GsaRecord>();
-
-      var dynamicMembers = speckleObject.GetMembers();
-      if (dynamicMembers.ContainsKey("memberType")) return GSAMember2dToNative(speckleObject);
-
       var speckleElement = (Element2D)speckleObject;
+                               
+      if (speckleElement.memberType != Objects.Structural.Geometry.MemberType.NotSet)
+      {
+        var speckleMember = new GSAMember2D()
+        {
+          applicationId = speckleElement.applicationId,
+          topology = speckleElement.topology,
+          name = speckleElement.name,
+          property = speckleElement.property,
+          memberType = speckleElement.memberType,
+          offset = speckleElement.offset,
+          orientationAngle = speckleElement.orientationAngle,
+          outline = speckleElement.outline,
+          voids = speckleElement.voids,
+          units = speckleElement.units
+        };
+        return GSAMember2dToNative(speckleMember);
+      }
+
       var gsaElement = new GsaEl()
       {
         ApplicationId = speckleElement.applicationId,
@@ -588,7 +603,7 @@ namespace ConverterGSA
         ApplicationId = speckleMember.applicationId,
         Index = speckleMember.GetIndex<GsaMemb>(),
         Name = speckleMember.name,
-        Type = ToNative(speckleMember.memberType),
+        Type = ToNative((MemberType2D)speckleMember.memberType),
         Colour = speckleMember.colour?.ColourToNative() ?? Colour.NotSet,
         Dummy = speckleMember.isDummy,
         IsIntersector = true,

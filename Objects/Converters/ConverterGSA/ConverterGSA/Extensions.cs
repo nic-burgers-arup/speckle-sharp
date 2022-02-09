@@ -208,14 +208,14 @@ namespace ConverterGSA
       }
     }
 
-    public static MemberType2D ToSpeckle2dMember(this GwaMemberType gsaMemberType)
+    public static MemberType ToSpeckle2dMember(this GwaMemberType gsaMemberType)
     {
       switch (gsaMemberType)
       {
-        case GwaMemberType.Slab: return MemberType2D.Slab;
-        case GwaMemberType.Wall: return MemberType2D.Wall;
-        case GwaMemberType.Generic2d: return MemberType2D.Generic2D;
-        case GwaMemberType.Void2d: return MemberType2D.VoidCutter2D;
+        case GwaMemberType.Slab: return MemberType.Slab;
+        case GwaMemberType.Wall: return MemberType.Wall;
+        case GwaMemberType.Generic2d: return MemberType.Generic2D;
+        case GwaMemberType.Void2d: return MemberType.VoidCutter2D;
         default:
           throw new Exception(gsaMemberType.ToString() + " is not currently a supported member type.");
       }
@@ -479,8 +479,8 @@ namespace ConverterGSA
     {
       switch (speckleType)
       {
-        case StructuralSolutionType.BUCKLING_NL: return SolutionType.Static;
-        case StructuralSolutionType.STATIC: return SolutionType.NonlinearStatic;
+        case StructuralSolutionType.BUCKLING_NL: return SolutionType.NonlinearStatic;
+        case StructuralSolutionType.STATIC: return SolutionType.Static;
         case StructuralSolutionType.MODAL: return SolutionType.Modal;
         default: return SolutionType.Static;
       }

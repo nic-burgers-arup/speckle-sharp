@@ -7,22 +7,28 @@ using Objects.Structural.Properties;
 
 namespace Objects.Structural.Geometry
 {
-  public class Element2D : Base, IDisplayMesh
+  public class Element2D : Base, IDisplayMesh //Member2D in GSA
   {
     public string name { get; set; }
-    public ICurve outline { get; set; }
+
+    [DetachProperty]
+    public ICurve outline { get; set; } 
 
     [DetachProperty]
     public Property2D property { get; set; }
-    //public ElementType2D type { get; set; }
+
+    public MemberType memberType { get; set; } // <<<<<< ex. slab, wall, generic, opening
+
     public double offset { get; set; } //z direction (normal)
-    public double orientationAngle { get; set; }
+    public double orientationAngle { get; set; } //
 
     [DetachProperty]
     public Base parent { get; set; } //parent element
 
     [DetachProperty]
     public List<Node> topology { get; set; }
+
+    public List<List<Node>> voids { get; set; } // <<<<<<
 
     [DetachProperty]
     public Mesh displayMesh { get; set; }
@@ -36,10 +42,12 @@ namespace Objects.Structural.Geometry
     }
 
     [SchemaInfo("Element2D", "Creates a Speckle structural 2D element (based on a list of edge ie. external, geometry defining nodes)", "Structural", "Geometry")]
-    public Element2D(List<Node> nodes, Property2D property, double offset = 0, double orientationAngle = 0)
+    public Element2D(List<Node> nodes, Property2D property, MemberType memberType = MemberType.NotSet, List<List<Node>> voids = null, double offset = 0, double orientationAngle = 0)
     {
       this.topology = nodes;
       this.property = property;
+      this.memberType = memberType;
+      this.voids = voids;
       this.offset = offset;
       this.orientationAngle = orientationAngle;
     }
