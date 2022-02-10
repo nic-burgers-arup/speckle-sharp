@@ -795,15 +795,15 @@ namespace ConverterGSA
         name = gsaAnalysisCase.Name,
       };
       if (gsaAnalysisCase.Index.IsIndex()) speckleAnalysisCase.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaAnal>(gsaAnalysisCase.Index.Value);
-      if (gsaAnalysisCase.TaskIndex.IsIndex())
-      {
-        speckleAnalysisCase["@task"] = GetTaskFromIndex(gsaAnalysisCase.TaskIndex.Value);
-      }
-      
       if (GetAnalysisCaseFactors(gsaAnalysisCase.Desc, out var loadCases, out var loadFactors))
       {
         speckleAnalysisCase.loadCases = loadCases;
         speckleAnalysisCase.loadFactors = loadFactors;
+      }
+      if (gsaAnalysisCase.TaskIndex.IsIndex())
+      {
+        var task = GetTaskFromIndex(gsaAnalysisCase.TaskIndex.Value);     
+        task.analysisCases.Add(speckleAnalysisCase);
       }
       return new ToSpeckleResult(speckleAnalysisCase);
     }
@@ -3015,6 +3015,16 @@ namespace ConverterGSA
 
     private GSAAnalysisTask GetTaskFromIndex(int index)
     {
+      return (Instance.GsaModel.Cache.GetSpeckleObjects<GsaTask, GSAAnalysisTask>(index, out var speckleObjects)) ? speckleObjects.First() : null;
+    }
+
+    private GSAAnalysisTask GetAndUpdateTaskFromIndex(int index, ref GSAAnalysisTask speckleTask)
+    {
+      var task = GetTaskFromIndex(index);
+      if(task != null)
+      {
+
+      }
       return (Instance.GsaModel.Cache.GetSpeckleObjects<GsaTask, GSAAnalysisTask>(index, out var speckleObjects)) ? speckleObjects.First() : null;
     }
 

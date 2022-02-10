@@ -17,9 +17,8 @@ namespace Objects.Structural.GSA.Geometry
     public bool isDummy { get; set; }
     public bool intersectsWithOthers { get; set; }
     public double targetMeshSize { get; set; }
-    public List<List<Node>> voids { get; set; }
-    public MemberType2D memberType { get; set; }
-    
+
+
     public GSAMember2D() { }
 
     [SchemaInfo("GSAMember2D", "Creates a Speckle structural 2D member for GSA", "GSA", "Geometry")]
@@ -32,7 +31,7 @@ namespace Objects.Structural.GSA.Geometry
       this.name = name;
       this.topology = perimeter; //needs to be ordered properly (ie. matching the point order of a valid polyline)            
       this.property = property;
-      this.memberType = memberType;
+      this.memberType = (MemberType)memberType;
       this.voids = voids; //needs to be ordered properly (ie. matching the point order of a valid polyline)
       this.offset = offset;
       this.orientationAngle = orientationAngle;
