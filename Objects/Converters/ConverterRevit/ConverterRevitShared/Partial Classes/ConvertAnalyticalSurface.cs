@@ -84,10 +84,10 @@ namespace Objects.Converter.Revit
 
     }
 
-    private Element2D AnalyticalSurfaceToSpeckle(AnalyticalModelSurface revitSurface)
-    {
-      if (!revitSurface.IsEnabled())
-        return new Element2D();
+	private Element2D AnalyticalSurfaceToSpeckle(AnalyticalModelSurface revitSurface)
+	{
+	  if (!revitSurface.IsEnabled())
+		return null;
 
       var speckleElement2D = new Element2D();
       var structuralElement = Doc.GetElement(revitSurface.GetElementId());
@@ -169,92 +169,98 @@ namespace Objects.Converter.Revit
         memberType = MemberType.Wall;
       }
 
-      var materialAsset = ((PropertySetElement)Doc.GetElement(structMaterial.StructuralAssetId)).GetStructuralAsset();
-      var materialType = structMaterial.MaterialClass;
+	  var structAsset = (PropertySetElement)Doc.GetElement(structMaterial.StructuralAssetId);
 
-      Structural.Materials.Material speckleMaterial = null;
-      switch (materialType)
-      {
-        case "Concrete":
-          var concreteMaterial = new Concrete
-          {
-            name = Doc.GetElement(structMaterial.StructuralAssetId).Name,
-            materialType = Structural.MaterialType.Concrete,
-            grade = null,
-            designCode = null,
-            codeYear = null,
-            elasticModulus = materialAsset.YoungModulus.X,
-            compressiveStrength = materialAsset.ConcreteCompression,
-            tensileStrength = 0,
-            flexuralStrength = 0,
-            maxCompressiveStrain = 0,
-            maxTensileStrain = 0,
-            maxAggregateSize = 0,
-            lightweight = materialAsset.Lightweight,
-            poissonsRatio = materialAsset.PoissonRatio.X,
-            shearModulus = materialAsset.ShearModulus.X,
-            density = materialAsset.Density,
-            thermalExpansivity = materialAsset.ThermalExpansionCoefficient.X,
-            dampingRatio = 0
-          };
-          speckleMaterial = concreteMaterial;
-          break;
-        case "Steel":
-          var steelMaterial = new Steel
-          {
-            name = Doc.GetElement(structMaterial.StructuralAssetId).Name,
-            materialType = Structural.MaterialType.Steel,
-            grade = materialAsset.Name,
-            designCode = null,
-            codeYear = null,
-            elasticModulus = materialAsset.YoungModulus.X, // Newtons per foot meter 
-            yieldStrength = materialAsset.MinimumYieldStress, // Newtons per foot meter
-            ultimateStrength = materialAsset.MinimumTensileStrength, // Newtons per foot meter
-            maxStrain = 0,
-            poissonsRatio = materialAsset.PoissonRatio.X,
-            shearModulus = materialAsset.ShearModulus.X, // Newtons per foot meter
-            density = materialAsset.Density, // kilograms per cubed feet 
-            thermalExpansivity = materialAsset.ThermalExpansionCoefficient.X, // inverse Kelvin
-            dampingRatio = 0
-          };
-          speckleMaterial = steelMaterial;
-          break;
-        case "Wood":
-          var timberMaterial = new Timber
-          {
-            name = Doc.GetElement(structMaterial.StructuralAssetId).Name,
-            materialType = Structural.MaterialType.Timber,
-            grade = materialAsset.WoodGrade,
-            designCode = null,
-            codeYear = null,
-            elasticModulus = materialAsset.YoungModulus.X, // Newtons per foot meter 
-            poissonsRatio = materialAsset.PoissonRatio.X,
-            shearModulus = materialAsset.ShearModulus.X, // Newtons per foot meter
-            density = materialAsset.Density, // kilograms per cubed feet 
-            thermalExpansivity = materialAsset.ThermalExpansionCoefficient.X, // inverse Kelvin
-            species = materialAsset.WoodSpecies,
-            dampingRatio = 0
-          };
-          timberMaterial["bendingStrength"] = materialAsset.WoodBendingStrength;
-          timberMaterial["parallelCompressionStrength"] = materialAsset.WoodParallelCompressionStrength;
-          timberMaterial["parallelShearStrength"] = materialAsset.WoodParallelShearStrength;
-          timberMaterial["perpendicularCompressionStrength"] = materialAsset.WoodPerpendicularCompressionStrength;
-          timberMaterial["perpendicularShearStrength"] = materialAsset.WoodPerpendicularShearStrength;
-          speckleMaterial = timberMaterial;
-          break;
-        default:
-          var defaultMaterial = new Structural.Materials.Material
-          {
-            name = Doc.GetElement(structMaterial.StructuralAssetId).Name
-          };
-          speckleMaterial = defaultMaterial;
-          break;
-      }
+	  // If material has no physical properties in revit, assign null
+	  var materialAsset = structAsset != null ? structAsset.GetStructuralAsset() : null;
+	  var materialType = structMaterial.MaterialClass;
 
-      prop.material = speckleMaterial;
-      prop.name = Doc.GetElement(revitSurface.GetElementId()).Name;
-      prop.type = Structural.PropertyType2D.Shell;
-      prop.thickness = thickness;
+	  Structural.Materials.Material speckleMaterial = null;
+	  switch (materialType)
+	  {
+		case "Concrete":
+		  var concreteMaterial = new Concrete
+		  {
+			name = Doc.GetElement(structMaterial.Id).Name,
+			materialType = Structural.MaterialType.Concrete,
+			grade = null,
+			designCode = null,
+			codeYear = null,
+			elasticModulus = materialAsset != null ? materialAsset.YoungModulus.X : 0,
+			compressiveStrength = materialAsset != null ? materialAsset.ConcreteCompression : 0,
+			tensileStrength = 0,
+			flexuralStrength = 0,
+			maxCompressiveStrain = 0,
+			maxTensileStrain = 0,
+			maxAggregateSize = 0,
+			lightweight = materialAsset != null ? materialAsset.Lightweight : false,
+			poissonsRatio = materialAsset != null ? materialAsset.PoissonRatio.X : 0,
+			shearModulus = materialAsset != null ? materialAsset.ShearModulus.X : 0,
+			density = materialAsset != null ? materialAsset.Density : 0,
+			thermalExpansivity = materialAsset != null ? materialAsset.ThermalExpansionCoefficient.X : 0,
+			dampingRatio = 0
+		  };
+		  speckleMaterial = concreteMaterial;
+		  break;
+		case "Steel":
+		  var steelMaterial = new Steel
+		  {
+			name = Doc.GetElement(structMaterial.StructuralAssetId).Name,
+			materialType = Structural.MaterialType.Steel,
+			grade = materialAsset != null ? materialAsset.Name : null,
+			designCode = null,
+			codeYear = null,
+			elasticModulus = materialAsset != null ? materialAsset.YoungModulus.X : 0, // Newtons per foot meter 
+			yieldStrength = materialAsset != null ? materialAsset.MinimumYieldStress : 0, // Newtons per foot meter
+			ultimateStrength = materialAsset != null ? materialAsset.MinimumTensileStrength : 0, // Newtons per foot meter
+			maxStrain = 0,
+			poissonsRatio = materialAsset != null ? materialAsset.PoissonRatio.X : 0,
+			shearModulus = materialAsset != null ? materialAsset.ShearModulus.X : 0, // Newtons per foot meter
+			density = materialAsset != null ? materialAsset.Density : 0, // kilograms per cubed feet 
+			thermalExpansivity = materialAsset != null ? materialAsset.ThermalExpansionCoefficient.X : 0, // inverse Kelvin
+			dampingRatio = 0
+		  };
+		  speckleMaterial = steelMaterial;
+		  break;
+		case "Wood":
+		  var timberMaterial = new Timber
+		  {
+			name = Doc.GetElement(structMaterial.StructuralAssetId).Name,
+			materialType = Structural.MaterialType.Timber,
+			grade = materialAsset != null ? materialAsset.WoodGrade : null,
+			designCode = null,
+			codeYear = null,
+			elasticModulus = materialAsset != null ? materialAsset.YoungModulus.X : 0, // Newtons per foot meter 
+			poissonsRatio = materialAsset != null ? materialAsset.PoissonRatio.X : 0,
+			shearModulus = materialAsset != null ? materialAsset.ShearModulus.X : 0, // Newtons per foot meter
+			density = materialAsset != null ? materialAsset.Density : 0, // kilograms per cubed feet 
+			thermalExpansivity = materialAsset != null ? materialAsset.ThermalExpansionCoefficient.X : 0, // inverse Kelvin
+			species = materialAsset != null ? materialAsset.WoodSpecies : null,
+			dampingRatio = 0
+		  };
+		  timberMaterial["bendingStrength"] = materialAsset != null ? materialAsset.WoodBendingStrength : 0;
+		  timberMaterial["parallelCompressionStrength"] = materialAsset != null ? materialAsset.WoodParallelCompressionStrength : 0;
+		  timberMaterial["parallelShearStrength"] = materialAsset != null ? materialAsset.WoodParallelShearStrength : 0;
+		  timberMaterial["perpendicularCompressionStrength"] = materialAsset != null ? materialAsset.WoodPerpendicularCompressionStrength : 0;
+		  timberMaterial["perpendicularShearStrength"] = materialAsset != null ? materialAsset.WoodPerpendicularShearStrength : 0;
+		  speckleMaterial = timberMaterial;
+		  break;
+		default:
+		  var defaultMaterial = new Structural.Materials.Material
+		  {
+			name = Doc.GetElement(structMaterial.StructuralAssetId).Name
+		  };
+		  speckleMaterial = defaultMaterial;
+		  break;
+	  }
+	  speckleMaterial.applicationId = structMaterial.UniqueId;
+	  prop.material = speckleMaterial;
+	  prop.name = structuralElement.Name;
+	  prop.applicationId = $"{structuralElement.Name}:{structMaterial.UniqueId}";
+	  prop["memberType"] = memberType;
+	  prop.type = Structural.PropertyType2D.Shell;
+	  prop.thickness = thickness;
+	  prop.units = ModelUnits;
 
       speckleElement2D.memberType = memberType;
       speckleElement2D.property = prop;
