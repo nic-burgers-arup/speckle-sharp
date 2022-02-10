@@ -437,6 +437,16 @@
     REBAR
   }
 
+  public enum Load1dThermalType
+  {
+    [StringValue("CONS")]
+    Uniform,
+    [StringValue("DY")]
+    GradientInY,
+    [StringValue("DZ")]
+    GradientInZ
+  }
+
   public enum Load2dThermalType
   {
     [StringValue("CONS")]
