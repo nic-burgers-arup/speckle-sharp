@@ -23,6 +23,8 @@ using Objects.Structural.Materials;
 using Objects;
 using Objects.Structural.Properties.Profiles;
 using Objects.Structural.Analysis;
+using Objects.Structural.ApplicationSpecific.GSA.Loading;
+using Speckle.GSA.API.GwaSchema.Loading.Beam;
 
 namespace ConverterGSA
 {
@@ -75,6 +77,7 @@ namespace ConverterGSA
         { typeof(LoadNode), LoadNodeToNative },
         { typeof(GSALoadGravity), GSALoadGravityToNative },
         { typeof(LoadGravity), LoadGravityToNative },
+        { typeof(GSALoadThermal1d), GSALoadThermal1dToNative },
         { typeof(GSALoadThermal2d), GSALoadThermal2dToNative },
         { typeof(GSALoadGridPoint), GSALoadGridPointToNative },
         { typeof(GSALoadGridLine), GSALoadGridLineToNative },
@@ -1394,6 +1397,30 @@ namespace ConverterGSA
         Type = speckleLoad.type.ToNative(),
         Values = speckleLoad.values.Select(v => (double)conversionFactors.TemperatureToNative(v)).ToList(),
       };
+      if (speckleLoad.elements != null)
+      {
+        var speckleElements = speckleLoad.elements.Select(o => (Base)o).ToList();
+        gsaLoad.ElementIndices = IndexByConversionOrLookup<GsaEl>(speckleElements.FindAll(o => o is Element2D), ref gsaRecords) ?? new List<int>();
+        gsaLoad.MemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleElements.FindAll(o => o is GSAMember2D), ref gsaRecords) ?? new List<int>();
+      }
+      gsaRecords.Add(gsaLoad);
+      return gsaRecords;
+    }
+
+    private List<GsaRecord> GSALoadThermal1dToNative(Base speckleObject)
+    {
+      var gsaRecords = new List<GsaRecord>();
+      var speckleLoad = (GSALoadThermal1d)speckleObject;
+      var gsaLoad = new GsaLoad1dThermal()
+      {
+        ApplicationId = speckleLoad.applicationId,
+        Index = speckleLoad.GetIndex<GsaLoad1dThermal>(),
+        Name = speckleLoad.name,
+        LoadCaseIndex = IndexByConversionOrLookup<GsaLoadCase>(speckleLoad.loadCase, ref gsaRecords),
+        Type = speckleLoad.type.ToNative(),
+        Values = speckleLoad.values.Select(v => (double)conversionFactors.TemperatureToNative(v)).ToList()
+      };
+
       if (speckleLoad.elements != null)
       {
         var speckleElements = speckleLoad.elements.Select(o => (Base)o).ToList();

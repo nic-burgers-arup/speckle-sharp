@@ -1204,6 +1204,19 @@ public class GSALoadNode1SchemaComponent: CreateSchemaObjectBase {
 }
 
 // This is generated code:
+public class GSALoadThermal1dSchemaComponent: CreateSchemaObjectBase {
+     
+    public GSALoadThermal1dSchemaComponent(): base("GSALoadThermal1d ", "GSALoadThermal1d ", "Creates a Speckle 1d thermal load for GSA", "Speckle 2 GSA", "Loading") { }
+    
+    public override Guid ComponentGuid => new Guid("13e72b05-228b-5f2a-f267-0286cc6a5070");
+    
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.ApplicationSpecific.GSA.Loading.GSALoadThermal1d.ctor(Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Objects.Structural.Geometry.Element1D],Objects.Structural.ApplicationSpecific.GSA.Loading.Thermal1dLoadType,System.Collections.Generic.List`1[System.Double],System.String,System.Nullable`1[System.Int32])","Objects.Structural.ApplicationSpecific.GSA.Loading.GSALoadThermal1d");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
 public class GSALoadThermal2dSchemaComponent: CreateSchemaObjectBase {
      
     public GSALoadThermal2dSchemaComponent(): base("GSALoadThermal2d ", "GSALoadThermal2d ", "Creates a Speckle 2d thermal load for GSA", "Speckle 2 GSA", "Loading") { }

@@ -23,6 +23,8 @@ using Objects.Structural.Materials;
 using Objects.Structural.GSA.Bridge;
 using Objects.Structural.GSA.Analysis;
 using StructuralUtilities.PolygonMesher;
+using Speckle.GSA.API.GwaSchema.Loading.Beam;
+using Objects.Structural.ApplicationSpecific.GSA.Loading;
 
 namespace ConverterGSA
 {
@@ -57,6 +59,7 @@ namespace ConverterGSA
         { typeof(GsaLoadBeamTrilin), GsaLoadBeamToSpeckle },
         { typeof(GsaLoadNode), GsaLoadNodeToSpeckle },
         { typeof(GsaLoadGravity), GsaLoadGravityLoadToSpeckle },
+        { typeof(GsaLoad1dThermal), GsaLoadThermal1dToSpeckle },
         { typeof(GsaLoad2dThermal), GsaLoadThermal2dToSpeckle },
         { typeof(GsaLoadGridArea), GsaLoadGridAreaToSpeckle },
         { typeof(GsaLoadGridLine), GsaLoadGridLineToSpeckle },
@@ -1015,6 +1018,54 @@ namespace ConverterGSA
       //TODO:
       //SpeckleObject:
       //  string units
+    }
+
+    private ToSpeckleResult GsaLoadThermal1dToSpeckle(GsaRecord nativeObject, GSALayer layer = GSALayer.Both)
+    {
+      //Two different objects are required, one for the analysis layer and one for the design layer.
+      //All conversions will be assigned to local variables first and then the two speckle objects will be created.
+      var gsaLoad = (GsaLoad1dThermal)nativeObject;
+      if (layer == GSALayer.Design && !gsaLoad.MemberIndices.HasValues() && gsaLoad.ElementIndices.HasValues()) return new ToSpeckleResult(true); //assume this is meant for the analysis layer only
+
+      //Defaults;
+      string applicationId = null;
+      GSALoadThermal1d analysisLoad = null;
+      GSALoadCase loadCase = null;
+
+      //local variables
+      var type = gsaLoad.Type.ToSpeckle();
+      if (gsaLoad.Index.IsIndex()) applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaLoad2dThermal>(gsaLoad.Index.Value);
+      if (gsaLoad.LoadCaseIndex.IsIndex()) loadCase = GetLoadCaseFromIndex(gsaLoad.LoadCaseIndex.Value);
+
+      //design layer
+      var designLoad = new GSALoadThermal1d()
+      {
+        applicationId = applicationId,
+        nativeId = gsaLoad.Index ?? 0,
+        name = gsaLoad.Name,
+        loadCase = loadCase,
+        type = type,
+        values = gsaLoad.Values,
+      };
+      if (gsaLoad.MemberIndices.HasValues()) designLoad.elements = gsaLoad.MemberIndices.Select(i => (Element1D)GetMemberFromIndex(i)).ToList();
+
+      if (layer == GSALayer.Both)
+      {
+        //analysis layer
+        analysisLoad = new GSALoadThermal1d()
+        {
+          applicationId = applicationId,
+          nativeId = gsaLoad.Index ?? 0,
+          name = gsaLoad.Name,
+          loadCase = loadCase,
+          type = type,
+          values = gsaLoad.Values,
+        };
+        if (gsaLoad.ElementIndices.HasValues()) analysisLoad.elements = gsaLoad.ElementIndices.Select(i => (Element1D)GetElement1DFromIndex(i)).ToList();
+      }
+
+      return new ToSpeckleResult(designLayerOnlyObjects: new List<Base>() { designLoad }, analysisLayerOnlyObjects: new List<Base>() { analysisLoad });
+
     }
 
     private ToSpeckleResult GsaLoadThermal2dToSpeckle(GsaRecord nativeObject, GSALayer layer = GSALayer.Both)
