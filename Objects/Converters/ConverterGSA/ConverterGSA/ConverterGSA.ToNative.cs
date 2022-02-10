@@ -366,7 +366,7 @@ namespace ConverterGSA
       return gsaRecords;
     }
 
-    private List<GsaRecord> Element2dToNative(Base speckleObject)
+    private List<GsaRecord> Element2dToNative(Base speckleObject) //an element2d obj from csi, or from a revit floor/slab, is more akin to a gsamember2d -> expect to convert to member instead of element2d
     {
       var retList = new List<GsaRecord>();
       var speckleElement = (Element2D)speckleObject;
@@ -394,7 +394,6 @@ namespace ConverterGSA
         ApplicationId = speckleElement.applicationId,
         Index = speckleElement.GetIndex<GsaEl>(),
         Name = speckleElement.name,
-        //Type = speckleElement.type.ToNative(),
         PropertyIndex = IndexByConversionOrLookup<GsaProp2d>(speckleElement.property, ref retList),
         ReleaseInclusion = ReleaseInclusion.NotIncluded,
         ParentIndex = IndexByConversionOrLookup<GsaMemb>(speckleElement.parent, ref retList)
@@ -402,6 +401,10 @@ namespace ConverterGSA
       if (speckleElement.topology != null && speckleElement.topology.Count > 0)
       {
         gsaElement.NodeIndices = speckleElement.topology.NodeAt(conversionFactors);
+        if (speckleElement.topology.Count == 4) gsaElement.Type = ElementType.Quad4;
+        else if (speckleElement.topology.Count == 8) gsaElement.Type = ElementType.Quad8;
+        else if (speckleElement.topology.Count == 3) gsaElement.Type = ElementType.Triangle3;
+        else if (speckleElement.topology.Count == 6) gsaElement.Type = ElementType.Triangle6;
       }
 
       if (speckleElement.orientationAngle != 0) gsaElement.Angle = conversionFactors.ConversionFactorToDegrees() * speckleElement.orientationAngle;
@@ -596,9 +599,10 @@ namespace ConverterGSA
     {
       var retList = new List<GsaRecord>();
       var speckleMember = (GSAMember2D)speckleObject;
+
       //Dynamic properties
       var dynamicMembers = speckleMember.GetMembers();
-      var memberType = Enum.Parse(typeof(Objects.Structural.Geometry.MemberType2D), speckleMember.memberType.ToString());
+      var memberType = Enum.Parse(typeof(MemberType2D), speckleMember.memberType.ToString());
 
       var gsaMember = new GsaMemb()
       {

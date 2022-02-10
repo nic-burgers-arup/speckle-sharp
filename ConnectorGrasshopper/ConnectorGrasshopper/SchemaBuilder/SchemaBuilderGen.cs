@@ -585,7 +585,7 @@ public class Element2DSchemaComponent: CreateSchemaObjectBase {
     public override Guid ComponentGuid => new Guid("0927879c-d28c-1c35-0d3f-4ba8e324ec39");
     
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.Geometry.Element2D.ctor(System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],Objects.Structural.Properties.Property2D,System.Double,System.Double)","Objects.Structural.Geometry.Element2D");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.Geometry.Element2D.ctor(System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],Objects.Structural.Properties.Property2D,Objects.Structural.Geometry.MemberType,System.Collections.Generic.List`1[System.Collections.Generic.List`1[Objects.Structural.Geometry.Node]],System.Double,System.Double)","Objects.Structural.Geometry.Element2D");
         base.AddedToDocument(document);
     }
 }
