@@ -77,7 +77,7 @@ namespace ConverterGSA
       { typeof(Property2D), typeof(GsaProp2d) },
       { typeof(GSAProperty2D), typeof(GsaProp2d) },
       { typeof(LoadCombination), typeof(GsaCombination) },
-                          { typeof(GSACombinationCase), typeof(GsaCombination) },
+      { typeof(GSACombinationCase), typeof(GsaCombination) },
       { typeof(GSAAssembly), typeof(GsaAssembly) }
     };
 
@@ -106,7 +106,7 @@ namespace ConverterGSA
         typeof(GSAAlignment), typeof(GSAInfluenceBeam), typeof(GSAInfluenceNode), typeof(GSAPath), typeof(GSAUserVehicle) } }, //Bridge
       { ModelAspect.Loads, new List<Type>()
         { typeof(GSAAnalysisCase), typeof(GSAAnalysisTask), typeof(GSALoadCase), typeof(GSALoadBeam), typeof(GSALoadFace), typeof(GSALoadGravity),
-        typeof(GSALoadCase), typeof(GSACombinationCase), typeof(GSALoadNode), typeof(GSALoadThermal2d), typeof(GSALoadGridArea), typeof(GSALoadGridLine),
+        typeof(GSALoadCase), typeof(GSACombinationCase), typeof(GSALoadNode), typeof(GSALoadThermal1d), typeof(GSALoadThermal2d), typeof(GSALoadGridArea), typeof(GSALoadGridLine),
         typeof(GSALoadGridPoint) } },
       { ModelAspect.Restraints, new List<Type>() { typeof(Objects.Structural.Geometry.Restraint) } },
       { ModelAspect.Properties, new List<Type>()
@@ -425,6 +425,8 @@ namespace ConverterGSA
           case UnitDimension.Strain: ms.modelUnits.strain = ud.Name; break;
         }
       }
+
+      conversionFactors.SetNativeUnits();
 
       var tol = modelSettingsRecords.FirstOrDefault(r => r is GsaTol);
       if (tol != null)

@@ -24,6 +24,8 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers.Loading.Beam
       var items = remainingItems;
 
       //LOAD_1D_THERMAL.2 | name | list | case | type | values(n)
+      //LOAD_1D_THERMAL.2 | name | list | case | type | value
+      //LOAD_1D_THERMAL.2 | name | item | case | type | pos_1 | value_1 | pos_2 | value_2
       if (!FromGwaByFuncs(items, out remainingItems, AddName, (v) => AddEntities(v, out record.MemberIndices, out record.ElementIndices),
         (v) => AddNullableIndex(v, out record.LoadCaseIndex), AddType))
       {

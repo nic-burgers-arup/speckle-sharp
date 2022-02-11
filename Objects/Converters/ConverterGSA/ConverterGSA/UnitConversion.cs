@@ -40,7 +40,7 @@ namespace ConverterGSA
       CalculateConversionFactors();
     }
 
-    private void SetNativeUnits()
+    public void SetNativeUnits()
     {
       if (Instance.GsaModel.Cache.GetNatives(out var gsaRecords))
       {

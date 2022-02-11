@@ -6,13 +6,14 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Objects.Structural.ApplicationSpecific.GSA.Loading
+namespace Objects.Structural.GSA.Loading
 {
   public class GSALoadThermal1d : Load
   {
     public int? nativeId { get; set; }
+
     [DetachProperty]
-    [Chunkable(5000)]
+    [Chunkable(1000)]
     public List<Element1D> elements { get; set; }
     public Thermal1dLoadType type { get; set; }
     public List<double> values { get; set; }
@@ -20,8 +21,14 @@ namespace Objects.Structural.ApplicationSpecific.GSA.Loading
     public GSALoadThermal1d() { }
 
     [SchemaInfo("GSALoadThermal1d ", "Creates a Speckle 1d thermal load for GSA", "GSA", "Loading")]
-    public GSALoadThermal1d(LoadCase loadCase, List<Element1D> elements, Thermal1dLoadType type, List<double> values, string name = null, int? nativeId = null )
+    public GSALoadThermal1d(LoadCase loadCase, Thermal1dLoadType type,
+      [SchemaParamInfo("A list that represents load magnitude or load magnitude and positions (number of values varies based on load type - Uniform: 1 value (constant temperature) or Gradient in Y or Z: 4 (position 1, temperature at position 1, position 2, temperature at position 2))")] List<double> values,
+      List<Element1D> elements = null, string name = null, int? nativeId = null)
     {
+      if (type == Thermal1dLoadType.Uniform && values.Count != 1)
+        throw new ArgumentException("Number of values provided does not match the selected load type of uniform");
+      if ((type == Thermal1dLoadType.GradientInY || type == Thermal1dLoadType.GradientInZ) && values.Count != 4)
+        throw new ArgumentException("Number of values provided does not match the selected load type of gradient");
       this.nativeId = nativeId;
       this.name = name;
       this.loadCase = loadCase;
@@ -29,7 +36,6 @@ namespace Objects.Structural.ApplicationSpecific.GSA.Loading
       this.type = type;
       this.values = values;
     }
-    
   }
 
   public enum Thermal1dLoadType
