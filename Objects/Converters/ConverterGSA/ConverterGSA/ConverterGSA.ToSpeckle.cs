@@ -24,7 +24,6 @@ using Objects.Structural.GSA.Bridge;
 using Objects.Structural.GSA.Analysis;
 using StructuralUtilities.PolygonMesher;
 using Speckle.GSA.API.GwaSchema.Loading.Beam;
-using Objects.Structural.ApplicationSpecific.GSA.Loading;
 
 namespace ConverterGSA
 {
@@ -164,7 +163,7 @@ namespace ConverterGSA
       {
         //-- App agnostic --
         name = gsaNode.Name,
-        basePoint = new Point(gsaNode.X, gsaNode.Y, gsaNode.Z),
+        basePoint = new Point(gsaNode.X, gsaNode.Y, gsaNode.Z, conversionFactors.nativeModelUnits.length),
         constraintAxis = GetConstraintAxis(gsaNode),
         restraint = GetRestraint(gsaNode),
 
@@ -1070,7 +1069,7 @@ namespace ConverterGSA
 
       //local variables
       var type = gsaLoad.Type.ToSpeckle();
-      if (gsaLoad.Index.IsIndex()) applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaLoad2dThermal>(gsaLoad.Index.Value);
+      if (gsaLoad.Index.IsIndex()) applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaLoad1dThermal>(gsaLoad.Index.Value);
       if (gsaLoad.LoadCaseIndex.IsIndex()) loadCase = GetLoadCaseFromIndex(gsaLoad.LoadCaseIndex.Value);
 
       //design layer
@@ -1101,7 +1100,6 @@ namespace ConverterGSA
       }
 
       return new ToSpeckleResult(designLayerOnlyObjects: new List<Base>() { designLoad }, analysisLayerOnlyObjects: new List<Base>() { analysisLoad });
-
     }
 
     private ToSpeckleResult GsaLoadThermal2dToSpeckle(GsaRecord nativeObject, GSALayer layer = GSALayer.Both)

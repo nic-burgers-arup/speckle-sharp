@@ -23,7 +23,6 @@ using Objects.Structural.Materials;
 using Objects;
 using Objects.Structural.Properties.Profiles;
 using Objects.Structural.Analysis;
-using Objects.Structural.ApplicationSpecific.GSA.Loading;
 using Speckle.GSA.API.GwaSchema.Loading.Beam;
 
 namespace ConverterGSA
@@ -373,7 +372,7 @@ namespace ConverterGSA
     {
       var retList = new List<GsaRecord>();
       var speckleElement = (Element2D)speckleObject;
-                               
+
       if (speckleElement.memberType != Objects.Structural.Geometry.MemberType.NotSet)
       {
         var speckleMember = new GSAMember2D()
@@ -1330,8 +1329,11 @@ namespace ConverterGSA
       gsaLoad.LoadCaseIndex = IndexByConversionOrLookup<GsaLoadCase>(speckleLoad.loadCase, ref gsaRecords);
       gsaLoad.Projected = speckleLoad.isProjected;
       gsaLoad.LoadDirection = speckleLoad.direction.ToNative();
-      gsaLoad.ElementIndices = IndexByConversionOrLookup<GsaEl>(speckleLoad.elements.FindAll(o => o is Element1D || o is Element2D), ref gsaRecords) ?? new List<int>();
-      gsaLoad.MemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleLoad.elements.FindAll(o => o is GSAMember1D || o is GSAMember2D), ref gsaRecords) ?? new List<int>();
+      if (speckleLoad.elements != null)
+      {
+        gsaLoad.ElementIndices = IndexByConversionOrLookup<GsaEl>(speckleLoad.elements.FindAll(o => o is Element1D || o is Element2D), ref gsaRecords) ?? new List<int>();
+        gsaLoad.MemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleLoad.elements.FindAll(o => o is GSAMember1D || o is GSAMember2D), ref gsaRecords) ?? new List<int>();
+      }
       if (speckleLoad.loadAxis == null)
       {
         gsaLoad.AxisRefType = speckleLoad.loadAxisType.ToNativeBeamAxisRefType();

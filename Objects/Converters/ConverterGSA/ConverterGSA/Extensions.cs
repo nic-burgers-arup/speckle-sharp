@@ -25,7 +25,6 @@ using Speckle.GSA.API;
 using Speckle.Core.Models;
 using Objects.Structural.Properties;
 using Objects.Structural.Materials;
-using Objects.Structural.ApplicationSpecific.GSA.Loading;
 
 namespace ConverterGSA
 {

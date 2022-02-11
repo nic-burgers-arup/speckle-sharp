@@ -1237,7 +1237,7 @@ public class GSALoadThermal1dSchemaComponent: CreateSchemaObjectBase {
     public override Guid ComponentGuid => new Guid("13e72b05-228b-5f2a-f267-0286cc6a5070");
     
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.ApplicationSpecific.GSA.Loading.GSALoadThermal1d.ctor(Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Objects.Structural.Geometry.Element1D],Objects.Structural.ApplicationSpecific.GSA.Loading.Thermal1dLoadType,System.Collections.Generic.List`1[System.Double],System.String,System.Nullable`1[System.Int32])","Objects.Structural.ApplicationSpecific.GSA.Loading.GSALoadThermal1d");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadThermal1d.ctor(Objects.Structural.Loading.LoadCase,Objects.Structural.GSA.Loading.Thermal1dLoadType,System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[Objects.Structural.Geometry.Element1D],System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadThermal1d");
         base.AddedToDocument(document);
     }
 }
@@ -1250,7 +1250,7 @@ public class GSALoadThermal2dSchemaComponent: CreateSchemaObjectBase {
     public override Guid ComponentGuid => new Guid("bd1c82a1-675e-da5f-4fd9-8ebe3459dabe");
     
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadThermal2d.ctor(Objects.Structural.Loading.LoadCase,System.Collections.Generic.List`1[Objects.Structural.Geometry.Element2D],Objects.Structural.GSA.Loading.Thermal2dLoadType,System.Collections.Generic.List`1[System.Double],System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadThermal2d");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Loading.GSALoadThermal2d.ctor(Objects.Structural.Loading.LoadCase,Objects.Structural.GSA.Loading.Thermal2dLoadType,System.Collections.Generic.List`1[System.Double],System.Collections.Generic.List`1[Objects.Structural.Geometry.Element2D],System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Loading.GSALoadThermal2d");
         base.AddedToDocument(document);
     }
 }

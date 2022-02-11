@@ -8,15 +8,7 @@ namespace Speckle.GSA.API.GwaSchema.Loading.Beam
 {
   public class GsaLoad1dThermal : GsaRecord
   {
-    public string Name
-    {
-      get { return name; }
-      set
-      {
-        name = value;
-      }
-    }
-
+    public string Name { get => name; set { name = value; } }
     public List<int> ElementIndices;
     public List<int> MemberIndices;
     public int? LoadCaseIndex;
@@ -24,7 +16,7 @@ namespace Speckle.GSA.API.GwaSchema.Loading.Beam
     public List<double> Values;
 
 
-    public GsaLoad1dThermal(): base()
+    public GsaLoad1dThermal() : base()
     {
       Version = 2;
     }
