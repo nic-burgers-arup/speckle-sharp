@@ -276,11 +276,11 @@ namespace ConverterGSA
     {
       if (string.IsNullOrEmpty(speckleUnit)) return 1;
 
-      var modelUnitProps = nativeModelUnits.GetType().GetProperties();
+      var modelUnits = nativeModelUnits.GetType().GetProperties();
       var isAnyUnitNull = false;
-      foreach(var prop in modelUnitProps)
+      foreach(var unit in modelUnits)
       {
-        if (prop.GetValue(nativeModelUnits, null) == null)
+        if (unit.GetValue(nativeModelUnits, null) == null)
         {
           isAnyUnitNull = true;
           break;
