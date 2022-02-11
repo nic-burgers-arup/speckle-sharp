@@ -1025,11 +1025,11 @@ namespace ConverterGSA
 
     private double Hypotenuse(double a, double o) => Math.Sqrt((a * a) + (o * o));
 
-    private bool IsGlobalAxis(Axis x) => ((x.axisType == AxisType.Cartesian)
-      && x.definition.origin.Equals(Origin, GeometricDecimalPlaces)
-      && x.definition.xdir.Equals(UnitX, GeometricDecimalPlaces)
-      && x.definition.ydir.Equals(UnitY, GeometricDecimalPlaces)
-      && x.definition.normal.Equals(UnitZ, GeometricDecimalPlaces));
+    private bool IsGlobalAxis(Axis x) => ((x.axisType == AxisType.Cartesian) && ((x.definition == null) 
+      || (x.definition.origin.Equals(Origin, GeometricDecimalPlaces)
+          && x.definition.xdir.Equals(UnitX, GeometricDecimalPlaces)
+          && x.definition.ydir.Equals(UnitY, GeometricDecimalPlaces)
+          && x.definition.normal.Equals(UnitZ, GeometricDecimalPlaces))));
 
     private bool IsXElevationAxis(Axis x) => ((x.axisType == AxisType.Cartesian)
       && x.definition.origin.Equals(Origin, GeometricDecimalPlaces)
@@ -1423,7 +1423,7 @@ namespace ConverterGSA
         var factor = speckleLoad.GetScaleFactor(conversionFactors);
         gsaLoad.Value = factor * speckleLoad.value;
       }
-      if (speckleLoad.loadAxis.definition.IsGlobal())
+      if ((speckleLoad.loadAxis == null) || (speckleLoad.loadAxis.definition.IsGlobal()))
       {
         gsaLoad.GlobalAxis = true;
       }
@@ -2712,7 +2712,7 @@ namespace ConverterGSA
     {
       gsaAxisRefType = NodeAxisRefType.NotSet;
       gsaAxisIndex = null;
-      if (speckleAxis == null)
+      if (speckleAxis == null || speckleAxis.definition == null)
       {
         gsaAxisRefType = NodeAxisRefType.Global;
         return true;

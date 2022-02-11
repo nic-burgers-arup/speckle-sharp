@@ -110,10 +110,10 @@ namespace ConverterGSA
 
     public static bool IsGlobal(this Plane p)
     {
-      return (p.origin.x == 0 && p.origin.y == 0 && p.origin.z == 0 &&
+      return ((p == null) || ((p.origin.x == 0 && p.origin.y == 0 && p.origin.z == 0 &&
         p.xdir.x == 1 && p.xdir.y == 0 && p.xdir.z == 0 &&
         p.ydir.x == 0 && p.ydir.y == 1 && p.ydir.z == 0 &&
-        p.normal.x == 0 && p.normal.y == 0 && p.normal.z == 1);
+        p.normal.x == 0 && p.normal.y == 0 && p.normal.z == 1)));
     }
 
     public static bool IsXElevation(this Plane p)
@@ -320,7 +320,7 @@ namespace ConverterGSA
         default: return GridExpansion.NotSet;
       }
     }
-
+    
     public static LoadType ToSpeckle(this StructuralLoadCaseType gsaLoadType)
     {
       switch (gsaLoadType)
@@ -896,12 +896,15 @@ namespace ConverterGSA
       {
         case LoadType.Dead: return StructuralLoadCaseType.Dead;
         case LoadType.SeismicStatic: return StructuralLoadCaseType.Earthquake;
+        case LoadType.SeismicAccTorsion: return StructuralLoadCaseType.EarthquakeAccTors;
+        case LoadType.SeismicRSA: return StructuralLoadCaseType.EarthquakeRSA;
         case LoadType.Live: return StructuralLoadCaseType.Live;
         case LoadType.Rain: return StructuralLoadCaseType.Rain;
         case LoadType.Snow: return StructuralLoadCaseType.Snow;
         case LoadType.Soil: return StructuralLoadCaseType.Soil;
         case LoadType.Thermal: return StructuralLoadCaseType.Thermal;
         case LoadType.Wind: return StructuralLoadCaseType.Wind;
+        case LoadType.Accidental: return StructuralLoadCaseType.Accidental;
         case LoadType.None: return StructuralLoadCaseType.NotSet;
         default: return StructuralLoadCaseType.Generic;
       }

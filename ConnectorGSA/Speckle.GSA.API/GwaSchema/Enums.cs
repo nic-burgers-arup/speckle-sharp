@@ -913,7 +913,10 @@
     Snow,
     Wind,
     Earthquake,
-    Thermal
+    EarthquakeAccTors,
+    EarthquakeRSA,
+    Thermal,
+    Accidental
   }
 
   public enum StructuralSolutionType
