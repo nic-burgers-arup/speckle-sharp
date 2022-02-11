@@ -32,7 +32,7 @@ namespace Objects.Structural.GSA.Analysis
     public int? maxCycle { get; set; }
 
     [DetachProperty]
-    public List<GSAAnalysisCase> analysisCases { get; set; }
+    public List<GSAAnalysisCase> analysisCases { get; set; } = new List<GSAAnalysisCase> { };
     public GSAAnalysisTask() { }
 
     //[SchemaInfo("GSAAnalysisTask (task only)", "Creates a Speckle structural analysis task for GSA", "GSA", "Analysis")]

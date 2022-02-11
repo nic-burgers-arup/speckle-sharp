@@ -369,6 +369,17 @@ namespace ConverterGSA
       }
     }
 
+    public static Thermal1dLoadType ToSpeckle(this Load1dThermalType gsaType)
+    {
+      switch (gsaType)
+      {
+        case Load1dThermalType.Uniform: return Thermal1dLoadType.Uniform;
+        case Load1dThermalType.GradientInY: return Thermal1dLoadType.GradientInY;
+        case Load1dThermalType.GradientInZ: return Thermal1dLoadType.GradientInZ;
+        default: return Thermal1dLoadType.NotSet;
+      }
+    }
+
     public static Thermal2dLoadType ToSpeckle(this Load2dThermalType gsaType)
     {
       switch (gsaType)
@@ -906,6 +917,17 @@ namespace ConverterGSA
         case Thermal2dLoadType.Uniform: return Load2dThermalType.Uniform;
         case Thermal2dLoadType.Gradient: return Load2dThermalType.Gradient;
         case Thermal2dLoadType.General: return Load2dThermalType.General;
+        default: throw new Exception(speckleType.ToString() + " speckle enum can not be converted into native enum");
+      }
+    }
+
+    public static Load1dThermalType ToNative(this Thermal1dLoadType speckleType)
+    {
+      switch (speckleType)
+      {
+        case Thermal1dLoadType.Uniform: return Load1dThermalType.Uniform;
+        case Thermal1dLoadType.GradientInY: return Load1dThermalType.GradientInY;
+        case Thermal1dLoadType.GradientInZ: return Load1dThermalType.GradientInZ;
         default: throw new Exception(speckleType.ToString() + " speckle enum can not be converted into native enum");
       }
     }

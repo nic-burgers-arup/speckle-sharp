@@ -11,14 +11,14 @@ namespace Objects.Structural.GSA.Loading
     public int? nativeId { get; set; }
 
     [DetachProperty]
-    [Chunkable(5000)]
+    [Chunkable(1000)]
     public List<Element2D> elements { get; set; }
     public Thermal2dLoadType type { get; set; }
     public List<double> values { get; set; }
     public GSALoadThermal2d() { }
 
     [SchemaInfo("GSALoadThermal2d ", "Creates a Speckle 2d thermal load for GSA", "GSA", "Loading")]
-    public GSALoadThermal2d(LoadCase loadCase, List<Element2D> elements, Thermal2dLoadType type, List<double> values, string name = null, int? nativeId = null)
+    public GSALoadThermal2d(LoadCase loadCase, Thermal2dLoadType type, List<double> values, List<Element2D> elements = null, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;

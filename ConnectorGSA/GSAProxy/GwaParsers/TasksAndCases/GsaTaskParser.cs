@@ -20,7 +20,6 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
         return false;
       }
 
-      //ANAL | case | name | task | desc
       //TASK.2 | task | name | stage | GSS | solution | mode_1 | mode_2 | num_iter | p_delta | p_delta_case | prestress | result | prune | geometry | lower | upper | raft | residual | shift | stiff | mass_filter | max_cycle
       return FromGwaByFuncs(remainingItems, out var _, AddName, (v) => AddNullableIntValue(v, out record.StageIndex), (v) => AddStringValue(v, out record.Solver),
         (v) => Enum.TryParse<StructuralSolutionType>(v, true, out record.Solution), (v) => AddNullableIntValue(v, out record.Mode1), (v) => AddNullableIntValue(v, out record.Mode2),

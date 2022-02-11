@@ -18,7 +18,6 @@ namespace Objects.Structural.GSA.Geometry
     public bool intersectsWithOthers { get; set; }
     public double targetMeshSize { get; set; }
 
-
     public GSAMember2D() { }
 
     [SchemaInfo("GSAMember2D", "Creates a Speckle structural 2D member for GSA", "GSA", "Geometry")]

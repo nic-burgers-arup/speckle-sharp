@@ -23,6 +23,7 @@ using Objects.Structural.Materials;
 using Objects;
 using Objects.Structural.Properties.Profiles;
 using Objects.Structural.Analysis;
+using Speckle.GSA.API.GwaSchema.Loading.Beam;
 
 namespace ConverterGSA
 {
@@ -76,6 +77,7 @@ namespace ConverterGSA
         { typeof(LoadNode), LoadNodeToNative },
         { typeof(GSALoadGravity), GSALoadGravityToNative },
         { typeof(LoadGravity), LoadGravityToNative },
+        { typeof(GSALoadThermal1d), GSALoadThermal1dToNative },
         { typeof(GSALoadThermal2d), GSALoadThermal2dToNative },
         { typeof(GSALoadGridPoint), GSALoadGridPointToNative },
         { typeof(GSALoadGridLine), GSALoadGridLineToNative },
@@ -366,11 +368,11 @@ namespace ConverterGSA
       return gsaRecords;
     }
 
-    private List<GsaRecord> Element2dToNative(Base speckleObject)
+    private List<GsaRecord> Element2dToNative(Base speckleObject) //an element2d obj from csi, or from a revit floor/slab, is more akin to a gsamember2d -> expect to convert to member instead of element2d
     {
       var retList = new List<GsaRecord>();
       var speckleElement = (Element2D)speckleObject;
-                               
+
       if (speckleElement.memberType != Objects.Structural.Geometry.MemberType.NotSet)
       {
         var speckleMember = new GSAMember2D()
@@ -394,7 +396,6 @@ namespace ConverterGSA
         ApplicationId = speckleElement.applicationId,
         Index = speckleElement.GetIndex<GsaEl>(),
         Name = speckleElement.name,
-        //Type = speckleElement.type.ToNative(),
         PropertyIndex = IndexByConversionOrLookup<GsaProp2d>(speckleElement.property, ref retList),
         ReleaseInclusion = ReleaseInclusion.NotIncluded,
         ParentIndex = IndexByConversionOrLookup<GsaMemb>(speckleElement.parent, ref retList)
@@ -402,6 +403,10 @@ namespace ConverterGSA
       if (speckleElement.topology != null && speckleElement.topology.Count > 0)
       {
         gsaElement.NodeIndices = speckleElement.topology.NodeAt(conversionFactors);
+        if (speckleElement.topology.Count == 4) gsaElement.Type = ElementType.Quad4;
+        else if (speckleElement.topology.Count == 8) gsaElement.Type = ElementType.Quad8;
+        else if (speckleElement.topology.Count == 3) gsaElement.Type = ElementType.Triangle3;
+        else if (speckleElement.topology.Count == 6) gsaElement.Type = ElementType.Triangle6;
       }
 
       if (speckleElement.orientationAngle != 0) gsaElement.Angle = conversionFactors.ConversionFactorToDegrees() * speckleElement.orientationAngle;
@@ -596,9 +601,10 @@ namespace ConverterGSA
     {
       var retList = new List<GsaRecord>();
       var speckleMember = (GSAMember2D)speckleObject;
+
       //Dynamic properties
       var dynamicMembers = speckleMember.GetMembers();
-      var memberType = Enum.Parse(typeof(Objects.Structural.Geometry.MemberType2D), speckleMember.memberType.ToString());
+      var memberType = Enum.Parse(typeof(MemberType2D), speckleMember.memberType.ToString());
 
       var gsaMember = new GsaMemb()
       {
@@ -1323,8 +1329,11 @@ namespace ConverterGSA
       gsaLoad.LoadCaseIndex = IndexByConversionOrLookup<GsaLoadCase>(speckleLoad.loadCase, ref gsaRecords);
       gsaLoad.Projected = speckleLoad.isProjected;
       gsaLoad.LoadDirection = speckleLoad.direction.ToNative();
-      gsaLoad.ElementIndices = IndexByConversionOrLookup<GsaEl>(speckleLoad.elements.FindAll(o => o is Element1D || o is Element2D), ref gsaRecords) ?? new List<int>();
-      gsaLoad.MemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleLoad.elements.FindAll(o => o is GSAMember1D || o is GSAMember2D), ref gsaRecords) ?? new List<int>();
+      if (speckleLoad.elements != null)
+      {
+        gsaLoad.ElementIndices = IndexByConversionOrLookup<GsaEl>(speckleLoad.elements.FindAll(o => o is Element1D || o is Element2D), ref gsaRecords) ?? new List<int>();
+        gsaLoad.MemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleLoad.elements.FindAll(o => o is GSAMember1D || o is GSAMember2D), ref gsaRecords) ?? new List<int>();
+      }
       if (speckleLoad.loadAxis == null)
       {
         gsaLoad.AxisRefType = speckleLoad.loadAxisType.ToNativeBeamAxisRefType();
@@ -1482,6 +1491,30 @@ namespace ConverterGSA
         Type = speckleLoad.type.ToNative(),
         Values = speckleLoad.values.Select(v => (double)conversionFactors.TemperatureToNative(v)).ToList(),
       };
+      if (speckleLoad.elements != null)
+      {
+        var speckleElements = speckleLoad.elements.Select(o => (Base)o).ToList();
+        gsaLoad.ElementIndices = IndexByConversionOrLookup<GsaEl>(speckleElements.FindAll(o => o is Element2D), ref gsaRecords) ?? new List<int>();
+        gsaLoad.MemberIndices = IndexByConversionOrLookup<GsaMemb>(speckleElements.FindAll(o => o is GSAMember2D), ref gsaRecords) ?? new List<int>();
+      }
+      gsaRecords.Add(gsaLoad);
+      return gsaRecords;
+    }
+
+    private List<GsaRecord> GSALoadThermal1dToNative(Base speckleObject)
+    {
+      var gsaRecords = new List<GsaRecord>();
+      var speckleLoad = (GSALoadThermal1d)speckleObject;
+      var gsaLoad = new GsaLoad1dThermal()
+      {
+        ApplicationId = speckleLoad.applicationId,
+        Index = speckleLoad.GetIndex<GsaLoad1dThermal>(),
+        Name = speckleLoad.name,
+        LoadCaseIndex = IndexByConversionOrLookup<GsaLoadCase>(speckleLoad.loadCase, ref gsaRecords),
+        Type = speckleLoad.type.ToNative(),
+        Values = speckleLoad.values.Select(v => (double)conversionFactors.TemperatureToNative(v)).ToList()
+      };
+
       if (speckleLoad.elements != null)
       {
         var speckleElements = speckleLoad.elements.Select(o => (Base)o).ToList();
