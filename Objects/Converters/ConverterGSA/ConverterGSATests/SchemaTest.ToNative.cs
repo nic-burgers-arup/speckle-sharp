@@ -711,7 +711,7 @@ namespace ConverterGSATests
     [Theory]
     [InlineData("m", "N", "mm", "kN")]
     [InlineData(null, null, null, null)]
-    public void GSALoadCombinationToNative(string gsaLengthUnit, string gsaForceUnit, string speckleLengthUnit, string speckleForceUnit)
+    public void GSACombinationCaseToNative(string gsaLengthUnit, string gsaForceUnit, string speckleLengthUnit, string speckleForceUnit)
     {
       //unit conversion factors
       var lengthFactor = (string.IsNullOrEmpty(speckleLengthUnit) || string.IsNullOrEmpty(gsaLengthUnit)) ? 1 : Units.GetConversionFactor(speckleLengthUnit, gsaLengthUnit);
@@ -734,7 +734,7 @@ namespace ConverterGSATests
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
       var speckleObjects = new List<Base>();
-      speckleObjects.AddRange(speckleDesignModel.loads.FindAll(o => o is GSALoadCombination).ToList());
+      speckleObjects.AddRange(speckleDesignModel.loads.FindAll(o => o is GSACombinationCase).ToList());
       speckleDesignModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units
       speckleDesignModel.specs.settings.modelUnits.force = speckleForceUnit; //change the units
       speckleObjects.Add(speckleDesignModel.specs.settings.modelUnits);
@@ -778,8 +778,8 @@ namespace ConverterGSATests
       var speckleModels = converter.ConvertToSpeckle(gsaRecords.Select(i => (object)i).ToList()).FindAll(o => o is Model).Select(o => (Model)o).ToList();
       var speckleAnalysisModel = speckleModels.Where(so => so.layerDescription == "Analysis").FirstOrDefault();
       var speckleDesignModel = speckleModels.Where(so => so.layerDescription == "Design").FirstOrDefault();
-      var speckleAppSpecificObjects = speckleDesignModel.loads.FindAll(o => o is GSALoadCombination).Select(o => (GSALoadCombination)o).ToList();
-      Map<GSALoadCombination, LoadCombination>(speckleAppSpecificObjects, out var speckleAppAgnosticObjects);
+      var speckleAppSpecificObjects = speckleDesignModel.loads.FindAll(o => o is GSACombinationCase).Select(o => (GSACombinationCase)o).ToList();
+      Map<GSACombinationCase, LoadCombination>(speckleAppSpecificObjects, out var speckleAppAgnosticObjects);
       var speckleObjects = new List<Base>();
       speckleObjects.AddRange(speckleAppAgnosticObjects);
       speckleDesignModel.specs.settings.modelUnits.length = speckleLengthUnit; //change the units

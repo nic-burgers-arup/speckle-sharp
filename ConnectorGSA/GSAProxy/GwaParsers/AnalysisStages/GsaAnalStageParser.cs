@@ -32,8 +32,8 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       }
 
       //ANAL_STAGE.3 | stage | name | colour | list | phi | time | lock
-      AddItems(ref items, record.Name, Colour.NO_RGB.ToString(), AddEntities(record.MemberIndices, record.ElementIndices), record.Phi ?? 0, record.Days ?? 0, 
-        AddEntities(record.LockMemberIndices, record.LockElementIndices));
+      AddItems(ref items, record.Name ?? $"Stage {record.Index}", Colour.NO_RGB.ToString(), AddEntities(record.MemberIndices, record.ElementIndices), record.Phi ?? 0, record.Days ?? 0,
+        AddLockedEntities(record.LockMemberIndices, record.LockElementIndices));
 
       gwa = Join(items, out var gwaLine) ? new List<string>() { gwaLine } : new List<string>();
       return (gwa.Count() > 0);

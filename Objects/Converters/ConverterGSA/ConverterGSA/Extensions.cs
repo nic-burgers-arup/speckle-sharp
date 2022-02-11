@@ -20,6 +20,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Objects.Structural.GSA.Bridge;
 using Objects.Structural.GSA.Loading;
+using Objects.Structural.GSA.Analysis;
 using Speckle.GSA.API;
 using Speckle.Core.Models;
 using Objects.Structural.Properties;
@@ -208,14 +209,14 @@ namespace ConverterGSA
       }
     }
 
-    public static MemberType2D ToSpeckle2dMember(this GwaMemberType gsaMemberType)
+    public static MemberType ToSpeckle2dMember(this GwaMemberType gsaMemberType)
     {
       switch (gsaMemberType)
       {
-        case GwaMemberType.Slab: return MemberType2D.Slab;
-        case GwaMemberType.Wall: return MemberType2D.Wall;
-        case GwaMemberType.Generic2d: return MemberType2D.Generic2D;
-        case GwaMemberType.Void2d: return MemberType2D.VoidCutter2D;
+        case GwaMemberType.Slab: return MemberType.Slab;
+        case GwaMemberType.Wall: return MemberType.Wall;
+        case GwaMemberType.Generic2d: return MemberType.Generic2D;
+        case GwaMemberType.Void2d: return MemberType.VoidCutter2D;
         default:
           throw new Exception(gsaMemberType.ToString() + " is not currently a supported member type.");
       }
@@ -483,6 +484,58 @@ namespace ConverterGSA
       else
       {
         return BeamLoadType.Uniform;
+      }
+    }
+
+    public static SolutionType ToSpeckle(this StructuralSolutionType speckleType)
+    {
+      switch (speckleType)
+      {
+        case StructuralSolutionType.BUCKLING_NL: return SolutionType.NonlinearStatic;
+        case StructuralSolutionType.STATIC: return SolutionType.Static;
+        case StructuralSolutionType.MODAL: return SolutionType.Modal;
+        default: return SolutionType.Static;
+      }
+    }
+
+    public static PruningOption ToSpeckle(this StructuralPruningOption speckleType)
+    {
+      switch (speckleType)
+      {
+        case StructuralPruningOption.NONE: return PruningOption.None;
+        case StructuralPruningOption.INFL_YES: return PruningOption.Influence;
+        default: return PruningOption.None;
+      }
+    }
+
+    public static GeometryChecksOption ToSpeckle(this StructuralGeometryChecksOption speckleType)
+    {
+      switch (speckleType)
+      {
+        case StructuralGeometryChecksOption.FATAL: return GeometryChecksOption.Error;
+        case StructuralGeometryChecksOption.SEVERE: return GeometryChecksOption.Severe;
+        default: return GeometryChecksOption.Error;
+      }
+    }
+
+    public static RaftPrecisionOption ToSpeckle(this StructuralRaftPrecisionOption speckleType)
+    {
+      switch (speckleType)
+      {
+        case StructuralRaftPrecisionOption.RAFT_LO: return RaftPrecisionOption.Low;
+        case StructuralRaftPrecisionOption.RAFT_HI: return RaftPrecisionOption.High;
+        default: return RaftPrecisionOption.Low;
+      }
+    }
+
+    public static ResidualSaveOption ToSpeckle(this StructuralResidualSaveOption speckleType)
+    {
+      switch (speckleType)
+      {
+        case StructuralResidualSaveOption.RESID_NO: return ResidualSaveOption.No;
+        case StructuralResidualSaveOption.RESID_NOCONV: return ResidualSaveOption.NoIfNotConverged;
+        case StructuralResidualSaveOption.RESID_YES: return ResidualSaveOption.Yes;
+        default: return ResidualSaveOption.No;
       }
     }
 
@@ -764,6 +817,77 @@ namespace ConverterGSA
         case "favourable": return IncludeOption.Favourable;
         case "both": return IncludeOption.Both;
         default: throw new Exception(include + " speckle string can not be converted into native enum");
+      }
+    }
+
+    public static StructuralSolutionType ToNative(this SolutionType speckleType)
+    {
+      switch (speckleType)
+      {
+        case SolutionType.Static: return StructuralSolutionType.STATIC;
+        case SolutionType.NonlinearStatic: return StructuralSolutionType.BUCKLING_NL;
+        case SolutionType.Modal: return StructuralSolutionType.MODAL;
+        //case SolutionType.Ritz: return StructuralSolutionType.RITZ;
+        //case SolutionType.Buckling: return StructuralSolutionType.BUCKLING;
+        //case SolutionType.StaticPDelta: return StructuralSolutionType.STATIC_P_DELTA;
+        //case SolutionType.ModalPDelta: return StructuralSolutionType.MODAL_P_DELTA;
+        //case SolutionType.RitzPDelta: return StructuralSolutionType.RITZ_P_DELTA;
+        //case SolutionType.Mass: return StructuralSolutionType.MASS;
+        //case SolutionType.Stability: return StructuralSolutionType.STABILITY;
+        //case SolutionType.BucklingNonLinear: return StructuralSolutionType.BUCKLING_NL;
+        default: return StructuralSolutionType.STATIC;
+      }
+    }
+
+    public static string ToNativeSolver(this SolutionType speckleType)
+    {
+      switch (speckleType)
+      {
+        case SolutionType.Static: return ("GSS");
+        case SolutionType.NonlinearStatic: return ("GSRELAX");
+        case SolutionType.Modal: return ("GSS");
+        default: return ("GSS");
+      }
+    }
+
+    public static StructuralPruningOption ToNative(this PruningOption speckleType)
+    {
+      switch (speckleType)
+      {
+        case PruningOption.None: return StructuralPruningOption.NONE;
+        case PruningOption.Influence: return StructuralPruningOption.INFL_YES;
+        default: return StructuralPruningOption.NONE;
+      }
+    }
+
+    public static StructuralGeometryChecksOption ToNative(this GeometryChecksOption speckleType)
+    {
+      switch (speckleType)
+      {
+        case GeometryChecksOption.Error: return StructuralGeometryChecksOption.FATAL;
+        case GeometryChecksOption.Severe: return StructuralGeometryChecksOption.SEVERE;
+        default: return StructuralGeometryChecksOption.FATAL;
+      }
+    }
+
+    public static StructuralRaftPrecisionOption ToNative(this RaftPrecisionOption speckleType)
+    {
+      switch (speckleType)
+      {
+        case RaftPrecisionOption.High: return StructuralRaftPrecisionOption.RAFT_HI;
+        case RaftPrecisionOption.Low: return StructuralRaftPrecisionOption.RAFT_LO;
+        default: return StructuralRaftPrecisionOption.RAFT_LO;
+      }
+    }
+
+    public static StructuralResidualSaveOption ToNative(this ResidualSaveOption speckleType)
+    {
+      switch (speckleType)
+      {
+        case ResidualSaveOption.No: return StructuralResidualSaveOption.RESID_NO;
+        case ResidualSaveOption.NoIfNotConverged: return StructuralResidualSaveOption.RESID_NOCONV;
+        case ResidualSaveOption.Yes: return StructuralResidualSaveOption.RESID_YES;
+        default: return StructuralResidualSaveOption.RESID_NO;
       }
     }
 

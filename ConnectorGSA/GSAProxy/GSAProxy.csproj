@@ -55,6 +55,7 @@
     <Compile Include="GwaParsers\IGwaChildType.cs" />
     <Compile Include="GwaParsers\Specification\GwaSpecConcDesignParser.cs" />
     <Compile Include="GwaParsers\Specification\GwaSpecSteelDesignParser.cs" />
+    <Compile Include="GwaParsers\TasksAndCases\GsaTaskParser.cs" />
     <Compile Include="Helper.cs" />
     <Compile Include="IPairCollection.cs" />
     <Compile Include="Merger\GsaRecordMerger.cs" />

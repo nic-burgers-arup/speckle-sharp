@@ -23,7 +23,7 @@ namespace Objects.Structural.GSA.Analysis
     public GSAStage() { }
 
     [SchemaInfo("GSAStage", "Creates a Speckle structural analysis stage for GSA", "GSA", "Analysis")]
-    public GSAStage(string colour, List<Base> elements, double creepFactor, int stageTime, List<Base> lockedElements, string name = null, int? nativeId = null)
+    public GSAStage(List<Base> elements = null, double creepFactor = 0, int stageTime = 0, List<Base> lockedElements = null, string colour = null, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;
