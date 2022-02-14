@@ -307,7 +307,7 @@ namespace Objects.Converter.MicroStationOpenRoads
       return baseLine;
     }
 
-    private Base CappingBeamToSpeckle(Dictionary<string, object> properties, string units = null)
+    private FamilyInstance CappingBeamToSpeckle(Dictionary<string, object> properties, string units = null)
     {
       var u = units ?? ModelUnits;
       string part = (string)GetProperty(properties, "PART");
