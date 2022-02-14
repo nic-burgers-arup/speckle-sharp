@@ -152,23 +152,25 @@ namespace ConverterGSA
       };
       if (speckleAxis.definition != null)
       {
+        var scaleFactor = speckleAxis.definition.origin.GetScaleFactor(conversionFactors);
+
         if (speckleAxis.definition.origin != null)
         {
-          gsaAxis.OriginX = speckleAxis.definition.origin.x;
-          gsaAxis.OriginY = speckleAxis.definition.origin.y;
-          gsaAxis.OriginZ = speckleAxis.definition.origin.z;
+          gsaAxis.OriginX = speckleAxis.definition.origin.x * scaleFactor;
+          gsaAxis.OriginY = speckleAxis.definition.origin.y * scaleFactor;
+          gsaAxis.OriginZ = speckleAxis.definition.origin.z * scaleFactor;
         }
         if (speckleAxis.definition.xdir != null && speckleAxis.definition.xdir.Norm() != 0)
         {
-          gsaAxis.XDirX = speckleAxis.definition.xdir.x;
-          gsaAxis.XDirY = speckleAxis.definition.xdir.y;
-          gsaAxis.XDirZ = speckleAxis.definition.xdir.z;
+          gsaAxis.XDirX = speckleAxis.definition.xdir.x * scaleFactor;
+          gsaAxis.XDirY = speckleAxis.definition.xdir.y * scaleFactor;
+          gsaAxis.XDirZ = speckleAxis.definition.xdir.z * scaleFactor;
         }
         if (speckleAxis.definition.ydir != null && speckleAxis.definition.ydir.Norm() != 0)
         {
-          gsaAxis.XYDirX = speckleAxis.definition.ydir.x;
-          gsaAxis.XYDirY = speckleAxis.definition.ydir.y;
-          gsaAxis.XYDirZ = speckleAxis.definition.ydir.z;
+          gsaAxis.XYDirX = speckleAxis.definition.ydir.x * scaleFactor;
+          gsaAxis.XYDirY = speckleAxis.definition.ydir.y * scaleFactor;
+          gsaAxis.XYDirZ = speckleAxis.definition.ydir.z * scaleFactor;
         }
       }
 

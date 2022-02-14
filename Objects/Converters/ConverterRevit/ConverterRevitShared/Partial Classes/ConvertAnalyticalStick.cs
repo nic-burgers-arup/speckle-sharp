@@ -259,7 +259,7 @@ namespace Objects.Converter.Revit
         case StructuralMaterialType.Concrete:
           var concreteMaterial = new Concrete
           {
-            name = Doc.GetElement(stickFamily.StructuralMaterialId).Name,
+            name = structMat.Name,
             materialType = Structural.MaterialType.Concrete,
             grade = null,
             designCode = null,
@@ -283,7 +283,7 @@ namespace Objects.Converter.Revit
         case StructuralMaterialType.Steel:
           var steelMaterial = new Steel
           {
-            name = Doc.GetElement(stickFamily.StructuralMaterialId).Name,
+            name = structMat.Name,
             materialType = Structural.MaterialType.Steel,
             grade = materialAsset != null ? materialAsset.Name : null,
             designCode = null,
@@ -303,7 +303,7 @@ namespace Objects.Converter.Revit
         case StructuralMaterialType.Wood:
           var timberMaterial = new Timber
           {
-            name = Doc.GetElement(structMat.StructuralAssetId).Name,
+            name = structMat.Name,
             materialType = Structural.MaterialType.Timber,
             grade = materialAsset != null ? materialAsset.WoodGrade : null,
             designCode = null,
@@ -326,7 +326,7 @@ namespace Objects.Converter.Revit
         default:
           var defaultMaterial = new Objects.Structural.Materials.Material
           {
-            name = Doc.GetElement(stickFamily.StructuralMaterialId).Name
+            name = structMat.Name
           };
           speckleMaterial = defaultMaterial;
           break;
