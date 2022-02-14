@@ -276,6 +276,19 @@ namespace ConverterGSA
     {
       if (string.IsNullOrEmpty(speckleUnit)) return 1;
 
+      var modelUnits = nativeModelUnits.GetType().GetProperties();
+      var isAnyUnitNull = false;
+      foreach(var unit in modelUnits)
+      {
+        if (unit.GetValue(nativeModelUnits, null) == null)
+        {
+          isAnyUnitNull = true;
+          break;
+        }
+      }
+
+      if (isAnyUnitNull) SetNativeUnits();
+
       switch (dimension)
       {
         case UnitDimension.Length:        
