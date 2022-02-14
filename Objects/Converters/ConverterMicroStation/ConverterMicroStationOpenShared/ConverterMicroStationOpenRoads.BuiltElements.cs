@@ -37,9 +37,9 @@ using RevitWall = Objects.BuiltElements.Revit.RevitWall;
 using Surface = Objects.Geometry.Surface;
 using Vector = Objects.Geometry.Vector;
 
-namespace Objects.Converter.MicroStationOpenRoads
+namespace Objects.Converter.MicroStationOpen
 {
-  public partial class ConverterMicroStationOpenRoads
+  public partial class ConverterMicroStationOpen
   {
     public RevitBeam BeamToSpeckle(Dictionary<string, object> properties, string units = null)
     {
