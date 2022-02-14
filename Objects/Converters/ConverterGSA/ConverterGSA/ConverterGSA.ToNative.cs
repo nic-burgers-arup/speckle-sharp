@@ -3059,7 +3059,7 @@ namespace ConverterGSA
       return desc;
     }
 
-    private bool GetPolyline(Polyline specklePolyline, out LoadLineOption gsaOption, out string gsaPolygon, out int? gsaPolgonIndex)
+    private bool GetPolyline(GSAPolyline specklePolyline, out LoadLineOption gsaOption, out string gsaPolygon, out int? gsaPolgonIndex)
     {
       //Defaults outputs
       gsaOption = LoadLineOption.NotSet;
@@ -3070,14 +3070,14 @@ namespace ConverterGSA
       if (specklePolyline == null) return false;
       //if (specklePolyline.applicationId != null) gsaPolgonIndex = Instance.GsaModel.Cache.LookupIndex<GsaPolyline>(specklePolyline.applicationId);
       if (specklePolyline.applicationId != null) gsaPolgonIndex = Instance.GsaModel.Cache.ResolveIndex<GsaPolyline>(specklePolyline.applicationId);
-      if (gsaPolgonIndex == null) gsaPolygon = specklePolyline.ToGwaString();
+      if (gsaPolgonIndex == null) gsaPolygon = specklePolyline.description.ToGwaString();
       if (gsaPolgonIndex == null && gsaPolygon == "") return false;
       else if (gsaPolgonIndex != null) gsaOption = LoadLineOption.PolyRef;
       else gsaOption = LoadLineOption.Polygon;
       return true;
     }
 
-    private bool GetPolyline(Polyline specklePolyline, out LoadAreaOption gsaOption, out string gsaPolygon, out int? gsaPolgonIndex)
+    private bool GetPolyline(GSAPolyline specklePolyline, out LoadAreaOption gsaOption, out string gsaPolygon, out int? gsaPolgonIndex)
     {
       //Defaults outputs
       gsaOption = LoadAreaOption.Plane;

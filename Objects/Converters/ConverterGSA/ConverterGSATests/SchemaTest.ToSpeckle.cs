@@ -1393,7 +1393,7 @@ namespace ConverterGSATests
         Assert.Equal(gsaLoadGridLines[1].Index.Value, speckleGridLineLoads[1].nativeId);
         Assert.Equal(gsaLoadGridLines[1].Name, speckleGridLineLoads[1].name);
         Assert.Equal("grid surface 1", speckleGridLineLoads[1].gridSurface.applicationId);
-        Assert.Equal(new List<double>() { 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0 }, speckleGridLineLoads[1].polyline.value);
+        Assert.Equal(new List<double>() { 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0 }, speckleGridLineLoads[1].polyline.description.value);
         Assert.Equal("load case 2", speckleGridLineLoads[1].loadCase.applicationId);
         Assert.Equal("axis 1", speckleGridLineLoads[1].loadAxis.applicationId);
         Assert.Equal(gsaLoadGridLines[1].Projected, speckleGridLineLoads[1].isProjected);

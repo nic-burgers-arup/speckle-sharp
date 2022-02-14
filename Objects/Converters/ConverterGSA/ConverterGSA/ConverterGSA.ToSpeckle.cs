@@ -2948,16 +2948,16 @@ namespace ConverterGSA
     #endregion
 
     #region Polyline
-    private Polyline GetPolyline(LoadLineOption gsaType, string gsaPolygon, int? gsaPolygonIndex)
+    private GSAPolyline GetPolyline(LoadLineOption gsaType, string gsaPolygon, int? gsaPolygonIndex)
     {
-      Polyline specklePolyline;
+      GSAPolyline specklePolyline = new GSAPolyline();
       if (gsaType == LoadLineOption.Polygon)
       {
-        specklePolyline = GetPolygonFromString(gsaPolygon);
+        specklePolyline.description = GetPolygonFromString(gsaPolygon);
       }
       else if (gsaType == LoadLineOption.PolyRef && gsaPolygonIndex.HasValue)
       {
-        specklePolyline = GetPolygonFromIndex(gsaPolygonIndex.Value).description;
+        specklePolyline = GetPolygonFromIndex(gsaPolygonIndex.Value);
       }
       else
       {
@@ -2966,16 +2966,16 @@ namespace ConverterGSA
       return specklePolyline;
     }
 
-    private Polyline GetPolyline(LoadAreaOption gsaType, string gsaPolygon, int? gsaPolygonIndex)
+    private GSAPolyline GetPolyline(LoadAreaOption gsaType, string gsaPolygon, int? gsaPolygonIndex)
     {
-      Polyline specklePolyline;
+      GSAPolyline specklePolyline = new GSAPolyline();
       if (gsaType == LoadAreaOption.Polygon)
       {
-        specklePolyline = GetPolygonFromString(gsaPolygon);
+        specklePolyline.description = GetPolygonFromString(gsaPolygon);
       }
       else if (gsaType == LoadAreaOption.PolyRef && gsaPolygonIndex.HasValue)
       {
-        specklePolyline = GetPolygonFromIndex(gsaPolygonIndex.Value).description;
+        specklePolyline = GetPolygonFromIndex(gsaPolygonIndex.Value);
       }
       else
       {
