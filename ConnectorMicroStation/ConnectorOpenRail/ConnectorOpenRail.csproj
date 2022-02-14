@@ -34,7 +34,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <IsDesktopBuild Condition="'$(IsDesktopBuild)' == ''">true</IsDesktopBuild>
-  </PropertyGroup>  
+  </PropertyGroup>
   <ItemGroup Condition="'$(Configuration)' == 'Release' AND '$(IsDesktopBuild)' == false">
     <PackageReference Include="Speckle.Bentley.API">
       <Version>1.0.0</Version>
@@ -126,9 +126,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(ProgramW6432)\Bentley\OpenRail Designer CONNECT Edition\OpenRailDesigner\ustation.dll</HintPath>
       <Private>False</Private>
-    </Reference>	
-	</ItemGroup>
-	<ItemGroup>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -151,13 +151,17 @@
       <Project>{a2c8730a-b605-483e-914e-61f3ed7954d9}</Project>
       <Name>Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\DesktopUI2\DesktopUI2\DesktopUI2.csproj">
+      <Project>{c1db41f0-1e90-4518-b8d6-3cb171f2aaa7}</Project>
+      <Name>DesktopUI2</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\DesktopUI\DesktopUI\DesktopUI.csproj">
       <Project>{a97c3046-2d55-4c49-ab40-a3c2194b82fa}</Project>
       <Name>DesktopUI</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="SpeckleOpenRail2.cfg">
+    <None Include="Speckle2OpenRail.cfg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -174,11 +178,11 @@
       <Version>1.3.6</Version>
     </PackageReference>
   </ItemGroup>
-  <Import Project="..\ConnectorMicroStationOpenRoadsShared\ConnectorMicroStationOpenRoadsShared.projitems" Label="Shared" />
+  <Import Project="..\ConnectorMicroStationOpenShared\ConnectorMicroStationOpenShared.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- POST BUILD EVENTS START -->
   <Target Name="Clean">
-    <RemoveDir Directories="$(TargetDir);$(AppData)\Bentley\OpenRailDesigner\Addins\SpeckleOpenRail2" />
+    <RemoveDir Directories="$(TargetDir);$(AppData)\Bentley\OpenRailDesigner\Addins\Speckle2OpenRail" />
   </Target>
   <Target Name="AfterBuild">
     <CallTarget Condition="'$(Configuration)' == 'Debug' AND '$(IsDesktopBuild)' == true" Targets="AfterBuildDebug" />
@@ -188,7 +192,8 @@
     <ItemGroup>
       <SourceDLLs Include="$(TargetDir)\**\*.*" />
     </ItemGroup>
-    <Copy DestinationFolder="$(AppData)\Bentley\OpenRailDesigner\Addins\SpeckleOpenRail2\%(RecursiveDir)" SourceFiles="@(SourceDLLs)" />
-    <Copy DestinationFolder="$(ProgramData)\Bentley\OpenRail Designer CE\Configuration\Organization" SourceFiles="$(TargetDir)\SpeckleOpenRail2.cfg" />
+    <Copy DestinationFolder="$(AppData)\Bentley\OpenRailDesigner\Addins\Speckle2OpenRail\%(RecursiveDir)" SourceFiles="@(SourceDLLs)" />
+    <Copy DestinationFolder="$(AppData)\Bentley\OpenRailDesigner\Addins\Speckle2OpenRail" SourceFiles="$(TargetDir)\ConnectorOpenRailRibbon.xml" />
+    <Copy DestinationFolder="$(ProgramData)\Bentley\OpenRail Designer CE\Configuration\Organization" SourceFiles="$(TargetDir)\Speckle2OpenRail.cfg" />
   </Target>
 </Project>

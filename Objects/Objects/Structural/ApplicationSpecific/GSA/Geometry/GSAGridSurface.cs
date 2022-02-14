@@ -11,43 +11,54 @@ namespace Objects.Structural.GSA.Geometry
 
     [DetachProperty]
     public GSAGridPlane gridPlane { get; set; }
-    public double tolerance { get; set; }
-    public double spanDirection { get; set; }
-    public LoadExpansion loadExpansion { get; set; }
-    public GridSurfaceSpanType span { get; set; }
 
     [DetachProperty]
-    [Chunkable(5000)]
+    [Chunkable(1000)]
     public List<Base> elements { get; set; }
+
+    public double tolerance { get; set; }
+    public GridSurfaceElementType type { get; set; }
+    public GridSurfaceSpanType span { get; set; }
+    public double spanDirection { get; set; }
+    public LoadExpansion loadExpansion { get; set; }
+
     public GSAGridSurface() { }
 
     [SchemaInfo("GSAGridSurface", "Creates a Speckle structural grid surface for GSA", "GSA", "Geometry")]
-    public GSAGridSurface(string name, GSAGridPlane gridPlane, double tolerance, double spanDirection, LoadExpansion loadExpansion, GridSurfaceSpanType span, List<Base> elements, int? nativeId = null)
+    public GSAGridSurface(GSAGridPlane gridPlane, [SchemaParamInfo("If null, element list defaults to all")] List<Base> elements = null, double tolerance = 10, GridSurfaceElementType type = GridSurfaceElementType.OneD, GridSurfaceSpanType span = GridSurfaceSpanType.OneWay, double spanDirection = 0, LoadExpansion loadExpansion = LoadExpansion.PlaneCorner, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;
       this.gridPlane = gridPlane;
-      this.tolerance = tolerance;
-      this.spanDirection = spanDirection;
-      this.loadExpansion = loadExpansion;
-      this.span = span;
       this.elements = elements;
+      this.tolerance = tolerance;
+      this.type = type;
+      this.spanDirection = spanDirection;
+      this.span = span;
+      this.loadExpansion = loadExpansion;
     }
+  }
+
+  public enum GridSurfaceElementType
+  {
+    OneD,
+    TwoD
   }
 
   public enum GridSurfaceSpanType
   {
+    OneWay = 1,
+    TwoWay = 2,
+    TwoWaySimple = 3,
     NotSet = 0,
-    OneWay,
-    TwoWay
   }
 
   public enum LoadExpansion
   {
-    NotSet = 0,
     Legacy = 1,
     PlaneAspect = 2,
     PlaneSmooth = 3,
-    PlaneCorner = 4
+    PlaneCorner = 4,
+    NotSet = 0,
   }
 }

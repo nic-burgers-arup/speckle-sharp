@@ -677,11 +677,11 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
 
     private bool ValidSchemaTypeGsaIndex(Type t, int gsaIndex)
     {
-      var valid = (recordIndicesBySchemaTypeGsaId.ContainsKey(t) && recordIndicesBySchemaTypeGsaId[t] != null
-        && recordIndicesBySchemaTypeGsaId[t].ContainsKey(gsaIndex) && recordIndicesBySchemaTypeGsaId[t][gsaIndex] != null
-        && recordIndicesBySchemaTypeGsaId[t][gsaIndex].Count > 0);
+            var valid = (recordIndicesBySchemaTypeGsaId.ContainsKey(t) && recordIndicesBySchemaTypeGsaId[t] != null
+              && recordIndicesBySchemaTypeGsaId[t].ContainsKey(gsaIndex) && recordIndicesBySchemaTypeGsaId[t][gsaIndex] != null
+              && recordIndicesBySchemaTypeGsaId[t][gsaIndex].Count > 0);
 
-      return valid;
+            return valid;
     }
 
     private bool ValidSpeckleObjectTypeApplicationId(Type t, string applicationId)

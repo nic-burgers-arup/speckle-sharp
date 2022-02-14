@@ -22,7 +22,9 @@ namespace ConnectorGrasshopper
 {
   public abstract class CreateSchemaObjectBase : SelectKitComponentBase, IGH_VariableParameterComponent
   {
-    public override GH_Exposure Exposure => GH_Exposure.tertiary;
+    public override GH_Exposure Exposure => SpeckleGHSettings.GetTabVisibility(Category)
+      ? GH_Exposure.tertiary
+      : GH_Exposure.hidden;
 
     protected ConstructorInfo SelectedConstructor;
     private bool readFailed;
@@ -175,6 +177,16 @@ namespace ConnectorGrasshopper
             if (comp is CreateSchemaObject scb)
             {
               if (scb.Seed == Seed)
+              {
+                Seed = GenerateSeed();
+                break;
+              }
+            }
+            var baseType = comp.GetType().BaseType;        
+            if (typeof(CreateSchemaObjectBase) == baseType)
+            {
+              var csob = (CreateSchemaObjectBase)comp;
+              if (csob.Seed == Seed)
               {
                 Seed = GenerateSeed();
                 break;

@@ -5,7 +5,6 @@ using Newtonsoft.Json;
 using Speckle.ConnectorGSA.Proxy;
 using Speckle.ConnectorGSA.Proxy.Cache;
 using Speckle.Core.Api;
-using Speckle.Core.Api.SubscriptionModels;
 using Speckle.Core.Credentials;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
@@ -18,7 +17,6 @@ using System.Collections.Generic;
 using System.Deployment.Application;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace ConnectorGSA
@@ -208,7 +206,7 @@ namespace ConnectorGSA
       return ((GsaProxy)Instance.GsaModel.Proxy).Clear();
     }
 
-    public static bool LoadDataFromFile(IProgress<string> gwaLoggingProgress = null, IEnumerable<ResultGroup> resultGroups = null, IEnumerable<ResultType> resultTypes = null)
+    public static bool LoadDataFromFile(IProgress<string> gwaLoggingProgress = null, IEnumerable<ResultGroup> resultGroups = null, IEnumerable<ResultType> resultTypes = null, List<string> cases = null, List<int> elemIds = null)
     {
       ((GsaProxy)Instance.GsaModel.Proxy).Clear();
       var loadedCache = UpdateCache(gwaLoggingProgress);
@@ -222,7 +220,7 @@ namespace ConnectorGSA
         }
         foreach (var g in resultGroups)
         {
-          if (!((GsaProxy)Instance.GsaModel.Proxy).LoadResults(g, out int numErrorRows) || numErrorRows > 0)
+          if (!((GsaProxy)Instance.GsaModel.Proxy).LoadResults(g, out int numErrorRows, cases, elemIds) || numErrorRows > 0)
           {
             return false;
           }
@@ -248,24 +246,6 @@ namespace ConnectorGSA
 
         loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ex, "Converion error"));
       }
-      /*
-      foreach (var tlo in TopLevelObjects)
-      {
-        try
-        {
-          if (converter.CanConvertToNative(tlo))
-          {
-            var nativeObjects = converter.ConvertToNative(new List<Base> { tlo }).Cast<GsaRecord>().ToList();
-            Instance.GsaModel.Cache.Upsert(nativeObjects);
-          }
-        }
-        catch (Exception ex)
-        {
-          loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "Unable to convert one or more received objects.  Refer to logs for more information"));
-          loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ex, "Converion error"));
-        }
-      }
-      */
 
       return true;
     }

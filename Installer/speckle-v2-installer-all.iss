@@ -205,24 +205,24 @@ Source: "..\ConnectorGSA\ConnectorGSA\bin\Release\*"; DestDir: "{userappdata}\Oa
 Source: "..\Objects\Converters\ConverterGSA\ConverterGSA\bin\Release\Objects.Converter.GSA.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: gsa
 
 ;microstation
-Source: "..\ConnectorMicroStation\ConnectorMicroStation\bin\Release\*"; DestDir: "{userappdata}\Bentley\MicroStation\Addins\SpeckleMicroStation2\"; Flags: ignoreversion recursesubdirs; Components: microstation
+Source: "..\ConnectorMicroStation\ConnectorMicroStation\bin\Release\*"; DestDir: "{userappdata}\Bentley\MicroStation\Addins\Speckle2MicroStation\"; Flags: ignoreversion recursesubdirs; Components: microstation
 Source: "..\Objects\Converters\ConverterMicroStation\ConverterMicroStation\bin\Release\netstandard2.0\Objects.Converter.MicroStation.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: microstation
-Source: "..\ConnectorMicroStation\ConnectorMicroStation\bin\Release\SpeckleMicrostation2.cfg"; DestDir: "{commonappdata}\Bentley\Microstation CONNECT Edition\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: microstation
+Source: "..\ConnectorMicroStation\ConnectorMicroStation\bin\Release\Speckle2Microstation.cfg"; DestDir: "{commonappdata}\Bentley\Microstation CONNECT Edition\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: microstation
 
 ;openroads
-Source: "..\ConnectorMicroStation\ConnectorOpenRoads\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenRoadsDesigner\Addins\SpeckleOpenRoads2\"; Flags: ignoreversion recursesubdirs; Components: openroads
+Source: "..\ConnectorMicroStation\ConnectorOpenRoads\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenRoadsDesigner\Addins\Speckle2OpenRoads\"; Flags: ignoreversion recursesubdirs; Components: openroads
 Source: "..\Objects\Converters\ConverterMicroStation\ConverterOpenRoads\bin\Release\netstandard2.0\Objects.Converter.OpenRoads.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: openroads
-Source: "..\ConnectorMicroStation\ConnectorOpenRoads\bin\Release\SpeckleOpenRoads2.cfg"; DestDir: "{commonappdata}\Bentley\OpenRoads Designer CE\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openroads
+Source: "..\ConnectorMicroStation\ConnectorOpenRoads\bin\Release\Speckle2OpenRoads.cfg"; DestDir: "{commonappdata}\Bentley\OpenRoads Designer CE\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openroads
 
 ;openrail
-Source: "..\ConnectorMicroStation\ConnectorOpenRail\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenRailDesigner\Addins\SpeckleOpenRail2\"; Flags: ignoreversion recursesubdirs; Components: openrail
+Source: "..\ConnectorMicroStation\ConnectorOpenRail\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenRailDesigner\Addins\Speckle2OpenRail\"; Flags: ignoreversion recursesubdirs; Components: openrail
 Source: "..\Objects\Converters\ConverterMicroStation\ConverterOpenRail\bin\Release\netstandard2.0\Objects.Converter.OpenRail.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: openrail
-Source: "..\ConnectorMicroStation\ConnectorOpenRail\bin\Release\SpeckleOpenRail2.cfg"; DestDir: "{commonappdata}\Bentley\OpenRail Designer CE\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openrail
+Source: "..\ConnectorMicroStation\ConnectorOpenRail\bin\Release\Speckle2OpenRail.cfg"; DestDir: "{commonappdata}\Bentley\OpenRail Designer CE\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openrail
 
 ;openbuildings
-Source: "..\ConnectorMicroStation\ConnectorOpenBuildings\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenBuildingsDesigner\Addins\SpeckleOpenBuildings2\"; Flags: ignoreversion recursesubdirs; Components: openbuildings
+Source: "..\ConnectorMicroStation\ConnectorOpenBuildings\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenBuildingsDesigner\Addins\Speckle2OpenBuildings\"; Flags: ignoreversion recursesubdirs; Components: openbuildings
 Source: "..\Objects\Converters\ConverterMicroStation\ConverterOpenBuildings\bin\Release\netstandard2.0\Objects.Converter.OpenBuildings.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: openbuildings
-Source: "..\ConnectorMicroStation\ConnectorOpenBuildings\bin\Release\SpeckleOpenBuildings2.cfg"; DestDir: "{commonappdata}\Bentley\OpenBuildings CONNECT Edition\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openbuildings
+Source: "..\ConnectorMicroStation\ConnectorOpenBuildings\bin\Release\Speckle2OpenBuildings.cfg"; DestDir: "{commonappdata}\Bentley\OpenBuildings CONNECT Edition\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openbuildings
 
 ;excel
 Source: "ExcelAddin\ExcelAddinRequest\bin\Release\net5.0\win-x64\*"; DestDir: "{#ExcelAddinRequestFolder}"; Flags: ignoreversion recursesubdirs; Components: excel
@@ -261,10 +261,10 @@ Type: filesandordirs; Name: "{userappdata}\Dynamo\*"; Components: dynamo
 Type: filesandordirs; Name: "{localappdata}\Computers and Structures\ETABS 18\Speckle2ETABS\*"; Components: etabs18
 Type: filesandordirs; Name: "{localappdata}\Computers and Structures\ETABS 19\Speckle2ETABS\*"; Components: etabs19
 Type: filesandordirs; Name: "{userappdata}\Oasys\SpeckleGSA\*"; Components: gsa
-Type: filesandordirs; Name: "{userappdata}\Bentley\MicroStation\Addins\SpeckleMicroStation2\*";  Components: microstation
-Type: filesandordirs; Name: "{userappdata}\Bentley\OpenRoadsDesigner\Addins\SpeckleOpenRoads2\*";  Components: openroads
-Type: filesandordirs; Name: "{userappdata}\Bentley\OpenRailDesigner\Addins\SpeckleOpenRail2\*";  Components: openrail
-Type: filesandordirs; Name: "{userappdata}\Bentley\OpenBuildingsDesigner\Addins\SpeckleOpenBuildings2\*";  Components: openbuildings
+Type: filesandordirs; Name: "{userappdata}\Bentley\MicroStation\Addins\Speckle2MicroStation\*";  Components: microstation
+Type: filesandordirs; Name: "{userappdata}\Bentley\OpenRoadsDesigner\Addins\Speckle2OpenRoads\*";  Components: openroads
+Type: filesandordirs; Name: "{userappdata}\Bentley\OpenRailDesigner\Addins\Speckle2OpenRail\*";  Components: openrail
+Type: filesandordirs; Name: "{userappdata}\Bentley\OpenBuildingsDesigner\Addins\Speckle2OpenBuildings\*";  Components: openbuildings
 Type: filesandordirs; Name: "{localappdata}\SpeckleExcelAddinRequest\*"; Components: excel
 Type: filesandordirs; Name: "{#AnalyticsFolder}\*";
 Type: filesandordirs; Name: "{#SpeckleFolder}\*";
@@ -294,10 +294,10 @@ Type: filesandordirs; Name: "{userappdata}\Dynamo";
 Type: filesandordirs; Name: "{localappdata}\Computers and Structures\ETABS 18\Speckle2ETABS";
 Type: filesandordirs; Name: "{localappdata}\Computers and Structures\ETABS 19\Speckle2ETABS";
 Type: filesandordirs; Name: "{userappdata}\Oasys\SpeckleGSA";
-Type: filesandordirs; Name: "{userappdata}\Bentley\MicroStation\Addins\SpeckleMicroStation2"; 
-Type: filesandordirs; Name: "{userappdata}\Bentley\OpenRoadsDesigner\Addins\SpeckleOpenRoads2";
-Type: filesandordirs; Name: "{userappdata}\Bentley\OpenRailDesigner\Addins\SpeckleOpenRail2"; 
-Type: filesandordirs; Name: "{userappdata}\Bentley\OpenBuildingsDesigner\Addins\SpeckleOpenBuildings2";  
+Type: filesandordirs; Name: "{userappdata}\Bentley\MicroStation\Addins\Speckle2MicroStation"; 
+Type: filesandordirs; Name: "{userappdata}\Bentley\OpenRoadsDesigner\Addins\Speckle2OpenRoads";
+Type: filesandordirs; Name: "{userappdata}\Bentley\OpenRailDesigner\Addins\Speckle2OpenRail"; 
+Type: filesandordirs; Name: "{userappdata}\Bentley\OpenBuildingsDesigner\Addins\Speckle2OpenBuildings";  
 Type: filesandordirs; Name: "{userappdata}\Speckle\Kits\Objects\*"
 Type: filesandordirs; Name: "{localappdata}\SpeckleExcelAddinRequest";
 Type: filesandordirs; Name: "{#AnalyticsFolder}";

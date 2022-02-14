@@ -36,7 +36,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       }
 
       //POLYLINE | num | name | colour | grid_plane | num_dim | desc
-      AddItems(ref items, record.Name, Colour.NO_RGB.ToString(), (record.GridPlaneIndex ?? 0), 
+      AddItems(ref items, record.Name ?? $"Polyline {record.Index}", Colour.NO_RGB.ToString(), (record.GridPlaneIndex ?? 0), 
         record.NumDim, AddDesc());
 
       gwa = Join(items, out var gwaLine) ? new List<string>() { gwaLine } : new List<string>();

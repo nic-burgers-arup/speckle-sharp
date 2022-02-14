@@ -36,15 +36,23 @@ namespace ConverterGSA
     public string WebsiteOrEmail => "https://www.oasys-software.com/";
 
     public ProgressReport Report { get; private set; } = new ProgressReport();
-    //public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
+
+    public void SetConverterSettings(object settings)
+    {
+      throw new NotImplementedException("This converter does not have any settings.");
+    }
 
     #endregion ISpeckleConverter props
 
     private UnitConversion conversionFactors = new UnitConversion();  //Default
 
     public List<ApplicationPlaceholderObject> ContextObjects { get; set; } = new List<ApplicationPlaceholderObject>();
-    
-    public List<string> ConvertedObjectsList { get; set; } = new List<string>();
+
+    //public List<string> ConvertedObjectsList { get; set; } = new List<string>();
+    //The presence of a key (application ID) and non-null speckle object means it's an embedded object yet to be converted to native
+    //The presence of a key and null speckle object means there was an embedded object with that application ID that's already converted
+    private Dictionary<string, Base> embeddedToBeConverted = new Dictionary<string, Base>();
+    private object embeddedToBeConvertedLock = new object();
 
     private delegate ToSpeckleResult ToSpeckleMethodDelegate(GsaRecord gsaRecord, GSALayer layer = GSALayer.Both);
 
@@ -97,8 +105,8 @@ namespace ConverterGSA
         typeof(GSARigidConstraint), typeof(GSAGeneralisedRestraint), //Constraints
         typeof(GSAAlignment), typeof(GSAInfluenceBeam), typeof(GSAInfluenceNode), typeof(GSAPath), typeof(GSAUserVehicle) } }, //Bridge
       { ModelAspect.Loads, new List<Type>()
-        { typeof(GSAAnalysisCase), typeof(GSATask), typeof(GSALoadCase), typeof(GSALoadBeam), typeof(GSALoadFace), typeof(GSALoadGravity), 
-        typeof(GSALoadCase), typeof(GSALoadCombination), typeof(GSALoadNode), typeof(GSALoadThermal2d), typeof(GSALoadGridArea), typeof(GSALoadGridLine), 
+        { typeof(GSAAnalysisCase), typeof(GSATask), typeof(GSALoadCase), typeof(GSALoadBeam), typeof(GSALoadFace), typeof(GSALoadGravity),
+        typeof(GSALoadCase), typeof(GSALoadCombination), typeof(GSALoadNode), typeof(GSALoadThermal2d), typeof(GSALoadGridArea), typeof(GSALoadGridLine),
         typeof(GSALoadGridPoint) } },
       { ModelAspect.Restraints, new List<Type>() { typeof(Objects.Structural.Geometry.Restraint) } },
       { ModelAspect.Properties, new List<Type>()
@@ -179,6 +187,10 @@ namespace ConverterGSA
     public List<object> ConvertToNative(List<Base> objects)
     {
       var retList = new List<object>();
+#if !DEBUG
+      var retListLock = new object();
+#endif
+      embeddedToBeConverted.Clear();
 
       //Handle Model objects as a special case, essentially flatten them first
       var models = objects.Where(o => o is Model).ToList();
@@ -210,22 +222,17 @@ namespace ConverterGSA
       {
         foreach (Base o in objects)
         {
-          var t = o.GetType();
-          try
+          if (SafeConvertToNative(o, out List<GsaRecord> newList))
           {
-            if (CanConvertToNative(o) && ToNativeFns.ContainsKey(t))
-            {
-              var natives = ToNativeFns[t](o);
-              retList.AddRangeIfNotNull(natives);
-              if (Instance.GsaModel.ConversionProgress != null)
-              {
-                Instance.GsaModel.ConversionProgress.Report(natives != null);
-              }
-            }
+            retList.AddRange(newList);
           }
-          catch
+          if (embeddedToBeConverted.Any())
           {
-            Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (o.applicationId ?? o.id) + " - refer to logs for more information"));
+            retList.AddRange(ConvertToNative(embeddedToBeConverted.Values.ToList()));
+            foreach (var k in embeddedToBeConverted.Keys)
+            {
+              embeddedToBeConverted[k] = null;
+            }
           }
         }
       }
@@ -233,11 +240,11 @@ namespace ConverterGSA
       {
         foreach (var gen in speckleDependencyTree)
         {
-//#if DEBUG
+#if DEBUG
           foreach (var t in gen)
-//#else
-          //Parallel.ForEach(gen, t =>
-//#endif
+#else
+          Parallel.ForEach(gen, t =>
+#endif
           {
             if (objectsByType.ContainsKey(t))
             {
@@ -251,21 +258,12 @@ namespace ConverterGSA
 
                 Parallel.ForEach(objectsByType[t].Cast<Base>(), so =>
                 {
-                  try
+                  if (SafeConvertToNative(so, out List<GsaRecord> newList, t))
                   {
-                    if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
+                    lock (retListLock)
                     {
-                      var natives = ToNativeFns[t](so);
-                      retList.AddRangeIfNotNull(natives);
-                      if (Instance.GsaModel.ConversionProgress != null)
-                      {
-                        Instance.GsaModel.ConversionProgress.Report(natives != null);
-                      }
+                      retList.AddRange(newList);
                     }
-                  }
-                  catch
-                  {
-                    Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
                   }
                 }
                 );
@@ -275,33 +273,67 @@ namespace ConverterGSA
               {
                 foreach (Base so in objectsByType[t])
                 {
-                  try
+                  if (SafeConvertToNative(so, out List<GsaRecord> newList, t))
                   {
-                    if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
-                    {
-                      var natives = ToNativeFns[t](so);
-                      retList.AddRangeIfNotNull(natives);
-                      if (Instance.GsaModel.ConversionProgress != null)
-                      {
-                        Instance.GsaModel.ConversionProgress.Report(natives != null);
-                      }
-                    }
-                  }
-                  catch
-                  {
-                    Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
+                    retList.AddRange(newList);
                   }
                 }
               }
             }
           }
-//#if !DEBUG
-          //);
-//#endif
+#if !DEBUG
+        );
+          lock (retListLock)
+          {
+#endif
+          if (embeddedToBeConverted.Any())
+          {
+            retList.AddRange(ConvertToNative(embeddedToBeConverted.Values.ToList()));
+            foreach (var k in embeddedToBeConverted.Keys)
+            {
+              embeddedToBeConverted[k] = null;
+            }
+          }
+#if !DEBUG
+          }
+#endif
         }
       }
 
       return retList;
+    }
+
+    private bool SafeConvertToNative(Base so, out List<GsaRecord> retList, Type t = null)
+    {
+      retList = new List<GsaRecord>();
+      if (so == null)
+      {
+        return false;
+      }
+      if (t == null)
+      {
+        t = so.GetType();
+      }
+
+      try
+      {
+        if (CanConvertToNative(so) && ToNativeFns.ContainsKey(t))
+        {
+          var natives = ToNativeFns[t](so);
+
+          retList.AddRange(natives);
+          if (Instance.GsaModel.ConversionProgress != null)
+          {
+            Instance.GsaModel.ConversionProgress.Report(natives != null);
+          }
+        }
+      }
+      catch
+      {
+        Report.ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id) + " - refer to logs for more information"));
+        return false;
+      }
+      return true;
     }
 
     public Base ConvertToSpeckle(object @object)
@@ -376,7 +408,7 @@ namespace ConverterGSA
 
       foreach (var ud in unitDataRecords)
       {
-        switch(ud.Option)
+        switch (ud.Option)
         {
           case UnitDimension.Length: ms.modelUnits.length = ud.Name; break;
           case UnitDimension.Sections: ms.modelUnits.sections = ud.Name; break;

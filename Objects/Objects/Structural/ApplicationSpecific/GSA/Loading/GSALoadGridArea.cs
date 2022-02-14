@@ -13,16 +13,43 @@ namespace Objects.Structural.GSA.Loading
     public double value { get; set; }
     public GSALoadGridArea() { }
 
-    [SchemaInfo("GSALoadGridArea", "Creates a Speckle structural grid area load for GSA", "GSA", "Loading")]
-    public GSALoadGridArea(LoadCase loadCase, GSAGridSurface gridSurface, Axis loadAxis, LoadDirection2D direction, Polyline polyline, bool isProjected, double value, string name = null, int? nativeId = null)
+    [SchemaInfo("GSALoadGridArea (explicit polyline)", "Creates a Speckle structural grid area load (by polyline) for GSA", "GSA", "Loading")]
+    public GSALoadGridArea(LoadCase loadCase, GSAGridSurface gridSurface, Polyline polyline, double value, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, bool isProjected = false, string name = null, int? nativeId = null)
     {
       this.name = name;
       this.loadCase = loadCase;
       this.nativeId = nativeId;
       this.gridSurface = gridSurface;
-      this.loadAxis = loadAxis;
+      this.loadAxis = loadAxis == null ? new Axis("Global", AxisType.Cartesian, new Plane(new Point(0, 0, 0), new Vector(0, 0, 1), new Vector(1, 0, 0), new Vector(0, 1, 0))) : loadAxis;
       this.direction = direction;
       this.polyline = polyline;
+      this.isProjected = isProjected;
+      this.value = value;
+    }
+
+    [SchemaInfo("GSALoadGridArea (GSAPolyline)", "Creates a Speckle structural grid area load (by GSAPolyline) for GSA", "GSA", "Loading")]
+    public GSALoadGridArea(LoadCase loadCase, GSAGridSurface gridSurface, GSAPolyline polyline, double value, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, bool isProjected = false, string name = null, int? nativeId = null)
+    {
+      this.name = name;
+      this.loadCase = loadCase;
+      this.nativeId = nativeId;
+      this.gridSurface = gridSurface;
+      this.loadAxis = loadAxis == null ? new Axis("Global", AxisType.Cartesian, new Plane(new Point(0, 0, 0), new Vector(0, 0, 1), new Vector(1, 0, 0), new Vector(0, 1, 0))) : loadAxis;
+      this.direction = direction;
+      this.polyline = polyline.description;
+      this.isProjected = isProjected;
+      this.value = value;
+    }
+
+    [SchemaInfo("GSALoadGridArea (whole plane)", "Creates a Speckle structural grid area load for GSA", "GSA", "Loading")]
+    public GSALoadGridArea(LoadCase loadCase, GSAGridSurface gridSurface, double value, Axis loadAxis = null, LoadDirection2D direction = LoadDirection2D.Z, bool isProjected = false, string name = null, int? nativeId = null)
+    {
+      this.name = name;
+      this.loadCase = loadCase;
+      this.nativeId = nativeId;
+      this.gridSurface = gridSurface;
+      this.loadAxis = loadAxis == null ? new Axis("Global", AxisType.Cartesian, new Plane(new Point(0, 0, 0), new Vector(0, 0, 1), new Vector(1, 0, 0), new Vector(0, 1, 0))) : loadAxis;
+      this.direction = direction;
       this.isProjected = isProjected;
       this.value = value;
     }

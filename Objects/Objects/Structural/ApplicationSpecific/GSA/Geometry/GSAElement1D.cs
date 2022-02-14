@@ -24,8 +24,9 @@ namespace Objects.Structural.GSA.Geometry
         [SchemaParamInfo("If null, defaults to no offsets")] Vector end1Offset = null,
         [SchemaParamInfo("If null, defaults to no offsets")] Vector end2Offset = null, Plane localAxis = null, int? nativeId = null)
     {
+      this.name = name;
       this.nativeId = nativeId;
-      this.baseLine = (Line)baseLine;
+      this.baseLine = baseLine;
       this.property = property;
       this.type = type;
       this.end1Releases = end1Releases == null ? new Restraint("FFFFFF") : end1Releases;
@@ -43,8 +44,9 @@ namespace Objects.Structural.GSA.Geometry
         [SchemaParamInfo("If null, defaults to no offsets")] Vector end2Offset = null,
         Node orientationNode = null, double orientationAngle = 0, int? nativeId = null)
     {
+      this.name = name;
       this.nativeId = nativeId;
-      this.baseLine = (Line)baseLine;
+      this.baseLine = baseLine;
       this.property = property;
       this.type = type;
       this.end1Releases = end1Releases == null ? new Restraint("FFFFFF") : end1Releases;

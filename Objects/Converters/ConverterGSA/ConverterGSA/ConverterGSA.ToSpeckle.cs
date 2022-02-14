@@ -291,6 +291,11 @@ namespace ConverterGSA
         action = "NORMAL", //TODO: update if interim schema is updated
       };
 
+      if (gsaEl.Index.IsIndex())
+      {
+        speckleElement1d.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaEl>(gsaEl.Index.Value);
+      }
+
       //-- App agnostic --
       if (gsaEl.NodeIndices.Count >= 2)
       {
@@ -303,11 +308,10 @@ namespace ConverterGSA
       {
         Report.ConversionErrors.Add(new Exception("GsaElement1dToSpeckle: "
           + "Error converting 1D element with application id (" + speckleElement1d.applicationId + "). "
-          + "There must be atleast 2 nodes to define the element"));
+          + "There must be at least 2 nodes to define the element"));
         return null;
       }
       speckleElement1d.baseLine = new Line(speckleElement1d.end1Node.basePoint, speckleElement1d.end2Node.basePoint);
-      if (gsaEl.Index.IsIndex()) speckleElement1d.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaEl>(gsaEl.Index.Value);
       if (gsaEl.PropertyIndex.IsIndex()) speckleElement1d.property = GetProperty1dFromIndex(gsaEl.PropertyIndex.Value);
       if (gsaEl.OrientationNodeIndex.IsIndex())
       {
@@ -362,7 +366,7 @@ namespace ConverterGSA
       {
         Report.ConversionErrors.Add(new Exception("GsaElement2dToSpeckle: "
           + "Error converting 2D element with application id (" + speckleElement2d.applicationId + "). "
-          + "There must be atleast 3 nodes to define the element"));
+          + "There must be at least 3 nodes to define the element"));
         return null;
       }
       if (gsaEl.Index.IsIndex()) speckleElement2d.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaEl>(gsaEl.Index.Value);
@@ -445,7 +449,7 @@ namespace ConverterGSA
       {
         Report.ConversionErrors.Add(new Exception("GsaMember1dToSpeckle: "
           + "Error converting 1D member with application id (" + speckleMember1d.applicationId + "). "
-          + "There must be atleast 2 nodes to define the member"));
+          + "There must be at least 2 nodes to define the member"));
         return null;
       }
       speckleMember1d.baseLine = GetBaseLine(speckleMember1d.topology.Select(n => n.basePoint).ToList());
@@ -530,8 +534,8 @@ namespace ConverterGSA
       {
         //-- App agnostic --
         name = gsaMemb.Name,
-        type = gsaMemb.Type.ToSpeckle2d(),
-        displayMesh = DisplayMeshPolygon(gsaMemb.NodeIndices, color),
+        //type = gsaMemb.Type.ToSpeckle2d(),
+        //displayMesh = DisplayMeshPolygon(gsaMemb.NodeIndices, color),
         orientationAngle = gsaMemb.Angle ?? 0,
         offset = gsaMemb.Offset2dZ ?? 0,
         parent = null, //no meaning for member, only for element
@@ -543,20 +547,24 @@ namespace ConverterGSA
         colour = gsaMemb.Colour.ToString(),
         isDummy = gsaMemb.Dummy,
         intersectsWithOthers = gsaMemb.IsIntersector,
-        memberType = gsaMemb.Type.ToSpeckle(),
+        memberType = gsaMemb.Type.ToSpeckle2dMember(),
       };
 
       //-- App agnostic --
       if (gsaMemb.NodeIndices.Count >= 3)
       {
-        speckleMember2d.topology = gsaMemb.NodeIndices.Select(i => GetNodeFromIndex(i)).ToList();
+        var topology = gsaMemb.NodeIndices.Select(i => GetNodeFromIndex(i)).ToList();
+        speckleMember2d.topology = topology;
+        var coordinates = topology.SelectMany(x => x.basePoint.ToList()).ToList();
+        coordinates.AddRange(topology[0].basePoint.ToList());
+        speckleMember2d.outline = new Polyline(coordinates);
         AddToMeaningfulNodeIndices(speckleMember2d.topology.Select(n => n.applicationId), GSALayer.Design);
       }
       else
       {
         Report.ConversionErrors.Add(new Exception("GsaMember2dToSpeckle: "
           + "Error converting 2D member with application id (" + speckleMember2d.applicationId + "). "
-          + "There must be atleast 3 nodes to define the member"));
+          + "There must be at least 3 nodes to define the member"));
         return null;
       }
       if (gsaMemb.Index.IsIndex()) speckleMember2d.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaMemb>(gsaMemb.Index.Value);
@@ -718,9 +726,9 @@ namespace ConverterGSA
       };
       if (gsaPolyline.Index.IsIndex()) specklePolyline.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaPolyline>(gsaPolyline.Index.Value);
       if (gsaPolyline.GridPlaneIndex.IsIndex()) specklePolyline.gridPlane = GetGridPlaneFromIndex(gsaPolyline.GridPlaneIndex.Value);
-      if (gsaPolyline.NumDim == 2) specklePolyline.value = gsaPolyline.Values.Insert(0.0, 3); //convert from list of x,y values to x,y,z values
-      else specklePolyline.value = gsaPolyline.Values;
-
+      var values = gsaPolyline.Values;
+      if (gsaPolyline.NumDim == 2) values = values.Insert(0.0, 3); //convert from list of x,y values to x,y,z values
+      specklePolyline.description = new Polyline(values);
       return new ToSpeckleResult(specklePolyline);
     }
     #endregion
@@ -2650,8 +2658,8 @@ namespace ConverterGSA
         _faces.Add(new int[] { 0, faceIndices[0], faceIndices[1], faceIndices[2] });
       }
 
-      var faces = _faces.SelectMany(o => o).ToArray();
-      var mesh = new Mesh(vertices.ToArray(), faces);
+      var faces = _faces.SelectMany(o => o).ToList();
+      var mesh = new Mesh(vertices, faces);
 
       return mesh;
     }
@@ -2864,7 +2872,7 @@ namespace ConverterGSA
       }
       else if (gsaType == LoadLineOption.PolyRef && gsaPolygonIndex.HasValue)
       {
-        specklePolyline = GetPolygonFromIndex(gsaPolygonIndex.Value);
+        specklePolyline = GetPolygonFromIndex(gsaPolygonIndex.Value).description;
       }
       else
       {
@@ -2882,7 +2890,7 @@ namespace ConverterGSA
       }
       else if (gsaType == LoadAreaOption.PolyRef && gsaPolygonIndex.HasValue)
       {
-        specklePolyline = GetPolygonFromIndex(gsaPolygonIndex.Value);
+        specklePolyline = GetPolygonFromIndex(gsaPolygonIndex.Value).description;
       }
       else
       {
@@ -3589,7 +3597,7 @@ namespace ConverterGSA
       var speckleProfile = new Perimeter()
       {
         shapeType = ShapeType.Perimeter,
-        voids = new List<Objects.ICurve>(),
+        voids = new List<Polyline>(),
       };
 
       if (gsaProfilePerimeter.Type[0] == 'P') //Perimeter
@@ -3618,8 +3626,8 @@ namespace ConverterGSA
             }
           }
         }
-        speckleProfile.outline = new Curve() { points = outline };
-        foreach (var v in voids) speckleProfile.voids.Add(new Curve() { points = v });
+        speckleProfile.outline = new Polyline() { value = outline };
+        foreach (var v in voids) speckleProfile.voids.Add(new Polyline() { value = v });
       }
       else if (gsaProfilePerimeter.Type[0] == 'L') //Line Segment
       {

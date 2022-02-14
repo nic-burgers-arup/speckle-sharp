@@ -30,7 +30,7 @@ namespace Objects.Structural.GSA.Geometry
     public GSARigidConstraint() { }
 
     [SchemaInfo("GSARigidConstraint", "Creates a Speckle structural rigid restraint (a set of nodes constrained to move as a rigid body) for GSA", "GSA", "Geometry")]
-    public GSARigidConstraint(string name, Node primaryNode, List<Node> constrainedNodes, Base parentMember, List<GSAStage> stages, LinkageType type, Dictionary<AxisDirection6, List<AxisDirection6>> constraintCondition, int? nativeId = null)
+    public GSARigidConstraint(Node primaryNode, List<Node> constrainedNodes, Base parentMember, List<GSAStage> stages, LinkageType type, Dictionary<AxisDirection6, List<AxisDirection6>> constraintCondition, string name = null, int? nativeId = null)
     {
       this.name = name;
       this.nativeId = nativeId;

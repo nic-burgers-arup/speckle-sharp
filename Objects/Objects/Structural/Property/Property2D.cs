@@ -23,6 +23,7 @@ namespace Objects.Structural.Properties
         public double modifierBending { get; set; } // negative number is a percentage, positive number is a value
         public double modifierShear { get; set; } // negative number is a percentage, positive number is a value
         public double modifierVolume { get; set; } // negative number is a percentage, positive number is a value
+        public string units { get; set; }
         public Property2D() { }
 
         [SchemaInfo("Property2D (by name)", "Creates a Speckle structural 2D element property", "Structural", "Properties")]

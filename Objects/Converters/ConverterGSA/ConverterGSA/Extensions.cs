@@ -207,6 +207,19 @@ namespace ConverterGSA
       }
     }
 
+    public static MemberType2D ToSpeckle2dMember(this GwaMemberType gsaMemberType)
+    {
+      switch (gsaMemberType)
+      {
+        case GwaMemberType.Slab: return MemberType2D.Slab;
+        case GwaMemberType.Wall: return MemberType2D.Wall;
+        case GwaMemberType.Generic2d: return MemberType2D.Generic2D;
+        case GwaMemberType.Void2d: return MemberType2D.VoidCutter2D;
+        default:
+          throw new Exception(gsaMemberType.ToString() + " is not currently a supported member type.");
+      }
+    }
+
     public static ElementType1D ToSpeckle1d(this GwaMemberType gsaMemberType)
     {
       switch (gsaMemberType)
@@ -726,7 +739,7 @@ namespace ConverterGSA
         case "traffic": return LoadCategory.Traffic;
         case "roofs": return LoadCategory.Roofs;
         case "notset": return LoadCategory.NotSet;
-        default: throw new Exception(category + " speckle string can not be converted into native enum");
+        default: return LoadCategory.NotSet;
       }
     }
 
