@@ -25,7 +25,7 @@ namespace Objects.Structural.GSA.Geometry
     public GSAMember2D([SchemaParamInfo("An ordered list of nodes which represents the perimeter of a member (ie. order of points should based on valid polyline)")] List<Node> perimeter,
         Property2D property, MemberType2D memberType = MemberType2D.Generic2D,
         [SchemaParamInfo("A list of ordered lists of nodes representing the voids within a member (ie. order of points should be based on valid polyline)")] List<List<Node>> voids = null,
-        double offset = 0, double orientationAngle = 0, string name = null, int? nativeId = null)
+        double offset = 0, double orientationAngle = 0, string name = null, int? nativeId = null, bool isDummy = false)
     {
       this.nativeId = nativeId;
       this.name = name;
