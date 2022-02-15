@@ -35,10 +35,12 @@ namespace Objects.Structural.GSA.Geometry
       this.voids = voids; //needs to be ordered properly (ie. matching the point order of a valid polyline)
       this.offset = offset;
       this.orientationAngle = orientationAngle;
+      this.isDummy = isDummy;
 
       var coordinates = perimeter.SelectMany(x => x.basePoint.ToList()).ToList();
       coordinates.AddRange(perimeter[0].basePoint.ToList());
       this.outline = new Polyline(coordinates, this.units != null ? this.units : perimeter.FirstOrDefault().units);
+
     }
   }
 }
