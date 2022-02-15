@@ -1027,7 +1027,7 @@ namespace ConverterGSA
 
     private double Hypotenuse(double a, double o) => Math.Sqrt((a * a) + (o * o));
 
-    private bool IsGlobalAxis(Axis x) => ((x.axisType == AxisType.Cartesian) && ((x.definition == null) 
+    private bool IsGlobalAxis(Axis x) => ((x.axisType == AxisType.Cartesian) && ((x.definition == null)
       || (x.definition.origin.Equals(Origin, GeometricDecimalPlaces)
           && x.definition.xdir.Equals(UnitX, GeometricDecimalPlaces)
           && x.definition.ydir.Equals(UnitY, GeometricDecimalPlaces)
