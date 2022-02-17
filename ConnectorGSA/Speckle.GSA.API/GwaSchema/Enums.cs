@@ -405,6 +405,26 @@
     Wedge6
   };
 
+  public enum ElementPropertyType
+  {
+    [StringValue("BEAM")]
+    Beam,
+    [StringValue("SPRING")]
+    Spring,
+    [StringValue("MASS")]
+    Mass,
+    [StringValue("2D")]
+    TwoD,
+    [StringValue("LINK")]
+    Link,
+    [StringValue("CABLE")]
+    Cable,
+    [StringValue("3D")]
+    ThreeD,
+    [StringValue("DAMPER")]
+    Damper
+  } 
+
   public enum Section1dType
   {
     [StringValue("1D_GENERIC")]

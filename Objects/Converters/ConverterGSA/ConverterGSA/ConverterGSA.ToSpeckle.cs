@@ -78,6 +78,7 @@ namespace ConverterGSA
         { typeof(GsaGenRest), GsaGenRestToSpeckle },
         //Analysis Stage
         { typeof(GsaAnalStage), GsaStageToSpeckle },
+        { typeof(GsaAnalStageProp), GsaStagePropToSpeckle },
         //Bridge
         { typeof(GsaInfBeam), GsaInfBeamToSpeckle },
         { typeof(GsaInfNode), GsaInfNodeToSpeckle },
@@ -785,6 +786,11 @@ namespace ConverterGSA
         massFilter = gsaAnalysisTask.MassFilter,
         maxCycle = gsaAnalysisTask.MaxCycle
       };
+      if (gsaAnalysisTask.StageIndex.IsIndex())
+      {
+        var stage = GetStageFromIndex(gsaAnalysisTask.StageIndex.Value, GSALayer.Analysis) ?? GetStageFromIndex(gsaAnalysisTask.StageIndex.Value, GSALayer.Design);
+        speckleAnalysisTask.stage = stage;
+      }
       if (gsaAnalysisTask.Index.IsIndex()) speckleAnalysisTask.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaTask>(gsaAnalysisTask.Index.Value);
       return new ToSpeckleResult(speckleAnalysisTask);
     }
@@ -2105,6 +2111,48 @@ namespace ConverterGSA
 
       return new ToSpeckleResult(designLayerOnlyObjects: new List<Base>() { designStage }, analysisLayerOnlyObjects: new List<Base>() { analysisStage });
     }
+    
+    private ToSpeckleResult GsaStagePropToSpeckle(GsaRecord nativeObject, GSALayer layer = GSALayer.Both)
+    {
+      var gsaAnalStageProp = (GsaAnalStageProp)nativeObject;
+      var speckleStageProp = new GSAStageProp()
+      {
+        nativeId = gsaAnalStageProp.Index ?? 0,
+        //stage = GetStageFromIndex(gsaAnalStageProp.StageIndex.Value),        
+      };
+      if (gsaAnalStageProp.StageIndex.IsIndex())
+      {
+        var stage = GetStageFromIndex(gsaAnalStageProp.StageIndex.Value, GSALayer.Analysis) ?? GetStageFromIndex(gsaAnalStageProp.StageIndex.Value, GSALayer.Design);
+        speckleStageProp.stage = stage;
+      }
+      var type = gsaAnalStageProp.Type.ToSpeckle();
+      speckleStageProp.type = type;
+      switch (type)
+      {
+        case PropertyType.Beam:
+          speckleStageProp.elementProperty = GetProperty1dFromIndex(gsaAnalStageProp.ElemPropIndex.Value);
+          speckleStageProp.stageProperty = GetProperty1dFromIndex(gsaAnalStageProp.StagePropIndex.Value);
+          break;
+        case PropertyType.Spring:
+          speckleStageProp.elementProperty = GetPropertySpringFromIndex(gsaAnalStageProp.ElemPropIndex.Value);
+          speckleStageProp.stageProperty = GetPropertySpringFromIndex(gsaAnalStageProp.StagePropIndex.Value);
+          break;
+        case PropertyType.Mass:
+          speckleStageProp.elementProperty = GetPropertyMassFromIndex(gsaAnalStageProp.ElemPropIndex.Value);
+          speckleStageProp.stageProperty = GetPropertyMassFromIndex(gsaAnalStageProp.StagePropIndex.Value);
+          break;
+        case PropertyType.TwoD:
+          speckleStageProp.elementProperty = GetProperty2dFromIndex(gsaAnalStageProp.ElemPropIndex.Value);
+          speckleStageProp.stageProperty = GetProperty2dFromIndex(gsaAnalStageProp.StagePropIndex.Value);
+          break;
+      }
+        
+      if (gsaAnalStageProp.Index.IsIndex()) speckleStageProp.applicationId = Instance.GsaModel.Cache.GetApplicationId<GsaAnalStageProp>(gsaAnalStageProp.Index.Value);
+      return new ToSpeckleResult(speckleStageProp);
+    }
+
+
+
     #endregion
 
     #region Bridge

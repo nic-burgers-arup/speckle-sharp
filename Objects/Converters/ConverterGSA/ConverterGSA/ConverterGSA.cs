@@ -100,7 +100,7 @@ namespace ConverterGSA
       { ModelAspect.Nodes, new List<Type>() { typeof(GSANode) } },
       { ModelAspect.Elements, new List<Type>() { typeof(GSAAssembly), typeof(GSAElement1D), typeof(GSAElement2D), typeof(GSAElement3D), typeof(GSAMember1D), typeof(GSAMember2D),
         //CatchAll
-        typeof(GSAStage), //Analysis stages
+        typeof(GSAStage), typeof(GSAStageProp), //Analysis stages
         typeof(Axis), typeof(GSAGridSurface), typeof(GSAGridPlane), typeof(GSAGridLine), typeof(GSAPolyline),  //Geometry
         typeof(GSARigidConstraint), typeof(GSAGeneralisedRestraint), //Constraints
         typeof(GSAAlignment), typeof(GSAInfluenceBeam), typeof(GSAInfluenceNode), typeof(GSAPath), typeof(GSAUserVehicle) } }, //Bridge
