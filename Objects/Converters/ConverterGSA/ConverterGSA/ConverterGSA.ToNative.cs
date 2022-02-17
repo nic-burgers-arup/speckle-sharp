@@ -2867,9 +2867,9 @@ namespace ConverterGSA
         gsaRelease = null;
         gsaStiffnesses = null;
       }
-      else if (speckleRelease.code.ToUpperInvariant().IndexOf('K') > 0)
+      else if (speckleRelease.code.ToUpperInvariant().Contains('K'))
       {
-        gsaReleaseInclusion = ReleaseInclusion.Stiff;
+        gsaReleaseInclusion = ReleaseInclusion.Included;
         gsaRelease = speckleRelease.code.ReleasesToNative();
         gsaStiffnesses = new List<double>();
         if (speckleRelease.stiffnessX > 0) gsaStiffnesses.Add(conversionFactors.force / conversionFactors.length * speckleRelease.stiffnessX);
