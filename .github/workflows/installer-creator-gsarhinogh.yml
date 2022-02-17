@@ -130,7 +130,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
       with:
         tag_name: ${{ steps.calculate-tag-version.outputs.tag }}
-        release_name: gsa/${{ steps.calculate-tag-version.outputs.tag }}
+        release_name: gsarhinogh/${{ steps.calculate-tag-version.outputs.tag }}
         body: |
           Automated release of Speckle v2 Connector for Oasys GSA 10.1, Rhino 6/7 and Grasshopper
         draft: false
