@@ -135,7 +135,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
       with:
         tag_name: ${{ steps.calculate-tag-version.outputs.tag }}
-        release_name: gsa/${{ steps.calculate-tag-version.outputs.tag }}
+        release_name: autoupdater/${{ steps.calculate-tag-version.outputs.tag }}
         body: |
           Automated release of Speckle@Arup AutoUpdater
         draft: false
