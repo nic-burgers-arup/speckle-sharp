@@ -1,11 +1,4 @@
-﻿using Speckle.Newtonsoft.Json;
-using Rhino;
-using Rhino.DocObjects;
-using Speckle.Core.Api;
-using Speckle.Core.Kits;
-using Speckle.Core.Models;
-using Speckle.Core.Transports;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,14 +7,27 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using System.Timers;
+using System.Threading;
+using Timer = System.Timers.Timer;
+
+using Rhino;
+using Rhino.DocObjects;
 using Rhino.Display;
+
+using Speckle.Newtonsoft.Json;
+using Speckle.Core.Api;
+using Speckle.Core.Kits;
+using Speckle.Core.Models;
+using Speckle.Core.Transports;
+using Speckle.Core.Logging;
+
 using DesktopUI2;
 using DesktopUI2.Models;
 using DesktopUI2.ViewModels;
 using DesktopUI2.Models.Filters;
+using DesktopUI2.Models.Settings;
 using System.Threading;
 using Speckle.Core.Logging;
-using Timer = System.Timers.Timer;
 
 namespace SpeckleRhino
 {
@@ -31,7 +37,7 @@ namespace SpeckleRhino
 
     public Timer SelectionTimer;
 
-    private static string SpeckleKey = "speckle";
+    private static string SpeckleKey = "speckle2";
     private static string UserStrings = "userStrings";
     private static string UserDictionary = "userDictionary";
 
@@ -47,36 +53,24 @@ namespace SpeckleRhino
     private void SelectionTimer_Elapsed(object sender, ElapsedEventArgs e)
     {
       if (Doc == null)
-      {
         return;
-      }
-
       var selection = GetSelectedObjects();
-      //TODO
-      //NotifyUi(new UpdateSelectionCountEvent() { SelectionCount = selection.Count });
-      //NotifyUi(new UpdateSelectionEvent() { ObjectIds = selection });
     }
 
     private void RhinoDoc_EndOpenDocument(object sender, DocumentOpenEventArgs e)
     {
       if (e.Merge)
-      {
         return; // prevents triggering this on copy pastes, imports, etc.
-      }
 
-      if (e.Document == null || UpdateSavedStreams == null)
-      {
+      if (e.Document == null)
         return;
-      }
 
       var streams = GetStreamsInFile();
-      //TODO check if needed
-      //if (streams != null && streams.Count != 0)
-      //{
-      //  SpeckleRevitCommand2.CreateOrFocusSpeckle();
-      //}
-
-      UpdateSavedStreams(streams);
+      if (streams != null && streams.Count != 0)
+      {
+        SpeckleCommand2.CreateOrFocusSpeckle();
+        UpdateSavedStreams(streams);
+      }
     }
 
     #region Local streams I/O with local file
@@ -84,14 +78,19 @@ namespace SpeckleRhino
     public override List<StreamState> GetStreamsInFile()
     {
       var strings = Doc?.Strings.GetEntryNames(SpeckleKey);
+
       if (strings == null)
-      {
         return new List<StreamState>();
-      }
 
       var states = strings.Select(s => JsonConvert.DeserializeObject<StreamState>(Doc.Strings.GetValue(SpeckleKey, s))).ToList();
-
       return states;
+    }
+
+    public override void WriteStreamsToFile(List<StreamState> streams)
+    {
+      Doc.Strings.Delete(SpeckleKey);
+      foreach (var s in streams)
+        Doc.Strings.SetString(SpeckleKey, s.StreamId, JsonConvert.SerializeObject(s));
     }
 
     #endregion
@@ -140,11 +139,23 @@ namespace SpeckleRhino
       };
     }
 
+    public override List<ISetting> GetSettings()
+    {
+      /*
+      var referencePoints = new List<string>() { "Internal Origin (default)" };
+      referencePoints.AddRange(Doc.NamedConstructionPlanes.Select(o => o.Name).ToList());
+      return new List<ISetting>()
+      {
+        new ListBoxSetting {Slug = "reference-point", Name = "Reference Point", Icon ="LocationSearching", Values = referencePoints, Description = "Receives stream objects in relation to this document point"}
+      };
+      */
+      return new List<ISetting>();
+    }
+
     public override void SelectClientObjects(string args)
     {
       throw new NotImplementedException();
     }
-
 
     #endregion
 
@@ -152,9 +163,6 @@ namespace SpeckleRhino
 
     public override async Task<StreamState> ReceiveStream(StreamState state, ProgressViewModel progress)
     {
-      //ConversionErrors.Clear();
-      //OperationErrors.Clear();
-
       var kit = KitManager.GetDefaultKit();
       var converter = kit.LoadConverter(Utils.RhinoAppName);
 
@@ -162,7 +170,6 @@ namespace SpeckleRhino
       {
         throw new Exception("Could not find any Kit!");
         progress.CancellationTokenSource.Cancel();
-        //return null;
       }
 
       converter.SetContextDocument(Doc);
@@ -170,9 +177,7 @@ namespace SpeckleRhino
       var transport = new ServerTransport(state.Client.Account, state.StreamId);
 
       if (progress.CancellationTokenSource.Token.IsCancellationRequested)
-      {
         return null;
-      }
 
       string referencedObject = null;
       //if "latest", always make sure we get the latest commit when the user clicks "receive"
@@ -205,15 +210,12 @@ namespace SpeckleRhino
           );
 
       if (progress.Report.OperationErrorsCount != 0)
-      {
         return state;
-      }
 
       var undoRecord = Doc.BeginUndoRecord($"Speckle bake operation for {state.CachedStream.name}");
 
       var conversionProgressDict = new ConcurrentDictionary<string, int>();
       conversionProgressDict["Conversion"] = 0;
-
 
       // get commit layer name 
       var commitLayerName = Speckle.DesktopUI.Utils.Formatting.CommitInfo(state.CachedStream.name, state.BranchName, state.CommitId);
@@ -259,10 +261,12 @@ namespace SpeckleRhino
         else
         {
           List<string> props = @base.GetDynamicMembers().ToList();
-          if (@base.GetMembers().ContainsKey("displayMesh")) // add display mesh to member list if it exists
-            props.Add("displayMesh");
-          else if (@base.GetMembers().ContainsKey("displayValue"))
+          if (@base.GetMembers().ContainsKey("displayValue"))
             props.Add("displayValue");
+          if (@base.GetMembers().ContainsKey("displayMesh")) // add display mesh to member list if it exists. this will be deprecated soon
+            props.Add("displayMesh");
+          if (@base.GetMembers().ContainsKey("elements")) // this is for builtelements like roofs, walls, and floors.
+            props.Add("elements");
           int totalMembers = props.Count;
 
           foreach (var prop in props)
@@ -282,10 +286,8 @@ namespace SpeckleRhino
           }
 
           if (!foundConvertibleMember && count == totalMembers) // this was an unsupported geo
-          {
-
             converter.Report.Log($"Skipped not supported type: { @base.speckle_type }. Object {@base.id} not baked.");
-          }
+
           return objects;
         }
       }
@@ -294,6 +296,14 @@ namespace SpeckleRhino
       {
         count = 0;
         foreach (var listObj in list)
+          objects.AddRange(FlattenCommitObject(listObj, converter, layer, state, ref count));
+        return objects;
+      }
+
+      if (obj is IReadOnlyList<object> readOnlyList)
+      {
+        count = 0;
+        foreach (var listObj in readOnlyList)
           objects.AddRange(FlattenCommitObject(listObj, converter, layer, state, ref count));
         return objects;
       }
@@ -337,32 +347,15 @@ namespace SpeckleRhino
             Layer bakeLayer = Doc.GetLayer(layerPath, true);
             if (bakeLayer != null)
             {
-              var attributes = new ObjectAttributes { LayerIndex = bakeLayer.Index };
+              var attributes = new ObjectAttributes();
 
               // handle display
               Base display = obj[@"displayStyle"] as Base;
               if (display != null)
               {
-                var color = display["color"] as int?;
-                var lineStyle = display["linetype"] as string;
-                var lineWidth = display["lineweight"] as double?;
-
-                if (color != null)
-                {
-                  attributes.ColorSource = ObjectColorSource.ColorFromObject;
-                  attributes.ObjectColor = System.Drawing.Color.FromArgb((int)color);
-                }
-                if (lineWidth != null)
-                  attributes.PlotWeight = (double)lineWidth;
-                if (lineStyle != null)
-                {
-                  var ls = Doc.Linetypes.FindName(lineStyle);
-                  if (ls != null)
-                  {
-                    attributes.LinetypeSource = ObjectLinetypeSource.LinetypeFromObject;
-                    attributes.LinetypeIndex = ls.Index;
-                  }
-                }
+                var displayAttribute = converter.ConvertToNative(display) as ObjectAttributes;
+                if (displayAttribute != null)
+                  attributes = displayAttribute;
               }
 
               /* Not implemented since revit displaymesh objs do not have render materials attached
@@ -381,6 +374,9 @@ namespace SpeckleRhino
                 }
               }
               */
+
+              // assign layer
+              attributes.LayerIndex = bakeLayer.Index;
 
               // TODO: deprecate after awhile, schemas included in user strings. This would be a breaking change.
               string schema = obj["SpeckleSchema"] as string;
@@ -452,9 +448,7 @@ namespace SpeckleRhino
       foreach (var applicationId in state.SelectedObjectIds)
       {
         if (progress.CancellationTokenSource.Token.IsCancellationRequested)
-        {
           return;
-        }
 
         Base converted = null;
         string containerName = string.Empty;
@@ -551,14 +545,10 @@ namespace SpeckleRhino
       }
 
       if (renamedlayers)
-      {
         progress.Report.Log("Replaced illegal chars ./ with - in one or more layer names.");
-      }
 
       if (progress.CancellationTokenSource.Token.IsCancellationRequested)
-      {
         return;
-      }
 
       progress.Max = objCount;
 
@@ -581,9 +571,7 @@ namespace SpeckleRhino
         );
 
       if (progress.Report.OperationErrorsCount != 0)
-      {
         return;
-      }
 
       var actualCommit = new CommitCreateInput
       {
@@ -741,17 +729,6 @@ namespace SpeckleRhino
       // remove ./
       return Regex.Replace(str, @"[./]", "-");
     }
-
-    public override void WriteStreamsToFile(List<StreamState> streams)
-    {
-      Doc.Strings.Delete(SpeckleKey);
-
-      foreach (var s in streams)
-      {
-        Doc.Strings.SetString(SpeckleKey, s.StreamId, JsonConvert.SerializeObject(s));
-      }
-    }
-
 
     public override List<MenuItem> GetCustomStreamMenuItems()
     {
