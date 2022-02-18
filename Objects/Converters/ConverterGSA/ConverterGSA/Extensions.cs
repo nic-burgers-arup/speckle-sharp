@@ -506,9 +506,9 @@ namespace ConverterGSA
     {
       switch (speckleType)
       {
-        case StructuralSolutionType.BUCKLING_NL: return SolutionType.NonlinearStatic;
+        //case StructuralSolutionType.BUCKLING_NL: return SolutionType.NonlinearStatic;
         case StructuralSolutionType.STATIC: return SolutionType.Static;
-        case StructuralSolutionType.MODAL: return SolutionType.Modal;
+        //case StructuralSolutionType.MODAL: return SolutionType.Modal;
         default: return SolutionType.Static;
       }
     }
@@ -856,8 +856,8 @@ namespace ConverterGSA
       switch (speckleType)
       {
         case SolutionType.Static: return StructuralSolutionType.STATIC;
-        case SolutionType.NonlinearStatic: return StructuralSolutionType.BUCKLING_NL;
-        case SolutionType.Modal: return StructuralSolutionType.MODAL;
+        //case SolutionType.NonlinearStatic: return StructuralSolutionType.BUCKLING_NL;
+        //case SolutionType.Modal: return StructuralSolutionType.MODAL;
         //case SolutionType.Ritz: return StructuralSolutionType.RITZ;
         //case SolutionType.Buckling: return StructuralSolutionType.BUCKLING;
         //case SolutionType.StaticPDelta: return StructuralSolutionType.STATIC_P_DELTA;
@@ -875,8 +875,8 @@ namespace ConverterGSA
       switch (speckleType)
       {
         case SolutionType.Static: return ("GSS");
-        case SolutionType.NonlinearStatic: return ("GSRELAX");
-        case SolutionType.Modal: return ("GSS");
+        //case SolutionType.NonlinearStatic: return ("GSRELAX");
+        //case SolutionType.Modal: return ("GSS");
         default: return ("GSS");
       }
     }
