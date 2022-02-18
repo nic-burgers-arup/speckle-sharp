@@ -158,7 +158,7 @@ namespace Objects.Converter.Revit
       {
         var floor = structuralElement as DB.Floor;
         structMaterial = Doc.GetElement(floor.FloorType.StructuralMaterialId) as DB.Material;
-        thickness = GetParamValue<double>(structuralElement, BuiltInParameter.STRUCTURAL_FLOOR_CORE_THICKNESS);
+        thickness = ScaleToSpeckle(GetParamValue<double>(structuralElement, BuiltInParameter.STRUCTURAL_FLOOR_CORE_THICKNESS));
         memberType = MemberType.Slab;
       }
       else if (structuralElement is DB.Wall)
@@ -181,7 +181,7 @@ namespace Objects.Converter.Revit
 		case "Concrete":
 		  var concreteMaterial = new Concrete
 		  {
-			name = Doc.GetElement(structMaterial.Id).Name,
+			name = structMaterial.Name,
 			materialType = Structural.MaterialType.Concrete,
 			grade = null,
 			designCode = null,
@@ -205,7 +205,7 @@ namespace Objects.Converter.Revit
 		case "Steel":
 		  var steelMaterial = new Steel
 		  {
-			name = Doc.GetElement(structMaterial.StructuralAssetId).Name,
+			name = structMaterial.Name,
 			materialType = Structural.MaterialType.Steel,
 			grade = materialAsset != null ? materialAsset.Name : null,
 			designCode = null,
@@ -225,7 +225,7 @@ namespace Objects.Converter.Revit
 		case "Wood":
 		  var timberMaterial = new Timber
 		  {
-			name = Doc.GetElement(structMaterial.StructuralAssetId).Name,
+			name = structMaterial.Name,
 			materialType = Structural.MaterialType.Timber,
 			grade = materialAsset != null ? materialAsset.WoodGrade : null,
 			designCode = null,
@@ -248,8 +248,8 @@ namespace Objects.Converter.Revit
 		default:
 		  var defaultMaterial = new Structural.Materials.Material
 		  {
-			name = Doc.GetElement(structMaterial.StructuralAssetId).Name
-		  };
+			name = structMaterial.Name
+          };
 		  speckleMaterial = defaultMaterial;
 		  break;
 	  }
