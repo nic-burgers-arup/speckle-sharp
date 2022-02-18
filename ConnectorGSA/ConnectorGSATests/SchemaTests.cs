@@ -473,7 +473,7 @@ namespace ConnectorGSATests
         "LOAD_TITLE.2\t18\tLoad case 18\tLC_ACCIDENTAL\t1\t~\tNONE\tINC_UNDEF\t",
         "LOAD_TITLE.2\t19\tLoad case 19\tLC_EQE_RSA\t1\t~\tX\tINC_UNDEF\t",
         "LOAD_TITLE.2\t20\tLoad case 20\tLC_EQE_ACC\t1\t~\tX\tINC_UNDEF\t",
-        "LOAD_TITLE.2\t21\tLoad case 21\tLC_EQE_STAT\t1\t~\tX\tINC_UNDEF\t",
+        "LOAD_TITLE.2\t21\tLoad case 21\tLC_EQE_STAT\t1\t~\tX\tINC_UNDEF\t"
       };
       var loadCases = new List<GsaLoadCase>();
       int i = 1;
@@ -524,9 +524,9 @@ namespace ConnectorGSATests
       Assert.Equal(StructuralLoadCaseType.Rain, loadCases[14].CaseType);
       Assert.Equal(StructuralLoadCaseType.Thermal, loadCases[15].CaseType);
       Assert.Equal(StructuralLoadCaseType.Generic, loadCases[16].CaseType);
-      Assert.Equal(StructuralLoadCaseType.Generic, loadCases[17].CaseType);
-      Assert.Equal(StructuralLoadCaseType.Earthquake, loadCases[18].CaseType);
-      Assert.Equal(StructuralLoadCaseType.Earthquake, loadCases[19].CaseType);
+      Assert.Equal(StructuralLoadCaseType.Accidental, loadCases[17].CaseType);
+      Assert.Equal(StructuralLoadCaseType.EarthquakeRSA, loadCases[18].CaseType);
+      Assert.Equal(StructuralLoadCaseType.EarthquakeAccTors, loadCases[19].CaseType);
       Assert.Equal(StructuralLoadCaseType.Earthquake, loadCases[20].CaseType);
 
       for (i = 0; i < loadCases.Count(); i++)

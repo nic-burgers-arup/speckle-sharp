@@ -40,7 +40,7 @@ namespace ConverterGSA
       CalculateConversionFactors();
     }
 
-    private void SetNativeUnits()
+    public void SetNativeUnits()
     {
       if (Instance.GsaModel.Cache.GetNatives(out var gsaRecords))
       {
@@ -275,6 +275,19 @@ namespace ConverterGSA
     public double ConversionFactorToNative(UnitDimension dimension, string speckleUnit)
     {
       if (string.IsNullOrEmpty(speckleUnit)) return 1;
+
+      var modelUnits = nativeModelUnits.GetType().GetProperties();
+      var isAnyUnitNull = false;
+      foreach(var unit in modelUnits)
+      {
+        if (unit.GetValue(nativeModelUnits, null) == null)
+        {
+          isAnyUnitNull = true;
+          break;
+        }
+      }
+
+      if (isAnyUnitNull) SetNativeUnits();
 
       switch (dimension)
       {

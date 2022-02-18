@@ -7,38 +7,35 @@ using Objects.Structural.Materials;
 
 namespace Objects.Structural.Properties
 {
-    public class Property2D : Property
+  public class Property2D : Property
+  {
+    public PropertyType2D type { get; set; }
+    public double thickness { get; set; } //also thickness type? ex. waffle vs constant
+
+    [DetachProperty]
+    public Material material { get; set; }
+
+    [DetachProperty]
+    public Axis orientationAxis { get; set; }
+    public ReferenceSurface refSurface { get; set; } = ReferenceSurface.Middle; //system plane
+    public double zOffset { get; set; } //relative to reference surface
+    public string units { get; set; }
+    public Property2D() { }
+
+    [SchemaInfo("Property2D (by name)", "Creates a Speckle structural 2D element property", "Structural", "Properties")]
+    public Property2D(string name)
     {
-        public PropertyType2D type { get; set; }
-        public double thickness { get; set; } //also thickness type? ex. waffle vs constant
-
-        [DetachProperty]
-        public Material material { get; set; }
-
-        [DetachProperty]
-        public Axis orientationAxis { get; set; }
-        public ReferenceSurface refSurface { get; set;} //system plane
-        public double zOffset { get; set; } //relative to reference surface
-        public double modifierInPlane { get; set; } // negative number is a percentage, positive number is a value
-        public double modifierBending { get; set; } // negative number is a percentage, positive number is a value
-        public double modifierShear { get; set; } // negative number is a percentage, positive number is a value
-        public double modifierVolume { get; set; } // negative number is a percentage, positive number is a value
-        public string units { get; set; }
-        public Property2D() { }
-
-        [SchemaInfo("Property2D (by name)", "Creates a Speckle structural 2D element property", "Structural", "Properties")]
-        public Property2D(string name)
-        {
-            this.name = name;
-        }
-
-        [SchemaInfo("Property2D", "Creates a Speckle structural 2D element property", "Structural", "Properties")]
-        public Property2D(string name, Material material, PropertyType2D type, double thickness)
-        {
-            this.name = name;
-            this.material = material;
-            this.type = type;
-            this.thickness = thickness;
-        }
+      this.name = name;
     }
+
+    [SchemaInfo("Property2D", "Creates a Speckle structural 2D element property", "Structural", "Properties")]
+    public Property2D(string name, Material material, PropertyType2D type, double thickness, ReferenceSurface referenceSurface = ReferenceSurface.Middle)
+    {
+      this.name = name;
+      this.material = material;
+      this.type = type;
+      this.thickness = thickness;
+      this.refSurface = referenceSurface;
+    }
+  }
 }
