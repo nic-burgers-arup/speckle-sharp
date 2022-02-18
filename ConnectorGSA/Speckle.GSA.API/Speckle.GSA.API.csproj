@@ -49,6 +49,7 @@
     <Compile Include="Enums.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="GsaModelBase.cs" />
+    <Compile Include="GwaSchema\AnalysisStages\GsaAnalStageProp.cs" />
     <Compile Include="GwaSchema\AnalysisStages\GsaAnalStage.cs" />
     <Compile Include="GwaSchema\Bridge\GsaAlign.cs" />
     <Compile Include="GwaSchema\Bridge\GsaPath.cs" />
@@ -67,6 +68,7 @@
     <Compile Include="GwaSchema\GsaEl.cs" />
     <Compile Include="GwaSchema\GsaMemb.cs" />
     <Compile Include="GwaSchema\GsaNode.cs" />
+    <Compile Include="GwaSchema\Loading\Beam\GsaLoad1dThermal.cs" />
     <Compile Include="GwaSchema\Specification\GsaSpecConcDesign.cs" />
     <Compile Include="GwaSchema\Specification\GsaSpecSteelDesign.cs" />
     <Compile Include="GwaSchema\Specification\GsaTol.cs" />
@@ -102,6 +104,7 @@
     <Compile Include="GwaSchema\StringValue.cs" />
     <Compile Include="GwaSchema\TasksAndCases\GsaAnal.cs" />
     <Compile Include="GwaSchema\TasksAndCases\GsaCombination.cs" />
+    <Compile Include="GwaSchema\TasksAndCases\GsaTask.cs" />
     <Compile Include="IGSACache.cs" />
     <Compile Include="IGSAModel.cs" />
     <Compile Include="IGSAProxy.cs" />

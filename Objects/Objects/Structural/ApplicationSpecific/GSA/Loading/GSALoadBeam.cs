@@ -47,9 +47,4 @@ namespace Objects.Structural.GSA.Loading
       this.name = name;
     }
   }
-
-
-
-
-
 }

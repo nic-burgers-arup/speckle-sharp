@@ -21,6 +21,7 @@ namespace Objects.Structural.GSA.Loading
       this.gridSurface = gridSurface;
       this.loadAxis = loadAxis;
       this.direction = direction;
+      this.units = "kN/m2";
     }
   }
 }

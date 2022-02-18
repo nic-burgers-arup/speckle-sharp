@@ -97,7 +97,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       }
       else
       {
-        v += "(m)"; //TO DO: assume m? or something else? or error?
+        v += "(mm)"; //TO DO: assume m? or something else? or error?
       }
       return v;
     }

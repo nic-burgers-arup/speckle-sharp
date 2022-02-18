@@ -8,6 +8,7 @@ namespace Objects.Structural.Geometry
 {
   public enum MemberType
   {
+    NotSet = 0,
     Beam,
     Column,
     Generic1D,
@@ -15,14 +16,14 @@ namespace Objects.Structural.Geometry
     Wall,
     Generic2D,
     VoidCutter1D,
-    VoidCutter2D
+    VoidCutter2D //Brace
   }
 
   public enum MemberType2D
   {
+    Generic2D,
     Slab,
     Wall,
-    Generic2D,
     VoidCutter2D
   }
 }

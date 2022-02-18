@@ -478,6 +478,7 @@ namespace ConnectorGSA
 
       percentageProgress.Report(100);
 
+      ((GsaProxy)Instance.GsaModel.Proxy).UpdateCasesAndTasks();
       ((GsaProxy)Instance.GsaModel.Proxy).UpdateViews();
 
       duration = DateTime.Now - startTime;

@@ -16,7 +16,7 @@ namespace Objects.Structural.GSA.Geometry
     [Chunkable(1000)]
     public List<Base> elements { get; set; }
 
-    public double tolerance { get; set; }
+    public double? tolerance { get; set; }
     public GridSurfaceElementType type { get; set; }
     public GridSurfaceSpanType span { get; set; }
     public double spanDirection { get; set; }
@@ -25,7 +25,7 @@ namespace Objects.Structural.GSA.Geometry
     public GSAGridSurface() { }
 
     [SchemaInfo("GSAGridSurface", "Creates a Speckle structural grid surface for GSA", "GSA", "Geometry")]
-    public GSAGridSurface(GSAGridPlane gridPlane, [SchemaParamInfo("If null, element list defaults to all")] List<Base> elements = null, double tolerance = 10, GridSurfaceElementType type = GridSurfaceElementType.OneD, GridSurfaceSpanType span = GridSurfaceSpanType.OneWay, double spanDirection = 0, LoadExpansion loadExpansion = LoadExpansion.PlaneCorner, string name = null, int? nativeId = null)
+    public GSAGridSurface(GSAGridPlane gridPlane, [SchemaParamInfo("If null, element list defaults to all")] List<Base> elements = null, double? tolerance = null, GridSurfaceElementType type = GridSurfaceElementType.OneD, GridSurfaceSpanType span = GridSurfaceSpanType.OneWay, double spanDirection = 0, LoadExpansion loadExpansion = LoadExpansion.PlaneCorner, string name = null, int? nativeId = null)
     {
       this.nativeId = nativeId;
       this.name = name;
