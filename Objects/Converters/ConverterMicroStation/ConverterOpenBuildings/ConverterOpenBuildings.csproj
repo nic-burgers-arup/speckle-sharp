@@ -37,10 +37,10 @@
       <Private>false</Private>
       <SpecificVersion>false</SpecificVersion>
     </Reference>
-    <Reference Include="Bentley.EC.Persistence3">
-      <HintPath>$(ProgramW6432)\Bentley\MicroStation CONNECT Edition\MicroStation\Assemblies\ECFramework\Bentley.EC.Persistence3.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="Bentley.EC.Persistence3, Version=1.0.0.0, Culture=neutral, PublicKeyToken=4bf6c96a266e58d4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(ProgramW6432)\Bentley\MicroStation CONNECT Edition\MicroStation\Assemblies\ECFramework\Bentley.EC.Persistence3.dll</HintPath>
+      <Private>false</Private>
     </Reference>
     <Reference Include="Bentley.DgnDisplayNET">
       <HintPath>$(ProgramW6432)\Bentley\OpenBuildings CONNECT Edition\OpenBuildingsDesigner\Bentley.DgnDisplayNet.dll</HintPath>
@@ -98,13 +98,7 @@
       <SpecificVersion>false</SpecificVersion>
     </Reference>
   </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Bentley.ECObjects.MixedMode3">
-      <HintPath>..\..\..\..\..\..\..\..\Program Files\Bentley\OpenBuildings CONNECT Edition\OpenBuildingsDesigner\Assemblies\ECFramework\Bentley.ECObjects.MixedMode3.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
+  
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="if '$(IsDesktopBuild)' == true OR  $(IsDesktopBuild) == '' (&#xA;&#xA;&#xD;&#xA;&#xD;&#xA;xcopy /Y /S &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;$(AppData)\Speckle\Kits\Objects\&quot;&#xD;&#xA;&#xD;&#xA;)" />
   </Target>
