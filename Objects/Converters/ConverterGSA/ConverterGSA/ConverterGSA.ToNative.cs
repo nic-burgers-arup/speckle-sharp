@@ -1637,7 +1637,11 @@ namespace ConverterGSA
       var gsaRecords = SteelToNative(speckleObject);
       var gsaSteel = (GsaMatSteel)gsaRecords.First(o => o is GsaMatSteel);
       var speckleSteel = (GSASteel)speckleObject;
-      gsaSteel.Mat = GetMat(speckleSteel.GetDynamicValue<Base>("Mat"));
+      var speckleMat = GetMat(speckleSteel.GetDynamicValue<Base>("Mat"));
+      if (speckleMat != null)
+      {
+        gsaSteel.Mat = speckleMat;
+      }
       return gsaRecords;
     }
 
@@ -2168,8 +2172,6 @@ namespace ConverterGSA
               CurveToGsaOutline(v, ref y, ref z, ref actions);
             }
           }
-
-
         }
         gsaProfileGroup = Section1dProfileGroup.Perimeter;
         gsaProfileDetails = new ProfileDetailsPerimeter()
@@ -2191,7 +2193,6 @@ namespace ConverterGSA
           {
             gsaProfileDetails = new ProfileDetailsTwoThickness() { ProfileType = Section1dStandardProfileType.RectangularHollow };
             ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth * lengthFactor, p.width * lengthFactor, p.webThickness * lengthFactor, p.flangeThickness * lengthFactor);
-
           }
           else
           {
