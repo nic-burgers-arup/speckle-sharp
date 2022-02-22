@@ -565,19 +565,6 @@ public class Element1D1SchemaComponent: CreateSchemaObjectBase {
 }
 
 // This is generated code:
-public class Element1D2SchemaComponent: CreateSchemaObjectBase {
-     
-    public Element1D2SchemaComponent(): base("Element1D (from nodes)", "Element1D (from nodes)", "Creates a Speckle structural 1D element (from nodes)", "Speckle 2 Structural", "Geometry") { }
-    
-    public override Guid ComponentGuid => new Guid("ffe8c605-0ffb-25a3-c3c8-6b87725690a1");
-    
-    public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.Geometry.Element1D.ctor(Objects.Structural.Geometry.Node,Objects.Structural.Geometry.Node,Objects.Structural.Properties.Property1D,Objects.Structural.Geometry.ElementType1D,System.String,Objects.Structural.Geometry.Restraint,Objects.Structural.Geometry.Restraint,Objects.Geometry.Vector,Objects.Geometry.Vector,Objects.Geometry.Plane)","Objects.Structural.Geometry.Element1D");
-        base.AddedToDocument(document);
-    }
-}
-
-// This is generated code:
 public class Element2DSchemaComponent: CreateSchemaObjectBase {
      
     public Element2DSchemaComponent(): base("Element2D", "Element2D", "Creates a Speckle structural 2D element (based on a list of edge ie. external, geometry defining nodes)", "Speckle 2 Structural", "Geometry") { }
@@ -606,7 +593,7 @@ public class Element3DSchemaComponent: CreateSchemaObjectBase {
 // This is generated code:
 public class ETABSAreaSpringSchemaComponent: CreateSchemaObjectBase {
      
-    public ETABSAreaSpringSchemaComponent(): base("AreaSpring", "AreaSpring", "Create an ETABS AreaSpring", "Speckle 2 ETABS", "Properties") { }
+    public ETABSAreaSpringSchemaComponent(): base("LinearSpring", "LinearSpring", "Create an ETABS AreaSpring", "Speckle 2 ETABS", "Properties") { }
     
     public override Guid ComponentGuid => new Guid("7a20a21e-e90a-3059-3f54-54b157240410");
     
@@ -788,7 +775,7 @@ public class FloorSchemaComponent: CreateSchemaObjectBase {
 // This is generated code:
 public class FreeformElementSchemaComponent: CreateSchemaObjectBase {
      
-    public FreeformElementSchemaComponent(): base("Freeform element", "Freeform element", "Creates a Revit Freeform element using a list of Brep or Meshes.", "Speckle 2 Revit", "Families") { }
+    public FreeformElementSchemaComponent(): base("Freeform element (from list)", "Freeform element (from list)", "Creates a Revit Freeform element using a list of Brep or Meshes.", "Speckle 2 Revit", "Families") { }
     
     public override Guid ComponentGuid => new Guid("b24dc861-1c3c-a509-bc8b-560e9f7d503e");
     

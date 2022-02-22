@@ -15,7 +15,7 @@ namespace Objects.Structural.GSA.Materials
       this.nativeId = nativeId;
       this.name = name;
       this.grade = grade;
-      this.materialType = MaterialType.Concrete;
+      this.materialType = MaterialType.Steel;
       this.designCode = designCode;
       this.codeYear = codeYear;
       this.elasticModulus = elasticModulus;
