@@ -15,6 +15,7 @@ using DesktopUI2;
 using DesktopUI2.Models;
 using DesktopUI2.ViewModels;
 using DesktopUI2.Models.Filters;
+using DesktopUI2.Models.Settings;
 
 using Bentley.DgnPlatformNET;
 using Bentley.DgnPlatformNET.Elements;
@@ -102,6 +103,11 @@ namespace Speckle.ConnectorMicroStationOpen.UI
     public override string GetDocumentLocation() => Path.GetDirectoryName(File.GetFileName());
 
     public override string GetFileName() => Path.GetFileName(File.GetFileName());
+
+    public override List<ISetting> GetSettings()
+    {
+      return new List<ISetting> { };
+    }
 
     public override string GetActiveViewName() => "Entire Document";
 
