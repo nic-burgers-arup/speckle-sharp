@@ -360,10 +360,10 @@ namespace Objects.Converter.Revit
 
       speckleElement1D.property = prop;
 
-      GetAllRevitParamsAndIds(speckleElement1D, revitStick);
-      speckleElement1D.displayMesh = GetElementDisplayMesh(Doc.GetElement(revitStick.GetElementId()));
-      return speckleElement1D;
-    }
+    GetAllRevitParamsAndIds(speckleElement1D, revitStick);
+    speckleElement1D.displayValue = GetElementDisplayMesh(Doc.GetElement(revitStick.GetElementId()));
+    return speckleElement1D;
+  }
 
     private ISection ISectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
     {

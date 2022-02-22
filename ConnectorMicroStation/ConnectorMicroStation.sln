@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DesktopUI", "..\DesktopUI\D
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Objects", "..\Objects\Objects\Objects.csproj", "{887018C0-D6F4-42F5-97BE-038677250BF9}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ConnectorMicroStationOpenShared", "ConnectorMicroStationOpenShared\ConnectorMicroStationOpenShared.shproj", "{372D9F0F-EDE9-4050-BF8C-758911C5C2E0}"
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ConnectorMicroStationOpenShared", "ConnectorMicroStationOpenShared\ConnectorMicroStationOpenShared.shproj", "{E037A245-E171-415F-A2AA-32A2D39AD307}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConnectorOpenRoads", "ConnectorOpenRoads\ConnectorOpenRoads.csproj", "{57BF94A8-8F73-4D1A-91D2-B10CC64178B6}"
 EndProject
@@ -41,12 +41,12 @@ Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		ConnectorMicroStationOpenShared\ConnectorMicroStationOpenShared.projitems*{0420d74a-2997-4b92-844b-c3769deaa1ad}*SharedItemsImports = 4
 		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{208b25e4-2d0e-4534-b197-4c5c96cc53ce}*SharedItemsImports = 13
-		ConnectorMicroStationOpenShared\ConnectorMicroStationOpenShared.projitems*{372d9f0f-ede9-4050-bf8c-758911c5c2e0}*SharedItemsImports = 13
 		ConnectorMicroStationOpenShared\ConnectorMicroStationOpenShared.projitems*{57bf94a8-8f73-4d1a-91d2-b10cc64178b6}*SharedItemsImports = 4
 		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{5c03ac5b-834e-48b4-ab7c-854bba3e872a}*SharedItemsImports = 5
 		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{7ad741dd-d4fd-4813-9970-09e4fd0a5ce2}*SharedItemsImports = 5
 		ConnectorMicroStationOpenShared\ConnectorMicroStationOpenShared.projitems*{a3a0ee09-6055-4009-ab8e-13fbc1a403a9}*SharedItemsImports = 4
 		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{d6bb2435-06ac-4c36-a8b4-73eaf8deb1c8}*SharedItemsImports = 5
+		ConnectorMicroStationOpenShared\ConnectorMicroStationOpenShared.projitems*{e037a245-e171-415f-a2aa-32a2d39ad307}*SharedItemsImports = 13
 		..\Objects\Converters\ConverterMicroStation\ConverterMicroStationOpenShared\ConverterMicroStationOpenShared.projitems*{f03177ce-31eb-42f1-9466-640bfe101f93}*SharedItemsImports = 5
 		ConnectorMicroStationOpenShared\ConnectorMicroStationOpenShared.projitems*{fc044d89-0ff3-441d-b35d-87454a693c16}*SharedItemsImports = 4
 	EndGlobalSection
