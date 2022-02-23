@@ -41,7 +41,7 @@ using Bentley.EC.Persistence.Query;
 using Bentley.Building.Api;
 #endif
 
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
 using Bentley.CifNET.GeometryModel.SDK;
 using Bentley.CifNET.LinearGeometry;
 using Bentley.CifNET.SDK;
@@ -59,8 +59,10 @@ namespace Objects.Converter.MicroStationOpen
     public static string BentleyAppName = VersionedHostApplications.OpenRail;
 #elif OPENBUILDINGS
     public static string BentleyAppName = VersionedHostApplications.OpenBuildings;
+#elif OPENBRIDGE
+    public static string BentleyAppName = VersionedHostApplications.OpenBridge;
 #endif
-    public string Description => "Default Speckle Kit for MicroStation, OpenRoads, OpenRail and OpenBuildings";
+    public string Description => "Default Speckle Kit for MicroStation, OpenRoads, OpenRail, OpenBridge and OpenBuildings";
     public string Name => nameof(ConverterMicroStationOpen);
     public string Author => "Arup";
     public string WebsiteOrEmail => "https://www.arup.com";
@@ -71,7 +73,7 @@ namespace Objects.Converter.MicroStationOpen
     public DgnFile Doc { get; private set; }
     public DgnModel Model { get; private set; }
 
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
     public GeometricModel GeomModel { get; private set; }
 #endif
     public double UoR { get; private set; }
@@ -89,7 +91,7 @@ namespace Objects.Converter.MicroStationOpen
       Doc = (DgnFile)Session.GetActiveDgnFile();
       Model = (DgnModel)Session.GetActiveDgnModel();
       UoR = Model.GetModelInfo().UorPerMaster;
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
       ConsensusConnection sdkCon = Bentley.CifNET.SDK.Edit.ConsensusConnectionEdit.GetActive();
       GeomModel = sdkCon.GetActiveGeometricModel();
 #endif
@@ -209,7 +211,7 @@ namespace Objects.Converter.MicroStationOpen
           Report.Log($"Converted GridSystems as Base");
           break;
 #endif
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
         case Bentley.CifNET.GeometryModel.SDK.Alignment o:
           @base = AlignmentToSpeckle(o);
           Report.Log($"Converted Alignment");
@@ -310,7 +312,7 @@ namespace Objects.Converter.MicroStationOpen
           Report.Log($"Created Mesh {o.id}");
           return MeshToNative(o);
 
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
         case Alignment o:
         Report.Log($"Created Alignment {o.id}");
           return AlignmentToNative(o);
@@ -352,7 +354,7 @@ namespace Objects.Converter.MicroStationOpen
         case Type2Element _: //Complex header element
           return true;
 
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
         case Bentley.CifNET.GeometryModel.SDK.Alignment _:
           //case Corridor _:
           //case Profile _:

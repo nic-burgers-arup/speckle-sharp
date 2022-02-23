@@ -1,4 +1,4 @@
-﻿#if (OPENROADS || OPENRAIL)
+﻿#if (OPENROADS || OPENRAIL || OPENBRIDGE)
 using Objects.Geometry;
 using Objects.Primitive;
 using Objects.Other;

@@ -120,6 +120,12 @@ namespace Speckle.Core.Kits
       public const string Slug = "openbuildings";
     }
 
+    public static class OpenBridge
+    {
+      public const string Name = "OpenBridge";
+      public const string Slug = "openbridge";
+    }
+
     public static class ETABS
     {
       public const string Name = "ETABS";
@@ -171,6 +177,7 @@ namespace Speckle.Core.Kits
     public const string OpenRoads = "OpenRoads";
     public const string OpenRail = "OpenRail";
     public const string OpenBuildings = "OpenBuildings";
+    public const string OpenBridge = "OpenBridge";
     public const string ETABSv18 = "ETABSv18";
     public const string ETABSv19 = "ETABSv19";
     public const string TeklaStructures2021 = "TeklaStructures2021";

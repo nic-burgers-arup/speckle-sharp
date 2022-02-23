@@ -29,7 +29,7 @@ using Speckle.Core.Logging;
 using Bentley.Building.Api;
 #endif
 
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
 using Bentley.CifNET.GeometryModel.SDK;
 using Bentley.CifNET.LinearGeometry;
 using Bentley.CifNET.SDK;
@@ -45,7 +45,7 @@ namespace Speckle.ConnectorMicroStationOpen.UI
     public DgnModel Model => Session.Instance.GetActiveDgnModel();
     public string ModelUnits { get; set; }
     public List<StreamState> DocumentStreams { get; set; } = new List<StreamState>();
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
     public GeometricModel GeomModel { get; private set; }
     public List<string> civilElementKeys => new List<string> { "Alignment" };
 #endif
@@ -70,7 +70,7 @@ namespace Speckle.ConnectorMicroStationOpen.UI
 
       ModelUnits = Model.GetModelInfo().GetMasterUnit().GetName(true, true);
 
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
       ConsensusConnection sdkCon = Bentley.CifNET.SDK.Edit.ConsensusConnectionEdit.GetActive();
       GeomModel = sdkCon.GetActiveGeometricModel();
 #endif
@@ -167,7 +167,7 @@ namespace Speckle.ConnectorMicroStationOpen.UI
       filterList.Add(new ListSelectionFilter { Slug = "level", Name = "Levels", Icon = "LayersTriple", Description = "Selects objects based on their level.", Values = levels });
       filterList.Add(new ListSelectionFilter { Slug = "elementType", Name = "Element Types", Icon = "Category", Description = "Selects objects based on their element type.", Values = elementTypes });
 
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
       var civilElementTypes = new List<string> { "Alignment" };
       filterList.Add(new ListSelectionFilter { Slug = "civilElementType", Name = "Civil Features", Icon = "RailroadVariant", Description = "Selects civil features based on their type.", Values = civilElementTypes });
 #endif
@@ -458,7 +458,7 @@ namespace Speckle.ConnectorMicroStationOpen.UI
 
       // grab elements from active model           
       var objs = new List<Element>();
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
       bool convertCivilObject = false;
       var civObjs = new List<NamedModelEntity>();
 
@@ -537,7 +537,7 @@ namespace Speckle.ConnectorMicroStationOpen.UI
           if (objLevel != null)
             layerName = objLevel.Name;
 
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
           if (convertCivilObject)
           {
             var civilObj = civObjs[objs.IndexOf(obj)];
@@ -652,7 +652,7 @@ namespace Speckle.ConnectorMicroStationOpen.UI
       }
     }
 
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
     delegate List<NamedModelEntity> GetCivilObjectsDelegate(StreamState state);
     private List<NamedModelEntity> GetCivilObjects(StreamState state)
     {
@@ -773,7 +773,7 @@ namespace Speckle.ConnectorMicroStationOpen.UI
             selection.AddRange(objs);
           }
           return selection;
-#if (OPENROADS || OPENRAIL)
+#if (OPENROADS || OPENRAIL || OPENBRIDGE)
         case "civilElementType":
           foreach (var typeName in filter.Selection)
           {

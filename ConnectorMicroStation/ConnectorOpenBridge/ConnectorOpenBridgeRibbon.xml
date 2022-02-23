@@ -1,10 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <RibbonItems xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="RibbonDefinitions.xsd">
   <TabCollections>
-    <TabCollection Name="RailTabs">
-      <TabRef Name="Speckle.Home" Priority="100000">
-      </TabRef>
-    </TabCollection>
     <TabCollection Name="Mstn.Drawing">
       <TabRef Name="Speckle.Home" Priority="100000">
       </TabRef>
@@ -14,6 +10,10 @@
       </TabRef>
     </TabCollection>
     <TabCollection Name="VisualizationTabs">
+      <TabRef Name="Speckle.Home" Priority="100000">
+      </TabRef>
+    </TabCollection>
+    <TabCollection Name="Mstn.TaskNavigation.Tabs">
       <TabRef Name="Speckle.Home" Priority="100000">
       </TabRef>
     </TabCollection>
@@ -68,8 +68,8 @@
   </Groups>
   <Buttons>
     <Button Name="Speckle.ShowUI" Priority="100">
-      <Label>Connector OpenRail (old)</Label>
-      <Description>Launches the old Speckle OpenRail Connector</Description>
+      <Label>Connector OpenBridge (old)</Label>
+      <Description>Launches the old Speckle OpenBridge Connector</Description>
       <ButtonParams CollapseToSmall="WhenGroupIsSmall" Size="Large">
       </ButtonParams>
       <ButtonData>
@@ -84,8 +84,8 @@
       </ButtonData>
     </Button>
     <Button Name="Speckle.ShowUI2" Priority="100">
-      <Label>Connector OpenRail</Label>
-      <Description>Launches the Speckle OpenRail Connector</Description>
+      <Label>Connector OpenBridge</Label>
+      <Description>Launches the Speckle OpenBridge Connector</Description>
       <ButtonParams CollapseToSmall="WhenGroupIsSmall" Size="Large">
       </ButtonParams>
       <ButtonData>

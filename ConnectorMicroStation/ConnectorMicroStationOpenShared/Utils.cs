@@ -30,6 +30,10 @@ namespace Speckle.ConnectorMicroStationOpen
     public static string VersionedAppName = VersionedHostApplications.OpenBuildings;
     public static string AppName = HostApplications.OpenBuildings.Name;
     public static string Slug = HostApplications.OpenBuildings.Slug;
+#elif OPENBRIDGE
+    public static string VersionedAppName = VersionedHostApplications.OpenBridge;
+    public static string AppName = HostApplications.OpenBridge.Name;
+    public static string Slug = HostApplications.OpenBridge.Slug;
 #endif
 
     /// <summary>
