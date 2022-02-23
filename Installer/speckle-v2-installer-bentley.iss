@@ -1,10 +1,10 @@
 ;defining variables
 #define AppName      "Speckle@Arup v2 Bentley Connectors"
-#define MicroStationVersion  GetFileVersion("..\ConnectorMicroStation\ConnectorMicroStation\bin\Release\SpeckleConnectorMicroStation.dll")
-#define OpenRoadsVersion  GetFileVersion("..\ConnectorMicroStation\ConnectorOpenRoads\bin\Release\SpeckleConnectorOpenRoads.dll")
-#define OpenRailVersion  GetFileVersion("..\ConnectorMicroStation\ConnectorOpenRail\bin\Release\SpeckleConnectorOpenRail.dll")
-#define OpenBuildingsVersion  GetFileVersion("..\ConnectorMicroStation\ConnectorOpenBuildings\bin\Release\SpeckleConnectorOpenBuildings.dll")
-#define OpenBridgeVersion  GetFileVersion("..\ConnectorMicroStation\ConnectorOpenBridge\bin\Release\SpeckleConnectorConnectorBridge.dll")
+#define MicroStationVersion  GetFileVersion("..\ConnectorBentley\ConnectorMicroStation\bin\Release\SpeckleConnectorMicroStation.dll")
+#define OpenRoadsVersion  GetFileVersion("..\ConnectorBentley\ConnectorOpenRoads\bin\Release\SpeckleConnectorOpenRoads.dll")
+#define OpenRailVersion  GetFileVersion("..\ConnectorBentley\ConnectorOpenRail\bin\Release\SpeckleConnectorOpenRail.dll")
+#define OpenBuildingsVersion  GetFileVersion("..\ConnectorBentley\ConnectorOpenBuildings\bin\Release\SpeckleConnectorOpenBuildings.dll")
+#define OpenBridgeVersion  GetFileVersion("..\ConnectorBentley\ConnectorOpenBridge\bin\Release\SpeckleConnectorOpenBridge.dll")
 #define AppPublisher "Speckle@Arup"
 #define AppURL       "https://speckle.arup.com"
 #define SpeckleFolder "{localappdata}\Speckle"
@@ -52,29 +52,29 @@ Name: "{app}"; Permissions: everyone-full
 
 [Files]
 ;microstation
-Source: "..\ConnectorMicroStation\ConnectorMicroStation\bin\Release\*"; DestDir: "{userappdata}\Bentley\MicroStation\Addins\Speckle2MicroStation\"; Flags: ignoreversion recursesubdirs; Components: microstation
-Source: "..\Objects\Converters\ConverterMicroStation\ConverterMicroStation\bin\Release\netstandard2.0\Objects.Converter.MicroStation.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: microstation
-Source: "..\ConnectorMicroStation\ConnectorMicroStation\bin\Release\Speckle2MicroStation.cfg"; DestDir: "{commonappdata}\Bentley\Microstation CONNECT Edition\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: microstation
+Source: "..\ConnectorBentley\ConnectorMicroStation\bin\Release\*"; DestDir: "{userappdata}\Bentley\MicroStation\Addins\Speckle2MicroStation\"; Flags: ignoreversion recursesubdirs; Components: microstation
+Source: "..\Objects\Converters\ConverterBentley\ConverterMicroStation\bin\Release\netstandard2.0\Objects.Converter.MicroStation.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: microstation
+Source: "..\ConnectorBentley\ConnectorMicroStation\bin\Release\Speckle2MicroStation.cfg"; DestDir: "{commonappdata}\Bentley\Microstation CONNECT Edition\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: microstation
 
 ;openroads
-Source: "..\ConnectorMicroStation\ConnectorOpenRoads\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenRoadsDesigner\Addins\Speckle2OpenRoads\"; Flags: ignoreversion recursesubdirs; Components: openroads
-Source: "..\Objects\Converters\ConverterMicroStation\ConverterOpenRoads\bin\Release\netstandard2.0\Objects.Converter.OpenRoads.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: openroads
-Source: "..\ConnectorMicroStation\ConnectorOpenRoads\bin\Release\Speckle2OpenRoads.cfg"; DestDir: "{commonappdata}\Bentley\OpenRoads Designer CE\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openroads
+Source: "..\ConnectorBentley\ConnectorOpenRoads\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenRoadsDesigner\Addins\Speckle2OpenRoads\"; Flags: ignoreversion recursesubdirs; Components: openroads
+Source: "..\Objects\Converters\ConverterBentley\ConverterOpenRoads\bin\Release\netstandard2.0\Objects.Converter.OpenRoads.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: openroads
+Source: "..\ConnectorBentley\ConnectorOpenRoads\bin\Release\Speckle2OpenRoads.cfg"; DestDir: "{commonappdata}\Bentley\OpenRoads Designer CE\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openroads
 
 ;openrail
-Source: "..\ConnectorMicroStation\ConnectorOpenRail\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenRailDesigner\Addins\Speckle2OpenRail\"; Flags: ignoreversion recursesubdirs; Components: openrail
-Source: "..\Objects\Converters\ConverterMicroStation\ConverterOpenRail\bin\Release\netstandard2.0\Objects.Converter.OpenRail.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: openrail
-Source: "..\ConnectorMicroStation\ConnectorOpenRail\bin\Release\Speckle2OpenRail.cfg"; DestDir: "{commonappdata}\Bentley\OpenRail Designer CE\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openrail
+Source: "..\ConnectorBentley\ConnectorOpenRail\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenRailDesigner\Addins\Speckle2OpenRail\"; Flags: ignoreversion recursesubdirs; Components: openrail
+Source: "..\Objects\Converters\ConverterBentley\ConverterOpenRail\bin\Release\netstandard2.0\Objects.Converter.OpenRail.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: openrail
+Source: "..\ConnectorBentley\ConnectorOpenRail\bin\Release\Speckle2OpenRail.cfg"; DestDir: "{commonappdata}\Bentley\OpenRail Designer CE\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openrail
 
 ;openbuildings
-Source: "..\ConnectorMicroStation\ConnectorOpenBuildings\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenBuildingsDesigner\Addins\Speckle2OpenBuildings\"; Flags: ignoreversion recursesubdirs; Components: openbuildings
-Source: "..\Objects\Converters\ConverterMicroStation\ConverterOpenBuildings\bin\Release\netstandard2.0\Objects.Converter.OpenBuildings.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: openbuildings
-Source: "..\ConnectorMicroStation\ConnectorOpenBuildings\bin\Release\Speckle2OpenBuildings.cfg"; DestDir: "{commonappdata}\Bentley\OpenBuildings CONNECT Edition\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openbuildings
+Source: "..\ConnectorBentley\ConnectorOpenBuildings\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenBuildingsDesigner\Addins\Speckle2OpenBuildings\"; Flags: ignoreversion recursesubdirs; Components: openbuildings
+Source: "..\Objects\Converters\ConverterBentley\ConverterOpenBuildings\bin\Release\netstandard2.0\Objects.Converter.OpenBuildings.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: openbuildings
+Source: "..\ConnectorBentley\ConnectorOpenBuildings\bin\Release\Speckle2OpenBuildings.cfg"; DestDir: "{commonappdata}\Bentley\OpenBuildings CONNECT Edition\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openbuildings
 
 ;openbridge
-Source: "..\ConnectorMicroStation\ConnectorOpenBridge\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenBridgeModeler\Addins\Speckle2OpenBridge\"; Flags: ignoreversion recursesubdirs; Components: openbridge
-Source: "..\Objects\Converters\ConverterMicroStation\ConverterOpenBridge\bin\Release\netstandard2.0\Objects.Converter.OpenBridge.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: openbridge
-Source: "..\ConnectorMicroStation\ConnectorOpenBridge\bin\Release\Speckle2OpenBridge.cfg"; DestDir: "{commonappdata}\Bentley\OpenBridge Modeler CE 10.10\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openbridge
+Source: "..\ConnectorBentley\ConnectorOpenBridge\bin\Release\*"; DestDir: "{userappdata}\Bentley\OpenBridgeModeler\Addins\Speckle2OpenBridge\"; Flags: ignoreversion recursesubdirs; Components: openbridge
+Source: "..\Objects\Converters\ConverterBentley\ConverterOpenBridge\bin\Release\netstandard2.0\Objects.Converter.OpenBridge.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: openbridge
+Source: "..\ConnectorBentley\ConnectorOpenBridge\bin\Release\Speckle2OpenBridge.cfg"; DestDir: "{commonappdata}\Bentley\OpenBridge Modeler CE 10.10\Configuration\Organization"; Flags: ignoreversion recursesubdirs; Components: openbridge
 
 ;kits
 Source: "..\Objects\Objects\bin\Release\netstandard2.0\Objects.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: kits
