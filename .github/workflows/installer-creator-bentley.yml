@@ -138,7 +138,7 @@ jobs:
         tag_name: ${{ steps.calculate-tag-version.outputs.tag }}
         release_name: bentley/${{ steps.calculate-tag-version.outputs.tag }}
         body: |
-          Automated release of Speckle v2 Connectors for MicroStation, OpenRoads Designer, OpenRail Designer and OpenBuildings Designer
+          Automated release of Speckle v2 Connectors for MicroStation, OpenRoads Designer, OpenRail Designer, OpenBridge Modeller and OpenBuildings Designer
         draft: false
         prerelease: true
 
