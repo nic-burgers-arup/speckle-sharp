@@ -877,6 +877,19 @@ public class GSAConcreteSchemaComponent: CreateSchemaObjectBase {
 }
 
 // This is generated code:
+public class GSAConstraintConditionSchemaComponent: CreateSchemaObjectBase {
+     
+    public GSAConstraintConditionSchemaComponent(): base("GSAConstraintCondition", "GSAConstraintCondition", "Creates a custom link description for a rigid constraint (ie. to be used with rigid contraints with custom linkage type)", "Speckle 2 GSA", "Geometry") { }
+    
+    public override Guid ComponentGuid => new Guid("59d3d09e-1992-ef7b-6164-ae46c3bbf8a9");
+    
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSAConstraintCondition.ctor(System.Collections.Generic.List`1[System.String],System.Collections.Generic.List`1[System.String],System.Collections.Generic.List`1[System.String],System.Collections.Generic.List`1[System.String],System.Collections.Generic.List`1[System.String],System.Collections.Generic.List`1[System.String])","Objects.Structural.GSA.Geometry.GSAConstraintCondition");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
 public class GSAElement1DSchemaComponent: CreateSchemaObjectBase {
      
     public GSAElement1DSchemaComponent(): base("GSAElement1D (from local axis)", "GSAElement1D (from local axis)", "Creates a Speckle structural 1D element for GSA (from local axis)", "Speckle 2 GSA", "Geometry") { }
@@ -1373,12 +1386,25 @@ public class GSAProperty2D1SchemaComponent: CreateSchemaObjectBase {
 // This is generated code:
 public class GSARigidConstraintSchemaComponent: CreateSchemaObjectBase {
      
-    public GSARigidConstraintSchemaComponent(): base("GSARigidConstraint", "GSARigidConstraint", "Creates a Speckle structural rigid restraint (a set of nodes constrained to move as a rigid body) for GSA", "Speckle 2 GSA", "Geometry") { }
+    public GSARigidConstraintSchemaComponent(): base("GSARigidConstraint (custom link)", "GSARigidConstraint (custom link)", "Creates a Speckle structural rigid restraint (a set of nodes constrained to move as a rigid body) for GSA", "Speckle 2 GSA", "Geometry") { }
     
     public override Guid ComponentGuid => new Guid("fd5845ec-2b73-db4d-8c8f-01d9c7c7d0bb");
     
     public override void AddedToDocument(GH_Document document){
-        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSARigidConstraint.ctor(Objects.Structural.Geometry.Node,System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],Speckle.Core.Models.Base,System.Collections.Generic.List`1[Objects.Structural.GSA.Analysis.GSAStage],Objects.Structural.GSA.Geometry.LinkageType,System.Collections.Generic.Dictionary`2[Objects.Structural.GSA.Geometry.AxisDirection6,System.Collections.Generic.List`1[Objects.Structural.GSA.Geometry.AxisDirection6]],System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSARigidConstraint");
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSARigidConstraint.ctor(Objects.Structural.Geometry.Node,System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],Objects.Structural.GSA.Geometry.GSAConstraintCondition,System.Collections.Generic.List`1[Objects.Structural.GSA.Analysis.GSAStage],System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSARigidConstraint");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
+public class GSARigidConstraint1SchemaComponent: CreateSchemaObjectBase {
+     
+    public GSARigidConstraint1SchemaComponent(): base("GSARigidConstraint", "GSARigidConstraint", "Creates a Speckle structural rigid restraint (a set of nodes constrained to move as a rigid body) for GSA", "Speckle 2 GSA", "Geometry") { }
+    
+    public override Guid ComponentGuid => new Guid("f685affc-2585-7771-c345-c223632a796b");
+    
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.GSA.Geometry.GSARigidConstraint.ctor(Objects.Structural.Geometry.Node,System.Collections.Generic.List`1[Objects.Structural.Geometry.Node],Objects.Structural.GSA.Geometry.LinkageType,System.Collections.Generic.List`1[Objects.Structural.GSA.Analysis.GSAStage],System.String,System.Nullable`1[System.Int32])","Objects.Structural.GSA.Geometry.GSARigidConstraint");
         base.AddedToDocument(document);
     }
 }

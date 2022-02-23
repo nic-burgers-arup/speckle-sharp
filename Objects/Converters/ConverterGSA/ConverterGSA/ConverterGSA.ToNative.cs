@@ -1117,7 +1117,7 @@ namespace ConverterGSA
         ApplicationId = speckleTask.applicationId,
         Index = speckleTask.GetIndex<GsaTask>(),
         Name = speckleTask.name,
-        StageIndex = IndexByConversionOrLookup<GSAStage>(speckleTask.stage, ref gsaRecords),
+        StageIndex = IndexByConversionOrLookup<GsaAnalStage>(speckleTask.stage, ref gsaRecords),
         Solver = speckleTask.solutionType.ToNativeSolver(),
         Solution = speckleTask.solutionType.ToNative(),
         Mode1 = speckleTask.modeParameter1,
@@ -2556,10 +2556,10 @@ namespace ConverterGSA
         Type = speckleRigid.type.ToNative(),
         Link = GetRigidConstraint(speckleRigid.constraintCondition),
         PrimaryNode = speckleRigid.primaryNode.NodeAt(conversionFactors),
-        ConstrainedNodes = speckleRigid.constrainedNodes.NodeAt(conversionFactors),
-        Stage = IndexByConversionOrLookup<GsaAnalStage>(speckleRigid.stages.Select(s => (Base)s).ToList(), ref gsaRecords),
-        ParentMember = IndexByConversionOrLookup<GsaMemb>(speckleRigid.parentMember, ref gsaRecords),
+        ConstrainedNodes = speckleRigid.constrainedNodes.NodeAt(conversionFactors),            
       };
+      if (speckleRigid.stages != null) gsaRigid.Stage = IndexByConversionOrLookup<GsaAnalStage>(speckleRigid.stages.Select(s => (Base)s).ToList(), ref gsaRecords);
+      if (speckleRigid.parentMember != null) gsaRigid.ParentMember = IndexByConversionOrLookup<GsaMemb>(speckleRigid.parentMember, ref gsaRecords);
       gsaRecords.Add(gsaRigid);
       return gsaRecords;
     }
@@ -2717,7 +2717,7 @@ namespace ConverterGSA
       {
         ApplicationId = analStageProp.applicationId,
         Index = analStageProp.GetIndex<GsaAnalStageProp>(),
-        StageIndex = IndexByConversionOrLookup<GSAStage>(analStageProp.stage, ref gsaRecords),
+        StageIndex = IndexByConversionOrLookup<GsaAnalStage>(analStageProp.stage, ref gsaRecords),
       };
 
       var type = analStageProp.type.ToNative();
@@ -3525,6 +3525,36 @@ namespace ConverterGSA
       }
       return gsaConstraint;
     }
+
+    private Dictionary<GwaAxisDirection6, List<GwaAxisDirection6>> GetRigidConstraint(GSAConstraintCondition speckleConstraint)
+    {
+      if (speckleConstraint == null) return null;
+
+      var gsaConstraint = new Dictionary<GwaAxisDirection6, List<GwaAxisDirection6>>();
+      var dynamicMembers = speckleConstraint.GetMembers();
+      foreach (var memb in dynamicMembers)
+      {
+        GwaAxisDirection6 speckleKey;
+        var parse = Enum.TryParse<GwaAxisDirection6>(memb.Key, out speckleKey);
+        if (parse)
+        {
+          var values = (List<string>)memb.Value;       
+          if (values != null)
+          {
+            var dirs = new List<GwaAxisDirection6>();
+            foreach (var val in values)
+            {
+              GwaAxisDirection6 dir;
+              parse = Enum.TryParse<GwaAxisDirection6>(val.ToUpper(), out dir);
+              dirs.Add(dir);
+            }
+            gsaConstraint[speckleKey] = dirs;
+          }
+        }        
+      }
+      return gsaConstraint;
+    }
+
     #endregion
 
     #region Other
