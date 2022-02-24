@@ -35,7 +35,7 @@ namespace Objects.Converter.MicroStationOpen
 {
   public partial class ConverterMicroStationOpen
   {
-    public double tolerance = 0.000;  // tolerance for geometry      
+    public double tolerance = 0.000;  // tolerance for geometry   
 
     public double[] PointToArray(DPoint2d pt)
     {
@@ -1710,7 +1710,7 @@ namespace Objects.Converter.MicroStationOpen
       {
         foreach (var curve in curves)
         {
-          // curve.Transform(processor._transform);
+          curve.Transform(processor._transform);
           foreach (var primitive in curve)
           {
             var curvePrimitiveType = primitive.GetCurvePrimitiveType();
@@ -2022,9 +2022,9 @@ namespace Objects.Converter.MicroStationOpen
       return null;
     }
 
-    internal class Processor : ElementGraphicsProcessor
+    public class Processor : ElementGraphicsProcessor
     {
-      private DTransform3d _transform;
+      public DTransform3d _transform;
 
       public List<CurveVector> curveVectors = new List<CurveVector>();
       public List<CurvePrimitive> curvePrimitives = new List<CurvePrimitive>();
