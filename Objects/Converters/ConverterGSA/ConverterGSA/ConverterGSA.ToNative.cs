@@ -317,23 +317,28 @@ namespace ConverterGSA
         gsaElement.Stiffnesses2 = gsaStiffnesses2;
         gsaElement.ReleaseInclusion = gsaReleaseInclusion2;
       }
+
+      // If offset vector units are not set, fallback to general conversion factors
+      var end1OffsetScaleFactor = speckleElement.end1Offset != null ? (string.IsNullOrEmpty(speckleElement.end1Offset.units) ? conversionFactors.length : conversionFactors.ConversionFactorToNative(UnitDimension.Length, speckleElement.end1Offset.units)) : conversionFactors.length;
+      var end2OffsetScaleFactor = speckleElement.end2Offset != null ? (string.IsNullOrEmpty(speckleElement.end2Offset.units) ? conversionFactors.length : conversionFactors.ConversionFactorToNative(UnitDimension.Length, speckleElement.end2Offset.units)) : conversionFactors.length;
+
       if (speckleElement.end1Offset != null && speckleElement.end1Offset.x != 0)
       {
-        gsaElement.End1OffsetX = conversionFactors.length * speckleElement.end1Offset.x;
+        gsaElement.End1OffsetX = end1OffsetScaleFactor * speckleElement.end1Offset.x;
       }
       if (speckleElement.end2Offset != null && speckleElement.end2Offset.x != 0)
       {
-        gsaElement.End2OffsetX = conversionFactors.length * speckleElement.end2Offset.x;
+        gsaElement.End2OffsetX = end2OffsetScaleFactor * speckleElement.end2Offset.x;
       }
       if (speckleElement.end1Offset != null && speckleElement.end2Offset != null)
       {
         if (speckleElement.end1Offset.y == speckleElement.end2Offset.y)
         {
-          if (speckleElement.end1Offset.y != 0) gsaElement.OffsetY = conversionFactors.length * speckleElement.end1Offset.y;
+          if (speckleElement.end1Offset.y != 0) gsaElement.OffsetY = end1OffsetScaleFactor * speckleElement.end1Offset.y;
         }
         else
         {
-          gsaElement.OffsetY = conversionFactors.length * speckleElement.end1Offset.y;
+          gsaElement.OffsetY = end1OffsetScaleFactor * speckleElement.end1Offset.y;
           Report.ConversionErrors.Add(new Exception("Element1dToNative: "
             + "Error converting element1d with application id (" + speckleElement.applicationId + "). "
             + "Different y offsets were assigned at either end."
@@ -341,11 +346,11 @@ namespace ConverterGSA
         }
         if (speckleElement.end1Offset.z == speckleElement.end2Offset.z)
         {
-          if (speckleElement.end1Offset.z != 0) gsaElement.OffsetZ = conversionFactors.length * speckleElement.end1Offset.z;
+          if (speckleElement.end1Offset.z != 0) gsaElement.OffsetZ = end1OffsetScaleFactor * speckleElement.end1Offset.z;
         }
         else
         {
-          gsaElement.OffsetZ = conversionFactors.length * speckleElement.end1Offset.z;
+          gsaElement.OffsetZ = end1OffsetScaleFactor * speckleElement.end1Offset.z;
           Report.ConversionErrors.Add(new Exception("Element1dToNative: "
             + "Error converting element1d with application id (" + speckleElement.applicationId + "). "
             + "Different z offsets were assigned at either end."
@@ -645,7 +650,7 @@ namespace ConverterGSA
       }
 
       if (speckleMember.orientationAngle != 0) gsaMember.Angle = conversionFactors.ConversionFactorToDegrees() * speckleMember.orientationAngle;
-      if (speckleMember.offset != 0) gsaMember.Offset2dZ = conversionFactors.length * speckleMember.offset;
+     if (speckleMember.offset != 0) gsaMember.Offset2dZ = conversionFactors.length * speckleMember.offset;
       if (speckleMember.group > 0) gsaMember.Group = speckleMember.group;
       if (speckleMember.targetMeshSize > 0) gsaMember.MeshSize = conversionFactors.length * speckleMember.targetMeshSize;
 
@@ -2358,10 +2363,12 @@ namespace ConverterGSA
         if (speckleProperty.material.materialType == MaterialType.Concrete)
         {
           gsaProp2d.MatType = Property2dMaterialType.Concrete;
+          gsaProp2d.GradeIndex = IndexByConversionOrLookup<GsaMatConcrete>(speckleProperty.material, ref retList);
         }
         else if (speckleProperty.material.materialType == MaterialType.Steel)
         {
           gsaProp2d.MatType = Property2dMaterialType.Steel;
+          gsaProp2d.GradeIndex = IndexByConversionOrLookup<GsaMatSteel>(speckleProperty.material, ref retList);
         }
       }
 
@@ -2911,9 +2918,9 @@ namespace ConverterGSA
         gsaRelease = null;
         gsaStiffnesses = null;
       }
-      else if (speckleRelease.code.ToUpperInvariant().IndexOf('K') > 0)
+      else if (speckleRelease.code.ToUpperInvariant().Contains('K'))
       {
-        gsaReleaseInclusion = ReleaseInclusion.Stiff;
+        gsaReleaseInclusion = ReleaseInclusion.Included;
         gsaRelease = speckleRelease.code.ReleasesToNative();
         gsaStiffnesses = new List<double>();
         if (speckleRelease.stiffnessX > 0) gsaStiffnesses.Add(conversionFactors.force / conversionFactors.length * speckleRelease.stiffnessX);
