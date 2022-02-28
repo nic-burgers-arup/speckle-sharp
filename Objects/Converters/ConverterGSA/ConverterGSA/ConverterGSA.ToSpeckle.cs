@@ -281,8 +281,8 @@ namespace ConverterGSA
         type = gsaEl.Type.ToSpeckle1d(),
         end1Releases = GetRestraint(gsaEl.Releases1, gsaEl.Stiffnesses1),
         end2Releases = GetRestraint(gsaEl.Releases2, gsaEl.Stiffnesses1),
-        end1Offset = new Vector(),
-        end2Offset = new Vector(),
+        end1Offset = new Vector() { units = conversionFactors.nativeModelUnits.length },
+        end2Offset = new Vector() { units = conversionFactors.nativeModelUnits.length },
         orientationAngle = gsaEl.Angle ?? 0,
         displayMesh = null, //TODO: update to handle section shape
 
@@ -425,8 +425,8 @@ namespace ConverterGSA
         type = gsaMemb.Type.ToSpeckle1d(),
         end1Releases = GetRestraint(gsaMemb.Releases1, gsaMemb.Stiffnesses1),
         end2Releases = GetRestraint(gsaMemb.Releases2, gsaMemb.Stiffnesses2),
-        end1Offset = new Vector(),
-        end2Offset = new Vector(),
+        end1Offset = new Vector() { units = conversionFactors.nativeModelUnits.length},
+        end2Offset = new Vector() { units = conversionFactors.nativeModelUnits.length},
         orientationAngle = gsaMemb.Angle ?? 0,
         parent = null, //no meaning for member, only for element
 

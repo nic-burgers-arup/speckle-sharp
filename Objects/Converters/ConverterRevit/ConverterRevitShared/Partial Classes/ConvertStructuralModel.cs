@@ -19,34 +19,42 @@ namespace Objects.Converter.Revit
     public List<ApplicationPlaceholderObject> StructuralModelToNative(Model speckleStructModel)
     {
       List<ApplicationPlaceholderObject> placeholderObjects = new List<ApplicationPlaceholderObject> { };
-      foreach (Node node in speckleStructModel.nodes)
+      if(speckleStructModel.nodes != null)
       {
-        var Application = AnalyticalNodeToNative(node);
-        placeholderObjects.Concat(Application);
-      }
-      foreach (var element in speckleStructModel.elements)
-      {
-        Element1D element1D = new Element1D();
-        if (element.GetType().Equals(element1D.GetType()))
+        foreach (Node node in speckleStructModel.nodes)
         {
-          try
+          var Application = AnalyticalNodeToNative(node);
+          placeholderObjects.Concat(Application);
+        }
+      }
+      if(speckleStructModel.elements != null)
+      {
+        foreach (var element in speckleStructModel.elements)
+        {
+          Element1D element1D = new Element1D();
+          //if (element.GetType().Equals(element1D.GetType()))
+          if(element is Element1D)
           {
-            var Application = AnalyticalStickToNative((Element1D)element);
-            placeholderObjects.Concat(Application);
-          }
-          catch { }
+            try
+            {
+              var Application = AnalyticalStickToNative((Element1D)element);
+              placeholderObjects.Concat(Application);
+            }
+            catch { }
 
-        }
-        else
-        {
-          try
-          {
-            var Application = AnalyticalSurfaceToNative((Element2D)element);
-            placeholderObjects.Concat(Application);
           }
-          catch { }
+          else
+          {
+            try
+            {
+              var Application = AnalyticalSurfaceToNative((Element2D)element);
+              placeholderObjects.Concat(Application);
+            }
+            catch { }
+          }
         }
       }
+      
 
       return placeholderObjects;
     }

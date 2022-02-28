@@ -152,7 +152,6 @@ namespace Objects.Converter.Revit
       var prop = new Property1D();
 
       var stickFamily = (Autodesk.Revit.DB.FamilyInstance)Doc.GetElement(revitStick.GetElementId());
-      var canHaveStructuralSection = stickFamily.Symbol.Family.CanHaveStructuralSection();
       var section = stickFamily.Symbol.GetStructuralSection();
       var speckleSection = new SectionProfile();
       speckleSection.name = section.StructuralSectionShapeName;
@@ -231,6 +230,12 @@ namespace Objects.Converter.Revit
             break;
           case DB.Structure.StructuralSections.StructuralSectionShape.CProfile:
             speckleSection = ChannelSectionToSpeckle(section);
+            break;
+          case DB.Structure.StructuralSections.StructuralSectionShape.ConcreteRectangle:
+            speckleSection = RectangularSectionToSpeckle(section);
+            break;
+          case DB.Structure.StructuralSections.StructuralSectionShape.ConcreteRound:
+            speckleSection = CircularSectionToSpeckle(section);
             break;
           // Not all structural section types are currently implemented
           default:
@@ -331,7 +336,7 @@ namespace Objects.Converter.Revit
           speckleMaterial = defaultMaterial;
           break;
       }
-      speckleMaterial.applicationId = structMat.UniqueId;
+      speckleMaterial.applicationId = $"{materialType}:{structMat.UniqueId}";
 
       prop.profile = speckleSection;
       prop.material = speckleMaterial;

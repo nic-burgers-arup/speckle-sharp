@@ -158,7 +158,8 @@ namespace Objects.Converter.Revit
       {
         var floor = structuralElement as DB.Floor;
         structMaterial = Doc.GetElement(floor.FloorType.StructuralMaterialId) as DB.Material;
-        thickness = ScaleToSpeckle(GetParamValue<double>(structuralElement, BuiltInParameter.STRUCTURAL_FLOOR_CORE_THICKNESS));
+        // Revit returns value correctly in mm without needing to scale with this call
+        thickness = GetParamValue<double>(structuralElement, BuiltInParameter.STRUCTURAL_FLOOR_CORE_THICKNESS);
         memberType = MemberType.Slab;
       }
       else if (structuralElement is DB.Wall)
@@ -253,7 +254,7 @@ namespace Objects.Converter.Revit
 		  speckleMaterial = defaultMaterial;
 		  break;
 	  }
-	  speckleMaterial.applicationId = structMaterial.UniqueId;
+	  speckleMaterial.applicationId = $"{materialType}:{structMaterial.UniqueId}";
 	  prop.material = speckleMaterial;
 	  prop.name = structuralElement.Name;
 	  prop.applicationId = $"{structuralElement.Name}:{structMaterial.UniqueId}";
