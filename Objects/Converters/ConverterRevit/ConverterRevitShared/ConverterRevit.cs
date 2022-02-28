@@ -15,15 +15,15 @@ namespace Objects.Converter.Revit
   public partial class ConverterRevit : ISpeckleConverter
   {
 #if REVIT2023
-    public static string RevitAppName = Applications.Revit2023;
+    public static string RevitAppName = VersionedHostApplications.Revit2023;
 #elif REVIT2022
-    public static string RevitAppName = Applications.Revit2022;
+    public static string RevitAppName = VersionedHostApplications.Revit2022;
 #elif REVIT2021
-    public static string RevitAppName = Applications.Revit2021;
+    public static string RevitAppName = VersionedHostApplications.Revit2021;
 #elif REVIT2020
-    public static string RevitAppName = Applications.Revit2020;
+    public static string RevitAppName = VersionedHostApplications.Revit2020;
 #else
-    public static string RevitAppName = Applications.Revit2019;
+    public static string RevitAppName = VersionedHostApplications.Revit2019;
 #endif
 
     #region ISpeckleConverter props
@@ -63,6 +63,8 @@ namespace Objects.Converter.Revit
 
     public ProgressReport Report { get; private set; } = new ProgressReport();
 
+    public Dictionary<string, string> Settings { get; private set; } = new Dictionary<string, string>();
+
     public Dictionary<string, BE.Level> Levels { get; private set; } = new Dictionary<string, BE.Level>();
 
     public ConverterRevit()
@@ -82,7 +84,7 @@ namespace Objects.Converter.Revit
     public void SetPreviousContextObjects(List<ApplicationPlaceholderObject> objects) => PreviousContextObjects = objects;
     public void SetConverterSettings(object settings)
     {
-      throw new NotImplementedException("This converter does not have any settings.");
+      Settings = settings as Dictionary<string, string>;
     }
 
     public Base ConvertToSpeckle(object @object)
@@ -158,6 +160,10 @@ namespace Objects.Converter.Revit
           returnObject = DuctToSpeckle(o);
           Report.Log($"Converted Duct {o.Id}");
           break;
+        case DB.Mechanical.FlexDuct o:
+          returnObject = DuctToSpeckle(o);
+          Report.Log($"Converted FlexDuct {o.Id}");
+          break;
         case DB.Mechanical.Space o:
           returnObject = SpaceToSpeckle(o);
           Report.Log($"Converted Space {o.Id}");
@@ -165,6 +171,10 @@ namespace Objects.Converter.Revit
         case DB.Plumbing.Pipe o:
           returnObject = PipeToSpeckle(o);
           Report.Log($"Converted Pipe {o.Id}");
+          break;
+        case DB.Plumbing.FlexPipe o:
+          returnObject = PipeToSpeckle(o);
+          Report.Log($"Converted FlexPipe {o.Id}");
           break;
         case DB.Electrical.Wire o:
           returnObject = WireToSpeckle(o);
@@ -256,7 +266,9 @@ namespace Objects.Converter.Revit
 
       // NOTE: Only try generic method assignment if there is no existing render material from conversions;
       // we might want to try later on to capture it more intelligently from inside conversion routines.
-      if (returnObject != null && returnObject["renderMaterial"] == null)
+      if (returnObject != null
+          && returnObject["renderMaterial"] == null
+          && returnObject["displayValue"] == null)
       {
         var material = GetElementRenderMaterial(@object as DB.Element);
         returnObject["renderMaterial"] = material;
@@ -290,7 +302,6 @@ namespace Objects.Converter.Revit
             return FreeformElementToNativeFamily(o);
           default:
             return null;
-
         }
       }
 
@@ -336,7 +347,7 @@ namespace Objects.Converter.Revit
 
         case BE.Structure o:
           Report.Log($"Created Structure {o.applicationId}");
-          return DirectShapeToNative(o.displayMesh);
+          return DirectShapeToNative(o.displayValue);
 
         //built elems
         case BER.AdaptiveComponent o:
@@ -506,8 +517,10 @@ namespace Objects.Converter.Revit
         DB.Architecture.TopographySurface _ => true,
         DB.Wall _ => true,
         DB.Mechanical.Duct _ => true,
+        DB.Mechanical.FlexDuct _ => true,
         DB.Mechanical.Space _ => true,
         DB.Plumbing.Pipe _ => true,
+        DB.Plumbing.FlexPipe _ => true,
         DB.Electrical.Wire _ => true,
         DB.CurtainGridLine _ => true, //these should be handled by curtain walls
         DB.Architecture.BuildingPad _ => true,

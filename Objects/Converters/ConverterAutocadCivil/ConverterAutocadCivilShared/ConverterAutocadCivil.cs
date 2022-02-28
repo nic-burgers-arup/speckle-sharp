@@ -41,13 +41,13 @@ namespace Objects.Converter.AutocadCivil
   public partial class ConverterAutocadCivil : ISpeckleConverter
   {
 #if AUTOCAD2021
-    public static string AutocadAppName = Applications.Autocad2021;
+    public static string AutocadAppName = VersionedHostApplications.Autocad2021;
 #elif AUTOCAD2022
-public static string AutocadAppName = Applications.Autocad2022;
+public static string AutocadAppName = VersionedHostApplications.Autocad2022;
 #elif CIVIL2021
-    public static string AutocadAppName = Applications.Civil2021;
+    public static string AutocadAppName = VersionedHostApplications.Civil2021;
 #elif CIVIL2022
-    public static string AutocadAppName = Applications.Civil2022;
+    public static string AutocadAppName = VersionedHostApplications.Civil2022;
 #endif
 
     public ConverterAutocadCivil()
@@ -97,8 +97,6 @@ public static string AutocadAppName = Applications.Autocad2022;
           if (schema != null)
             return ObjectToSpeckleBuiltElement(o);
           */
-          DisplayStyle style = GetStyle(obj);
-
           switch (obj)
           {
             case DBPoint o:
@@ -166,6 +164,11 @@ public static string AutocadAppName = Applications.Autocad2022;
               Report.Log($"Converted SubD Mesh");
               break;
             case Solid3d o:
+              if (o.IsNull)
+              {
+                Report.Log($"Skipped null Solid");
+                return null;
+              }
               @base = SolidToSpeckle(o);
               Report.Log($"Converted Solid as Mesh");
               break;
@@ -216,6 +219,8 @@ public static string AutocadAppName = Applications.Autocad2022;
               break;
 #endif
           }
+
+          DisplayStyle style = GetStyle(obj);
           if (style != null)
             @base["displayStyle"] = style;
 
@@ -345,13 +350,15 @@ public static string AutocadAppName = Applications.Autocad2022;
           Report.Log($"Created Curve {o.id}");
           break;
 
-        //case Surface o: 
-        //  return SurfaceToNative(o);
+        /*
+        case Surface o: 
+          return SurfaceToNative(o);
 
         case Brep o:
           acadObj = (o.displayMesh != null) ? MeshToNativeDB(o.displayMesh) : null;
           Report.Log($"Created Brep {o.id} as Mesh");
           break;
+        */
 
         case Mesh o:
           acadObj = MeshToNativeDB(o);
@@ -486,7 +493,7 @@ public static string AutocadAppName = Applications.Autocad2022;
         case Polyline _:
         case Polycurve _:
         case Curve _:
-        case Brep _:
+        //case Brep _:
         case Mesh _:
 
         case BlockDefinition _:

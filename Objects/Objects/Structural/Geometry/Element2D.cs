@@ -1,13 +1,15 @@
-﻿using Speckle.Newtonsoft.Json;
+﻿using System;
+using Speckle.Newtonsoft.Json;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using System.Collections.Generic;
+using System.Linq;
 using Objects.Geometry;
 using Objects.Structural.Properties;
 
 namespace Objects.Structural.Geometry
 {
-  public class Element2D : Base, IDisplayMesh //Member2D in GSA
+  public class Element2D : Base, IDisplayMesh, IDisplayValue<List<Mesh>>
   {
     public string name { get; set; }
 
@@ -29,10 +31,11 @@ namespace Objects.Structural.Geometry
     public List<Node> topology { get; set; }
 
     [DetachProperty]
-    public List<List<Node>> voids { get; set; } // <<<<<<
+    public List<List<Node>> voids { get; set; }
 
     [DetachProperty]
-    public Mesh displayMesh { get; set; }
+    public List<Mesh> displayValue { get; set; }
+
     public string units { get; set; }
 
     public Element2D() { }
@@ -52,5 +55,14 @@ namespace Objects.Structural.Geometry
       this.offset = offset;
       this.orientationAngle = orientationAngle;
     }
+
+    #region Obsolete
+    [JsonIgnore, Obsolete("Use " + nameof(displayValue) + " instead")]
+    public Mesh displayMesh
+    {
+      get => displayValue?.FirstOrDefault();
+      set => displayValue = new List<Mesh> { value };
+    }
+    #endregion
   }
 }

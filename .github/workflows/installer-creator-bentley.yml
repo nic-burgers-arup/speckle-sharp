@@ -70,7 +70,7 @@ jobs:
     - name: Restore all the applications
       shell: cmd
       run: |
-        for %%x in (Objects, ConnectorMicroStation) do (
+        for %%x in (Objects, ConnectorBentley) do (
           cd %%x && msbuild %%x.sln /t:Restore /p:Configuration=Release /p:WarningLevel=0 /p:IsDesktopBuild=false && cd ../ 
         )
       env:
@@ -82,7 +82,7 @@ jobs:
       shell: cmd
       run: |
         SET _version=${{ github.event.inputs.version }}
-        for %%x in (Objects, ConnectorMicroStation) do (
+        for %%x in (Objects, ConnectorBentley) do (
           cd %%x && msbuild %%x.sln /p:Configuration=Release /p:WarningLevel=0 /p:IsDesktopBuild=false /p:AssemblyVersionNumber=%_version% /p:AssemblyInformationalVersion=%_version% /p:Version=%_version% && cd ../ 
         )                
       env:
@@ -138,7 +138,7 @@ jobs:
         tag_name: ${{ steps.calculate-tag-version.outputs.tag }}
         release_name: bentley/${{ steps.calculate-tag-version.outputs.tag }}
         body: |
-          Automated release of Speckle v2 Connectors for MicroStation, OpenRoads Designer, OpenRail Designer and OpenBuildings Designer
+          Automated release of Speckle v2 Connectors for MicroStation, OpenRoads Designer, OpenRail Designer, OpenBridge Modeller and OpenBuildings Designer
         draft: false
         prerelease: true
 
