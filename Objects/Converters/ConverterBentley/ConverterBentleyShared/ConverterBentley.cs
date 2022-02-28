@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
+using Alignment = Objects.BuiltElements.Alignment;
 using Arc = Objects.Geometry.Arc;
 using Box = Objects.Geometry.Box;
 using Brep = Objects.Geometry.Brep;
@@ -22,20 +23,19 @@ using Plane = Objects.Geometry.Plane;
 using Point = Objects.Geometry.Point;
 using Polyline = Objects.Geometry.Polyline;
 using View3D = Objects.BuiltElements.View3D;
+using Station = Objects.BuiltElements.Station;
 using Surface = Objects.Geometry.Surface;
 using Vector = Objects.Geometry.Vector;
-using Alignment = Objects.BuiltElements.Alignment;
-using Station = Objects.BuiltElements.Station;
 
 using Bentley.DgnPlatformNET;
 using Bentley.DgnPlatformNET.Elements;
 using Bentley.DgnPlatformNET.DgnEC;
+using Bentley.EC.Persistence.Query;
+using Bentley.ECObjects;
+using Bentley.ECObjects.Schema;
+using Bentley.ECObjects.Instance;
 using Bentley.GeometryNET;
 using Bentley.MstnPlatformNET;
-using Bentley.ECObjects.Schema;
-using Bentley.ECObjects;
-using Bentley.ECObjects.Instance;
-using Bentley.EC.Persistence.Query;
 
 #if(OPENBUILDINGS)
 using Bentley.Building.Api;
@@ -386,7 +386,7 @@ namespace Objects.Converter.Bentley
         case Box _:
         case Mesh _:
           //case Surface _:
-          //case Alignment _:                    ;
+          //case Alignment _:
           return true;
 
         //TODO: This types are not supported in Bentley connectors!

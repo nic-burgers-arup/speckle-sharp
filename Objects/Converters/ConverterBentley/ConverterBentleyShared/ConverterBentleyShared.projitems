@@ -9,6 +9,7 @@
     <Import_RootNamespace>ConverterBentleyShared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)ConverterBentley.BuiltElements.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterBentley.Civil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterBentley.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConverterBentley.Geometry.cs" />

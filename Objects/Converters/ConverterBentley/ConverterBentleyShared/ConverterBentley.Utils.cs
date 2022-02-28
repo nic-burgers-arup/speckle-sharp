@@ -7,15 +7,15 @@ using Objects.Other;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 
-using Bentley.DgnPlatformNET.DgnEC;
-using Bentley.MstnPlatformNET;
 using Bentley.DgnPlatformNET;
-using Bentley.ECObjects.Schema;
+using Bentley.DgnPlatformNET.DgnEC;
+using Bentley.DgnPlatformNET.Elements;
+using Bentley.EC.Persistence.Query;
 using Bentley.ECObjects;
 using Bentley.ECObjects.Instance;
-using Bentley.EC.Persistence.Query;
+using Bentley.ECObjects.Schema;
 using Bentley.GeometryNET;
-using Bentley.DgnPlatformNET.Elements;
+using Bentley.MstnPlatformNET;
 
 using System.Diagnostics;
 
@@ -206,8 +206,60 @@ namespace Objects.Converter.Bentley
           }
         }
       };
-
       return null;
     }
+
+#if (OPENBUILDINGS)
+    public static IECClass[] GetSearchClasses(IECSchema schema)
+    {
+      List<IECClass> classes = new List<IECClass>();
+
+      if (null == schema)
+        return classes.ToArray();
+
+      int nClasses = schema.ClassCount;
+      if (0 != nClasses)
+      {
+        foreach (IECClass ecClass in schema.GetClasses())
+        {
+          classes.Add(ecClass);
+        }
+      }
+      return classes.ToArray();
+    }
+
+    internal IList<ItemTypeLibrary> GetItemTypeLibraries()
+    {
+      IList<ItemTypeLibrary> itemTypes = ItemTypeLibrary.PopulateListFromFile(Session.Instance.GetActiveDgnFile());
+      return itemTypes;
+    }
+
+    public static IQueryable<IDgnECInstance> GetInstances(string schemaName)
+    {
+      bool IncludeReferences = true;
+      IECSchema schema = GetItemTypeSchema(schemaName);
+      return GetInstances(GetSearchClasses(schema), schemaName, !IncludeReferences);
+    }
+
+    public static IQueryable<IDgnECInstance> GetInstances(IECClass[] classes, string schemaName, bool includeReferences)
+    {
+      ECQuery query = new ECQuery(classes);
+      query.SelectClause.SelectAllProperties = true;
+      DgnECManager manager = DgnECManager.Manager;
+      DgnFile file = Session.Instance.GetActiveDgnFile();
+      FindInstancesScope scope = FindInstancesScope.CreateScope(file, new FindInstancesScopeOption(DgnECHostType.Element, includeReferences));
+      DgnECInstanceCollection instances = manager.FindInstances(scope, query);
+      return instances.AsQueryable();
+    }
+
+    static public IECSchema GetItemTypeSchema(string schemaName)
+    {
+      bool IncludeAttachments = true;
+      FindInstancesScope scope = FindInstancesScope.CreateScope(Session.Instance.GetActiveDgnFile(), new FindInstancesScopeOption(DgnECHostType.All, !IncludeAttachments));
+      IECSchema schema = DgnECManager.Manager.LocateSchemaInScope(scope, schemaName, 1, 0, SchemaMatchType.Latest);
+      return schema;
+    }
+#endif
   }
 }
+

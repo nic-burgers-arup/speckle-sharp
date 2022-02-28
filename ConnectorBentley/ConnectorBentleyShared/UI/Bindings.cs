@@ -209,7 +209,7 @@ namespace Speckle.ConnectorBentley.UI
         else
         {
           schema = StreamStateManager.StreamStateListSchema.GetSchema();
-          if (schema == null) schema = StreamStateManager.StreamStateListSchema.AddSchema(); 
+          if (schema == null) schema = StreamStateManager.StreamStateListSchema.AddSchema();
           DocumentStreams = StreamStateManager.ReadState(schema);
         }
       }
@@ -520,7 +520,7 @@ namespace Speckle.ConnectorBentley.UI
       if (state.Filter != null)
       {
         if (Control.InvokeRequired)
-          state.SelectedObjectIds  = (List<string>)Control.Invoke(new GetObjectsFromFilterDelegate(GetObjectsFromFilter), new object[] { state.Filter, converter });
+          state.SelectedObjectIds = (List<string>)Control.Invoke(new GetObjectsFromFilterDelegate(GetObjectsFromFilter), new object[] { state.Filter, converter });
         else
           state.SelectedObjectIds = GetObjectsFromFilter(state.Filter, converter);
       }
@@ -645,7 +645,10 @@ namespace Speckle.ConnectorBentley.UI
           var layerName = "Unknown";
           if (objLevel != null)
           {
-            layerName = objLevel.Name;
+            if (objLevel.Status != LevelCacheErrorCode.CannotFindLevel)
+            {
+              layerName = objLevel.Name;
+            }
           }
 
 #if (OPENROADS || OPENRAIL || OPENBRIDGE)
@@ -696,7 +699,7 @@ namespace Speckle.ConnectorBentley.UI
         {
           converted[key] = obj.ExtensionDictionary.GetUserString(key);
         }
-        */      
+        */
 
         if (commitObj[$"@{containerName}"] == null)
           commitObj[$"@{containerName}"] = new List<Base>();
