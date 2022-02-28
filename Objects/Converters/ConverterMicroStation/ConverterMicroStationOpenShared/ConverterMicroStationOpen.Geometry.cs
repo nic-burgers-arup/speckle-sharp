@@ -1,28 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
+using Bentley.DgnPlatformNET;
+using Bentley.DgnPlatformNET.DgnEC;
+using Bentley.DgnPlatformNET.Elements;
+using Bentley.ECObjects.Instance;
+using Bentley.ECObjects.Schema;
+using Bentley.GeometryNET;
 using Objects.Geometry;
 using Objects.Primitive;
+using Speckle.Core.Logging;
 using Speckle.Core.Models;
-
-using Bentley.GeometryNET;
-using Bentley.DgnPlatformNET.Elements;
-using Bentley.DgnPlatformNET;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Arc = Objects.Geometry.Arc;
 using BIM = Bentley.Interop.MicroStationDGN;
 using BMIU = Bentley.MstnPlatformNET.InteropServices.Utilities;
-
-using Arc = Objects.Geometry.Arc;
 using Box = Objects.Geometry.Box;
 using Circle = Objects.Geometry.Circle;
 using Curve = Objects.Geometry.Curve;
 using Ellipse = Objects.Geometry.Ellipse;
+using FamilyInstance = Objects.BuiltElements.Revit.FamilyInstance;
 using Interval = Objects.Primitive.Interval;
 using Line = Objects.Geometry.Line;
 using Mesh = Objects.Geometry.Mesh;
 using Plane = Objects.Geometry.Plane;
 using Point = Objects.Geometry.Point;
 using Polyline = Objects.Geometry.Polyline;
+using RevitBeam = Objects.BuiltElements.Revit.RevitBeam;
+using RevitColumn = Objects.BuiltElements.Revit.RevitColumn;
+using RevitFloor = Objects.BuiltElements.Revit.RevitFloor;
 using Surface = Objects.Geometry.Surface;
 using Vector = Objects.Geometry.Vector;
 
@@ -30,7 +35,7 @@ namespace Objects.Converter.MicroStationOpen
 {
   public partial class ConverterMicroStationOpen
   {
-    public double tolerance = 0.000;  // tolerance for geometry      
+    public double tolerance = 0.000;  // tolerance for geometry   
 
     public double[] PointToArray(DPoint2d pt)
     {
@@ -89,10 +94,17 @@ namespace Objects.Converter.MicroStationOpen
       return myPoint;
     }
 
-    public Point Point3dToSpeckle(DPoint3d pt, string units = null)
+    public Point Point3dToSpeckle(DPoint3d pt, bool isScaled = true, string units = null)
     {
       var u = units ?? ModelUnits;
-      return new Point(ScaleToSpeckle(pt.X, UoR), ScaleToSpeckle(pt.Y, UoR), ScaleToSpeckle(pt.Z, UoR), u);
+      if (isScaled)
+      {
+        return new Point(ScaleToSpeckle(pt.X, UoR), ScaleToSpeckle(pt.Y, UoR), ScaleToSpeckle(pt.Z, UoR), u);
+      }
+      else
+      {
+        return new Point(pt.X, pt.Y, pt.Z, u);
+      }
     }
 
     public Point Point3dToSpeckle(Point3d pt, string units = null)
@@ -219,10 +231,10 @@ namespace Objects.Converter.MicroStationOpen
       {
         CurveVector vec = q.GetCurveVector();
         if (vec != null)
-        {          
+        {
           vec.GetStartEnd(out DPoint3d startPoint, out DPoint3d endPoint);
-          if (startPoint == endPoint) 
-            return Point3dToSpeckle(startPoint, units);
+          if (startPoint == endPoint)
+            return Point3dToSpeckle(startPoint, true, units);
 
           double length = vec.SumOfLengths() / UoR;
 
@@ -246,12 +258,32 @@ namespace Objects.Converter.MicroStationOpen
     {
       var u = units ?? ModelUnits;
       var _line = new Line(Point3dToSpeckle(line.StartPoint), Point3dToSpeckle(line.EndPoint), u);
-      _line.length = line.Length;
+      _line.length = line.Length / UoR;
       _line.domain = new Interval(0, line.Length);
 
       var range = DRange3d.FromPoints(line.StartPoint, line.EndPoint);
       bool worldXY = range.Low.Z == 0 && range.High.Z == 0 ? true : false;
       _line.bbox = BoxToSpeckle(range, worldXY);
+
+      return _line;
+    }
+
+    public Line LineToSpeckle(DPoint3d start, DPoint3d end, bool isScaled = true, string units = null)
+    {
+      var u = units ?? ModelUnits;
+      var _line = new Line(Point3dToSpeckle(start, isScaled), Point3dToSpeckle(end, isScaled), u);
+      double deltaX = end.X - start.X;
+      double deltaY = end.Y - start.Y;
+      double deltaZ = end.Z - start.Z;
+      double length = Math.Sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+      _line.length = length;
+      if (isScaled)
+        _line.length /= UoR;
+      _line.domain = new Interval(0, length);
+
+      var range = DRange3d.FromPoints(start, end);
+      bool worldXY = range.Low.Z == 0 && range.High.Z == 0 ? true : false;
+      _line.bbox = BoxToSpeckle(range, worldXY, false);
 
       return _line;
     }
@@ -599,6 +631,7 @@ namespace Objects.Converter.MicroStationOpen
       Plane specklePlane = PlaneToSpeckle(new DPlane3d(center, normal));
 
       var u = units ?? ModelUnits;
+      radius = ScaleToSpeckle(radius, UoR);
       var _circle = new Circle(specklePlane, radius, u);
       _circle.domain = new Interval(0, 1);
       _circle.length = 2 * Math.PI * radius;
@@ -1225,7 +1258,7 @@ namespace Objects.Converter.MicroStationOpen
 
 
     // Box
-    public Box BoxToSpeckle(DRange3d range, bool OrientToWorldXY = false, string units = null)
+    public Box BoxToSpeckle(DRange3d range, bool OrientToWorldXY = false, bool isScaled = true, string units = null)
     {
       try
       {
@@ -1235,9 +1268,19 @@ namespace Objects.Converter.MicroStationOpen
         var max = range.High;
 
         // get dimension intervals
-        var xSize = new Interval(ScaleToSpeckle(min.X, UoR), ScaleToSpeckle(max.X, UoR));
-        var ySize = new Interval(ScaleToSpeckle(min.Y, UoR), ScaleToSpeckle(max.Y, UoR));
-        var zSize = new Interval(ScaleToSpeckle(min.Z, UoR), ScaleToSpeckle(max.Z, UoR));
+        Interval xSize, ySize, zSize;
+        if (isScaled)
+        {
+          xSize = new Interval(ScaleToSpeckle(min.X, UoR), ScaleToSpeckle(max.X, UoR));
+          ySize = new Interval(ScaleToSpeckle(min.Y, UoR), ScaleToSpeckle(max.Y, UoR));
+          zSize = new Interval(ScaleToSpeckle(min.Z, UoR), ScaleToSpeckle(max.Z, UoR));
+        }
+        else
+        {
+          xSize = new Interval(min.X, max.X);
+          ySize = new Interval(min.Y, max.Y);
+          zSize = new Interval(min.Z, max.Z);
+        }
 
         // get box size info
         double area = 2 * ((xSize.Length * ySize.Length) + (xSize.Length * zSize.Length) + (ySize.Length * zSize.Length));
@@ -1246,7 +1289,15 @@ namespace Objects.Converter.MicroStationOpen
         if (OrientToWorldXY)
         {
           var origin = new DPoint3d(0, 0, 0);
-          var normal = new DVector3d(0, 0, 1 * UoR);
+          DVector3d normal;
+          if (isScaled)
+          {
+            normal = new DVector3d(0, 0, 1 * UoR);
+          }
+          else
+          {
+            normal = new DVector3d(0, 0, 1);
+          }
           var plane = PlaneToSpeckle(new DPlane3d(origin, normal));
           box = new Box(plane, xSize, ySize, zSize, ModelUnits) { area = area, volume = volume };
         }
@@ -1646,11 +1697,12 @@ namespace Objects.Converter.MicroStationOpen
 
     public Base Type2ElementToSpeckle(Type2Element cellHeader, string units = null)
     {
-      var element = new Base();
+#if (OPENBUILDINGS)
+#endif
+
       Processor processor = new Processor();
       ElementGraphicsOutput.Process(cellHeader, processor);
 
-      var x = cellHeader.GetChildren();
       var segments = new List<ICurve>();
       var curves = processor.curveVectors;
 
@@ -1658,6 +1710,7 @@ namespace Objects.Converter.MicroStationOpen
       {
         foreach (var curve in curves)
         {
+          curve.Transform(processor._transform);
           foreach (var primitive in curve)
           {
             var curvePrimitiveType = primitive.GetCurvePrimitiveType();
@@ -1690,16 +1743,288 @@ namespace Objects.Converter.MicroStationOpen
         }
       }
 
+      DgnECInstanceCollection instanceCollection = GetElementProperties(cellHeader);
+      Dictionary<string, object> properties = new Dictionary<string, object>();
+      foreach (IDgnECInstance instance in instanceCollection)
+      {
+        foreach (IECPropertyValue propertyValue in instance)
+        {
+          if (propertyValue != null)
+          {
+            properties = GetValue(properties, propertyValue);
+          }
+        }
+        var instanceName = instance.ClassDefinition.Name;
+      }
+
+      string part = (string)properties["PART"];
+      Category category = FindCategory(part);
+
+      string family = (string)properties["FAMILY"];
+
+      Base element;
+      var u = units ?? ModelUnits;
+
+      // levels in OBD are actually layers..
+      //int level = (int)GetProperty(properties, "Level");
+      //string levelName = (string)GetProperty(properties, "LEVELNAME");
+
+      // ModifiedTime causes problems with de-serialisation atm
+      properties.Remove("ModifiedTime");
+
+      switch (category)
+      {
+        case (Category.Beams):
+          element = BeamToSpeckle(properties, u);
+          break;
+
+        case (Category.CappingBeam):
+          element = CappingBeamToSpeckle(properties, u);
+          break;
+
+        case (Category.Columns):
+          element = ColumnToSpeckle(properties, u);
+          break;
+
+        case (Category.Piles):
+          element = PileToSpeckle(properties, u);
+          break;
+
+        case (Category.FoundationSlab):
+        case (Category.Slabs):
+          element = SlabToSpeckle(properties, segments, u);
+          break;
+
+        case (Category.Walls):
+          element = WallToSpeckle(properties, segments, u);
+          break;
+
+        default:
+          element = new Base();
+          break;
+      }
+
       element["segments"] = segments;
+
+      Base bentleyProperties = new Base();
+      foreach (string propertyName in properties.Keys)
+      {
+        Object value = properties[propertyName];
+        if (value.GetType().Name == "DPoint3d")
+        {
+          bentleyProperties[propertyName] = ConvertToSpeckle(value);
+        }
+        else
+        {
+          bentleyProperties[propertyName] = value;
+        }
+      }
+
+      element["@properties"] = bentleyProperties;
 
       return element;
     }
 
-
-
-    internal class Processor : ElementGraphicsProcessor
+    private static Dictionary<string, object> GetValue(Dictionary<string, object> properties, IECPropertyValue propertyValue)
     {
-      private DTransform3d _transform;
+      string propertyName = propertyValue.Property.Name;
+      IECValueContainer containedValues = propertyValue.ContainedValues;
+      IECValueContainer container = propertyValue.Container;
+      IECProperty property = propertyValue.Property;
+      IECInstance instance = propertyValue.Instance;
+
+      string type = propertyValue.GetType().Name;
+
+      propertyValue.TryGetDoubleValue(out double doubleValue);
+      propertyValue.TryGetIntValue(out int intValue);
+      propertyValue.TryGetNativeValue(out object nativeValue);
+      propertyValue.TryGetStringValue(out string stringValue);
+
+      switch (type)
+      {
+        case "ECDBooleanValue":
+          if (nativeValue != null)
+          {
+            AddProperty(properties, propertyName, nativeValue);
+          }
+          break;
+
+        case "ECDIntegerValue":
+          if (nativeValue != null)
+          {
+            AddProperty(properties, propertyName, intValue);
+          }
+          break;
+
+        case "ECDLongValue":
+        case "ECDDoubleValue":
+          if (nativeValue != null)
+          {
+            AddProperty(properties, propertyName, doubleValue);
+          }
+          break;
+
+        case "ECDDateTimeValue":
+          if (stringValue != null)
+          {
+            AddProperty(properties, propertyName, stringValue);
+          }
+          break;
+
+        case "ECDArrayValue":
+          Dictionary<string, object> arrayProperties = GetArrayValues(propertyValue);
+          arrayProperties.ToList().ForEach(x => properties.Add(x.Key, x.Value));
+          break;
+
+        case "ECDStructValue":
+          if (nativeValue != null)
+          {
+            Dictionary<string, object> structProperties = GetStructValues((IECStructValue)nativeValue);
+            structProperties.ToList().ForEach(x => properties.Add(x.Key, x.Value));
+          }
+          break;
+
+        case "ECDStructArrayValue":
+          if (nativeValue != null)
+          {
+            Dictionary<string, object> structArrayProperties = GetStructArrayValues((IECPropertyValue)nativeValue);
+            structArrayProperties.ToList().ForEach(x => properties.Add(x.Key, x.Value));
+          }
+          break;
+
+        case "ECDStringValue":
+        case "ECDCalculatedStringValue":
+          if (stringValue != null)
+          {
+            AddProperty(properties, propertyName, stringValue);
+          }
+          break;
+
+        case "ECDDPoint3dValue":
+          if (nativeValue != null)
+          {
+            DPoint3d point = (DPoint3d)nativeValue;
+            AddProperty(properties, propertyName, point);
+          }
+          break;
+
+        case "ECDBinaryValue":
+          break;
+
+        default:
+          break;
+      }
+      return properties;
+    }
+
+    // see https://communities.bentley.com/products/programming/microstation_programming/b/weblog/posts/ec-properties-related-operations-with-native-and-managed-apis
+    private static Dictionary<string, object> GetArrayValues(IECPropertyValue container)
+    {
+      Dictionary<string, object> containedProperties = new Dictionary<string, object>();
+
+      IECArrayValue containedValues = container.ContainedValues as IECArrayValue;
+      if (containedValues != null)
+      {
+        for (int i = 0; i < containedValues.Count; i++)
+        {
+          IECPropertyValue propertyValue = containedValues[i];
+
+          containedProperties = GetValue(containedProperties, propertyValue);
+        }
+      }
+      return containedProperties;
+    }
+
+    private static Dictionary<string, object> GetStructValues(IECStructValue structValue)
+    {
+      Dictionary<string, object> containedProperties = new Dictionary<string, object>();
+
+      foreach (IECPropertyValue containedPropertyValue in structValue)
+      {
+        //IECPropertyValue containedPropertyValue = enumerator.Current;
+        string containedPropertyName = containedPropertyValue.Property.Name;
+
+        containedProperties = GetValue(containedProperties, containedPropertyValue);
+      }
+      return containedProperties;
+    }
+
+
+    private static Dictionary<string, object> GetStructArrayValues(IECPropertyValue container)
+    {
+      Dictionary<string, object> containedProperties = new Dictionary<string, object>();
+
+      IECStructArrayValue structArrayValue = (IECStructArrayValue)container;
+      if (structArrayValue != null)
+      {
+        foreach (IECStructValue structValue in structArrayValue.GetStructs())
+        {
+          containedProperties = GetStructValues(structValue);
+        }
+      }
+      return containedProperties;
+    }
+
+    private static Category FindCategory(string part)
+    {
+      Category category = Category.None;
+      if (part.Contains("CappingBeam"))
+      {
+        category = Category.CappingBeam;
+      }
+      else if (part.Contains("Beam"))
+      {
+        category = Category.Beams;
+      }
+      else if (part.Contains("Column"))
+      {
+        category = Category.Columns;
+      }
+      else if (part.Contains("Pile"))
+      {
+        category = Category.Piles;
+      }
+      else if (part.Contains("FoundationSlab"))
+      {
+        category = Category.FoundationSlab;
+      }
+      else if (part.Contains("Slab"))
+      {
+        category = Category.Slabs;
+      }
+      else if (part.Contains("Wall"))
+      {
+        category = Category.Walls;
+      }
+      return category;
+    }
+
+    private static Dictionary<string, object> AddProperty(Dictionary<string, object> properties, string propertyName, object value)
+    {
+      if (properties.ContainsKey(propertyName))
+      {
+        throw new SpeckleException("Can´t convert duplicate property " + propertyName + " with key " + value + ".");
+      }
+      else
+      {
+        properties.Add(propertyName, value);
+      }
+      return properties;
+    }
+
+    private static Object GetProperty(Dictionary<string, object> properties, string propertyName)
+    {
+      if (properties.TryGetValue(propertyName, out object value))
+      {
+        properties.Remove(propertyName);
+        return value;
+      }
+      return null;
+    }
+
+    public class Processor : ElementGraphicsProcessor
+    {
+      public DTransform3d _transform;
 
       public List<CurveVector> curveVectors = new List<CurveVector>();
       public List<CurvePrimitive> curvePrimitives = new List<CurvePrimitive>();
@@ -1790,6 +2115,19 @@ namespace Objects.Converter.MicroStationOpen
       {
         return false;
       }
+    }
+
+    private static List<Element> GetChildren(Element parent)
+    {
+      List<Element> children = new List<Element>();
+      IEnumerator<Element> enumerator = parent.GetChildren().GetEnumerator();
+      while (enumerator.MoveNext())
+      {
+        Element child = enumerator.Current;
+        children.Add(child);
+        children.AddRange(GetChildren(child));
+      }
+      return children;
     }
   }
 }
