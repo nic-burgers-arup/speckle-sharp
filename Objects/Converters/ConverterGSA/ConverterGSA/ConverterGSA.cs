@@ -110,7 +110,7 @@ namespace ConverterGSA
         typeof(GSALoadGridPoint) } },
       { ModelAspect.Restraints, new List<Type>() { typeof(Objects.Structural.Geometry.Restraint) } },
       { ModelAspect.Properties, new List<Type>()
-        { typeof(GSAProperty1D), typeof(GSAProperty2D), typeof(SectionProfile), typeof(PropertyMass), typeof(PropertySpring), typeof(PropertyDamper), typeof(Property3D) } },
+        { typeof(GSAProperty1D), typeof(GSAProperty2D), typeof(SectionProfile), typeof(GSASectionProfile), typeof(PropertyMass), typeof(PropertySpring), typeof(PropertyDamper), typeof(Property3D) } },
       { ModelAspect.Materials, new List<Type>() { typeof(GSAMaterial), typeof(GSAConcrete), typeof(GSASteel) } }
     };
     #endregion

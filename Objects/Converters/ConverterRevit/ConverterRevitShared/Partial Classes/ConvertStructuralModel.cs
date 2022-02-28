@@ -11,7 +11,6 @@ using Plane = Objects.Geometry.Plane;
 using Speckle.Core.Models;
 using DB = Autodesk.Revit.DB;
 using Objects.Structural.Analysis;
-using Objects.Structural.ETABS.Geometry;
 
 namespace Objects.Converter.Revit
 {
@@ -20,50 +19,42 @@ namespace Objects.Converter.Revit
     public List<ApplicationPlaceholderObject> StructuralModelToNative(Model speckleStructModel)
     {
       List<ApplicationPlaceholderObject> placeholderObjects = new List<ApplicationPlaceholderObject> { };
-      foreach (Node node in speckleStructModel.nodes)
+      if(speckleStructModel.nodes != null)
       {
-        var Application = AnalyticalNodeToNative(node);
-        placeholderObjects.Concat(Application);
-      }
-      foreach (var element in speckleStructModel.elements)
-      {
-        
-        if (element is Element1D)
+        foreach (Node node in speckleStructModel.nodes)
         {
-          try
-          {
-            if(element is ETABSElement1D){
-              var Application = AnalyticalStickToNative((ETABSElement1D)element);
-              placeholderObjects.Concat(Application);
-            }
-            else { var Application = AnalyticalStickToNative((Element1D)element);
-              placeholderObjects.Concat(Application);
-            }
-
-
-            
-          }
-          catch { }
-
+          var Application = AnalyticalNodeToNative(node);
+          placeholderObjects.Concat(Application);
         }
-        else
+      }
+      if(speckleStructModel.elements != null)
+      {
+        foreach (var element in speckleStructModel.elements)
         {
-          try
+          Element1D element1D = new Element1D();
+          //if (element.GetType().Equals(element1D.GetType()))
+          if(element is Element1D)
           {
-            if (element is ETABSElement2D)
+            try
             {
-              var Application = AnalyticalSurfaceToNative((ETABSElement2D)element);
+              var Application = AnalyticalStickToNative((Element1D)element);
               placeholderObjects.Concat(Application);
             }
-            else
+            catch { }
+
+          }
+          else
+          {
+            try
             {
               var Application = AnalyticalSurfaceToNative((Element2D)element);
               placeholderObjects.Concat(Application);
             }
+            catch { }
           }
-          catch { }
         }
       }
+      
 
       return placeholderObjects;
     }
