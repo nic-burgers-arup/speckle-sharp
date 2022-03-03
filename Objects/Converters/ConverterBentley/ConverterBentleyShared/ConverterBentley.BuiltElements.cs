@@ -226,7 +226,7 @@ namespace Objects.Converter.Bentley
 
         case ("ROTATION"):
           double rotation = (double)GetProperty(properties, "ROTATION");
-          Parameter structuralBendDirAngle = new Parameter("Cross-Section Rotation", rotation );
+          Parameter structuralBendDirAngle = new Parameter("Cross-Section Rotation", Math.PI * rotation / 180.0);
           return new List<Parameter>() { structuralBendDirAngle };
 
         default:
