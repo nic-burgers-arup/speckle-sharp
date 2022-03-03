@@ -1941,7 +1941,7 @@ namespace ConverterGSA
       Node primaryNode = null;
       List<Node> constrainedNodes = null;
       List<GSAStage> designStages = null, analysisStages = null;
-      Dictionary<AxisDirection6, List<AxisDirection6>> constraintCondition = null;
+      GSAConstraintCondition constraintCondition = new GSAConstraintCondition();
       string applicationId = null;
       Base parentMember = null;
 
@@ -3982,17 +3982,18 @@ namespace ConverterGSA
     #endregion
 
     #region Constraint
-    private Dictionary<AxisDirection6, List<AxisDirection6>> GetRigidConstraint(Dictionary<GwaAxisDirection6, List<GwaAxisDirection6>> gsaLink)
+    private GSAConstraintCondition GetRigidConstraint(Dictionary<GwaAxisDirection6, List<GwaAxisDirection6>> gsaLink)
     {
-      var speckleConstraint = new Dictionary<AxisDirection6, List<AxisDirection6>>();
+      var speckleConstraint = new GSAConstraintCondition();
       foreach (var key in gsaLink.Keys)
       {
-        var speckleKey = key.ToSpeckle();
-        speckleConstraint[speckleKey] = new List<AxisDirection6>();
+        var speckleKey = key.ToString();
+        var constrainedDirs = new List<String> { };
         foreach (var val in gsaLink[key])
         {
-          speckleConstraint[speckleKey].Add(val.ToSpeckle());
+          constrainedDirs.Add(val.ToString());
         }
+        speckleConstraint[speckleKey] = constrainedDirs;
       }
       return speckleConstraint;
     }
