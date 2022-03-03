@@ -299,10 +299,11 @@ namespace ConverterGSA
       {
         gsaElement.NodeIndices = speckleElement.topology.NodeAt(conversionFactors);
       }
-      else if (speckleElement.baseLine != null && speckleElement.baseLine.start != null && speckleElement.baseLine.end != null)
+      else if (speckleElement.baseLine != null)
       {
-        var specklePoints = new List<Point>() { speckleElement.baseLine.start, speckleElement.baseLine.end };
-        gsaElement.NodeIndices = specklePoints.NodeAt(conversionFactors);
+          var specklePoints = Get1dTopolopgy(speckleElement.baseLine);
+          if(specklePoints != null)
+            gsaElement.NodeIndices = specklePoints.NodeAt(conversionFactors);
       }
 
       if (speckleElement.end1Releases != null && GetReleases(speckleElement.end1Releases, out var gsaRelease1, out var gsaStiffnesses1, out var gsaReleaseInclusion1))
@@ -460,6 +461,8 @@ namespace ConverterGSA
       return index;
     }
 
+
+
     private List<GsaRecord> GSAMember1dToNative(Base speckleObject)
     {
       var retList = new List<GsaRecord>();
@@ -483,10 +486,11 @@ namespace ConverterGSA
       {
         gsaMember.NodeIndices = speckleMember.topology.NodeAt(conversionFactors);
       }
-      else if (speckleMember.baseLine != null && speckleMember.baseLine.start != null && speckleMember.baseLine.end != null)
+      else if (speckleMember.baseLine != null)
       {
-        var specklePoints = new List<Point>() { speckleMember.baseLine.start, speckleMember.baseLine.end };
-        gsaMember.NodeIndices = specklePoints.NodeAt(conversionFactors);
+        var specklePoints = Get1dTopolopgy(speckleMember.baseLine);
+        if(specklePoints != null)
+          gsaMember.NodeIndices = specklePoints.NodeAt(conversionFactors);  
       }
 
       var dynamicMembers = speckleMember.GetMembers();
@@ -2953,6 +2957,40 @@ namespace ConverterGSA
       }
       return true;
     }
+
+    private List<Point> Get1dTopolopgy(ICurve speckleBasecurve)
+    {
+      var specklePoints = new List<Point> { };
+      var baseLine = ((Base)speckleBasecurve);
+      switch (baseLine)  
+      {
+        case Curve _curve:
+          var curve = (Curve)speckleBasecurve;
+          var points = curve.GetPoints();
+          if (points != null)
+          {
+            var startPoint = points.First();
+            var endPoint = points.Last();
+            if (startPoint != null && endPoint != null)
+              specklePoints = new List<Point>() { startPoint, endPoint };
+          }
+          break;
+        case Line _line:
+          var line = (Line)speckleBasecurve;
+          if (line.start != null && line.end != null)
+            specklePoints = new List<Point>() { line.start, line.end };
+          break;
+        case Arc _arc:
+          var arc = (Arc)speckleBasecurve;
+          if (arc.startPoint != null && arc.endPoint != null)
+            specklePoints = new List<Point>() { arc.startPoint, arc.endPoint };
+          break;
+        default:
+          return null; // cannot extract meaningful 1d el/memb topology from Polycurve, Polyline, Ellipse - in these cases, a topology list, rather than base curve, should be provided
+      }
+      return specklePoints;
+    }
+
     #endregion
     #endregion
 
