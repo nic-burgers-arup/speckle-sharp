@@ -41,6 +41,8 @@ namespace Objects.Converter.Bentley
 {
   public partial class ConverterBentley
   {
+    private static int Decimals = 3;
+
     public RevitBeam BeamToSpeckle(Dictionary<string, object> properties, string units = null)
     {
       var u = units ?? ModelUnits;
@@ -119,8 +121,7 @@ namespace Objects.Converter.Bentley
     {
       var u = units ?? ModelUnits;
 
-      double accuracy = 1000.0;
-      elevation = Math.Round(elevation * accuracy) / accuracy;
+      elevation = Math.Round(elevation, Decimals);
 
       Level level = new Level("Level " + elevation + u, elevation);
       level.units = u;
@@ -300,8 +301,16 @@ namespace Objects.Converter.Bentley
       double dy2 = edge2.end.y - edge2.start.y;
       double dz2 = edge2.end.z - edge2.start.z;
 
-      Point start = new Point(edge1.start.x + dx1 / 2, edge1.start.y + dy1 / 2, edge1.start.z + dz1 / 2, u);
-      Point end = new Point(edge2.start.x + dx2 / 2, edge2.start.y + dy2 / 2, edge2.start.z + dz2 / 2, u);
+      double x1 = edge1.start.x + dx1 / 2;
+      double y1 = edge1.start.y + dy1 / 2;
+      double z1 = Math.Round(edge1.start.z + dz1 / 2, Decimals);
+
+      double x2 = edge2.start.x + dx2 / 2;
+      double y2 = edge2.start.y + dy2 / 2;
+      double z2 = Math.Round(edge2.start.z + dz2 / 2, Decimals);
+
+      Point start = new Point(x1, y1, z1, u);
+      Point end = new Point(x2, y2, z2, u);
 
       Line baseLine = new Line(start, end, u);
       return baseLine;
