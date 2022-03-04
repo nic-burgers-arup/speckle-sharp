@@ -43,6 +43,8 @@ namespace Objects.Converter.Bentley
   {
     private static int Decimals = 3;
 
+    private Dictionary<int, Level> levels = new Dictionary<int, Level>();
+
     public RevitBeam BeamToSpeckle(Dictionary<string, object> properties, string units = null)
     {
       var u = units ?? ModelUnits;
@@ -120,11 +122,17 @@ namespace Objects.Converter.Bentley
     public Level CreateLevel(double elevation, string units = null)
     {
       var u = units ?? ModelUnits;
-
       elevation = Math.Round(elevation, Decimals);
 
-      Level level = new Level("Level " + elevation + u, elevation);
-      level.units = u;
+      int levelKey = (int)(elevation * Math.Pow(10, Decimals));
+      levels.TryGetValue(levelKey, out Level level);
+
+      if (level == null)
+      {
+        level = new Level("Level " + elevation + u, elevation);
+        level.units = u;
+        levels.Add(levelKey, level);
+      }
       return level;
     }
 
@@ -425,7 +433,6 @@ namespace Objects.Converter.Bentley
         {
           List<ICurve> lines = new List<ICurve>() { line };
           elevationMap.Add(elevation, lines);
-
         }
       }
 
@@ -433,6 +440,8 @@ namespace Objects.Converter.Bentley
       {
         throw new SpeckleException("Slab geometry has more than two different elevations!");
       }
+
+      Level level = CreateLevel(maxElevation, u);
 
       Polycurve outline = CreatePolyCurve(elevationMap[maxElevation], u);
       floor.outline = outline;
@@ -442,10 +451,9 @@ namespace Objects.Converter.Bentley
       floor.type = part;
       floor.family = family;
       floor.elementId = elementId.ToString();
-      //floor.level = new Level();
-      //floor.level.units = u;
+      floor.level = level;
       floor.structural = true;
-      //floor.slope
+      floor.slope = 0;
       //floor.slopeDirection
 
       return floor;
