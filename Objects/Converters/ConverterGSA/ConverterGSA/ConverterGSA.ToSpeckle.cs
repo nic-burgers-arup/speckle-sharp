@@ -261,7 +261,7 @@ namespace ConverterGSA
             return new ToSpeckleResult(analysisLayerOnlyObject: speckleElement2d);
           }
         }
-        else //3D element
+        else if (gsaEl.Is1dElement()) //3D element
         {
           //TODO: add conversion code for 3D elements
           Report.ConversionErrors.Add(new Exception("GsaElement3dToSpeckle: "
@@ -1924,8 +1924,155 @@ namespace ConverterGSA
 
     //TODO: implement conversion code for result objects
     //CsvAssembly
-    /* ResultGlobal
+    /* ResultGlobal 
      */
+
+    public bool GsaGlobalResultToSpeckle(out List<ResultGlobal> speckleResults)
+    {
+      speckleResults = null;
+      if (Instance.GsaModel.Proxy.GetResultRecords(ResultGroup.Global, 0, out var csvRecord))
+      {
+        speckleResults = new List<ResultGlobal>();
+        var gsaGlobalResults = csvRecord.FindAll(so => so is CsvGlobal).Select(so => (CsvGlobal)so).ToList();
+        foreach (var gsaResult in gsaGlobalResults)
+        {
+          var result = new ResultGlobal();
+
+          var indexString = gsaResult.CaseId.Substring(1);
+          if (!int.TryParse(indexString, out int gsaCaseIndex))
+          {
+            if (indexString.Any(x => char.IsLetter(x)))
+            {
+              var id = new string(indexString.TakeWhile(Char.IsDigit).ToArray());
+              if (!int.TryParse(id, out gsaCaseIndex))
+                return false;
+              result.permutation = indexString.Replace(id, "");
+            }
+          }
+
+          if (gsaResult.CaseId[0] == 'A')
+          {
+            result.resultCase = GetAnalysisCaseFromIndex(gsaCaseIndex);
+          }
+          else if (gsaResult.CaseId[0] == 'C')
+          {
+            result.resultCase = GetLoadCombinationFromIndex(gsaCaseIndex);
+          }
+          result.applicationId = result.resultCase.applicationId;
+
+          //loads
+          if (gsaResult.Fx.HasValue) result.loadX = gsaResult.Fx.Value;
+          if (gsaResult.Fy.HasValue) result.loadY = gsaResult.Fy.Value;
+          if (gsaResult.Fz.HasValue) result.loadZ = gsaResult.Fz.Value;
+          if (gsaResult.Mxx.HasValue) result.loadXX = gsaResult.Mxx.Value;
+          if (gsaResult.Myy.HasValue) result.loadYY = gsaResult.Myy.Value;
+          if (gsaResult.Mzz.HasValue) result.loadZZ = gsaResult.Mzz.Value;
+
+          //reactions forces/moments
+          if (gsaResult.Fx_Reac.HasValue) result.reactionX = gsaResult.Fx_Reac.Value;
+          if (gsaResult.Fy_Reac.HasValue) result.reactionY = gsaResult.Fy_Reac.Value;
+          if (gsaResult.Fz_Reac.HasValue) result.reactionZ = gsaResult.Fz_Reac.Value;
+          if (gsaResult.Mxx_Reac.HasValue) result.reactionXX = gsaResult.Mxx_Reac.Value;
+          if (gsaResult.Myy_Reac.HasValue) result.reactionYY = gsaResult.Myy_Reac.Value;
+          if (gsaResult.Mzz_Reac.HasValue) result.reactionZZ = gsaResult.Mzz_Reac.Value;
+
+          //mode details
+          if (gsaResult.Mode.HasValue) result.mode = gsaResult.Mode.Value;
+          if (gsaResult.Frequency.HasValue) result.frequency = gsaResult.Frequency.Value;
+          if (gsaResult.LoadFactor.HasValue) result.loadFactor = gsaResult.LoadFactor.Value;
+          if (gsaResult.ModalStiffness.HasValue) result.modalStiffness = gsaResult.ModalStiffness.Value;
+          if (gsaResult.ModalGeometricStiffness.HasValue) result.modalGeoStiffness = gsaResult.ModalGeometricStiffness.Value;
+          if (gsaResult.ModalMass.HasValue) result.modalMass = gsaResult.ModalMass.Value;
+
+          //effective mass details
+          if (gsaResult.EffectiveMassX.HasValue) result.effMassX = gsaResult.EffectiveMassX.Value;
+          if (gsaResult.EffectiveMassY.HasValue) result.effMassY = gsaResult.EffectiveMassY.Value;
+          if (gsaResult.EffectiveMassZ.HasValue) result.effMassZ = gsaResult.EffectiveMassZ.Value;
+          if (gsaResult.EffectiveMassXX.HasValue) result.effMassXX = gsaResult.EffectiveMassXX.Value;
+          if (gsaResult.EffectiveMassYY.HasValue) result.effMassYY = gsaResult.EffectiveMassYY.Value;
+          if (gsaResult.EffectiveMassZZ.HasValue) result.effMassZZ = gsaResult.EffectiveMassZZ.Value;
+
+          speckleResults.Add(result);
+        }
+        return true;
+      }
+      return false;
+
+      //TODO:
+      //SpeckleObject:
+      //  string permutation
+      //  string description
+    }
+
+
+    //public bool GsaGlobalResultToSpeckle(out ResultGlobal speckleResult)
+    //{
+    //  speckleResult = null;
+    //  if (Instance.GsaModel.Proxy.GetResultRecords(ResultGroup.Global, 0, out var csvRecords))
+    //  {
+    //    speckleResult = new ResultGlobal();
+    //    var gsaGlobalResults = csvRecords.FindAll(so => so is CsvGlobal).Select(so => (CsvGlobal)so).ToList();
+    //    foreach (var gsaResult in gsaGlobalResults)
+    //    {
+    //      var indexString = gsaResult.CaseId.Substring(1);
+    //      if (!int.TryParse(indexString, out int gsaCaseIndex))
+    //      {
+    //        if (indexString.Any(x => char.IsLetter(x)))
+    //        {
+    //          var id = new string(indexString.TakeWhile(Char.IsDigit).ToArray());
+    //          if (!int.TryParse(id, out gsaCaseIndex))
+    //            return false;
+    //          speckleResult.permutation = indexString.Replace(id, "");
+    //        }
+    //      }
+
+    //      if (gsaResult.CaseId[0] == 'A')
+    //      {
+    //        speckleResult.resultCase = GetAnalysisCaseFromIndex(gsaCaseIndex);
+    //      }
+    //      else if (gsaResult.CaseId[0] == 'C')
+    //      {
+    //        speckleResult.resultCase = GetLoadCombinationFromIndex(gsaCaseIndex);
+    //      }
+    //      speckleResult.applicationId = speckleResult.resultCase.applicationId;
+
+    //      //loads
+    //      if (gsaResult.Fx.HasValue) speckleResult.loadX = gsaResult.Fx.Value;
+    //      if (gsaResult.Fy.HasValue) speckleResult.loadY = gsaResult.Fy.Value;
+    //      if (gsaResult.Fz.HasValue) speckleResult.loadZ = gsaResult.Fz.Value;
+    //      if (gsaResult.Mxx.HasValue) speckleResult.loadXX = gsaResult.Mxx.Value;
+    //      if (gsaResult.Myy.HasValue) speckleResult.loadYY = gsaResult.Myy.Value;
+    //      if (gsaResult.Mzz.HasValue) speckleResult.loadZZ = gsaResult.Mzz.Value;
+
+    //      //reactions forces/moments
+    //      if (gsaResult.Fx_Reac.HasValue) speckleResult.reactionX = gsaResult.Fx_Reac.Value;
+    //      if (gsaResult.Fy_Reac.HasValue) speckleResult.reactionY = gsaResult.Fy_Reac.Value;
+    //      if (gsaResult.Fz_Reac.HasValue) speckleResult.reactionZ = gsaResult.Fz_Reac.Value;
+    //      if (gsaResult.Mxx_Reac.HasValue) speckleResult.reactionXX = gsaResult.Mxx_Reac.Value;
+    //      if (gsaResult.Myy_Reac.HasValue) speckleResult.reactionYY = gsaResult.Myy_Reac.Value;
+    //      if (gsaResult.Mzz_Reac.HasValue) speckleResult.reactionZZ = gsaResult.Mzz_Reac.Value;
+
+    //      //mode details
+    //      if (gsaResult.Mode.HasValue) speckleResult.mode = gsaResult.Mode.Value;
+    //      if (gsaResult.Frequency.HasValue) speckleResult.frequency = gsaResult.Frequency.Value;
+    //      if (gsaResult.LoadFactor.HasValue) speckleResult.loadFactor = gsaResult.LoadFactor.Value;
+    //      if (gsaResult.ModalStiffness.HasValue) speckleResult.modalStiffness = gsaResult.ModalStiffness.Value;
+    //      if (gsaResult.ModalGeometricStiffness.HasValue) speckleResult.modalGeoStiffness = gsaResult.ModalGeometricStiffness.Value;
+    //      if (gsaResult.ModalMass.HasValue) speckleResult.modalMass = gsaResult.ModalMass.Value;
+
+    //      //effective mass details
+    //      if (gsaResult.EffectiveMassX.HasValue) speckleResult.effMassX = gsaResult.EffectiveMassX.Value;
+    //      if (gsaResult.EffectiveMassY.HasValue) speckleResult.effMassY = gsaResult.EffectiveMassY.Value;
+    //      if (gsaResult.EffectiveMassZ.HasValue) speckleResult.effMassZ = gsaResult.EffectiveMassZ.Value;
+    //      if (gsaResult.EffectiveMassXX.HasValue) speckleResult.effMassXX = gsaResult.EffectiveMassXX.Value;
+    //      if (gsaResult.EffectiveMassYY.HasValue) speckleResult.effMassYY = gsaResult.EffectiveMassYY.Value;
+    //      if (gsaResult.EffectiveMassZZ.HasValue) speckleResult.effMassZZ = gsaResult.EffectiveMassZZ.Value;
+    //    }
+    //    return true;
+    //  }
+    //  return false;
+    //}
+
     #endregion
 
     #region Constraints

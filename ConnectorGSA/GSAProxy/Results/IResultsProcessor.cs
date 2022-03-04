@@ -9,6 +9,7 @@ namespace Speckle.ConnectorGSA.Results
     bool LoadFromFile(out int numErrorRows, bool parallel = true);
     bool GetResultRecords(int index, string loadCase, out List<CsvRecord> records);
     bool GetResultRecords(int index, out List<CsvRecord> records);
+    bool GetResultRecords(out List<CsvRecord> records);
 
     string ResultTypeName(ResultType rt);
     List<int> ElementIds { get; }

@@ -37,7 +37,8 @@ namespace Speckle.GSA.API
     Node = 1,
     Element1d = 2,
     Element2d = 3,
-    Assembly = 4
+    Assembly = 4,
+    Global = 5
   }
 
   public enum ResultType
@@ -55,6 +56,15 @@ namespace Speckle.GSA.API
     Element2dProjectedStressBottom = 10,
     Element2dProjectedStressMiddle = 11,
     Element2dProjectedStressTop = 12,
-    AssemblyForcesAndMoments = 13
+    AssemblyForcesAndMoments = 13,
+    TotalLoads = 14,
+    TotalReactions = 15,
+    Mode = 16,
+    Frequency = 17,
+    LoadFactor = 18,
+    ModalStiffness = 19,
+    ModalGeometricStiffness = 20,
+    ModalMass = 21,
+    EffectiveMass = 22
   }
 }

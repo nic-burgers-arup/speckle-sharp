@@ -68,8 +68,12 @@ namespace Speckle.ConnectorGSA.Results
       numErrorRows = 0;
 
       // [ result_type, [ [ headers ], [ row, column ] ] ]
+      var config = new CsvHelper.Configuration.CsvConfiguration(cultureInfo: CultureInfo.InvariantCulture)
+      {
+        MissingFieldFound = null
+      };
 
-      using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+      using (var csv = new CsvReader(reader, config))
       {
         csv.Read();
         csv.ReadHeader();
@@ -160,6 +164,17 @@ namespace Speckle.ConnectorGSA.Results
       return false;
     }
 
+    public bool GetResultRecords(out List<CsvRecord> records)
+    {
+      if (GetResultRecords(out List<T> localRecords))
+      {
+        records = localRecords.Cast<CsvRecord>().ToList();
+        return true;
+      }
+      records = null;
+      return false;
+    }
+
     public virtual bool GetResultRecords(int index, string loadCase, out List<T> records)
     {
       if (RecordIndices.ContainsKey(index) && RecordIndices[index] != null && RecordIndices[index].ContainsKey(loadCase) 
@@ -183,6 +198,16 @@ namespace Speckle.ConnectorGSA.Results
       return false;
     }
 
+    public virtual bool GetResultRecords(out List<T> records)
+    {
+      //if (RecordIndices.ContainsKey(index) && RecordIndices[index] != null && RecordIndices[index].Count > 0)
+      //{
+      //  records = RecordIndices[index].Keys.SelectMany(k => RecordIndices[index][k].Select(i => (T)Records[i])).ToList();
+      //  return true;
+      //}
+      records = null;
+      return false;
+    }
 
     protected float? ApplyFactors(float? val, List<double> factors)
     {

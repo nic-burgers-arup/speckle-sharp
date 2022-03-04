@@ -282,7 +282,7 @@ namespace ConnectorGSA
           objectId = commitObjId,
           branchName = "main",
           message = "Pushed data from GSA",
-          sourceApplication = Applications.GSA
+          sourceApplication = VersionedHostApplications.GSA
         };
 
         if (!string.IsNullOrEmpty(parent))
@@ -360,7 +360,6 @@ namespace ConnectorGSA
         loggingProgress.Report(new MessageEventArgs(MessageIntent.Telemetry, MessageLevel.Information, "receive", "update-cache", "duration", duration.ToString(@"hh\:mm\:ss")));
       }
       startTime = DateTime.Now;
-
 
       statusProgress.Report("Accessing streams");
       var streamIds = coordinator.ReceiverTab.StreamList.StreamListItems.Select(i => i.StreamId).ToList();

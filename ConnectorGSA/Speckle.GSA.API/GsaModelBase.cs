@@ -41,6 +41,10 @@ namespace Speckle.GSA.API
             {
               retList.Add(ResultGroup.Node);
             }
+            else if (!retList.Contains(ResultGroup.Global) && !retList.Contains(ResultGroup.Global))
+            {
+              retList.Add(ResultGroup.Global);
+            }
           }
         }
         return retList;
