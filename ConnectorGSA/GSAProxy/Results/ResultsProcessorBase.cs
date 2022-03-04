@@ -164,17 +164,6 @@ namespace Speckle.ConnectorGSA.Results
       return false;
     }
 
-    public bool GetResultRecords(out List<CsvRecord> records)
-    {
-      if (GetResultRecords(out List<T> localRecords))
-      {
-        records = localRecords.Cast<CsvRecord>().ToList();
-        return true;
-      }
-      records = null;
-      return false;
-    }
-
     public virtual bool GetResultRecords(int index, string loadCase, out List<T> records)
     {
       if (RecordIndices.ContainsKey(index) && RecordIndices[index] != null && RecordIndices[index].ContainsKey(loadCase) 
@@ -194,17 +183,6 @@ namespace Speckle.ConnectorGSA.Results
         records = RecordIndices[index].Keys.SelectMany(k => RecordIndices[index][k].Select(i => (T)Records[i])).ToList();
         return true;
       }
-      records = null;
-      return false;
-    }
-
-    public virtual bool GetResultRecords(out List<T> records)
-    {
-      //if (RecordIndices.ContainsKey(index) && RecordIndices[index] != null && RecordIndices[index].Count > 0)
-      //{
-      //  records = RecordIndices[index].Keys.SelectMany(k => RecordIndices[index][k].Select(i => (T)Records[i])).ToList();
-      //  return true;
-      //}
       records = null;
       return false;
     }
