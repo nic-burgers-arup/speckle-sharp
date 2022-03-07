@@ -316,6 +316,7 @@ namespace Objects.Converter.Bentley
       double dy2 = edge2.end.y - edge2.start.y;
       double dz2 = edge2.end.z - edge2.start.z;
 
+      // z-coordinates need to be rounded to avoid problems in Revit regarding floating point errors or small deviations
       double x1 = edge1.start.x + dx1 / 2;
       double y1 = edge1.start.y + dy1 / 2;
       double z1 = Math.Round(edge1.start.z + dz1 / 2, Decimals);
