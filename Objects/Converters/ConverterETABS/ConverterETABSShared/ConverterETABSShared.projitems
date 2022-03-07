@@ -45,7 +45,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\Properties\ConvertLinkProperty.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\Properties\ConvertSpring.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\Properties\ConvertTendonProperty.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\Results\ConverrtResultGlobal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\Results\ConvertResultGlobal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\Results\ConvertResultNodes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\Results\ConvertResults.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Partial Classes\Results\ConvertResultSet1D.cs" />
