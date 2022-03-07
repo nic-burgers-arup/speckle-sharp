@@ -29,16 +29,8 @@ namespace ConnectorGSA.Models
         new ResultSettingItem("2D Element Projected Stress - Middle", ResultType.Element2dProjectedStressMiddle, false),
         new ResultSettingItem("2D Element Projected Stress - Top", ResultType.Element2dProjectedStressTop, false),
         new ResultSettingItem("Assembly Forces and Moments", ResultType.AssemblyForcesAndMoments, true),
-        new ResultSettingItem("Total Loads", ResultType.TotalLoads, false),
-        new ResultSettingItem("Total Reactions", ResultType.TotalReactions, false),
-        new ResultSettingItem("Mode", ResultType.Mode, false),
-        new ResultSettingItem("Frequency", ResultType.Frequency, false),
-        new ResultSettingItem("Load Factor", ResultType.LoadFactor, false),
-        new ResultSettingItem("Frequency", ResultType.Frequency, false),
-        new ResultSettingItem("Modal Stiffness", ResultType.ModalStiffness, false),
-        new ResultSettingItem("Modal Geometric Stiffness", ResultType.ModalGeometricStiffness, false),
-        new ResultSettingItem("Modal Mass", ResultType.ModalMass, false),
-        new ResultSettingItem("Effective Mass", ResultType.EffectiveMass, false)
+        new ResultSettingItem("Total Loads & Reactions", ResultType.TotalLoadsAndReactions, false),
+        new ResultSettingItem("Dynamic Summary", ResultType.DynamicSummary, false),
       };
     }
   }

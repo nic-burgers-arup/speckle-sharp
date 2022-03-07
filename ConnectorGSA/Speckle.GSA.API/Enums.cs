@@ -57,14 +57,7 @@ namespace Speckle.GSA.API
     Element2dProjectedStressMiddle = 11,
     Element2dProjectedStressTop = 12,
     AssemblyForcesAndMoments = 13,
-    TotalLoads = 14,
-    TotalReactions = 15,
-    Mode = 16,
-    Frequency = 17,
-    LoadFactor = 18,
-    ModalStiffness = 19,
-    ModalGeometricStiffness = 20,
-    ModalMass = 21,
-    EffectiveMass = 22
+    TotalLoadsAndReactions = 14,
+    DynamicSummary = 15
   }
 }

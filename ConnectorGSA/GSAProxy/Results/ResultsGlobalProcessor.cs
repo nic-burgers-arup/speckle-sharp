@@ -11,15 +11,8 @@ namespace Speckle.ConnectorGSA.Results
 
     private List<ResultType> possibleResultTypes = new List<ResultType>()
     {
-      ResultType.TotalLoads,
-      ResultType.TotalReactions,
-      ResultType.Mode,
-      ResultType.Frequency,
-      ResultType.LoadFactor,
-      ResultType.ModalStiffness,
-      ResultType.ModalGeometricStiffness,
-      ResultType.ModalMass,
-      ResultType.EffectiveMass
+      ResultType.TotalLoadsAndReactions,
+      ResultType.DynamicSummary
     };
 
     public ResultsGlobalProcessor(string filePath, Dictionary<ResultUnitType, double> unitData, List<ResultType> resultTypes = null,
@@ -47,38 +40,38 @@ namespace Speckle.ConnectorGSA.Results
 
       var factorsMass = GetFactors(ResultUnitType.Mass);
 
-      record.Fx = resultTypes.Contains(ResultType.TotalLoads) ? ApplyFactors(record.Fx, factorsForce) : null;
-      record.Fy = resultTypes.Contains(ResultType.TotalLoads) ? ApplyFactors(record.Fy, factorsForce) : null;
-      record.Fz = resultTypes.Contains(ResultType.TotalLoads) ? ApplyFactors(record.Fz, factorsForce) : null;
-      record.Mxx = resultTypes.Contains(ResultType.TotalLoads) ? ApplyFactors(record.Mxx, factorsForceLength) : null;
-      record.Myy = resultTypes.Contains(ResultType.TotalLoads) ? ApplyFactors(record.Myy, factorsForceLength) : null;
-      record.Mzz = resultTypes.Contains(ResultType.TotalLoads) ? ApplyFactors(record.Mzz, factorsForceLength) : null;
+      record.Fx = resultTypes.Contains(ResultType.TotalLoadsAndReactions) ? ApplyFactors(record.Fx, factorsForce) : null;
+      record.Fy = resultTypes.Contains(ResultType.TotalLoadsAndReactions) ? ApplyFactors(record.Fy, factorsForce) : null;
+      record.Fz = resultTypes.Contains(ResultType.TotalLoadsAndReactions) ? ApplyFactors(record.Fz, factorsForce) : null;
+      record.Mxx = resultTypes.Contains(ResultType.TotalLoadsAndReactions) ? ApplyFactors(record.Mxx, factorsForceLength) : null;
+      record.Myy = resultTypes.Contains(ResultType.TotalLoadsAndReactions) ? ApplyFactors(record.Myy, factorsForceLength) : null;
+      record.Mzz = resultTypes.Contains(ResultType.TotalLoadsAndReactions) ? ApplyFactors(record.Mzz, factorsForceLength) : null;
 
-      record.Fx_Reac = resultTypes.Contains(ResultType.TotalReactions) ? ApplyFactors(record.Fx_Reac, factorsForce) : null;
-      record.Fy_Reac = resultTypes.Contains(ResultType.TotalReactions) ? ApplyFactors(record.Fy_Reac, factorsForce) : null;
-      record.Fz_Reac = resultTypes.Contains(ResultType.TotalReactions) ? ApplyFactors(record.Fz_Reac, factorsForce) : null;
-      record.Mxx_Reac = resultTypes.Contains(ResultType.TotalReactions) ? ApplyFactors(record.Mxx_Reac, factorsForceLength) : null;
-      record.Myy_Reac = resultTypes.Contains(ResultType.TotalReactions) ? ApplyFactors(record.Myy_Reac, factorsForceLength) : null;
-      record.Mzz_Reac = resultTypes.Contains(ResultType.TotalReactions) ? ApplyFactors(record.Mzz_Reac, factorsForceLength) : null;
+      record.Fx_Reac = resultTypes.Contains(ResultType.TotalLoadsAndReactions) ? ApplyFactors(record.Fx_Reac, factorsForce) : null;
+      record.Fy_Reac = resultTypes.Contains(ResultType.TotalLoadsAndReactions) ? ApplyFactors(record.Fy_Reac, factorsForce) : null;
+      record.Fz_Reac = resultTypes.Contains(ResultType.TotalLoadsAndReactions) ? ApplyFactors(record.Fz_Reac, factorsForce) : null;
+      record.Mxx_Reac = resultTypes.Contains(ResultType.TotalLoadsAndReactions) ? ApplyFactors(record.Mxx_Reac, factorsForceLength) : null;
+      record.Myy_Reac = resultTypes.Contains(ResultType.TotalLoadsAndReactions) ? ApplyFactors(record.Myy_Reac, factorsForceLength) : null;
+      record.Mzz_Reac = resultTypes.Contains(ResultType.TotalLoadsAndReactions) ? ApplyFactors(record.Mzz_Reac, factorsForceLength) : null;
 
-      record.Mode = resultTypes.Contains(ResultType.Mode) ? record.Mode : null;
+      record.Mode = resultTypes.Contains(ResultType.DynamicSummary) ? record.Mode : null;
 
-      record.Frequency = resultTypes.Contains(ResultType.Frequency) ? record.Frequency : null;
+      record.Frequency = resultTypes.Contains(ResultType.DynamicSummary) ? record.Frequency : null;
 
-      record.LoadFactor = resultTypes.Contains(ResultType.LoadFactor) ? record.LoadFactor : null;
+      record.LoadFactor = resultTypes.Contains(ResultType.DynamicSummary) ? record.LoadFactor : null;
 
-      record.ModalStiffness = resultTypes.Contains(ResultType.ModalStiffness) ? ApplyFactors(record.ModalStiffness, factorsForcePerLength) : null; // kN/m
+      record.ModalStiffness = resultTypes.Contains(ResultType.DynamicSummary) ? ApplyFactors(record.ModalStiffness, factorsForcePerLength) : null; // kN/m
 
-      record.ModalGeometricStiffness = resultTypes.Contains(ResultType.ModalGeometricStiffness) ? ApplyFactors(record.ModalGeometricStiffness, factorsForcePerLength) : null; // kN/m
+      record.ModalGeometricStiffness = resultTypes.Contains(ResultType.DynamicSummary) ? ApplyFactors(record.ModalGeometricStiffness, factorsForcePerLength) : null; // kN/m
 
-      record.ModalMass = resultTypes.Contains(ResultType.ModalMass) ? ApplyFactors(record.ModalMass, factorsMass) : null;
+      record.ModalMass = resultTypes.Contains(ResultType.DynamicSummary) ? ApplyFactors(record.ModalMass, factorsMass) : null;
 
-      record.EffectiveMassX = resultTypes.Contains(ResultType.EffectiveMass) ? ApplyFactors(record.EffectiveMassX, factorsMass) : null;
-      record.EffectiveMassY = resultTypes.Contains(ResultType.EffectiveMass) ? ApplyFactors(record.EffectiveMassY, factorsMass) : null;
-      record.EffectiveMassZ = resultTypes.Contains(ResultType.EffectiveMass) ? ApplyFactors(record.EffectiveMassZ, factorsMass) : null;
-      record.EffectiveMassXX = resultTypes.Contains(ResultType.EffectiveMass) ? ApplyFactors(record.EffectiveMassXX, factorsMass) : null;
-      record.EffectiveMassYY = resultTypes.Contains(ResultType.EffectiveMass) ? ApplyFactors(record.EffectiveMassYY, factorsMass) : null;
-      record.EffectiveMassZZ = resultTypes.Contains(ResultType.EffectiveMass) ? ApplyFactors(record.EffectiveMassZZ, factorsMass) : null;
+      record.EffectiveMassX = resultTypes.Contains(ResultType.DynamicSummary) ? ApplyFactors(record.EffectiveMassX, factorsMass) : null;
+      record.EffectiveMassY = resultTypes.Contains(ResultType.DynamicSummary) ? ApplyFactors(record.EffectiveMassY, factorsMass) : null;
+      record.EffectiveMassZ = resultTypes.Contains(ResultType.DynamicSummary) ? ApplyFactors(record.EffectiveMassZ, factorsMass) : null;
+      record.EffectiveMassXX = resultTypes.Contains(ResultType.DynamicSummary) ? ApplyFactors(record.EffectiveMassXX, factorsMass) : null;
+      record.EffectiveMassYY = resultTypes.Contains(ResultType.DynamicSummary) ? ApplyFactors(record.EffectiveMassYY, factorsMass) : null;
+      record.EffectiveMassZZ = resultTypes.Contains(ResultType.DynamicSummary) ? ApplyFactors(record.EffectiveMassZZ, factorsMass) : null;
 
       return true;
     }

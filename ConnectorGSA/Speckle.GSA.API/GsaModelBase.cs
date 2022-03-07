@@ -37,7 +37,7 @@ namespace Speckle.GSA.API
             {
               retList.Add(ResultGroup.Assembly);
             }
-            else if (!retList.Contains(ResultGroup.Node) && !retList.Contains(ResultGroup.Node))
+            else if ((rts.Contains("nodal") || rts.Contains("constraint")) && !retList.Contains(ResultGroup.Node) && !retList.Contains(ResultGroup.Node))
             {
               retList.Add(ResultGroup.Node);
             }

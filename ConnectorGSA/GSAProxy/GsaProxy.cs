@@ -52,15 +52,8 @@ namespace Speckle.ConnectorGSA.Proxy
       { ResultType.Element2dProjectedStressMiddle, "2D Element Projected Stress - Middle" },
       { ResultType.Element2dProjectedStressTop, "2D Element Projected Stress - Top" },
       { ResultType.AssemblyForcesAndMoments, "Assembly Forces and Moments" },
-      { ResultType.TotalLoads, "Total Loads" },
-      { ResultType.TotalReactions, "Total Reactions" },
-      { ResultType.Mode, "Mode" },
-      { ResultType.Frequency, "Frequency" },
-      { ResultType.LoadFactor, "Load Factor" },
-      { ResultType.ModalStiffness, "Modal Stiffness" },
-      { ResultType.ModalGeometricStiffness, "Modal Geometric Stiffness" },
-      { ResultType.ModalMass, "Modal Mass" },
-      { ResultType.EffectiveMass, "Effective Mass" }
+      { ResultType.TotalLoadsAndReactions, "Total Loads and Reactions" },
+      { ResultType.DynamicSummary, "Dynamic Summary" }
     };
 
     //These are the exceptions to the rule that, in GSA, all records that relate to each table (i.e. the set with mutually-exclusive indices) have the same keyword
