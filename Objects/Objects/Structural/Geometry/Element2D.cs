@@ -14,7 +14,7 @@ namespace Objects.Structural.Geometry
     public string name { get; set; }
 
     [DetachProperty]
-    public ICurve outline { get; set; }
+    public List<ICurve> outline { get; set; }
 
     [DetachProperty]
     public Property2D property { get; set; }

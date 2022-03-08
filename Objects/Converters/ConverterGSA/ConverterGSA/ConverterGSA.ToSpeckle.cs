@@ -1,4 +1,5 @@
-﻿using Objects.Geometry;
+﻿using Objects;
+using Objects.Geometry;
 using Objects.Structural;
 using Objects.Structural.Geometry;
 using Objects.Structural.GSA.Geometry;
@@ -555,13 +556,14 @@ namespace ConverterGSA
       };
 
       //-- App agnostic --
+      var outline = new List<ICurve> { };
       if (gsaMemb.NodeIndices.Count >= 3)
       {
         var topology = gsaMemb.NodeIndices.Select(i => GetNodeFromIndex(i)).ToList();
         speckleMember2d.topology = topology;
         var coordinates = topology.SelectMany(x => x.basePoint.ToList()).ToList();
         coordinates.AddRange(topology[0].basePoint.ToList());
-        speckleMember2d.outline = new Polyline(coordinates);
+        outline.Add(new Polyline(coordinates));
         AddToMeaningfulNodeIndices(speckleMember2d.topology.Select(n => n.applicationId), GSALayer.Design);
       }
       else
@@ -575,13 +577,23 @@ namespace ConverterGSA
       if (gsaMemb.PropertyIndex.IsIndex()) speckleMember2d.property = GetProperty2dFromIndex(gsaMemb.PropertyIndex.Value);
       if (gsaMemb.Voids.HasValues())
       {
-        speckleMember2d.voids = gsaMemb.Voids.Select(v => v.Select(i => GetNodeFromIndex(i)).ToList()).ToList();
+        var voids = gsaMemb.Voids.Select(v => v.Select(i => GetNodeFromIndex(i)).ToList()).ToList();
+        foreach(var v in voids){
+          var coordinates = v.SelectMany(x => x.basePoint.ToList()).ToList();
+          coordinates.AddRange(v[0].basePoint.ToList());
+          outline.Add(new Polyline(coordinates));
+        }
+        speckleMember2d.voids = voids;
+
         AddToMeaningfulNodeIndices(speckleMember2d.voids.SelectMany(n => n.Select(n2 => n2.applicationId)), GSALayer.Design);
       }
       else
       {
 
       }
+
+      //add list of curves for member and member void outlines
+      speckleMember2d.outline = outline;
 
       //The following properties aren't part of the structural schema:
       speckleMember2d["Exposure"] = gsaMemb.Exposure.ToString();

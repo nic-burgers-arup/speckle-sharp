@@ -117,13 +117,16 @@ namespace Objects.Converter.Revit
       }
 
       speckleElement2D.topology = edgeNodes;
-      speckleElement2D.outline = displayLine;
+
+      var outline = new List<ICurve> { };
+      outline.Add(displayLine);
 
       var voidNodes = new List<List<Node>> { };
-      var voidLoops = revitSurface.GetLoops(AnalyticalLoopType.Void);
+      var voidLoops = revitSurface.GetLoops(AnalyticalLoopType.Void);      
       foreach (var loop in voidLoops)
       {
         var loopNodes = new List<Node>();
+        var voidDisplayLine = new Polycurve();
         foreach (var curve in loop)
         {
           var points = curve.Tessellate();
@@ -134,10 +137,14 @@ namespace Objects.Converter.Revit
             var voidNode = new Node(vertex, null, null, null);
             loopNodes.Add(voidNode);
           }
+          voidDisplayLine.segments.Add(CurveToSpeckle(curve));
         }
         voidNodes.Add(loopNodes);
+        outline.Add(voidDisplayLine);
       }
+
       speckleElement2D.voids = voidNodes;
+      speckleElement2D.outline = outline;
 
       //var mesh = new Geometry.Mesh();
       //var solidGeom = GetElementSolids(structuralElement);

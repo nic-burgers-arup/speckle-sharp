@@ -2,6 +2,7 @@
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using System.Collections.Generic;
+using Objects;
 using Objects.Geometry;
 using Objects.Structural.Geometry;
 using Objects.Structural.Properties;
@@ -37,9 +38,22 @@ namespace Objects.Structural.GSA.Geometry
       this.orientationAngle = orientationAngle;
       this.isDummy = isDummy;
 
+      var outline = new List<ICurve> { };
       var coordinates = perimeter.SelectMany(x => x.basePoint.ToList()).ToList();
       coordinates.AddRange(perimeter[0].basePoint.ToList());
-      this.outline = new Polyline(coordinates, this.units != null ? this.units : perimeter.FirstOrDefault().units);
+      outline.Add(new Polyline(coordinates, this.units != null ? this.units : perimeter.FirstOrDefault().units));
+
+      if(voids != null)
+      {
+        foreach(var v in voids)
+        {
+          var voidCoordinates = v.SelectMany(x => x.basePoint.ToList()).ToList();
+          voidCoordinates.AddRange(v[0].basePoint.ToList());
+          outline.Add(new Polyline(voidCoordinates, this.units != null ? this.units : v.FirstOrDefault().units));
+        }
+      }
+
+      this.outline = outline;
 
     }
   }
