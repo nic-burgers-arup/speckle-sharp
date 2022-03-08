@@ -76,8 +76,12 @@ namespace Objects.Converter.Revit
       if (revitBeam == null)
       {
         revitBeam = Doc.Create.NewFamilyInstance(baseLine, familySymbol, level, structuralType);
-        StructuralFramingUtils.DisallowJoinAtEnd(revitBeam, 0);
-        StructuralFramingUtils.DisallowJoinAtEnd(revitBeam, 1);
+
+        if (structuralType == StructuralType.Beam)
+        {
+          StructuralFramingUtils.DisallowJoinAtEnd(revitBeam, 0);
+          StructuralFramingUtils.DisallowJoinAtEnd(revitBeam, 1);
+        }
       }
 
       //reference level, only for beams
