@@ -500,7 +500,7 @@ namespace Objects.Converter.Revit
     private T GetElementType<T>(Base element)
     {
       List<ElementType> types = new List<ElementType>();
-      ElementFilter filter = GetCategoryFilter(element);
+     ElementFilter filter = GetCategoryFilter(element);
 
       if (filter != null)
       {
@@ -528,18 +528,18 @@ namespace Objects.Converter.Revit
 
       if (!string.IsNullOrEmpty(family) && !string.IsNullOrEmpty(type))
       {
-        match = types.FirstOrDefault(x => x.FamilyName == family && x.Name == type);
+        match = types.FirstOrDefault(x => x.FamilyName.ToLower() == family.ToLower() && x.Name.ToLower() == type.ToLower());
       }
 
       //some elements only have one family so we didn't add such prop our schema
       if (match == null && string.IsNullOrEmpty(family) && !string.IsNullOrEmpty(type))
       {
-        match = types.FirstOrDefault(x => x.Name == type);
+        match = types.FirstOrDefault(x => x.Name.ToLower() == type.ToLower());
       }
 
       if (match == null && !string.IsNullOrEmpty(family)) // try and match the family only.
       {
-        match = types.FirstOrDefault(x => x.FamilyName == family);
+        match = types.FirstOrDefault(x => x.FamilyName.ToLower() == family.ToLower());
         if (match != null) //inform user that the type is different!
           Report.Log($"Missing type. Family: {family} Type: {type}\nType was replaced with: {match.FamilyName}, {match.Name}");
 

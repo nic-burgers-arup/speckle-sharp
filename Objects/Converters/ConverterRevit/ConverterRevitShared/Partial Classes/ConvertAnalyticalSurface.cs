@@ -60,9 +60,9 @@ namespace Objects.Converter.Revit
     {
 
       List<ApplicationPlaceholderObject> placeholderObjects = new List<ApplicationPlaceholderObject> { };
-      switch (speckleElement.property.type)
+      switch (speckleElement.memberType)
       {
-        case Structural.PropertyType2D.Wall:
+        case MemberType.Wall:
           Geometry.Line baseline = GetBottomLine(speckleElement.topology);
           double lowestElvevation = speckleElement.topology.Min(node => node.basePoint.z);
           double topElevation = speckleElement.topology.Max(node => node.basePoint.z);
@@ -70,7 +70,7 @@ namespace Objects.Converter.Revit
           Node topNode = speckleElement.topology.Find(node => node.basePoint.z == topElevation);
           var bottemLevel = LevelFromPoint(PointToNative(bottomNode.basePoint));
           var topLevel = LevelFromPoint(PointToNative(topNode.basePoint));
-          RevitWall revitWall = new RevitWall(speckleElement.property.name, speckleElement.property.name, baseline, bottemLevel, topLevel);
+          RevitWall revitWall = new RevitWall("", speckleElement.property.name, baseline, bottemLevel, topLevel);
           return WallToNative(revitWall);
           break;
         default:
