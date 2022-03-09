@@ -58,8 +58,6 @@ namespace Objects.Converter.Revit
 
     public List<ApplicationPlaceholderObject> AnalyticalSurfaceToNative(Element2D speckleElement)
     {
-
-      List<ApplicationPlaceholderObject> placeholderObjects = new List<ApplicationPlaceholderObject> { };
       switch (speckleElement.memberType)
       {
         case MemberType.Wall:
@@ -71,17 +69,15 @@ namespace Objects.Converter.Revit
           var bottemLevel = LevelFromPoint(PointToNative(bottomNode.basePoint));
           var topLevel = LevelFromPoint(PointToNative(topNode.basePoint));
           RevitWall revitWall = new RevitWall("", speckleElement.property.name, baseline, bottemLevel, topLevel);
+          revitWall.structural = true;
           return WallToNative(revitWall);
-          break;
         default:
           var polycurve = PolycurveFromTopology(speckleElement.topology);
           var level = LevelFromPoint(PointToNative(speckleElement.topology[0].basePoint));
-          RevitFloor revitFloor = new RevitFloor(speckleElement.property.name, speckleElement.property.name, polycurve, level);
+          RevitFloor revitFloor = new RevitFloor("", speckleElement.property.name, polycurve, level);
+          revitFloor.structural = true;
           return FloorToNative(revitFloor);
-          break;
       }
-      return placeholderObjects;
-
     }
 
 	private Element2D AnalyticalSurfaceToSpeckle(AnalyticalModelSurface revitSurface)
