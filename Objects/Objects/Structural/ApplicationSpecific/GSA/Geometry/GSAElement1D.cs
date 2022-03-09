@@ -15,7 +15,6 @@ namespace Objects.Structural.GSA.Geometry
     public string colour { get; set; }
     public string action { get; set; }
     public bool isDummy { get; set; }
-    public ElementType1D type { get; set; }
     public GSAElement1D() { }
 
     [SchemaInfo("GSAElement1D (from local axis)", "Creates a Speckle structural 1D element for GSA (from local axis)", "GSA", "Geometry")]
@@ -35,7 +34,6 @@ namespace Objects.Structural.GSA.Geometry
       this.end1Offset = end1Offset == null ? new Vector(0, 0, 0) : end1Offset;
       this.end2Offset = end2Offset == null ? new Vector(0, 0, 0) : end2Offset;
       this.localAxis = localAxis;
-      this.memberType = MemberType.NotSet;
     }
 
     [SchemaInfo("GSAElement1D (from orientation node and angle)", "Creates a Speckle structural 1D element for GSA (from orientation node and angle)", "GSA", "Geometry")]
@@ -57,7 +55,6 @@ namespace Objects.Structural.GSA.Geometry
       this.end2Offset = end2Offset == null ? new Vector(0, 0, 0) : end2Offset;
       this.orientationNode = orientationNode;
       this.orientationAngle = orientationAngle;
-      this.memberType = MemberType.NotSet;
     }
   }
 }

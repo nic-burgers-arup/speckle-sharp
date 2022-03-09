@@ -230,7 +230,7 @@ namespace ConverterGSATests
     {
       var speckleMember1d = new GSAMember1D()
       {
-        memberType = MemberType.Beam,
+        type = ElementType1D.Beam,
         baseLine = new Line(new List<double>() { 20, 21, 22, 50, 51, 52 }),
       };
       var gsaConvertedRecords = converter.ConvertToNative(new List<Base>() { speckleMember1d });

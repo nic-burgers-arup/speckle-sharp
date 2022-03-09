@@ -32,7 +32,7 @@ namespace Objects.Structural.ETABS.Geometry
     /// <param name="end2Offset"></param>
     /// <param name="localAxis"></param>
     [SchemaInfo("Element1D (from local axis)", "Creates a Speckle ETABS 1D element (from local axis)", "ETABS", "Geometry")]
-    public ETABSElement1D(Line baseLine, Property1D property, MemberType memberType,
+    public ETABSElement1D(Line baseLine, Property1D property, ElementType1D type,
         string name = null,
         [SchemaParamInfo("If null, restraint condition defaults to unreleased (fully fixed translations and rotations)")] Restraint end1Releases = null,
         [SchemaParamInfo("If null, restraint condition defaults to unreleased (fully fixed translations and rotations)")] Restraint end2Releases = null,
@@ -44,7 +44,7 @@ namespace Objects.Structural.ETABS.Geometry
     {
       this.baseLine = baseLine;
       this.property = property;
-      this.memberType = memberType;
+      this.type = type;
       this.name = name;
       this.end1Releases = end1Releases == null ? new Restraint("FFFFFF") : end1Releases;
       this.end2Releases = end2Releases == null ? new Restraint("FFFFFF") : end2Releases;
@@ -70,7 +70,7 @@ namespace Objects.Structural.ETABS.Geometry
     /// <param name="orientationNode"></param>
     /// <param name="orientationAngle"></param>
     [SchemaInfo("Element1D (from orientation node and angle)", "Creates a Speckle ETABS 1D element (from orientation node and angle)", "ETABS", "Geometry")]
-    public ETABSElement1D(Line baseLine, Property1D property, MemberType memberType,
+    public ETABSElement1D(Line baseLine, Property1D property, ElementType1D type,
          string name = null,
          [SchemaParamInfo("If null, restraint condition defaults to unreleased (fully fixed translations and rotations)")] Restraint end1Releases = null,
          [SchemaParamInfo("If null, restraint condition defaults to unreleased (fully fixed translations and rotations)")] Restraint end2Releases = null,
@@ -83,7 +83,7 @@ namespace Objects.Structural.ETABS.Geometry
     {
       this.baseLine = baseLine;
       this.property = property;
-      this.memberType = memberType;
+      this.type = type;
       this.name = name;
       this.end1Releases = end1Releases == null ? new Restraint("FFFFFF") : end1Releases;
       this.end2Releases = end2Releases == null ? new Restraint("FFFFFF") : end2Releases;
