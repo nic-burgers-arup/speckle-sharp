@@ -21,6 +21,7 @@ using Bentley.DgnPlatformNET;
 using Bentley.DgnPlatformNET.Elements;
 using Bentley.MstnPlatformNET;
 using Bentley.DgnPlatformNET.DgnEC;
+using Bentley.ECObjects.Instance;
 using Speckle.ConnectorBentley.Entry;
 using Speckle.ConnectorBentley.Storage;
 using Speckle.Core.Logging;
@@ -144,7 +145,7 @@ namespace Speckle.ConnectorBentley.UI
 
       for (uint i = 0; i < numSelected; i++)
       {
-        Bentley.DgnPlatformNET.Elements.Element el = null;
+        Element el = null;
         SelectionSetManager.GetElement(i, ref el, ref modelRef);
         objs.Add(el.ElementId.ToString());
       }
@@ -164,6 +165,7 @@ namespace Speckle.ConnectorBentley.UI
       var elementTypes = new List<string> { "Arc", "Ellipse", "Line", "Spline", "Line String", "Complex Chain", "Shape", "Complex Shape", "Mesh" };
 
       var filterList = new List<ISelectionFilter>();
+      filterList.Add(new ManualSelectionFilter());
       filterList.Add(new ListSelectionFilter { Slug = "level", Name = "Levels", Icon = "LayersTriple", Description = "Selects objects based on their level.", Values = levels });
       filterList.Add(new ListSelectionFilter { Slug = "elementType", Name = "Element Types", Icon = "Category", Description = "Selects objects based on their element type.", Values = elementTypes });
 
@@ -194,12 +196,12 @@ namespace Speckle.ConnectorBentley.UI
     {
       var kit = KitManager.GetDefaultKit();
       var converter = kit.LoadConverter(Utils.VersionedAppName);
+      if (converter == null)
+        throw new Exception("Could not find any Kit!");
+
       var transport = new ServerTransport(state.Client.Account, state.StreamId);
       var stream = await state.Client.StreamGet(state.StreamId);
       var previouslyReceivedObjects = state.ReceivedObjects;
-
-      if (converter == null)
-        throw new Exception("Could not find any Kit!");
 
       if (Control.InvokeRequired)
         Control.Invoke(new SetContextDelegate(converter.SetContextDocument), new object[] { Session.Instance });
@@ -208,14 +210,6 @@ namespace Speckle.ConnectorBentley.UI
 
       if (progress.CancellationTokenSource.Token.IsCancellationRequested)
         return null;
-
-      /*
-      if (Doc == null)
-      {
-        progress.Report.LogOperationError(new Exception($"No Document is open."));
-        progress.CancellationTokenSource.Cancel();
-      }
-      */
 
       //if "latest", always make sure we get the latest commit when the user clicks "receive"
       Commit commit = null;
@@ -228,24 +222,24 @@ namespace Speckle.ConnectorBentley.UI
       {
         commit = await state.Client.CommitGet(progress.CancellationTokenSource.Token, state.StreamId, state.CommitId);
       }
+
       string referencedObject = commit.referencedObject;
-
-      var commitObject = await Operations.Receive(
-        referencedObject,
-        progress.CancellationTokenSource.Token,
-        transport,
-        onProgressAction: dict => progress.Update(dict),
-        onTotalChildrenCountKnown: num => Execute.PostToUIThread(() => progress.Max = num),
-        onErrorAction: (message, exception) =>
-        {
-          progress.Report.LogOperationError(exception);
-          progress.CancellationTokenSource.Cancel();
-        },
-        disposeTransports: true
-        );
-
+      Base commitObject = null;
       try
       {
+        commitObject = await Operations.Receive(
+          referencedObject,
+          progress.CancellationTokenSource.Token,
+          transport,
+          onProgressAction: dict => progress.Update(dict),
+          onTotalChildrenCountKnown: num => Execute.PostToUIThread(() => progress.Max = num),
+          onErrorAction: (message, exception) =>
+          {
+            progress.Report.LogOperationError(exception);
+            progress.CancellationTokenSource.Cancel();
+          },
+          disposeTransports: true
+          );
         await state.Client.CommitReceived(new CommitReceivedInput
         {
           streamId = stream?.id,
@@ -254,15 +248,19 @@ namespace Speckle.ConnectorBentley.UI
           sourceApplication = Utils.VersionedAppName
         });
       }
-      catch
+      catch (Exception e)
       {
-        // Do nothing!
+        progress.Report.OperationErrors.Add(new Exception($"Could not receive or deserialize commit: {e.Message}"));
       }
-      if (progress.Report.OperationErrorsCount != 0)
+
+      if (progress.Report.OperationErrorsCount != 0 || commitObject == null)
         return state;
 
-      // invoke conversions on the main thread via control
       var flattenedObjects = FlattenCommitObject(commitObject, converter);
+      // needs to be set for editing to work 
+      converter.SetPreviousContextObjects(previouslyReceivedObjects);
+
+      // invoke conversions on the main thread via control
       List<ApplicationPlaceholderObject> newPlaceholderObjects;
       if (Control.InvokeRequired)
         newPlaceholderObjects = (List<ApplicationPlaceholderObject>)Control.Invoke(new NativeConversionAndBakeDelegate(ConvertAndBakeReceivedObjects), new object[] { flattenedObjects, converter, state, progress });
@@ -271,7 +269,7 @@ namespace Speckle.ConnectorBentley.UI
 
       if (newPlaceholderObjects == null)
       {
-        converter.Report.ConversionErrors.Add(new Exception("fatal error: receive cancelled by user"));
+        converter.Report.LogConversionError(new Exception("fatal error: receive cancelled by user"));
         return null;
       }
 
@@ -295,6 +293,34 @@ namespace Speckle.ConnectorBentley.UI
       }
 
       return state;
+    }
+
+    private string GetItemTypeProperty(Element host, string libraryName, string itemTypeName, string propertyName)
+    {
+      CustomItemHost itemHost = new CustomItemHost(host, false);
+      IDgnECInstance ecInstance = itemHost.GetCustomItem(libraryName, itemTypeName);
+      if(ecInstance != null)
+      {
+        var prop = ecInstance.GetAsString(propertyName);
+        return prop;
+      }
+      return null;
+    }
+
+    private Element FindExistingElementByApplicationId(ISpeckleConverter converter, string applicationId)
+    {
+      var modelObjIds = Model.ConvertibleObjects(converter);
+      foreach (var objId in modelObjIds)
+      {
+        double.TryParse(objId, out double id);
+        var obj = Model.FindElementById((ElementId)(long)id);
+        var prop = GetItemTypeProperty(obj, "Speckle", "Speckle Data", "ApplicationId");
+
+        if(prop == applicationId)
+          return obj;
+      }
+
+      return null;
     }
 
     delegate List<ApplicationPlaceholderObject> NativeConversionAndBakeDelegate(List<Base> objects, ISpeckleConverter converter, StreamState state, ProgressViewModel progress);
@@ -327,17 +353,103 @@ namespace Speckle.ConnectorBentley.UI
           else if (convRes is List<ApplicationPlaceholderObject> placeholderList)
             placeholders.AddRange(placeholderList);
 
-          // creating new elements, not updating existing!
+          var libraryName = "Speckle";
+          var itemTypeName = "Speckle Data";
+          var propertyName = "ApplicationId";
+
+          // try to update existing, fall back to adding new elements if failed
           var convertedElement = convRes as Element;
-          if (convertedElement != null)
+          if (convertedElement != null && convertedElement.IsValid)
           {
-            var status = convertedElement.AddToModel();
+            var status = StatusInt.Error;
+
+            // check for existing speckle generated id in file ec data
+            var existing = FindExistingElementByApplicationId(converter, @base.applicationId);
+            if (existing != null)
+            {
+              status = convertedElement.ReplaceInModel(existing);
+            } else
+            {
+              // check for existing bentley id 
+              var parse = double.TryParse(@base.applicationId, out double id);
+              if (parse)
+              {
+                var appId = (long)id;
+                var existingElement = Model.FindElementById((ElementId)appId);
+
+                if (existingElement != null)
+                {
+                  var oldElement = Element.GetFromElementRef(existingElement.GetNativeElementRef());
+
+                  if (oldElement != null)
+                  {
+                    try
+                    {
+                      status = convertedElement.ReplaceInModel(oldElement);
+                    }
+                    catch
+                    {
+                      status = convertedElement.AddToModel();
+                    }
+                  }
+                }
+                else
+                {
+                  status = convertedElement.AddToModel();
+                }
+              }
+              else
+              {
+                status = convertedElement.AddToModel();
+              }
+            }
+
             if (status == StatusInt.Error)
+            {
               converter.Report.LogConversionError(new Exception($"Failed to bake object {@base.id} of type {@base.speckle_type}."));
+            }
           }
           else
           {
             converter.Report.LogConversionError(new Exception($"Failed to convert object {@base.id} of type {@base.speckle_type}."));
+          }
+
+          // add item type property to track applicationId
+          CustomItemHost customItemHost = new CustomItemHost(convertedElement, false);
+          ItemTypeLibrary itemTypeLibrary = ItemTypeLibrary.FindByName(libraryName, File);
+          ItemType itemType = null;
+
+          if (itemTypeLibrary == null)
+          {
+            itemTypeLibrary = ItemTypeLibrary.Create(libraryName, File);
+            itemType = itemTypeLibrary.AddItemType(itemTypeName);
+            CustomProperty customProperty = itemType.AddProperty(propertyName);
+            customProperty.DefaultValue = "applicationId";
+            customProperty.Type = CustomProperty.TypeKind.String;
+            itemTypeLibrary.Write();
+          }
+          else
+          {
+            itemType = itemTypeLibrary.GetItemTypeByName(itemTypeName);
+            if (itemType == null)
+              itemType = itemTypeLibrary.AddItemType(itemTypeName);
+
+            CustomProperty customProperty = itemType.GetPropertyByName(propertyName);
+            if (customProperty == null)
+              customProperty = itemType.AddProperty(propertyName);
+          }
+
+          IDgnECInstance item = customItemHost.GetCustomItem(libraryName, itemTypeName);
+          if (item == null)
+          {
+            item = customItemHost.ApplyCustomItem(itemType, true);
+          }
+
+          if (item != null)
+          {
+            item.SetString("ApplicationId", @base.applicationId);
+            item.SetValue("ApplicationId", @base.applicationId);
+            item.WriteChanges();
           }
         }
         catch (Exception e)
@@ -534,8 +646,11 @@ namespace Speckle.ConnectorBentley.UI
           var levelCache = Model.GetFileLevelCache();
           var objLevel = levelCache.GetLevel(obj.LevelId);
           var layerName = "Unknown";
-          if (objLevel != null)
-            layerName = objLevel.Name;
+          if (objLevel != null && objLevel.Status != LevelCacheErrorCode.CannotFindLevel)
+            if (Control.InvokeRequired)
+              Control.Invoke((Action)(() => { layerName = objLevel.Name; }));        
+            else
+              layerName = objLevel.Name;
 
 #if (OPENROADS || OPENRAIL || OPENBRIDGE)
           if (convertCivilObject)
@@ -713,8 +828,12 @@ namespace Speckle.ConnectorBentley.UI
       var selection = new List<string>();
       switch (filter.Slug)
       {
+        case "manual":
+          return filter.Selection;
+
         case "all":
           return Model.ConvertibleObjects(converter);
+
         case "level":
           foreach (var levelName in filter.Selection)
           {
@@ -728,6 +847,7 @@ namespace Speckle.ConnectorBentley.UI
             selection.AddRange(objs);
           }
           return selection;
+
         case "elementType":
           foreach (var typeName in filter.Selection)
           {

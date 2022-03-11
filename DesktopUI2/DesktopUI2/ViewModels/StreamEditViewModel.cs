@@ -188,7 +188,13 @@ namespace DesktopUI2.ViewModels
       if (branch != null)
         SelectedBranch = branch;
       else
-        SelectedBranch = Branches[0];
+      {
+        var main = Branches.FirstOrDefault(x => x.name == "main");
+        if (main != null)
+          SelectedBranch = main;
+        else
+          SelectedBranch = Branches[0];         
+      }        
 
       if (streamState.Filter != null)
       {

@@ -398,7 +398,6 @@ namespace Objects.Converter.Bentley
           var _arc = new Arc();
 
           _arc.radius = radius;
-
           _arc.angleRadians = Math.Abs(sweep);
           _arc.startPoint = Point3dToSpeckle(startPoint);
           _arc.endPoint = Point3dToSpeckle(endPoint);
@@ -423,16 +422,6 @@ namespace Objects.Converter.Bentley
           vec.GetRange(out var range);
           bool worldXY = startPoint.Z == 0 && endPoint.Z == 0 ? true : false;
           _arc.bbox = BoxToSpeckle(range, worldXY);
-
-          //if (sweep < 0)
-          //{
-          //  Point start = _arc.endPoint;
-          //  _arc.endPoint = _arc.startPoint;
-          //  _arc.startPoint = start;
-
-          //  _arc.startAngle = endAngle;
-          //  _arc.endAngle = startAngle;
-          //}
 
           return _arc;
         }
@@ -461,7 +450,8 @@ namespace Objects.Converter.Bentley
 
       var _arc = new Arc();
       _arc.radius = radius / UoR;
-      _arc.angleRadians = Math.Abs(sweep);
+      
+      _arc.angleRadians = sweep;
       _arc.startPoint = Point3dToSpeckle(startPoint);
       _arc.endPoint = Point3dToSpeckle(endPoint);
       _arc.midPoint = Point3dToSpeckle(midPoint);
@@ -792,6 +782,7 @@ namespace Objects.Converter.Bentley
                 break;
               case CurvePrimitive.CurvePrimitiveType.Arc:
                 primitive.TryGetArc(out DEllipse3d arc);
+                if (arc.SweepAngle.Radians < 0) arc.ReverseInPlace();
                 segments.Add(ArcToSpeckle(arc));
                 break;
               case CurvePrimitive.CurvePrimitiveType.LineString:
@@ -1630,117 +1621,82 @@ namespace Objects.Converter.Bentley
 
     public Base ExtendedElementToSpeckle(ExtendedElementElement extendedElement, string units = null)
     {
+      // check for primitive solid
+      var solidPrimitive = SolidPrimitiveQuery.ElementToSolidPrimitive(extendedElement);
+
+      // check for smart solid
+      Convert1.ElementToBody(out var entity, extendedElement, true, false, false);
+      var solidSmartSolid = entity.EntityType == SolidKernelEntity.KernelEntityType.Solid;
+
       var element = new Base();
+      var u = units ?? ModelUnits;
 
-      var segments = new List<ICurve>();
-
-      Processor processor = new Processor();
-      ElementGraphicsOutput.Process(extendedElement, processor);
-      var curves = processor.curveVectors;
-
-      if (curves.Any())
+      if (solidPrimitive != null || solidSmartSolid)
       {
-        foreach (var curve in curves)
-        {
-          foreach (var primitive in curve)
-          {
-            var curvePrimitiveType = primitive.GetCurvePrimitiveType();
+        MeshProcessor meshProcessor = new MeshProcessor();
+        ElementGraphicsOutput.Process(extendedElement, meshProcessor);
 
-            switch (curvePrimitiveType)
+        var mesh = meshProcessor.polyfaceHeader;        
+        element["@displayValue"] = GetMeshFromPolyfaceHeader(mesh, u);
+      } else {
+        Processor processor = new Processor();
+        ElementGraphicsOutput.Process(extendedElement, processor);
+
+        var segments = new List<ICurve>();
+        var curves = processor.curveVectors;
+
+        if (curves.Any())
+        {
+          foreach (var curve in curves)
+          {
+            foreach (var primitive in curve)
             {
-              case CurvePrimitive.CurvePrimitiveType.Line:
-                primitive.TryGetLine(out DSegment3d segment);
-                segments.Add(LineToSpeckle(segment));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.Arc:
-                primitive.TryGetArc(out DEllipse3d arc);
-                segments.Add(ArcToSpeckle(arc));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.LineString:
-                var pointList = new List<DPoint3d>();
-                primitive.TryGetLineString(pointList);
-                segments.Add(PolylineToSpeckle(pointList));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.BsplineCurve:
-                var spline = primitive.GetBsplineCurve();
-                segments.Add(BSplineCurveToSpeckle(spline));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.Spiral:
-                var spiralSpline = primitive.GetProxyBsplineCurve();
-                segments.Add(SpiralCurveElementToCurve(spiralSpline));
-                break;
+              var curvePrimitiveType = primitive.GetCurvePrimitiveType();
+
+              switch (curvePrimitiveType)
+              {
+                case CurvePrimitive.CurvePrimitiveType.Line:
+                  primitive.TryGetLine(out DSegment3d segment);
+                  segments.Add(LineToSpeckle(segment));
+                  break;
+                case CurvePrimitive.CurvePrimitiveType.Arc:
+                  primitive.TryGetArc(out DEllipse3d arc);
+                  segments.Add(ArcToSpeckle(arc));
+                  break;
+                case CurvePrimitive.CurvePrimitiveType.LineString:
+                  var pointList = new List<DPoint3d>();
+                  primitive.TryGetLineString(pointList);
+                  segments.Add(PolylineToSpeckle(pointList));
+                  break;
+                case CurvePrimitive.CurvePrimitiveType.BsplineCurve:
+                  var spline = primitive.GetBsplineCurve();
+                  segments.Add(BSplineCurveToSpeckle(spline));
+                  break;
+                case CurvePrimitive.CurvePrimitiveType.Spiral:
+                  var spiralSpline = primitive.GetProxyBsplineCurve();
+                  segments.Add(SpiralCurveElementToCurve(spiralSpline));
+                  break;
+              }
             }
           }
         }
+
+        element["segments"] = segments;
       }
 
-      element["segments"] = segments;
       return element;
     }
 
     public Base CellHeaderElementToSpeckle(CellHeaderElement cellHeader, string units = null)
     {
       var element = new Base();
-
-
-      return element;
-    }
-
-    public CellHeaderElement CellHeaderElementToNative(Base cellHeader, string units = null)
-    {
-      var element = new CellHeaderElement(Model, null, new DPoint3d(), new DMatrix3d(), new List<Element>() { });
-
-
-      return element;
-    }
-
-
-    public Base Type2ElementToSpeckle(Type2Element cellHeader, string units = null)
-    {
-#if (OPENBUILDINGS)
-#endif
-
-      Processor processor = new Processor();
-      ElementGraphicsOutput.Process(cellHeader, processor);
-
-      var segments = new List<ICurve>();
-      var curves = processor.curveVectors;
-
-      if (curves.Any())
+      var u = units ?? ModelUnits;
+      
+      var cellChildren = cellHeader.GetChildren();
+      List<Base> children = new List<Base> { };
+      foreach (var child in cellChildren)
       {
-        foreach (var curve in curves)
-        {
-          curve.Transform(processor._transform);
-          foreach (var primitive in curve)
-          {
-            var curvePrimitiveType = primitive.GetCurvePrimitiveType();
-
-            switch (curvePrimitiveType)
-            {
-              case CurvePrimitive.CurvePrimitiveType.Line:
-                primitive.TryGetLine(out DSegment3d segment);
-                segments.Add(LineToSpeckle(segment));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.Arc:
-                primitive.TryGetArc(out DEllipse3d arc);
-                segments.Add(ArcToSpeckle(arc));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.LineString:
-                var pointList = new List<DPoint3d>();
-                primitive.TryGetLineString(pointList);
-                segments.Add(PolylineToSpeckle(pointList));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.BsplineCurve:
-                var spline = primitive.GetBsplineCurve();
-                segments.Add(BSplineCurveToSpeckle(spline));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.Spiral:
-                var spiralSpline = primitive.GetProxyBsplineCurve();
-                segments.Add(SpiralCurveElementToCurve(spiralSpline));
-                break;
-            }
-          }
-        }
+        if (CanConvertToSpeckle(child)) children.Add(ConvertToSpeckle(child));
       }
 
       DgnECInstanceCollection instanceCollection = GetElementProperties(cellHeader);
@@ -1757,59 +1713,11 @@ namespace Objects.Converter.Bentley
         var instanceName = instance.ClassDefinition.Name;
       }
 
-      string part = (string)properties["PART"];
-      Category category = FindCategory(part);
-
-      string family = (string)properties["FAMILY"];
-
-      Base element;
-      var u = units ?? ModelUnits;
-
-      // levels in OBD are actually layers..
-      //int level = (int)GetProperty(properties, "Level");
-      //string levelName = (string)GetProperty(properties, "LEVELNAME");
-
-      // ModifiedTime causes problems with de-serialisation atm
-      properties.Remove("ModifiedTime");
-
-      switch (category)
-      {
-        case (Category.Beams):
-          element = BeamToSpeckle(properties, u);
-          break;
-
-        case (Category.CappingBeam):
-          element = CappingBeamToSpeckle(properties, u);
-          break;
-
-        case (Category.Columns):
-          element = ColumnToSpeckle(properties, u);
-          break;
-
-        case (Category.Piles):
-          element = PileToSpeckle(properties, u);
-          break;
-
-        case (Category.FoundationSlab):
-        case (Category.Slabs):
-          element = SlabToSpeckle(properties, segments, u);
-          break;
-
-        case (Category.Walls):
-          element = WallToSpeckle(properties, segments, u);
-          break;
-
-        default:
-          element = new Base();
-          break;
-      }
-
-      element["segments"] = segments;
-
       Base bentleyProperties = new Base();
       foreach (string propertyName in properties.Keys)
       {
         Object value = properties[propertyName];
+
         if (value.GetType().Name == "DPoint3d")
         {
           bentleyProperties[propertyName] = ConvertToSpeckle(value);
@@ -1820,8 +1728,157 @@ namespace Objects.Converter.Bentley
         }
       }
 
+      element["@children"] = children;
       element["@properties"] = bentleyProperties;
+      element["cellDesription"] = cellHeader.CellDescription;
+      element["cellName"] = cellHeader.CellName;
+      element["description"] = cellHeader.Description;
+      element["typeName"] = cellHeader.TypeName;
+      element["elementType"] = cellHeader.ElementType;
 
+      return element;
+    }
+
+    public CellHeaderElement CellHeaderElementToNative(Base cellHeader, string units = null)
+    {
+      var element = new CellHeaderElement(Model, null, new DPoint3d(), new DMatrix3d(), new List<Element>() { });
+      return element;
+    }
+
+    public Base Type2ElementToSpeckle(Type2Element cellHeader, string units = null)
+    {
+      Base element = new Base();
+      var u = units ?? ModelUnits;
+
+      DgnECInstanceCollection instanceCollection = GetElementProperties(cellHeader);
+      Dictionary<string, object> properties = new Dictionary<string, object>();
+      foreach (IDgnECInstance instance in instanceCollection)
+      {
+        foreach (IECPropertyValue propertyValue in instance)
+        {
+          if (propertyValue != null)
+          {
+            properties = GetValue(properties, propertyValue);
+          }
+        }
+        var instanceName = instance.ClassDefinition.Name;
+      }
+
+      Base bentleyProperties = new Base();
+      foreach (string propertyName in properties.Keys)
+      {
+        Object value = properties[propertyName];
+
+        if (value.GetType().Name == "DPoint3d")
+        {
+          bentleyProperties[propertyName] = ConvertToSpeckle(value);
+        } else
+        {
+          bentleyProperties[propertyName] = value;
+        }
+      }
+     
+      if (cellHeader is BrepCellHeaderElement) // smart solids
+      {
+        MeshProcessor meshProcessor = new MeshProcessor();
+        ElementGraphicsOutput.Process(cellHeader, meshProcessor);
+        var mesh = meshProcessor.polyfaceHeader;
+        //element["@displayValue"] = GetMeshFromPolyfaceHeader(mesh, u);
+        element = GetMeshFromPolyfaceHeader(mesh, u);
+      } else
+      {
+        Processor processor = new Processor();
+        ElementGraphicsOutput.Process(cellHeader, processor);
+
+        var segments = new List<ICurve>();
+        var curves = processor.curveVectors;
+
+        if (curves.Any())
+        {
+          foreach (var curve in curves)
+          {
+            curve.Transform(processor._transform);
+            foreach (var primitive in curve)
+            {
+              var curvePrimitiveType = primitive.GetCurvePrimitiveType();
+
+              switch (curvePrimitiveType)
+              {
+                case CurvePrimitive.CurvePrimitiveType.Line:
+                  primitive.TryGetLine(out DSegment3d segment);
+                  segments.Add(LineToSpeckle(segment));
+                  break;
+                case CurvePrimitive.CurvePrimitiveType.Arc:
+                  primitive.TryGetArc(out DEllipse3d arc);
+                  segments.Add(ArcToSpeckle(arc));
+                  break;
+                case CurvePrimitive.CurvePrimitiveType.LineString:
+                  var pointList = new List<DPoint3d>();
+                  primitive.TryGetLineString(pointList);
+                  segments.Add(PolylineToSpeckle(pointList));
+                  break;
+                case CurvePrimitive.CurvePrimitiveType.BsplineCurve:
+                  var spline = primitive.GetBsplineCurve();
+                  segments.Add(BSplineCurveToSpeckle(spline));
+                  break;
+                case CurvePrimitive.CurvePrimitiveType.Spiral:
+                  var spiralSpline = primitive.GetProxyBsplineCurve();
+                  segments.Add(SpiralCurveElementToCurve(spiralSpline));
+                  break;
+              }
+            }
+          }
+        }
+
+        element["segments"] = segments;
+
+#if (OPENBUILDINGS)
+        string part = (string)properties["PART"];
+        Category category = FindCategory(part);
+
+        string family = (string)properties["FAMILY"];
+
+        // levels in OBD are actually layers..
+        //int level = (int)GetProperty(properties, "Level");
+        //string levelName = (string)GetProperty(properties, "LEVELNAME");
+
+        // ModifiedTime causes problems with de-serialisation atm
+        properties.Remove("ModifiedTime");
+
+        switch (category)
+        {
+          case (Category.Beams):
+            element = BeamToSpeckle(properties, u);
+            break;
+
+          case (Category.CappingBeam):
+            element = CappingBeamToSpeckle(properties, u);
+            break;
+
+          case (Category.Columns):
+            element = ColumnToSpeckle(properties, u);
+            break;
+
+          case (Category.Piles):
+            element = PileToSpeckle(properties, u);
+            break;
+
+          case (Category.FoundationSlab):
+          case (Category.Slabs):
+            element = SlabToSpeckle(properties, segments, u);
+            break;
+
+          case (Category.Walls):
+            element = WallToSpeckle(properties, segments, u);
+            break;
+
+          default:
+            element = new Base();
+            break;
+        }
+#endif
+      }
+      element["@properties"] = bentleyProperties;
       return element;
     }
 
@@ -2022,10 +2079,48 @@ namespace Objects.Converter.Bentley
       return null;
     }
 
+
+    public class MeshProcessor : ElementGraphicsProcessor
+    {
+      public DTransform3d _transform;
+      public PolyfaceHeader polyfaceHeader;
+
+      public override void AnnounceTransform(DTransform3d trans)
+      {
+        _transform = trans;
+      }
+
+      public override bool ProcessAsBody(bool isCurved)
+      {
+        return false;
+      }
+
+      public override bool ProcessAsFacets(bool isPolyface)
+      {
+        return true;
+      }
+
+      public override BentleyStatus ProcessFacets(PolyfaceHeader meshData, bool filled)
+      {
+        var polyfaceHeaderData = new PolyfaceHeader();
+        polyfaceHeaderData.CopyFrom(meshData);
+        polyfaceHeader = polyfaceHeaderData;
+        return BentleyStatus.Success;
+      }
+
+      public override bool WantClipping()
+      {
+        return false;
+      }
+    }
+
+
     public class Processor : ElementGraphicsProcessor
     {
       public DTransform3d _transform;
 
+      public List<MSBsplineSurface> surfaces = new List<MSBsplineSurface>();
+      public PolyfaceHeader polyfaceHeader = new PolyfaceHeader();
       public List<CurveVector> curveVectors = new List<CurveVector>();
       public List<CurvePrimitive> curvePrimitives = new List<CurvePrimitive>();
       public List<Base> elements = new List<Base>();
@@ -2050,10 +2145,7 @@ namespace Objects.Converter.Bentley
 
       public override bool ProcessAsBody(bool isCurved)
       {
-        if (isCurved)
-          return true;
-        else
-          return false;
+        return false;
       }
 
       public override bool ProcessAsFacets(bool isPolyface)
@@ -2064,9 +2156,21 @@ namespace Objects.Converter.Bentley
           return false;
       }
 
-      public override BentleyStatus ProcessSurface(MSBsplineSurface surface)
+      public override BentleyStatus ProcessBody(SolidKernelEntity entity)
       {
         return BentleyStatus.Error;
+      }
+
+      public override BentleyStatus ProcessSolidPrimitive(SolidPrimitive primitive)
+      {
+        var y = primitive.TryGetDgnExtrusionDetail();
+        return BentleyStatus.Error;
+      }
+
+      public override BentleyStatus ProcessSurface(MSBsplineSurface surface)
+      {
+        
+        return BentleyStatus.Success;
       }
 
       public override BentleyStatus ProcessFacets(PolyfaceHeader meshData, bool filled)
@@ -2093,8 +2197,6 @@ namespace Objects.Converter.Bentley
           case CurvePrimitive.CurvePrimitiveType.LineString:
             var pointList = new List<DPoint3d>();
             curvePrimitive.TryGetLineString(pointList);
-            //PolylineToSpeckle(pointList);
-
             break;
           case CurvePrimitive.CurvePrimitiveType.Arc:
             curvePrimitive.TryGetArc(out DEllipse3d arc);
@@ -2129,5 +2231,436 @@ namespace Objects.Converter.Bentley
       }
       return children;
     }
+
+    public Element BrepToNative(Brep brep, string units = null)
+    {
+      //create solid from mesh
+      var displayMesh = brep.displayValue;
+      var mesh = displayMesh.Select(m => MeshToNative(m));
+      Convert1.ElementToBody(out var ent1, mesh.First(), true, true, true);
+      Convert1.BodyToElement(out var element, ent1, null, Model);
+
+
+      //CustomItemHost customItemHost = new CustomItemHost(element, true);
+      //IDgnECInstance ecInstance = customItemHost.ApplyCustomItem(itemType);
+      //ecInstance.SetString("ApplicationId", brep.applicationId);
+      //ecInstance.SetValue("ApplicationId", brep.applicationId);
+      //ecInstance.WriteChanges();
+
+      return element;
+    }
+
+    public Brep SolidElementToSpeckle(SolidElement solid, string units = null)
+    {
+      var solidPrim = solid.GetSolidPrimitive();
+      Convert1.ElementToBody(out var entity, solid, true, true, true);
+      SolidUtil.GetBodyFaces(out var subEntities, entity);
+
+      foreach(var e in subEntities)
+      {
+        var subType = e.EntitySubType;
+        Convert1.SubEntityToCurveVector(out var curves, e);
+
+      }
+
+      var u = units ?? ModelUnits;
+      var brep = new Brep();
+      brep.units = u;
+
+      brep["description"] = solid.Description;
+      brep["typeName"] = solid.TypeName;
+      brep["elementType"] = solid.ElementType;
+      
+      if (solid is null) return null;
+
+      var faceIndex = 0;
+      var edgeIndex = 0;
+      var curve2dIndex = 0;
+      var curve3dIndex = 0;
+      var loopIndex = 0;
+      var trimIndex = 0;
+      var surfaceIndex = 0;
+
+      brep.displayValue = new List<Mesh> { GetMeshFromSolid(solid, u) };
+
+      //var speckleFaces = new Dictionary<Face, BrepFace>();
+      //var speckleEdges = new Dictionary<Edge, BrepEdge>();
+      //var speckleEdgeIndexes = new Dictionary<Edge, int>();
+      //var speckle3dCurves = new ICurve[solid.Edges.Size];
+      //var speckle2dCurves = new List<ICurve>();
+      //var speckleLoops = new List<BrepLoop>();
+      //var speckleTrims = new List<BrepTrim>();
+
+      //foreach (var face in solid.Faces.Cast<Face>())
+      //{
+      //  var surface = FaceToSpeckle(face, out bool orientation, 0.0);
+      //  var iterator = face.EdgeLoops.ForwardIterator();
+      //  var loopIndices = new List<int>();
+
+      //  while (iterator.MoveNext())
+      //  {
+      //    var loop = iterator.Current as EdgeArray;
+      //    var loopTrimIndices = new List<int>();
+      //    // Loop through the edges in the loop.
+      //    var loopIterator = loop.ForwardIterator();
+      //    while (loopIterator.MoveNext())
+      //    {
+      //      // Each edge should create a 2d curve, a 3d curve, a BrepTrim and a BrepEdge.
+      //      var edge = loopIterator.Current as Edge;
+      //      var faceA = edge.GetFace(0);
+
+      //      // Determine what face side are we currently on.
+      //      var edgeSide = face == faceA ? 0 : 1;
+
+      //      // Get curve, create trim and save index
+      //      var trim = edge.GetCurveUV(edgeSide);
+      //      var sTrim = new BrepTrim(brep, edgeIndex, faceIndex, loopIndex, curve2dIndex, 0, BrepTrimType.Boundary, edge.IsFlippedOnFace(edgeSide), -1, -1);
+      //      var sTrimIndex = trimIndex;
+      //      loopTrimIndices.Add(sTrimIndex);
+
+      //      // Add curve and trim, increase index counters.
+      //      speckle2dCurves.Add(CurveToSpeckle(trim.As3DCurveInXYPlane(), Units.None));
+      //      speckleTrims.Add(sTrim);
+      //      curve2dIndex++;
+      //      trimIndex++;
+
+      //      // Check if we have visited this edge before.
+      //      if (!speckleEdges.ContainsKey(edge))
+      //      {
+      //        // First time we visit this edge, add 3d curve and create new BrepEdge.
+      //        var edgeCurve = edge.AsCurve();
+      //        speckle3dCurves[curve3dIndex] = CurveToSpeckle(edgeCurve, u);
+      //        var sCurveIndex = curve3dIndex;
+      //        curve3dIndex++;
+
+      //        // Create a trim with just one of the trimIndices set, the second one will be set on the opposite condition.
+      //        var sEdge = new BrepEdge(brep, sCurveIndex, new[] { sTrimIndex }, -1, -1, edge.IsFlippedOnFace(face), null);
+      //        speckleEdges.Add(edge, sEdge);
+      //        speckleEdgeIndexes.Add(edge, edgeIndex);
+      //        edgeIndex++;
+      //      }
+      //      else
+      //      {
+      //        // Already visited this edge, skip curve 3d
+      //        var sEdge = speckleEdges[edge];
+      //        var sEdgeIndex = speckleEdgeIndexes[edge];
+      //        sTrim.EdgeIndex = sEdgeIndex;
+
+      //        // Update trim indices with new item.
+      //        // TODO: Make this better.
+      //        var trimIndices = sEdge.TrimIndices.ToList();
+      //        trimIndices.Append(sTrimIndex); //TODO Append is a pure function and the return is unused
+      //        sEdge.TrimIndices = trimIndices.ToArray();
+      //      }
+      //    }
+
+      //    var speckleLoop = new BrepLoop(brep, faceIndex, loopTrimIndices, BrepLoopType.Outer);
+      //    speckleLoops.Add(speckleLoop);
+      //    var sLoopIndex = loopIndex;
+      //    loopIndex++;
+      //    loopIndices.Add(sLoopIndex);
+      //  }
+
+      //  speckleFaces.Add(face,
+      //    new BrepFace(brep, surfaceIndex, loopIndices, loopIndices[0], !face.OrientationMatchesSurfaceOrientation));
+      //  faceIndex++;
+      //  brep.Surfaces.Add(surface);
+      //  surfaceIndex++;
+      //}
+
+      //brep.Faces = speckleFaces.Values.ToList();
+      //brep.Curve2D = speckle2dCurves;
+      //brep.Curve3D = speckle3dCurves.ToList();
+      //brep.Trims = speckleTrims;
+      //brep.Edges = speckleEdges.Values.ToList();
+      //brep.Loops = speckleLoops;
+      //brep.displayValue = GetMeshesFromSolids(new[] { solid });
+
+      return brep;
+    }
+
+    public Mesh GetMeshFromPolyfaceHeader(PolyfaceHeader meshData, string units = null)
+    {
+      meshData.Triangulate();
+
+      // get vertices
+      var _vertices = meshData.Point.ToArray();
+
+      // get faces
+      var _faces = new List<int[]>();
+      var _faceIndices = new List<int>();
+      var _pointIndex = meshData.PointIndex.ToList();
+      for (int i = 0; i < _pointIndex.Count(); i++)
+      {
+        var index = _pointIndex.ElementAt(i);
+
+        // index of 0 is face loop pad/terminator
+        if (index != 0)
+        {
+          _faceIndices.Add(Math.Abs(index) - 1);
+        }
+        else
+        {
+          if (_faceIndices.Count() == 4)
+          {
+            _faceIndices.Insert(0, 1);
+          }
+          else if (_faceIndices.Count() == 3)
+          {
+            _faceIndices.Insert(0, 0);
+          }
+          else if (_faceIndices.Count() % 3 == 0) // split ngon to tris
+          {
+            var _nFaceIndices = new List<int>();
+
+            for (int j = 0; j < _faceIndices.Count(); j += 3)
+            {
+              var _subIndices = _faceIndices.GetRange(j, Math.Min(3, _faceIndices.Count() - j));
+              _subIndices.Insert(0, 0);
+              _nFaceIndices.AddRange(_subIndices);
+            }
+
+            _faceIndices = _nFaceIndices;
+          }
+          else { return null; }
+          var faceIndices = _faceIndices.ToArray();
+          _faces.Add(faceIndices);
+          _faceIndices = new List<int>();
+        }
+      }
+      _faces.ToArray();
+
+      // create speckle mesh
+      var vertices = PointsToFlatList(_vertices);
+      var faces = _faces.SelectMany(o => o).ToList();
+      var _mesh = new Mesh(vertices, faces);
+      _mesh.units = units;
+      return _mesh;
+    }
+
+    /// <summary>
+    /// Given a collection of <paramref name="solids"/>, will create one <see cref="Mesh"/>
+    /// </summary>
+    /// <param name="solids"></param>
+    /// <returns></returns>
+    public Mesh GetMeshFromSolid(SolidElement solid, string units = null)
+    {
+      Processor processor = new Processor();
+      ElementGraphicsOutput.Process(solid, processor);
+      var meshData = processor.polyfaceHeader;
+      meshData.Triangulate();
+
+      // get vertices
+      var _vertices = meshData.Point.ToArray();
+
+      // get faces
+      var _faces = new List<int[]>();
+      var _faceIndices = new List<int>();
+      var _pointIndex = meshData.PointIndex.ToList();
+      for (int i = 0; i < _pointIndex.Count(); i++)
+      {
+        var index = _pointIndex.ElementAt(i);
+
+        // index of 0 is face loop pad/terminator
+        if (index != 0)
+        {
+          _faceIndices.Add(Math.Abs(index) - 1);
+        }
+        else
+        {
+          if (_faceIndices.Count() == 4)
+          {
+            _faceIndices.Insert(0, 1);
+          }
+          else if (_faceIndices.Count() == 3)
+          {
+            _faceIndices.Insert(0, 0);
+          }
+          else if (_faceIndices.Count() % 3 == 0) // split ngon to tris
+          {
+            var _nFaceIndices = new List<int>();
+
+            for (int j = 0; j < _faceIndices.Count(); j += 3)
+            {
+              var _subIndices = _faceIndices.GetRange(j, Math.Min(3, _faceIndices.Count() - j));
+              _subIndices.Insert(0, 0);
+              _nFaceIndices.AddRange(_subIndices);
+            }
+
+            _faceIndices = _nFaceIndices;
+          }
+          else { return null; }
+          var faceIndices = _faceIndices.ToArray();
+          _faces.Add(faceIndices);
+          _faceIndices = new List<int>();
+        }
+      }
+      _faces.ToArray();
+
+      // create speckle mesh
+      var vertices = PointsToFlatList(_vertices);
+      var faces = _faces.SelectMany(o => o).ToList();
+      var _mesh = new Mesh(vertices, faces);
+      _mesh.units = units;
+      return _mesh;
+    }
+
+
+    /// <summary>
+    /// Given a collection of <paramref name="solids"/>, will create one <see cref="Mesh"/>
+    /// </summary>
+    /// <param name="solids"></param>
+    /// <returns></returns>
+    public List<Mesh> GetMeshesFromSolids(IEnumerable<SolidElement> solids)
+    {
+      MeshBuildHelper meshBuildHelper = new MeshBuildHelper();
+
+      var meshes = new List<Mesh> { };
+      foreach (SolidElement solid in solids)
+      {
+        //Convert1.ElementToBody(out var entity, solid, true, true, true);
+        //SolidUtil.GetBodyFaces(out var faces, entity);
+        //foreach (var face in faces)
+        //{
+        //  var subType = face.EntitySubType;
+        //  Convert1.SubEntityToCurveVector(out var edges, face);
+        //  Mesh m = meshBuildHelper.GetOrCreateMesh(null, ModelUnits);
+        //  var poly = new PolyfaceHeader();
+
+        //  ConvertMeshData(face.Triangulate(), m.faces, m.vertices);
+        //}
+
+        MeshProcessor processor = new MeshProcessor();
+        ElementGraphicsOutput.Process(solid, processor);
+        var meshData = processor.polyfaceHeader;
+        meshData.Triangulate();
+
+        // get vertices
+        var _vertices = meshData.Point.ToArray();
+
+        // get faces
+        var _faces = new List<int[]>();
+        var _faceIndices = new List<int>();
+        var _pointIndex = meshData.PointIndex.ToList();
+        for (int i = 0; i < _pointIndex.Count(); i++)
+        {
+          var index = _pointIndex.ElementAt(i);
+
+          // index of 0 is face loop pad/terminator
+          if (index != 0)
+          {
+            _faceIndices.Add(Math.Abs(index) - 1);
+          }            
+          else
+          {
+            if (_faceIndices.Count() == 4)
+            {
+              _faceIndices.Insert(0, 1);
+            }
+            else if (_faceIndices.Count() == 3)
+            {
+              _faceIndices.Insert(0, 0);
+            }
+            else if (_faceIndices.Count() % 3 == 0) // split ngon to tris
+            {
+              var _nFaceIndices = new List<int>();
+
+              for (int j = 0; j < _faceIndices.Count(); j += 3)
+              {
+                var _subIndices = _faceIndices.GetRange(j, Math.Min(3, _faceIndices.Count() - j));
+                _subIndices.Insert(0, 0);
+                _nFaceIndices.AddRange(_subIndices);
+              }
+
+              _faceIndices = _nFaceIndices;
+            }
+            else { return null; }
+            var faceIndices = _faceIndices.ToArray();
+            _faces.Add(faceIndices);
+            _faceIndices = new List<int>();
+          }
+        }
+        _faces.ToArray();
+
+        // create speckle mesh
+        var vertices = PointsToFlatList(_vertices);
+        var faces = _faces.SelectMany(o => o).ToList();
+        var _mesh = new Mesh(vertices, faces);
+        meshes.Add(_mesh);
+      }
+
+      return meshes;
+    }
+
+    /// <summary>
+    /// Given <paramref name="mesh"/>, will convert and add triangle data to <paramref name="faces"/> and <paramref name="vertices"/>
+    /// </summary>
+    /// <param name="mesh">The revit mesh to convert</param>
+    /// <param name="faces">The faces list to add to</param>
+    /// <param name="vertices">The vertices list to add to</param>
+    private void ConvertMeshData(Mesh mesh, List<int> faces, List<double> vertices)
+    {
+      int faceIndexOffset = vertices.Count / 3;
+
+      //vertices.Capacity += mesh.Vertices.Count * 3;
+      //foreach (var vert in mesh.Vertices)
+      //{
+      //  var (x, y, z) = Point3dToSpeckle(vert);
+      //  vertices.Add(x);
+      //  vertices.Add(y);
+      //  vertices.Add(z);
+      //}
+
+      //faces.Capacity += mesh.NumTriangles * 4;
+      //for (int i = 0; i < mesh.NumTriangles; i++)
+      //{
+      //  var triangle = mesh.get_Triangle(i);
+
+      //  faces.Add(0); // TRIANGLE flag
+      //  faces.Add((int)triangle.get_Index(0) + faceIndexOffset);
+      //  faces.Add((int)triangle.get_Index(1) + faceIndexOffset);
+      //  faces.Add((int)triangle.get_Index(2) + faceIndexOffset);
+      //}
+    }
+
+    /// <summary>
+    /// Helper class for a single <see cref="Objects.Geometry.Mesh"/> object for each <see cref="DB.Material"/>
+    /// </summary>
+    private class MeshBuildHelper
+    {
+      //Mesh to use for null materials (because dictionary keys can't be null)
+      private Mesh nullMesh;
+      //Lazy initialised Dictionary of revit material (hash) -> Speckle Mesh
+      private readonly Dictionary<int, Mesh> meshMap = new Dictionary<int, Mesh>();
+      public Mesh GetOrCreateMesh(Material mat, string units)
+      {
+        if (mat == null) return nullMesh ??= new Mesh { units = units };
+
+        var mesh = new Mesh
+        {
+          units = units
+        };
+
+        return mesh;
+      }
+
+      public List<Mesh> GetAllMeshes()
+      {
+        List<Mesh> meshes = meshMap.Values.ToList();
+        if (nullMesh != null) meshes.Add(nullMesh);
+        return meshes;
+      }
+
+      public List<Mesh> GetAllValidMeshes() => GetAllMeshes().FindAll(m => m.vertices.Count > 0 && m.faces.Count > 0);
+
+    }
+
+    public Brep SurfaceOrSolidElementToSpeckle(SurfaceOrSolidElement brep)
+    {
+      var _brep = new Brep();
+
+      return _brep;
+    }
+
   }
 }
