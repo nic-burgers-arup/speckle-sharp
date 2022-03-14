@@ -32,6 +32,7 @@ namespace Objects.Converter.Revit
       DB.Level level = null;
       DB.Level topLevel = null;
       DB.FamilyInstance revitColumn = null;
+      
       //var structuralType = StructuralType.Column;
       var isLineBased = true;
 
@@ -59,16 +60,21 @@ namespace Objects.Converter.Revit
       {
         try
         {
+          var analyticalStick = docObj as AnalyticalModelStick;
           var revitType = Doc.GetElement(docObj.GetTypeId()) as ElementType;
-
+          
+          // Gets physical element associated with analytical element
+          var revitElement = Doc.GetElement(analyticalStick.GetElementId()) as DB.FamilyInstance;
+          
           // if family changed, tough luck. delete and let us create a new one.
-          if (familySymbol.FamilyName != revitType.FamilyName)
+          if (familySymbol.FamilyName != revitElement.Symbol.FamilyName)
           {
             Doc.Delete(docObj.Id);
           }
+
           else
           {
-            revitColumn = (DB.FamilyInstance)docObj;
+            revitColumn = (DB.FamilyInstance)revitElement;
             switch (revitColumn.Location)
             {
               case LocationCurve crv:
@@ -80,9 +86,11 @@ namespace Objects.Converter.Revit
             }
 
             // check for a type change
-            if (!string.IsNullOrEmpty(familySymbol.FamilyName) && familySymbol.FamilyName != revitType.Name)
+            if (!string.IsNullOrEmpty(familySymbol.Name) && familySymbol.Name != revitElement.Name)
             {
               revitColumn.ChangeTypeId(familySymbol.Id);
+              //var familyDoc = Doc.EditFamily(familySymbol.Family);
+              //var famParam = familyDoc.FamilyManager.AddParameter("SpeckleSection", BuiltInParameterGroup.INVALID, ParameterType.Text, true);
             }
           }
           isUpdate = true;

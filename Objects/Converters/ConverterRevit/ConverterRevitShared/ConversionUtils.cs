@@ -629,6 +629,29 @@ namespace Objects.Converter.Revit
       return Doc.GetElement(@ref.ApplicationGeneratedId);
     }
 
+    public List<string> SubdividePropertyName(string propertyName)
+    {
+      if (String.IsNullOrEmpty(propertyName)) return new List<string>{ "" };
+
+      var splitNames = propertyName.Split(':').ToList();
+
+      return splitNames.Any() ? splitNames : new List<string> { "" };
+    }
+
+    public string ParseFamilyNameFromProperty(string propertyName)
+    {
+      var splitNames = SubdividePropertyName(propertyName);
+
+      return splitNames.FirstOrDefault();
+    }
+
+    public string ParseFamilyTypeFromProperty(string propertyName)
+    {
+      var splitNames = SubdividePropertyName(propertyName);
+
+      return splitNames.LastOrDefault();
+    }
+
     #endregion
 
     #region Project Base Point
