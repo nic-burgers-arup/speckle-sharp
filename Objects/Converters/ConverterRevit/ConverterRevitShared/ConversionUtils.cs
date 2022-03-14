@@ -1,13 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Objects.BuiltElements;
 using Objects.BuiltElements.Revit;
 using Objects.Geometry;
 using Objects.Other;
 using Speckle.Core.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using DB = Autodesk.Revit.DB;
 using ElementType = Autodesk.Revit.DB.ElementType;
 using Floor = Objects.BuiltElements.Floor;
@@ -319,9 +320,7 @@ namespace Objects.Converter.Revit
       // its member names will have for Key either a BuiltInName, GUID or Name of the parameter (depending onwhere it comes from)
       // and as value the full Parameter object, that might come from Revit or SchemaBuilder
       // We only loop params we can set and that actually exist on the revit element
-      var filteredSpeckleParameters = speckleParameters.GetMembers()
-        .Where(x => revitParameterById.ContainsKey(x.Key) || revitParameterByName.ContainsKey(x.Key));
-
+      var filteredSpeckleParameters = speckleParameters.GetMembers();
 
       foreach (var spk in filteredSpeckleParameters)
       {
@@ -329,57 +328,82 @@ namespace Objects.Converter.Revit
         if (sp == null || sp.isReadOnly)
           continue;
 
-        var rp = revitParameterById.ContainsKey(spk.Key) ? revitParameterById[spk.Key] : revitParameterByName[spk.Key];
-        try
+        if (revitParameterById.ContainsKey(spk.Key) || revitParameterByName.ContainsKey(spk.Key))
         {
-          switch (rp.StorageType)
+          var rp = revitParameterById.ContainsKey(spk.Key) ? revitParameterById[spk.Key] : revitParameterByName[spk.Key];
+
+          if (rp != null)
           {
-            case StorageType.Double:
-              // This is meant for parameters that come from Revit
-              // as they might use a lot more unit types that Speckle doesn't currently support
-              if (!string.IsNullOrEmpty(sp.applicationUnit))
+            try
+            {
+              switch (rp.StorageType)
               {
-                var val = RevitVersionHelper.ConvertToInternalUnits(sp);
-                rp.Set(val);
-              }
-              // the following two cases are for parameters comimg form schema builder
-              // they do not have applicationUnit but just units
-              // units are automatically set but the user can override them 
-              // users might set them to "none" so that we convert them by using the Revit destination parameter display units
-              // this is needed to correctly receive non lenght based parameters (eg air flow)
-              else if (sp.units == Speckle.Core.Kits.Units.None)
-              {
-                var val = RevitVersionHelper.ConvertToInternalUnits(Convert.ToDouble(sp.value), rp);
-                rp.Set(val);
-              }
-              else if (Speckle.Core.Kits.Units.IsUnitSupported(sp.units))
-              {
-                var val = ScaleToNative(Convert.ToDouble(sp.value), sp.units);
-                rp.Set(val);
-              }
-              else
-              {
-                rp.Set(Convert.ToDouble(sp.value));
-              }
-              break;
+                case StorageType.Double:
+                  // This is meant for parameters that come from Revit
+                  // as they might use a lot more unit types that Speckle doesn't currently support
+                  if (!string.IsNullOrEmpty(sp.applicationUnit))
+                  {
+                    var val = RevitVersionHelper.ConvertToInternalUnits(sp);
+                    rp.Set(val);
+                  }
+                  // the following two cases are for parameters comimg form schema builder
+                  // they do not have applicationUnit but just units
+                  // units are automatically set but the user can override them 
+                  // users might set them to "none" so that we convert them by using the Revit destination parameter display units
+                  // this is needed to correctly receive non lenght based parameters (eg air flow)
+                  else if (sp.units == Speckle.Core.Kits.Units.None)
+                  {
+                    var val = RevitVersionHelper.ConvertToInternalUnits(Convert.ToDouble(sp.value), rp);
+                    rp.Set(val);
+                  }
+                  else if (Speckle.Core.Kits.Units.IsUnitSupported(sp.units))
+                  {
+                    var val = ScaleToNative(Convert.ToDouble(sp.value), sp.units);
+                    rp.Set(val);
+                  }
+                  else
+                  {
+                    rp.Set(Convert.ToDouble(sp.value));
+                  }
+                  break;
 
-            case StorageType.Integer:
-              rp.Set(Convert.ToInt32(sp.value));
-              break;
+                case StorageType.Integer:
+                  rp.Set(Convert.ToInt32(sp.value));
+                  break;
 
-            case StorageType.String:
-              rp.Set(Convert.ToString(sp.value));
+                case StorageType.String:
+                  rp.Set(Convert.ToString(sp.value));
+                  break;
+                default:
+                  break;
+              }
+            }
+            catch (Exception ex)
+            {
+              continue;
+            }
+          }
+        } else
+        {
+          switch (sp.value)
+          {
+            case int _:
+              var param = CreateInstanceParameter(sp.name, ParameterType.Integer, revitElement);
+              if (param != null) param.Set((int)sp.value);
+              break;
+            case double _:
+              param = CreateInstanceParameter(sp.name, ParameterType.Number, revitElement);
+              if (param != null) param.Set((double)sp.value);
+              break;
+            case string _:
+              param = CreateInstanceParameter(sp.name, ParameterType.Text, revitElement);
+              if (param != null) param.Set((string)sp.value);
               break;
             default:
               break;
           }
         }
-        catch (Exception ex)
-        {
-          continue;
-        }
       }
-
     }
 
     //Shared parameters use a GUID to be uniquely identified
@@ -395,6 +419,49 @@ namespace Objects.Converter.Revit
           return def.Name;
         return def.BuiltInParameter.ToString();
       }
+    }
+
+    private DB.Parameter CreateInstanceParameter(string parameterName, ParameterType parameterType, Element revitElement)
+    {
+      // create shared parameter file
+      var modulePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+      var paramFile = modulePath + "\\SpeckleSharedParameters.txt";
+      if (File.Exists(paramFile)) File.Delete(paramFile);
+      var fs = File.Create(paramFile);
+      fs.Close();
+
+      // prepare shared parameter file
+      Doc.Application.SharedParametersFilename = paramFile;
+
+      DefinitionFile parafile = Doc.Application.OpenSharedParameterFile();
+
+      // create a group
+      DefinitionGroup apiGroup = parafile.Groups.Create("Speckle");
+
+      // create a visible "External Room ID" of text type.
+      ExternalDefinitionCreationOptions options = new ExternalDefinitionCreationOptions(parameterName, parameterType);
+      Definition definition = apiGroup.Definitions.Create(options);
+
+      var elementCategory = (BuiltInCategory)revitElement.Category.Id.IntegerValue; // i think this is redundant
+      Category category = Doc.Settings.Categories.get_Item(elementCategory);
+      CategorySet categories = Doc.Application.Create.NewCategorySet();
+      categories.Insert(category);
+
+      //Create an instance of InstanceBinding
+      InstanceBinding instanceBinding = Doc.Application.Create.NewInstanceBinding(categories);
+
+      // Get the BingdingMap of current document.
+      BindingMap bindingMap = Doc.ParameterBindings;
+
+      // Bind the definitions to the document
+      bool bindInstance = bindingMap.Insert(definition, instanceBinding, BuiltInParameterGroup.INVALID);
+
+      if (bindInstance)
+      {
+        var param = revitElement.get_Parameter(options.GUID);
+        return param;
+      }
+      else return null;
     }
 
     //private bool IsValid(DB.Parameter rp)
