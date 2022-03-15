@@ -23,11 +23,13 @@ namespace Objects.Converter.Revit
       DB.FamilySymbol familySymbol = GetElementType<FamilySymbol>(speckleColumn);
 
       var baseLine = CurveToNative(speckleColumn.baseLine).get_Item(0);
+      var startPoint = baseLine.GetEndPoint(0);
+      var endPoint = baseLine.GetEndPoint(1);
 
       // If the start point elevation is higher than the end point elevation, reverse the line.
-      if (baseLine.GetEndPoint(0).Z > baseLine.GetEndPoint(1).Z)
+      if (startPoint.Z > endPoint.Z)
       {
-        baseLine = DB.Line.CreateBound(baseLine.GetEndPoint(1), baseLine.GetEndPoint(0));
+        baseLine = DB.Line.CreateBound(endPoint, startPoint);
       }
 
       DB.Level level = null;
@@ -86,7 +88,7 @@ namespace Objects.Converter.Revit
                 crv.Curve = baseLine;
                 break;
               case LocationPoint pt:
-                pt.Point = baseLine.GetEndPoint(0);
+                pt.Point = startPoint;
                 break;
             }
 
@@ -114,10 +116,7 @@ namespace Objects.Converter.Revit
       //try with a point based column
       if (speckleRevitColumn != null && revitColumn == null && !isLineBased)
       {
-        var start = baseLine.GetEndPoint(0);
-        var end = baseLine.GetEndPoint(1);
-
-        var basePoint = start.Z < end.Z ? start : end; // pick the lowest
+        var basePoint = startPoint.Z < endPoint.Z ? startPoint : endPoint; // pick the lowest
         revitColumn = Doc.Create.NewFamilyInstance(basePoint, familySymbol, level, structuralType);
         //
         //rotate, we know it must be a RevitColumn
