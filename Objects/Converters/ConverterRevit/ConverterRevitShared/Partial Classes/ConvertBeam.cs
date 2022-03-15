@@ -38,7 +38,9 @@ namespace Objects.Converter.Revit
       {
         level = LevelToNative(LevelFromCurve(baseLine));
       }
+
       var isUpdate = false;
+
       //try update existing 
       var docObj = GetExistingElementByApplicationId(speckleBeam.applicationId);
 

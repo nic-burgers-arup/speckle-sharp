@@ -310,6 +310,9 @@ namespace ConnectorGSA
     {
       var kit = KitManager.GetDefaultKit();
       var converter = kit.LoadConverter(Applications.GSA);
+      if (converter == null)
+        throw new Exception("Could not find any Kit!");
+
       var percentage = 0;
 
       Instance.GsaModel.StreamLayer = coordinator.ReceiverTab.TargetLayer;

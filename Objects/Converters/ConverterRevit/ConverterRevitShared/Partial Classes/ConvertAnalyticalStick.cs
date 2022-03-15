@@ -32,8 +32,8 @@ namespace Objects.Converter.Revit
           revitBeam.type = ParseFamilyTypeFromProperty(speckleStick.property.name);
           revitBeam.baseLine = speckleStick.baseLine;
           //Beam beam = new Beam(speckleStick.baseLine);
-          revitBeam["family"] = ParseFamilyNameFromProperty(speckleStick.property.name);
-         placeholders = BeamToNative(revitBeam);
+          revitBeam.family = ParseFamilyNameFromProperty(speckleStick.property.name);
+          placeholders = BeamToNative(revitBeam);
           DB.FamilyInstance nativeRevitBeam = (DB.FamilyInstance)placeholders[0].NativeObject;
           AnalyticalModelStick analyticalModel = (AnalyticalModelStick)nativeRevitBeam.GetAnalyticalModel();
           analyticalModel.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));
@@ -60,7 +60,8 @@ namespace Objects.Converter.Revit
           revitColumn.type = ParseFamilyTypeFromProperty(speckleStick.property.name);
           revitColumn.baseLine = speckleStick.baseLine;
           revitColumn.units = speckleStick.end1Offset.units; // column units are used for setting offset
-          revitColumn["family"] = ParseFamilyNameFromProperty(speckleStick.property.name);
+          revitColumn.family = ParseFamilyNameFromProperty(speckleStick.property.name);
+
           placeholders = ColumnToNative(revitColumn);
           DB.FamilyInstance nativeRevitColumn = (DB.FamilyInstance)placeholders[0].NativeObject;
           AnalyticalModelColumn analyticalModelCol = (AnalyticalModelColumn)nativeRevitColumn.GetAnalyticalModel();
@@ -157,9 +158,9 @@ namespace Objects.Converter.Revit
       var section = stickFamily.Symbol.GetStructuralSection();
       var speckleSection = new SectionProfile();
       speckleSection.name = section.StructuralSectionShapeName;
-      
+
       // If section general shape enum is not defined, us section shape enum to derive profile
-      if(section.StructuralSectionGeneralShape != DB.Structure.StructuralSections.StructuralSectionGeneralShape.NotDefined)
+      if (section.StructuralSectionGeneralShape != DB.Structure.StructuralSections.StructuralSectionGeneralShape.NotDefined)
       {
         switch (section.StructuralSectionGeneralShape)
         {
@@ -245,7 +246,7 @@ namespace Objects.Converter.Revit
             break;
         }
       }
-      
+
 
       var materialType = stickFamily.StructuralMaterialType;
       var structMat = (DB.Material)Doc.GetElement(stickFamily.StructuralMaterialId);
@@ -257,7 +258,7 @@ namespace Objects.Converter.Revit
       // If material has no physical properties in revit, assign null
       var materialAsset = structAsset != null ? structAsset.GetStructuralAsset() : null;
 
-        //materialAsset = ((PropertySetElement)Doc.GetElement(structMat.StructuralAssetId)).GetStructuralAsset();
+      //materialAsset = ((PropertySetElement)Doc.GetElement(structMat.StructuralAssetId)).GetStructuralAsset();
 
       Structural.Materials.Material speckleMaterial = null;
 
@@ -388,7 +389,7 @@ namespace Objects.Converter.Revit
         Izz = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralI).GetProperty("MomentOfInertiaWeakAxis").GetValue(section)),
         J = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralI).GetProperty("TorsionalMomentOfInertia").GetValue(section))
       };
-  }
+    }
 
     private Tee TeeSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
     {
