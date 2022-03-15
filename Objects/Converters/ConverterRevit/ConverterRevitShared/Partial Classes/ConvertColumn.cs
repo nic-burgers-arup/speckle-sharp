@@ -89,8 +89,6 @@ namespace Objects.Converter.Revit
             if (!string.IsNullOrEmpty(familySymbol.Name) && familySymbol.Name != revitElement.Name)
             {
               revitColumn.ChangeTypeId(familySymbol.Id);
-              //var familyDoc = Doc.EditFamily(familySymbol.Family);
-              //var famParam = familyDoc.FamilyManager.AddParameter("SpeckleSection", BuiltInParameterGroup.INVALID, ParameterType.Text, true);
             }
           }
           isUpdate = true;
@@ -119,18 +117,22 @@ namespace Objects.Converter.Revit
         //
         //rotate, we know it must be a RevitColumn
         var axis = DB.Line.CreateBound(new XYZ(basePoint.X, basePoint.Y, 0), new XYZ(basePoint.X, basePoint.Y, 1000));
-        (revitColumn.Location as LocationPoint).Rotate(axis, speckleRevitColumn.rotation - (revitColumn.Location as LocationPoint).Rotation);
+        var rotationAngle = speckleRevitColumn.rotation - (revitColumn.Location as LocationPoint).Rotation;
+
+        // This call is time-consuming so only call if section actually requires rotation
+        if(rotationAngle != 0)
+        {
+          (revitColumn.Location as LocationPoint).Rotate(axis, rotationAngle);
+        }
       }
 
       if (revitColumn == null)
       {
         throw (new Exception($"Failed to create column for {speckleColumn.applicationId}."));
-
       }
 
       TrySetParam(revitColumn, BuiltInParameter.FAMILY_BASE_LEVEL_PARAM, level);
       TrySetParam(revitColumn, BuiltInParameter.FAMILY_TOP_LEVEL_PARAM, topLevel);
-
 
       if (speckleRevitColumn != null)
       {
