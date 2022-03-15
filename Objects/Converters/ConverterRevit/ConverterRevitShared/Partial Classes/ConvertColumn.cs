@@ -21,6 +21,7 @@ namespace Objects.Converter.Revit
       }
 
       DB.FamilySymbol familySymbol = GetElementType<FamilySymbol>(speckleColumn);
+
       var baseLine = CurveToNative(speckleColumn.baseLine).get_Item(0);
 
       // If the start point elevation is higher than the end point elevation, reverse the line.
@@ -33,16 +34,31 @@ namespace Objects.Converter.Revit
       DB.Level topLevel = null;
       DB.FamilyInstance revitColumn = null;
       
-      //var structuralType = StructuralType.Column;
+      var structuralType = StructuralType.NonStructural;
       var isLineBased = true;
 
       var speckleRevitColumn = speckleColumn as RevitColumn;
+
+      if (familySymbol.FamilyName != speckleRevitColumn.family || familySymbol.Name != speckleRevitColumn.type)
+      {
+        var param = speckleRevitColumn.parameters == null ? new Base() : speckleRevitColumn.parameters;
+
+        var key = "Section Family";
+        var val = new Objects.BuiltElements.Revit.Parameter("Section Family", speckleRevitColumn.family);
+        param[key] = val;
+
+        key = "Section Type";
+        val = new Objects.BuiltElements.Revit.Parameter("Section Type", speckleRevitColumn.type);
+        param[key] = val;
+
+        speckleRevitColumn.parameters = param;
+      }
 
       if (speckleRevitColumn != null)
       {
         level = LevelToNative(speckleRevitColumn.level);
         topLevel = LevelToNative(speckleRevitColumn.topLevel);
-        //structuralType = speckleRevitColumn.structural ? StructuralType.Column : StructuralType.NonStructural;
+        structuralType = speckleRevitColumn.speckle_type.Contains("Objects.Structural") ? StructuralType.Column : StructuralType.NonStructural;
         //non slanted columns are point based
         isLineBased = speckleRevitColumn.isSlanted;
       }
@@ -98,7 +114,7 @@ namespace Objects.Converter.Revit
 
       if (revitColumn == null && isLineBased)
       {
-        revitColumn = Doc.Create.NewFamilyInstance(baseLine, familySymbol, level, StructuralType.Column);
+        revitColumn = Doc.Create.NewFamilyInstance(baseLine, familySymbol, level, structuralType);
         if (revitColumn.Symbol.Family.FamilyPlacementType == FamilyPlacementType.CurveDrivenStructural)
         {
           StructuralFramingUtils.DisallowJoinAtEnd(revitColumn, 0);
@@ -113,7 +129,7 @@ namespace Objects.Converter.Revit
         var end = baseLine.GetEndPoint(1);
 
         var basePoint = start.Z < end.Z ? start : end; // pick the lowest
-        revitColumn = Doc.Create.NewFamilyInstance(basePoint, familySymbol, level, StructuralType.NonStructural);
+        revitColumn = Doc.Create.NewFamilyInstance(basePoint, familySymbol, level, structuralType);
         //
         //rotate, we know it must be a RevitColumn
         var axis = DB.Line.CreateBound(new XYZ(basePoint.X, basePoint.Y, 0), new XYZ(basePoint.X, basePoint.Y, 1000));
