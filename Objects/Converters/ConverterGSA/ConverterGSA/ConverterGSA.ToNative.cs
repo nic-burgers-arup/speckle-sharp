@@ -650,30 +650,54 @@ namespace ConverterGSA
       }
 
       if (speckleMember.orientationAngle != 0) gsaMember.Angle = conversionFactors.ConversionFactorToDegrees() * speckleMember.orientationAngle;
-     if (speckleMember.offset != 0) gsaMember.Offset2dZ = conversionFactors.length * speckleMember.offset;
+      if (speckleMember.offset != 0) gsaMember.Offset2dZ = conversionFactors.length * speckleMember.offset;
       if (speckleMember.group > 0) gsaMember.Group = speckleMember.group;
       if (speckleMember.targetMeshSize > 0) gsaMember.MeshSize = conversionFactors.length * speckleMember.targetMeshSize;
 
 
-      if (dynamicMembers.ContainsKey("Voids") && speckleMember["Voids"] is List<List<Node>>)
+      if (dynamicMembers.ContainsKey("voids") && speckleMember.voids is List<List<Node>>)
       {
-        var speckleVoids = speckleObject["Voids"] as List<List<Node>>;
+        var speckleVoids = speckleObject["voids"] as List<List<Node>>;
         gsaMember.Voids = speckleVoids.Select(v => v.NodeAt(conversionFactors)).ToList();
       }
-      if (dynamicMembers.ContainsKey("Points") && speckleMember["Points"] is List<Node>)
+      if (dynamicMembers.ContainsKey("Points"))
       {
-        var specklePoints = speckleObject["Points"] as List<Node>;
-        gsaMember.PointNodeIndices = specklePoints.NodeAt(conversionFactors);
+        var points = speckleObject["Points"] as List<object>;
+        if (points != null)
+        {
+          var specklePoints = new List<Node> { };
+          foreach (var point in points)
+            specklePoints.Add(point as Node);
+          if (specklePoints.Count > 0) gsaMember.PointNodeIndices = specklePoints.NodeAt(conversionFactors);
+        }
       }
-      if (dynamicMembers.ContainsKey("Lines") && speckleMember["Lines"] is List<List<Node>>)
+      if (dynamicMembers.ContainsKey("Lines"))
       {
-        var speckleLines = speckleObject["Lines"] as List<List<Node>>;
-        gsaMember.Polylines = speckleLines.Select(v => v.NodeAt(conversionFactors)).ToList();
+        var lines = speckleObject["Lines"] as List<object>;
+        if (lines != null)
+        {
+          var speckleLines = new List<List<Node>> { };
+          foreach (var line in lines)
+          {
+            var l = line as List<object>;
+            speckleLines.Add(l.Select(ln => (Node)ln).ToList());
+          }
+          if (speckleLines.Count > 0) gsaMember.Polylines = speckleLines.Select(v => v.NodeAt(conversionFactors)).ToList();
+        }
       }
-      if (dynamicMembers.ContainsKey("Areas") && speckleMember["Areas"] is List<List<Node>>)
+      if (dynamicMembers.ContainsKey("Areas"))
       {
-        var speckleAreas = speckleObject["Areas"] as List<List<Node>>;
-        gsaMember.AdditionalAreas = speckleAreas.Select(v => v.NodeAt(conversionFactors)).ToList();
+        var areas = speckleObject["Areas"] as List<object>;
+        if (areas != null)
+        {
+          var speckleAreas = new List<List<Node>> { };
+          foreach (var area in areas)
+          {
+            var a = area as List<object>;
+            speckleAreas.Add(a.Select(an => (Node)an).ToList());
+          }
+          if (speckleAreas.Count > 0) gsaMember.AdditionalAreas = speckleAreas.Select(v => v.NodeAt(conversionFactors)).ToList();
+        }
       }
       retList.Add(gsaMember);
       return retList;

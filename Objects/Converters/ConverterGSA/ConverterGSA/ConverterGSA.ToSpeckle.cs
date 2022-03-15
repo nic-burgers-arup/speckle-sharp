@@ -607,7 +607,7 @@ namespace ConverterGSA
       if (gsaMemb.Voids.HasValues())
       {
         var speckleVoids = gsaMemb.Voids.Select(v => v.Select(i => GetNodeFromIndex(i)).ToList()).ToList();
-        speckleMember2d["Voids"] = speckleVoids;
+        speckleMember2d.voids = speckleVoids;
         AddToMeaningfulNodeIndices(speckleVoids.SelectMany(n => n.Select(n2 => n2.applicationId)), GSALayer.Design);
       }
       if (gsaMemb.PointNodeIndices.HasValues())
