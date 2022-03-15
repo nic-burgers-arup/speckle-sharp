@@ -61,8 +61,7 @@ namespace Objects.Converter.Revit
           revitColumn.baseLine = speckleStick.baseLine;
           revitColumn.units = speckleStick.end1Offset.units; // column units are used for setting offset
           revitColumn.family = ParseFamilyNameFromProperty(speckleStick.property.name);
-
-          placeholders = ColumnToNative(revitColumn);
+          placeholders = ColumnToNative(revitColumn, StructuralType.Column);
           DB.FamilyInstance nativeRevitColumn = (DB.FamilyInstance)placeholders[0].NativeObject;
           AnalyticalModelColumn analyticalModelCol = (AnalyticalModelColumn)nativeRevitColumn.GetAnalyticalModel();
           analyticalModelCol.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));

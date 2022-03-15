@@ -616,7 +616,7 @@ namespace Objects.Converter.Revit
         if (element is BuiltElements.Wall) // specifies the basic wall sub type as default
           match = types.Cast<WallType>().Where(o => o.Kind == WallKind.Basic).Cast<ElementType>().FirstOrDefault();
         if (match == null)
-          match = types.First();
+          match = types.Last();
         Report.Log($"Missing type. Family: {family} Type: {type}\nType was replaced with: {match.FamilyName}, {match.Name}");
       }
 
@@ -717,6 +717,21 @@ namespace Objects.Converter.Revit
       var splitNames = SubdividePropertyName(propertyName);
 
       return splitNames.LastOrDefault();
+    }
+
+    public Base CreateSpeckleSectionParameter(string speckleColumnFamily, string speckleColumnType)
+    {
+      var param = new Base();
+
+      var key = "Section Family";
+      var val = new Objects.BuiltElements.Revit.Parameter("Section Family", speckleColumnFamily);
+      param[key] = val;
+
+      key = "Section Type";
+      val = new Objects.BuiltElements.Revit.Parameter("Section Type", speckleColumnType);
+      param[key] = val;
+
+      return param;
     }
 
     #endregion

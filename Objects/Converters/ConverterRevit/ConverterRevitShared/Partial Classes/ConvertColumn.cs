@@ -13,7 +13,7 @@ namespace Objects.Converter.Revit
 {
   public partial class ConverterRevit
   {
-    public List<ApplicationPlaceholderObject> ColumnToNative(Column speckleColumn)
+    public List<ApplicationPlaceholderObject> ColumnToNative(Column speckleColumn, StructuralType structuralType = StructuralType.NonStructural)
     {
       if (speckleColumn.baseLine == null)
       {
@@ -34,31 +34,20 @@ namespace Objects.Converter.Revit
       DB.Level topLevel = null;
       DB.FamilyInstance revitColumn = null;
       
-      var structuralType = StructuralType.NonStructural;
       var isLineBased = true;
 
       var speckleRevitColumn = speckleColumn as RevitColumn;
 
+      // If family name or type not present in Revit model, add speckle section info as instance parameter
       if (familySymbol.FamilyName != speckleRevitColumn.family || familySymbol.Name != speckleRevitColumn.type)
       {
-        var param = speckleRevitColumn.parameters == null ? new Base() : speckleRevitColumn.parameters;
-
-        var key = "Section Family";
-        var val = new Objects.BuiltElements.Revit.Parameter("Section Family", speckleRevitColumn.family);
-        param[key] = val;
-
-        key = "Section Type";
-        val = new Objects.BuiltElements.Revit.Parameter("Section Type", speckleRevitColumn.type);
-        param[key] = val;
-
-        speckleRevitColumn.parameters = param;
+        speckleRevitColumn.parameters = CreateSpeckleSectionParameter(speckleRevitColumn.family, speckleRevitColumn.type);
       }
 
       if (speckleRevitColumn != null)
       {
         level = LevelToNative(speckleRevitColumn.level);
         topLevel = LevelToNative(speckleRevitColumn.topLevel);
-        structuralType = speckleRevitColumn.speckle_type.Contains("Objects.Structural") ? StructuralType.Column : StructuralType.NonStructural;
         //non slanted columns are point based
         isLineBased = speckleRevitColumn.isSlanted;
       }

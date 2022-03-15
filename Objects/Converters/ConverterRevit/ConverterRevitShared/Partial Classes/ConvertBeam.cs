@@ -26,6 +26,12 @@ namespace Objects.Converter.Revit
       //comes from revit or schema builder, has these props
       var speckleRevitBeam = speckleBeam as RevitBeam;
 
+      // If family name or type not present in Revit model, add speckle section info as instance parameter
+      if (familySymbol.FamilyName != speckleRevitBeam.family || familySymbol.Name != speckleRevitBeam.type)
+      {
+        speckleRevitBeam.parameters = CreateSpeckleSectionParameter(speckleRevitBeam.family, speckleRevitBeam.type);
+      }
+
       if (speckleRevitBeam != null)
       {
         if (level != null)
@@ -48,20 +54,24 @@ namespace Objects.Converter.Revit
       {
         try
         {
+          var analyticalStick = docObj as AnalyticalModelStick;
           var revitType = Doc.GetElement(docObj.GetTypeId()) as ElementType;
 
+          // Gets physical element associated with analytical element
+          var revitElement = Doc.GetElement(analyticalStick.GetElementId()) as DB.FamilyInstance;
+
           // if family changed, tough luck. delete and let us create a new one.
-          if (familySymbol.FamilyName != revitType.FamilyName)
+          if (familySymbol.FamilyName != revitElement.Symbol.FamilyName)
           {
             Doc.Delete(docObj.Id);
           }
           else
           {
-            revitBeam = (DB.FamilyInstance)docObj;
+            revitBeam = (DB.FamilyInstance)revitElement;
             (revitBeam.Location as LocationCurve).Curve = baseLine;
 
             // check for a type change
-            if (!string.IsNullOrEmpty(familySymbol.FamilyName) && familySymbol.FamilyName != revitType.Name)
+            if (!string.IsNullOrEmpty(familySymbol.FamilyName) && familySymbol.FamilyName != revitElement.Name)
             {
               revitBeam.ChangeTypeId(familySymbol.Id);
             }
