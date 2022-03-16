@@ -1,14 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Autodesk.Revit.DB;
 using Objects.BuiltElements;
 using Objects.BuiltElements.Revit;
 using Objects.Geometry;
 using Objects.Other;
 using Speckle.Core.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using DB = Autodesk.Revit.DB;
 using ElementType = Autodesk.Revit.DB.ElementType;
 using Floor = Objects.BuiltElements.Floor;
@@ -316,9 +317,7 @@ namespace Objects.Converter.Revit
       // its member names will have for Key either a BuiltInName, GUID or Name of the parameter (depending onwhere it comes from)
       // and as value the full Parameter object, that might come from Revit or SchemaBuilder
       // We only loop params we can set and that actually exist on the revit element
-      var filteredSpeckleParameters = speckleParameters.GetMembers()
-        .Where(x => revitParameterById.ContainsKey(x.Key) || revitParameterByName.ContainsKey(x.Key));
-
+      var filteredSpeckleParameters = speckleParameters.GetMembers();
 
       foreach (var spk in filteredSpeckleParameters)
       {
@@ -326,7 +325,12 @@ namespace Objects.Converter.Revit
         if (sp == null || sp.isReadOnly)
           continue;
 
+        if (revitParameterById.ContainsKey(spk.Key) || revitParameterByName.ContainsKey(spk.Key))
+        {
         var rp = revitParameterById.ContainsKey(spk.Key) ? revitParameterById[spk.Key] : revitParameterByName[spk.Key];
+
+          if (rp != null)
+          {
         try
         {
           switch (rp.StorageType)
@@ -385,7 +389,27 @@ namespace Objects.Converter.Revit
           continue;
         }
       }
-
+        } else
+        {
+          switch (sp.value)
+          {
+            case int _:
+              var param = CreateInstanceParameter(sp.name, ParameterType.Integer, revitElement);
+              if (param != null) param.Set((int)sp.value);
+              break;
+            case double _:
+              param = CreateInstanceParameter(sp.name, ParameterType.Number, revitElement);
+              if (param != null) param.Set((double)sp.value);
+              break;
+            case string _:
+              param = CreateInstanceParameter(sp.name, ParameterType.Text, revitElement);
+              if (param != null) param.Set((string)sp.value);
+              break;
+            default:
+              break;
+    }
+        }
+      }
     }
 
     //Shared parameters use a GUID to be uniquely identified
@@ -401,6 +425,49 @@ namespace Objects.Converter.Revit
           return def.Name;
         return def.BuiltInParameter.ToString();
       }
+    }
+
+    private DB.Parameter CreateInstanceParameter(string parameterName, ParameterType parameterType, Element revitElement)
+    {
+      // create shared parameter file
+      var modulePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+      var paramFile = modulePath + "\\SpeckleSharedParameters.txt";
+      if (File.Exists(paramFile)) File.Delete(paramFile);
+      var fs = File.Create(paramFile);
+      fs.Close();
+
+      // prepare shared parameter file
+      Doc.Application.SharedParametersFilename = paramFile;
+
+      DefinitionFile parafile = Doc.Application.OpenSharedParameterFile();
+
+      // create a group
+      DefinitionGroup apiGroup = parafile.Groups.Create("Speckle");
+
+      // create a visible "External Room ID" of text type.
+      ExternalDefinitionCreationOptions options = new ExternalDefinitionCreationOptions(parameterName, parameterType);
+      Definition definition = apiGroup.Definitions.Create(options);
+
+      var elementCategory = (BuiltInCategory)revitElement.Category.Id.IntegerValue; // i think this is redundant
+      Category category = Doc.Settings.Categories.get_Item(elementCategory);
+      CategorySet categories = Doc.Application.Create.NewCategorySet();
+      categories.Insert(category);
+
+      //Create an instance of InstanceBinding
+      InstanceBinding instanceBinding = Doc.Application.Create.NewInstanceBinding(categories);
+
+      // Get the BingdingMap of current document.
+      BindingMap bindingMap = Doc.ParameterBindings;
+
+      // Bind the definitions to the document
+      bool bindInstance = bindingMap.Insert(definition, instanceBinding, BuiltInParameterGroup.INVALID);
+
+      if (bindInstance)
+      {
+        var param = revitElement.get_Parameter(options.GUID);
+        return param;
+      }
+      else return null;
     }
 
     //private bool IsValid(DB.Parameter rp)
@@ -534,18 +601,18 @@ namespace Objects.Converter.Revit
 
       if (!string.IsNullOrEmpty(family) && !string.IsNullOrEmpty(type))
       {
-        match = types.FirstOrDefault(x => x.FamilyName == family && x.Name == type);
+        match = types.FirstOrDefault(x => x.FamilyName.ToLower() == family.ToLower() && x.Name.ToLower() == type.ToLower());
       }
 
       //some elements only have one family so we didn't add such prop our schema
       if (match == null && string.IsNullOrEmpty(family) && !string.IsNullOrEmpty(type))
       {
-        match = types.FirstOrDefault(x => x.Name == type);
+        match = types.FirstOrDefault(x => x.Name.ToLower() == type.ToLower());
       }
 
       if (match == null && !string.IsNullOrEmpty(family)) // try and match the family only.
       {
-        match = types.FirstOrDefault(x => x.FamilyName == family);
+        match = types.FirstOrDefault(x => x.FamilyName.ToLower() == family.ToLower());
         if (match != null) //inform user that the type is different!
           Report.Log($"Missing type. Family: {family} Type: {type}\nType was replaced with: {match.FamilyName}, {match.Name}");
 
@@ -555,7 +622,7 @@ namespace Objects.Converter.Revit
         if (element is BuiltElements.Wall) // specifies the basic wall sub type as default
           match = types.Cast<WallType>().Where(o => o.Kind == WallKind.Basic).Cast<ElementType>().FirstOrDefault();
         if (match == null)
-          match = types.First();
+          match = types.Last();
         Report.Log($"Missing type. Family: {family} Type: {type}\nType was replaced with: {match.FamilyName}, {match.Name}");
       }
 
@@ -624,6 +691,44 @@ namespace Objects.Converter.Revit
 
       //return the cached object, if it's still in the model
       return Doc.GetElement(@ref.ApplicationGeneratedId);
+    }
+
+    public List<string> SubdividePropertyName(string propertyName)
+    {
+      if (String.IsNullOrEmpty(propertyName)) return new List<string>{ "" };
+
+      var splitNames = propertyName.Split(':').ToList();
+
+      return splitNames.Any() ? splitNames : new List<string> { "" };
+    }
+
+    public string ParseFamilyNameFromProperty(string propertyName)
+    {
+      var splitNames = SubdividePropertyName(propertyName);
+
+      return splitNames.FirstOrDefault();
+    }
+
+    public string ParseFamilyTypeFromProperty(string propertyName)
+    {
+      var splitNames = SubdividePropertyName(propertyName);
+
+      return splitNames.LastOrDefault();
+    }
+
+    public Base CreateSpeckleSectionParameter(string speckleColumnFamily, string speckleColumnType)
+    {
+      var param = new Base();
+
+      var key = "Section Family";
+      var val = new Objects.BuiltElements.Revit.Parameter("Section Family", speckleColumnFamily);
+      param[key] = val;
+
+      key = "Section Type";
+      val = new Objects.BuiltElements.Revit.Parameter("Section Type", speckleColumnType);
+      param[key] = val;
+
+      return param;
     }
 
     #endregion

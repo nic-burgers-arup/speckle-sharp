@@ -268,6 +268,7 @@ namespace ConverterGSA
       var gsaRecords = Element1dToNative(speckleObject);
       var gsaElement = (GsaEl)gsaRecords.First(o => o is GsaEl);
       var speckleElement = (GSAElement1D)speckleObject;
+      gsaElement.Type = speckleElement.type.ToNative();
       gsaElement.Colour = speckleElement.colour?.ColourToNative() ?? Colour.NotSet;
       gsaElement.Dummy = speckleElement.isDummy;
       gsaElement.Group = speckleElement.group.IsPositiveOrNull();
@@ -282,12 +283,36 @@ namespace ConverterGSA
     {
       var retList = new List<GsaRecord>();
       var speckleElement = (Element1D)speckleObject;
+
+      if(speckleElement.memberType != Objects.Structural.Geometry.MemberType.NotSet)
+      {
+        var speckleMember = new GSAMember1D()
+        {
+          applicationId = speckleElement.applicationId,
+          id = speckleElement.id,
+          name = speckleElement.name,
+          baseLine = speckleElement.baseLine,
+          property = speckleElement.property,
+          memberType = speckleElement.memberType,
+          end1Releases = speckleElement.end1Releases,
+          end2Releases = speckleElement.end2Releases,
+          end1Offset = speckleElement.end1Offset,
+          end2Offset = speckleElement.end2Offset,
+          orientationNode = speckleElement.orientationNode,
+          orientationAngle = speckleElement.orientationAngle,
+          localAxis = speckleElement.localAxis,
+          end1Node = speckleElement.end1Node,
+          end2Node = speckleElement.end2Node,
+          topology = speckleElement.topology
+        };
+        return GSAMember1dToNative(speckleMember);
+      }
+
       var gsaElement = new GsaEl()
       {
         ApplicationId = speckleElement.applicationId,
         Index = speckleElement.GetIndex<GsaEl>(),
         Name = speckleElement.name,
-        Type = speckleElement.type.ToNative(),
         OrientationNodeIndex = speckleElement.orientationNode.NodeAt(conversionFactors),
         //TaperOffsetPercentageEnd1 - currently not supported
         //TaperOffsetPercentageEnd2 - currently not supported

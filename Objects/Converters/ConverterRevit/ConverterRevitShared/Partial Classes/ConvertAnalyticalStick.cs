@@ -23,14 +23,16 @@ namespace Objects.Converter.Revit
       XYZ offset2 = VectorToNative(speckleStick.end2Offset);
       List<ApplicationPlaceholderObject> placeholders = new List<ApplicationPlaceholderObject> { };
 
-      switch (speckleStick.type)
+      switch (speckleStick.memberType)
       {
-        case ElementType1D.Beam:
+        case MemberType.Beam:
           RevitBeam revitBeam = new RevitBeam();
+          revitBeam.applicationId = speckleStick.applicationId;
           //This only works for CSIC sections now for sure. Need to test on other sections
-          revitBeam.type = speckleStick.property.name.Replace('X', 'x');
+          revitBeam.type = ParseFamilyTypeFromProperty(speckleStick.property.name);
           revitBeam.baseLine = speckleStick.baseLine;
           //Beam beam = new Beam(speckleStick.baseLine);
+          revitBeam.family = ParseFamilyNameFromProperty(speckleStick.property.name);
           placeholders = BeamToNative(revitBeam);
           DB.FamilyInstance nativeRevitBeam = (DB.FamilyInstance)placeholders[0].NativeObject;
           AnalyticalModelStick analyticalModel = (AnalyticalModelStick)nativeRevitBeam.GetAnalyticalModel();
@@ -38,26 +40,28 @@ namespace Objects.Converter.Revit
           analyticalModel.SetReleases(false, Convert.ToBoolean(speckleStick.end2Releases.stiffnessX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end2Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZZ));
           analyticalModel.SetOffset(AnalyticalElementSelector.StartOrBase, offset1);
           analyticalModel.SetOffset(AnalyticalElementSelector.EndOrTop, offset2);
-          //analyticalModel.
           return placeholders;
-        case ElementType1D.Brace:
-          RevitBrace revitBrace = new RevitBrace();
-          revitBrace.type = speckleStick.property.name.Replace('X', 'x');
-          revitBrace.baseLine = speckleStick.baseLine;
-          //Brace brace = new Brace(speckleStick.baseLine);
-          placeholders = BraceToNative(revitBrace);
-          DB.FamilyInstance nativeRevitBrace = (DB.FamilyInstance)placeholders[0].NativeObject;
-          analyticalModel = (AnalyticalModelStick)nativeRevitBrace.GetAnalyticalModel();
-          analyticalModel.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));
-          analyticalModel.SetReleases(false, Convert.ToBoolean(speckleStick.end2Releases.stiffnessX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end2Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZZ));
-          analyticalModel.SetOffset(AnalyticalElementSelector.StartOrBase, offset1);
-          analyticalModel.SetOffset(AnalyticalElementSelector.EndOrTop, offset2);
-          return placeholders;
-        case ElementType1D.Column:
+        //case ElementType1D.Brace:
+        //  RevitBrace revitBrace = new RevitBrace();
+        //  revitBrace.type = speckleStick.property.name.Replace('X', 'x');
+        //  revitBrace.baseLine = speckleStick.baseLine;
+        //  //Brace brace = new Brace(speckleStick.baseLine);
+        //  placeholders = BraceToNative(revitBrace);
+        //  DB.FamilyInstance nativeRevitBrace = (DB.FamilyInstance)placeholders[0].NativeObject;
+        //  analyticalModel = (AnalyticalModelStick)nativeRevitBrace.GetAnalyticalModel();
+        //  analyticalModel.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));
+        //  analyticalModel.SetReleases(false, Convert.ToBoolean(speckleStick.end2Releases.stiffnessX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end2Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZZ));
+        //  analyticalModel.SetOffset(AnalyticalElementSelector.StartOrBase, offset1);
+        //  analyticalModel.SetOffset(AnalyticalElementSelector.EndOrTop, offset2);
+        //  return placeholders;
+        case MemberType.Column:
           RevitColumn revitColumn = new RevitColumn();
-          revitColumn.type = speckleStick.property.name.Replace('X', 'x');
+          revitColumn.applicationId = speckleStick.applicationId;
+          revitColumn.type = ParseFamilyTypeFromProperty(speckleStick.property.name);
           revitColumn.baseLine = speckleStick.baseLine;
-          placeholders = ColumnToNative(revitColumn);
+          revitColumn.units = speckleStick.end1Offset.units; // column units are used for setting offset
+          revitColumn.family = ParseFamilyNameFromProperty(speckleStick.property.name);
+          placeholders = ColumnToNative(revitColumn, StructuralType.Column);
           DB.FamilyInstance nativeRevitColumn = (DB.FamilyInstance)placeholders[0].NativeObject;
           AnalyticalModelColumn analyticalModelCol = (AnalyticalModelColumn)nativeRevitColumn.GetAnalyticalModel();
           analyticalModelCol.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));
@@ -65,8 +69,6 @@ namespace Objects.Converter.Revit
           analyticalModelCol.SetOffset(AnalyticalElementSelector.StartOrBase, offset1);
           analyticalModelCol.SetOffset(AnalyticalElementSelector.EndOrTop, offset2);
           return placeholders;
-          //Column column = new Column(speckleStick.baseLine);
-          return ColumnToNative(revitColumn);
       }
       return placeholderObjects;
     }
@@ -80,16 +82,16 @@ namespace Objects.Converter.Revit
       switch (revitStick.Category.Name)
       {
         case "Analytical Columns":
-          speckleElement1D.type = ElementType1D.Column;
+          speckleElement1D.memberType = MemberType.Column;
           break;
         case "Analytical Beams":
-          speckleElement1D.type = ElementType1D.Beam;
+          speckleElement1D.memberType = MemberType.Beam;
           break;
         case "Analytical Braces":
-          speckleElement1D.type = ElementType1D.Brace;
+          speckleElement1D.memberType = MemberType.Beam;
           break;
         default:
-          speckleElement1D.type = ElementType1D.Other;
+          speckleElement1D.memberType = MemberType.Generic1D;
           break;
       }
 
@@ -155,9 +157,9 @@ namespace Objects.Converter.Revit
       var section = stickFamily.Symbol.GetStructuralSection();
       var speckleSection = new SectionProfile();
       speckleSection.name = section.StructuralSectionShapeName;
-      
+
       // If section general shape enum is not defined, us section shape enum to derive profile
-      if(section.StructuralSectionGeneralShape != DB.Structure.StructuralSections.StructuralSectionGeneralShape.NotDefined)
+      if (section.StructuralSectionGeneralShape != DB.Structure.StructuralSections.StructuralSectionGeneralShape.NotDefined)
       {
         switch (section.StructuralSectionGeneralShape)
         {
@@ -243,7 +245,7 @@ namespace Objects.Converter.Revit
             break;
         }
       }
-      
+
 
       var materialType = stickFamily.StructuralMaterialType;
       var structMat = (DB.Material)Doc.GetElement(stickFamily.StructuralMaterialId);
@@ -255,7 +257,7 @@ namespace Objects.Converter.Revit
       // If material has no physical properties in revit, assign null
       var materialAsset = structAsset != null ? structAsset.GetStructuralAsset() : null;
 
-        //materialAsset = ((PropertySetElement)Doc.GetElement(structMat.StructuralAssetId)).GetStructuralAsset();
+      //materialAsset = ((PropertySetElement)Doc.GetElement(structMat.StructuralAssetId)).GetStructuralAsset();
 
       Structural.Materials.Material speckleMaterial = null;
 
@@ -340,8 +342,8 @@ namespace Objects.Converter.Revit
 
       prop.profile = speckleSection;
       prop.material = speckleMaterial;
-      prop.name = stickFamily.Name;
-      prop.applicationId = $"{stickFamily.Name}:{structMat.UniqueId}";
+      prop.name = $"{stickFamily.Symbol.FamilyName}:{stickFamily.Name}";
+      prop.applicationId = stickFamily.Symbol.UniqueId;
 
 
       var structuralElement = Doc.GetElement(revitStick.GetElementId());
@@ -349,7 +351,7 @@ namespace Objects.Converter.Revit
 
       if (revitStick is AnalyticalModelColumn)
       {
-        speckleElement1D.type = ElementType1D.Column;
+        speckleElement1D.memberType = MemberType.Column;
         //prop.memberType = MemberType.Column;
         var locationMark = GetParamValue<string>(structuralElement, BuiltInParameter.COLUMN_LOCATION_MARK);
         if (locationMark == null)
@@ -386,7 +388,7 @@ namespace Objects.Converter.Revit
         Izz = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralI).GetProperty("MomentOfInertiaWeakAxis").GetValue(section)),
         J = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralI).GetProperty("TorsionalMomentOfInertia").GetValue(section))
       };
-  }
+    }
 
     private Tee TeeSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
     {
