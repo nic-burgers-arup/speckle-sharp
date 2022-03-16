@@ -78,7 +78,7 @@ namespace Objects.Converter.ETABS
           if (element is Element1D && !(element is ETABSTendon))
           {
             var ETABSelement = (Element1D)element;
-            if(ETABSelement.type == ElementType1D.Link){
+            if(ETABSelement.memberType == MemberType.Generic1D){
               LinkToNative((ETABSElement1D)(element));
             }
             else{
