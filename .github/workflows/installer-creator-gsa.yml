@@ -49,7 +49,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
+    runs-on: windows-2019 # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -93,8 +93,16 @@ jobs:
         echo "::set-output name=filename::$filename"          
       working-directory: Installer          
           
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '2.1.x'      
+
     - name: Install Azure Key Vault signtool
       run: dotnet tool install --global AzureSignTool --version 2.0.17
+      env:
+        GH_PKG_USER: ${{ secrets.GH_PKG_USER }} 
+        GH_PKG_TOKEN: ${{ secrets.GH_PKG_TOKEN }}  
         
     # https://github.com/vcsjones/AzureSignTool
     - name: Sign Installer

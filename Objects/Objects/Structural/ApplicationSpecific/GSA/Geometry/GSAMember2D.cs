@@ -6,6 +6,7 @@ using Objects.Geometry;
 using Objects.Structural.Geometry;
 using Objects.Structural.Properties;
 using System.Linq;
+using System;
 
 namespace Objects.Structural.GSA.Geometry
 {
@@ -22,22 +23,24 @@ namespace Objects.Structural.GSA.Geometry
 
     [SchemaInfo("GSAMember2D", "Creates a Speckle structural 2D member for GSA", "GSA", "Geometry")]
     public GSAMember2D([SchemaParamInfo("An ordered list of nodes which represents the perimeter of a member (ie. order of points should based on valid polyline)")] List<Node> perimeter,
-        Property2D property, MemberType2D memberType,
+        Property2D property, MemberType2D memberType = MemberType2D.Generic2D,
         [SchemaParamInfo("A list of ordered lists of nodes representing the voids within a member (ie. order of points should be based on valid polyline)")] List<List<Node>> voids = null,
-        double offset = 0, double orientationAngle = 0, string name = null, int? nativeId = null)
+        double offset = 0, double orientationAngle = 0, string name = null, int? nativeId = null, bool isDummy = false)
     {
       this.nativeId = nativeId;
       this.name = name;
       this.topology = perimeter; //needs to be ordered properly (ie. matching the point order of a valid polyline)            
       this.property = property;
-      this.memberType = (MemberType)memberType;
+      this.memberType = (MemberType)Enum.Parse(typeof(MemberType), memberType.ToString());
       this.voids = voids; //needs to be ordered properly (ie. matching the point order of a valid polyline)
       this.offset = offset;
       this.orientationAngle = orientationAngle;
+      this.isDummy = isDummy;
 
       var coordinates = perimeter.SelectMany(x => x.basePoint.ToList()).ToList();
       coordinates.AddRange(perimeter[0].basePoint.ToList());
       this.outline = new Polyline(coordinates, this.units != null ? this.units : perimeter.FirstOrDefault().units);
+
     }
   }
 }

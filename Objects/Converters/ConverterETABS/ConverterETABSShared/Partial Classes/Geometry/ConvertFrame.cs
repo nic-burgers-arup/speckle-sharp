@@ -22,7 +22,7 @@ namespace Objects.Converter.ETABS
       }
       string units = ModelUnits();
       string newFrame = "";
-      Line baseline = element1D.baseLine;
+      Line baseline = (Line)element1D.baseLine;
       string[] properties = null;
       int number = 0;
       Model.PropFrame.GetNameList(ref number, ref properties);

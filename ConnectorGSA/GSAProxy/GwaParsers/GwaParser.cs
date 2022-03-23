@@ -251,10 +251,6 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       {
         var releaseCode = (releases != null && releases.Count() > 0 && releases.ContainsKey(d)) ? releases[d] : ReleaseCode.Fixed;
         rls += releaseCode.GetStringValue();
-        if (releaseCode == ReleaseCode.Stiff && releases.ContainsKey(d) && (++stiffnessIndex) < stiffnesses.Count())
-        {
-          stiffnesses.Add(stiffnesses[stiffnessIndex]);
-        }
       }
       items.Add(rls);
       if (stiffnesses != null && stiffnesses.Count() > 0)

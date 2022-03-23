@@ -100,7 +100,7 @@ namespace ConverterGSA
       { ModelAspect.Nodes, new List<Type>() { typeof(GSANode) } },
       { ModelAspect.Elements, new List<Type>() { typeof(GSAAssembly), typeof(GSAElement1D), typeof(GSAElement2D), typeof(GSAElement3D), typeof(GSAMember1D), typeof(GSAMember2D),
         //CatchAll
-        typeof(GSAStage), //Analysis stages
+        typeof(GSAStage), typeof(GSAStageProp), //Analysis stages
         typeof(Axis), typeof(GSAGridSurface), typeof(GSAGridPlane), typeof(GSAGridLine), typeof(GSAPolyline),  //Geometry
         typeof(GSARigidConstraint), typeof(GSAGeneralisedRestraint), //Constraints
         typeof(GSAAlignment), typeof(GSAInfluenceBeam), typeof(GSAInfluenceNode), typeof(GSAPath), typeof(GSAUserVehicle) } }, //Bridge
@@ -537,7 +537,7 @@ namespace ConverterGSA
                     Instance.GsaModel.Cache.SetSpeckleObjects(nativeObj, layerObjectsToCache.ToDictionary(o => o.applicationId, o => (object)o), l);
                   }
                 }
-
+                
                 if (AssignIntoResultSet(rsa, toSpeckleResult))
                 {
                   resultSetHasData = true;
@@ -550,6 +550,15 @@ namespace ConverterGSA
             }
           }
         }
+      }
+     
+      var resultObjects = new List<Base> { };
+      var globalResults = GsaGlobalResultToSpeckle(out var speckleResult);
+      if (globalResults) resultObjects.AddRange(speckleResult.Select(i => (Base)i));
+
+      if (AssignIntoResultSet(rsa, new ToSpeckleResult(resultObjects)))
+      {
+        resultSetHasData = true;
       }
 
       if (Instance.GsaModel.SendOnlyMeaningfulNodes && nodesTemp != null && nodesTemp.Keys.Count > 0)
@@ -645,6 +654,17 @@ namespace ConverterGSA
           else
           {
             rsa.results2D.results2D.AddRange(objsByType[t].Cast<Result2D>().ToList());
+          }
+        }
+        if (t == typeof(ResultGlobal))
+        {
+          if (rsa.resultsGlobal == null)
+          {
+            rsa.resultsGlobal = new ResultSetGlobal(objsByType[t].Cast<ResultGlobal>().ToList());
+          }
+          else
+          {
+            rsa.resultsGlobal.resultsGlobal.AddRange(objsByType[t].Cast<ResultGlobal>().ToList());
           }
         }
         //Other result types aren't supported yet
@@ -789,6 +809,14 @@ namespace ConverterGSA
         {
           this.ObjectsByLayer.UpsertDictionary(GSALayer.Both, layerAgnosticObject);
         }
+        if (resultObjects != null)
+        {
+          this.ResultObjects = resultObjects.ToList();
+        }
+      }
+
+      public ToSpeckleResult(IEnumerable<Base> resultObjects)
+      {
         if (resultObjects != null)
         {
           this.ResultObjects = resultObjects.ToList();

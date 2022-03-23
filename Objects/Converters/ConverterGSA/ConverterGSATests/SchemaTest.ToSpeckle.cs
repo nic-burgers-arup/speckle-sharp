@@ -1393,7 +1393,7 @@ namespace ConverterGSATests
         Assert.Equal(gsaLoadGridLines[1].Index.Value, speckleGridLineLoads[1].nativeId);
         Assert.Equal(gsaLoadGridLines[1].Name, speckleGridLineLoads[1].name);
         Assert.Equal("grid surface 1", speckleGridLineLoads[1].gridSurface.applicationId);
-        Assert.Equal(new List<double>() { 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0 }, speckleGridLineLoads[1].polyline.value);
+        Assert.Equal(new List<double>() { 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0 }, speckleGridLineLoads[1].polyline.description.value);
         Assert.Equal("load case 2", speckleGridLineLoads[1].loadCase.applicationId);
         Assert.Equal("axis 1", speckleGridLineLoads[1].loadAxis.applicationId);
         Assert.Equal(gsaLoadGridLines[1].Projected, speckleGridLineLoads[1].isProjected);
@@ -2427,14 +2427,14 @@ namespace ConverterGSATests
         Assert.Equal(gsaRigids[1].Stage.Count(), speckleRigids[1].stages.Count());
         Assert.Equal("stage 1", speckleRigids[1].stages[0].applicationId);
         Assert.Equal(LinkageType.Custom, speckleRigids[1].type);
-        var constraintCondition = new Dictionary<AxisDirection6, List<AxisDirection6>>()
+        var constraintCondition = new GSAConstraintCondition()
         {
-          { AxisDirection6.X, new List<AxisDirection6>() { AxisDirection6.X, AxisDirection6.YY, AxisDirection6.ZZ } },
-          { AxisDirection6.Y, new List<AxisDirection6>() { AxisDirection6.Y, AxisDirection6.XX, AxisDirection6.ZZ } },
-          { AxisDirection6.Z, new List<AxisDirection6>() { AxisDirection6.Z, AxisDirection6.XX, AxisDirection6.YY } },
-          { AxisDirection6.XX, new List<AxisDirection6>() { AxisDirection6.XX } },
-          { AxisDirection6.YY, new List<AxisDirection6>() { AxisDirection6.YY } },
-          { AxisDirection6.ZZ, new List<AxisDirection6>() { AxisDirection6.ZZ } },
+          X = new List<string> { "X", "YY", "ZZ" },
+          Y = new List<string> { "Y", "XX", "ZZ" },
+          Z = new List<string> { "Z", "XX", "YY" },
+          XX = new List<string> { "XX" },
+          YY = new List<string> { "YY" },
+          ZZ = new List<string> { "ZZ" }
         };
         Assert.Equal(constraintCondition, speckleRigids[1].constraintCondition);
       }

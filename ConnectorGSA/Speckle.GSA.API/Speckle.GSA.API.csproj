@@ -44,11 +44,13 @@
     <Compile Include="CsvSchema\CsvAssembly.cs" />
     <Compile Include="CsvSchema\CsvElem1d.cs" />
     <Compile Include="CsvSchema\CsvElem2d.cs" />
+    <Compile Include="CsvSchema\CsvGlobal.cs" />
     <Compile Include="CsvSchema\CsvNode.cs" />
     <Compile Include="CsvSchema\CsvRecord.cs" />
     <Compile Include="Enums.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="GsaModelBase.cs" />
+    <Compile Include="GwaSchema\AnalysisStages\GsaAnalStageProp.cs" />
     <Compile Include="GwaSchema\AnalysisStages\GsaAnalStage.cs" />
     <Compile Include="GwaSchema\Bridge\GsaAlign.cs" />
     <Compile Include="GwaSchema\Bridge\GsaPath.cs" />

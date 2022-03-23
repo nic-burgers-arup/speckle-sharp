@@ -769,12 +769,12 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
           {
             if (!indices.Contains(i) && !ProvisionalContains(t, i))
             {
-              UpsertProvisional(t, i, applicationId);
+              UpsertProvisional(t, i, appId);
               return i;
             }
           }
 
-          UpsertProvisional(t, highestIndex + 1, applicationId);
+          UpsertProvisional(t, highestIndex + 1, appId);
           return highestIndex + 1;
         }
       }
