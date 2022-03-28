@@ -82,15 +82,40 @@ namespace Objects.Converter.Revit
           else
           {
             revitColumn = (DB.FamilyInstance)revitElement;
-            switch (revitColumn.Location)
+            var revitStickLocation = AnalyticalCurvesToBaseline(analyticalStick);
+
+            if (revitColumn.Location is LocationCurve)
             {
-              case LocationCurve crv:
+              var crv = revitColumn.Location as LocationCurve;
+
+              if (crv.Curve != baseLine) 
+              {
                 crv.Curve = baseLine;
-                break;
-              case LocationPoint pt:
-                pt.Point = startPoint;
-                break;
+              }
             }
+
+            // column location must be LocationPoint
+            else
+            {
+              var pt = revitColumn.Location as LocationPoint;
+
+              var convertedStartPoint = PointToNative(revitStickLocation.start);
+
+              if (!convertedStartPoint.IsAlmostEqualTo(startPoint))
+              {
+                pt.Point = startPoint;
+              }
+            }
+
+            //switch (revitColumn.Location)
+            //{
+            //  case LocationCurve crv:
+            //    crv.Curve = baseLine;
+            //    break;
+            //  case LocationPoint pt:
+            //    pt.Point = startPoint;
+            //    break;
+            //}
 
             // check for a type change
             if (!string.IsNullOrEmpty(familySymbol.Name) && familySymbol.Name != revitElement.Name)

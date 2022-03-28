@@ -95,20 +95,22 @@ namespace Objects.Converter.Revit
           break;
       }
 
-      var curves = revitStick.GetCurves(AnalyticalCurveType.RigidLinkHead).ToList();
-      curves.AddRange(revitStick.GetCurves(AnalyticalCurveType.ActiveCurves));
-      curves.AddRange(revitStick.GetCurves(AnalyticalCurveType.RigidLinkTail));
+      speckleElement1D.baseLine = AnalyticalCurvesToBaseline(revitStick);
 
-      if (curves.Count > 1)
-      {
-        var curveList = CurveListToSpeckle(curves);
-        var firstSegment = (Geometry.Line)curveList.segments[0];
-        var lastSegment = (Geometry.Line)curveList.segments[-1];
-        var baseLine = new Geometry.Line(firstSegment.start, lastSegment.end);
-        speckleElement1D.baseLine = baseLine;
-      }
-      else
-        speckleElement1D.baseLine = LineToSpeckle((Line)curves[0]);
+      //var curves = revitStick.GetCurves(AnalyticalCurveType.RigidLinkHead).ToList();
+      //curves.AddRange(revitStick.GetCurves(AnalyticalCurveType.ActiveCurves));
+      //curves.AddRange(revitStick.GetCurves(AnalyticalCurveType.RigidLinkTail));
+
+      //if (curves.Count > 1)
+      //{
+      //  var curveList = CurveListToSpeckle(curves);
+      //  var firstSegment = (Geometry.Line)curveList.segments[0];
+      //  var lastSegment = (Geometry.Line)curveList.segments[-1];
+      //  var baseLine = new Geometry.Line(firstSegment.start, lastSegment.end);
+      //  speckleElement1D.baseLine = baseLine;
+      //}
+      //else
+      //  speckleElement1D.baseLine = LineToSpeckle((Line)curves[0]);
 
       var coordinateSystem = revitStick.GetLocalCoordinateSystem();
       if (coordinateSystem != null)
@@ -509,6 +511,23 @@ namespace Objects.Converter.Revit
         Izz = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralU).GetProperty("MomentOfInertiaWeakAxis").GetValue(section)),
         J = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralU).GetProperty("TorsionalMomentOfInertia").GetValue(section))
       };
+    }
+
+    private Geometry.Line AnalyticalCurvesToBaseline(AnalyticalModelStick analyticalStick)
+    {
+      var curves = analyticalStick.GetCurves(AnalyticalCurveType.RigidLinkHead).ToList();
+      curves.AddRange(analyticalStick.GetCurves(AnalyticalCurveType.ActiveCurves));
+      curves.AddRange(analyticalStick.GetCurves(AnalyticalCurveType.RigidLinkTail));
+
+      if (curves.Count > 1)
+      {
+        var curveList = CurveListToSpeckle(curves);
+        var firstSegment = (Geometry.Line)curveList.segments[0];
+        var lastSegment = (Geometry.Line)curveList.segments[-1];
+        return new Geometry.Line(firstSegment.start, lastSegment.end);
+        
+      }
+      return LineToSpeckle((Line)curves[0]);
     }
   }
 }
