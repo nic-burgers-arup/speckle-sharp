@@ -485,7 +485,7 @@ namespace Objects.Converter.Bentley
 
       var u = units ?? ModelUnits;
       string part = (string)GetProperty(properties, "PART");
-      string family = (string)GetProperty(properties, "FAMILY");
+      string family = "Basic Wall";
       // for some reason the ElementID is a long
       int elementId = (int)(double)GetProperty(properties, "ElementID");
 
