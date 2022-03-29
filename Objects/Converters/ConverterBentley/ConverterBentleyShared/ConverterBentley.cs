@@ -320,6 +320,10 @@ namespace Objects.Converter.Bentley
            Report.Log($"Created Revit Beam {o.id}");
            return RevitBeamToNative(o);
 
+        case RevitFloor o:
+          Report.Log($"Created Revit Floor {o.id}");
+          return RevitFloorToNative(o);
+
         case RevitWall o:
            Report.Log($"Created Revit Wall {o.id}");
            return RevitWallToNative(o);
@@ -399,7 +403,7 @@ namespace Objects.Converter.Bentley
         case Mesh _:
         case RevitBeam _:
         //case RevitColumn _:
-        //case RevitFloor _:
+        case RevitFloor _:
         case RevitWall _:
           //case Surface _:
           //case Alignment _:

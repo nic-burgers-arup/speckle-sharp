@@ -396,12 +396,10 @@ namespace Objects.Converter.Bentley
 
     public Element RevitBeamToNative(RevitBeam beam)
     {
-      Line baseLine = beam.baseLine as Line;
-
-      if (baseLine is Line)
+      if (beam.baseLine is Line baseLine)
       {
-        DPoint3d start = Point3dToNative(((Line)baseLine).start);
-        DPoint3d opposite = Point3dToNative(((Line)baseLine).end);
+        DPoint3d start = Point3dToNative(baseLine.start);
+        DPoint3d end = Point3dToNative(baseLine.end);
 
 
         //string type = revitColumn.type;
@@ -438,7 +436,7 @@ namespace Objects.Converter.Bentley
 
         //form.SetWallType(TFdLoadableWallType.TFdLoadableWallType_Line, 0);
         start.ScaleInPlace(1.0 / UoR);
-        opposite.ScaleInPlace(1.0 / UoR);
+        end.ScaleInPlace(1.0 / UoR);
         //form.SetEndPoints(ref start, ref opposite, 0);
 
         Element element;
@@ -453,14 +451,37 @@ namespace Objects.Converter.Bentley
       }
     }
 
-    public Element RevitColumnToNative(RevitColumn revitColumn)
+    public Element RevitColumnToNative(RevitColumn column)
     {
-      Line baseLine = revitColumn.baseLine as Line;
-
-      if (baseLine is Line)
+      if (column.baseLine is Line baseLine)
       {
-        Point start = ((Line)baseLine).start;
-        Point end = ((Line)baseLine).end;
+        DPoint3d start = Point3dToNative(baseLine.start);
+        DPoint3d end = Point3dToNative(baseLine.end);
+
+
+        TFCatalogList datagroup = new TFCatalogList();
+        datagroup.Init("");
+        ITFCatalog catalog = datagroup as ITFCatalog;
+
+        ITFCatalogTypeList typeList;
+        catalog.GetAllCatalogTypesList(0, out typeList);
+
+        string family = column.family;
+        string type = column.type;
+
+        ITFCatalogItemList itemList;
+        catalog.GetCatalogItemByNames(family, type, 0, out itemList);
+
+        // if no catalog item is not found, use a random one
+        if (itemList == null)
+          catalog.GetCatalogItemsByTypeName("Wall", 0, out itemList);
+
+
+
+
+
+
+
         //string type = revitColumn.type;
 
         //LineElement element = LineToNative(baseLine);
@@ -493,61 +514,100 @@ namespace Objects.Converter.Bentley
       }
     }
 
+    public Element RevitFloorToNative(RevitFloor floor)
+    {
+      DisplayableElement outline = CurveToNative(floor.outline);
+
+      TFPolyList polyList = new TFPolyList();
+      polyList.InitFromElement(outline, Tolerance, "0");
+
+      //Array points;
+      //polyList.InitFromPoints(points, "0");
+
+
+      Level level = floor.level;
+
+
+      TFCatalogList datagroup = new TFCatalogList();
+      datagroup.Init("");
+      ITFCatalog catalog = datagroup as ITFCatalog;
+
+      catalog.GetAllCatalogTypesList(0, out ITFCatalogTypeList typeList);
+
+      string family = floor.family;
+      string type = floor.type;
+
+      catalog.GetCatalogItemByNames(family, type, 0, out ITFCatalogItemList itemList);
+
+      // if no catalog item is not found, use a random one
+      if (itemList == null)
+        catalog.GetCatalogItemsByTypeName("Slab", 0, out itemList);
+      if (itemList == null)
+        catalog.GetCatalogItemsByTypeName("Floor", 0, out itemList);
+
+      TFLoadableFloorList form = new TFLoadableFloorList();
+      form.InitFromCatalogItem(itemList, 0);
+      form.SetFloorType(TFdLoadableFloorType.TFdLoadableFloorType_SimpleFloor, 0); // floor type to verify
+
+      form.SetPoly(polyList, 0);
+      form.SetElevation(level.elevation, 0);
+
+      form.GetElementWritten(out Element element, Session.Instance.GetActiveDgnModelRef(), 0);
+      return element;
+    }
+
     public Element RevitWallToNative(RevitWall wall)
     {
-      if (wall.baseLine is Line line)
+      if (wall.baseLine is Line baseLine)
       {
-        DPoint3d start = Point3dToNative(line.start);
-        DPoint3d opposite = Point3dToNative(line.end);
+        DPoint3d start = Point3dToNative(baseLine.start);
+        DPoint3d end = Point3dToNative(baseLine.end);
 
         double height = wall.height;
         //double thickness = height / 10.0;
-
-        //string type = revitColumn.type;
 
         TFCatalogList datagroup = new TFCatalogList();
         datagroup.Init("");
         ITFCatalog catalog = datagroup as ITFCatalog;
 
-        ITFCatalogTypeList typeList;
-        catalog.GetAllCatalogTypesList(0, out typeList);
+        catalog.GetAllCatalogTypesList(0, out ITFCatalogTypeList typeList);
 
         string family = wall.family;
         string type = wall.type;
 
-        ITFCatalogItemList itemList;
-        //catalog.GetCatalogItemsByTypeName("Wall", 0, out itemList);
-        catalog.GetCatalogItemByNames(family, type, 0, out itemList);
+        catalog.GetCatalogItemByNames(family, type, 0, out ITFCatalogItemList itemList);
+
+        // if no catalog item is not found, use a random one
+        if (itemList == null)
+          catalog.GetCatalogItemsByTypeName("Wall", 0, out itemList);
 
         TFLoadableWallList form = new TFLoadableWallList();
         form.InitFromCatalogItem(itemList, 0);
         form.SetWallType(TFdLoadableWallType.TFdLoadableWallType_Line, 0);
         start.ScaleInPlace(1.0 / UoR);
-        opposite.ScaleInPlace(1.0 / UoR);
-        form.SetEndPoints(ref start, ref opposite, 0);
+        end.ScaleInPlace(1.0 / UoR);
+        form.SetEndPoints(ref start, ref end, 0);
         form.SetHeight(height, 0);
         //form.SetThickness(thickness, 0);
 
-        Element element;
-        bool isDynamic = false;
-        if (isDynamic)
-        {
-          form.GetPreviewDescr(out _, 0, out element);
+        // horizontal offset
+        // revit parameter: WALL_KEY_REF_PARAM  "Location Line"
+        // 0. wall centerline
+        // 1. core centerline
+        // 2. finish face: exterior
+        // 3. finish face: interior
+        // 4. core face: exterior
+        // 5. core face: interior
+        // 
+        // todo: determine interior/exterior face?
+        // form.SetOffsetType(TFdFormRecipeOffsetType.tfdFormRecipeOffsetTypeCenter, 0);
 
-          // setting the modelref on the element is needed later for transient draw code to work
-          var itfe = element as ITFElement;
-          if (itfe != null)
-            itfe.SetModelRef(Session.Instance.GetActiveDgnModelRef(), 0);
-        }
-        else
-        {
-          form.GetElementWritten(out element, Session.Instance.GetActiveDgnModelRef(), 0);
-        }
+        form.GetElementWritten(out Element element, Session.Instance.GetActiveDgnModelRef(), 0);
         return element;
       }
       else
       {
-        throw new SpeckleException("Only lines as base lines supported.");
+        throw new SpeckleException("Only simple lines as base lines supported.");
       }
     }
 
