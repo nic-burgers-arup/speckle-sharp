@@ -394,164 +394,162 @@ namespace Objects.Converter.Bentley
       return familyInstance;
     }
 
-        public Element RevitBeamToNative(RevitBeam beam)
+    public Element RevitBeamToNative(RevitBeam beam)
+    {
+      Line baseLine = beam.baseLine as Line;
+
+      if (baseLine is Line)
+      {
+        DPoint3d start = Point3dToNative(((Line)baseLine).start);
+        DPoint3d opposite = Point3dToNative(((Line)baseLine).end);
+
+
+        //string type = revitColumn.type;
+
+        TFCatalogList datagroup = new TFCatalogList();
+        datagroup.Init("");
+        ITFCatalog catalog = datagroup as ITFCatalog;
+
+        ITFCatalogTypeList typeList;
+        catalog.GetAllCatalogTypesList(0, out typeList);
+
+        string family = beam.family;
+        string type = beam.type;
+
+        ITFCatalogItemList itemList;
+        //catalog.GetCatalogItemByNames(family, type, 0, out itemList);
+        //catalog.GetCatalogItemByNames("Beam", type, 0, out itemList);
+        catalog.GetCatalogItemByNames("Concrete Beam", type, 0, out itemList);
+
+        //catalog.GetCatalogItemsByTypeName(family, 0, out itemList);
+        //catalog.GetCatalogItemsByTypeName("Beam", 0, out itemList);
+
+        //catalog.GetCatalogItemByNames("Foundation | Concrete Pile", "ARP_Pile_-_Contiguous_Concrete_1500", 0, out itemList);
+        //catalog.GetCatalogItemsByTypeName("Foundation | Concrete Pile", 0, out itemList);
+
+        //catalog.GetCatalogItemByNames("Slab", "ARP_Slab_-_Foundation_Concrete_2000", 0, out itemList);
+        //catalog.GetCatalogItemByNames("Slab", "ARP_Slab_-_Floor_Concrete_600", 0, out itemList);
+        //catalog.GetCatalogItemsByTypeName("Slab", 0, out itemList);
+
+        TFLoadableList form = new TFLoadableList();
+
+
+        form.InitFromCatalogItem(TFdLoadableType.TFdLoadableTypeEnum_UserDefined, itemList, 0);
+
+        //form.SetWallType(TFdLoadableWallType.TFdLoadableWallType_Line, 0);
+        start.ScaleInPlace(1.0 / UoR);
+        opposite.ScaleInPlace(1.0 / UoR);
+        //form.SetEndPoints(ref start, ref opposite, 0);
+
+        Element element;
+
+        form.GetElementWritten(out element, Session.Instance.GetActiveDgnModelRef(), 0);
+
+        return element;
+      }
+      else
+      {
+        throw new SpeckleException("Only simple lines as base lines supported.");
+      }
+    }
+
+    public Element RevitColumnToNative(RevitColumn revitColumn)
+    {
+      Line baseLine = revitColumn.baseLine as Line;
+
+      if (baseLine is Line)
+      {
+        Point start = ((Line)baseLine).start;
+        Point end = ((Line)baseLine).end;
+        //string type = revitColumn.type;
+
+        //LineElement element = LineToNative(baseLine);
+
+
+        Element element = new CellHeaderElement(Model, "cell", new DPoint3d(), DMatrix3d.Identity, new List<Element>() { });
+
+        DPoint3d baseOrigin = new DPoint3d(0, 0, 0);
+        DPoint3d topOrigin = new DPoint3d(0, 0, 2);
+
+        DVector3d vectorX = new DVector3d(1, 1, 0);
+        DVector3d vectorY = new DVector3d(1, 1, 0);
+
+        double baseX = 5;
+        double baseY = 6;
+        double topX = 5;
+        double topY = 6;
+        DgnBoxDetail odata = new DgnBoxDetail(baseOrigin, topOrigin, vectorX, vectorY, baseX, baseY, topX, topY, true);
+        SolidPrimitive sample = SolidPrimitive.CreateDgnBox(odata);
+
+        element = DraftingElementSchema.ToElement(Model, sample, null);
+        //element.AddToModel();
+
+
+        return element;
+      }
+      else
+      {
+        throw new SpeckleException("Only lines as base lines supported.");
+      }
+    }
+
+    public Element RevitWallToNative(RevitWall wall)
+    {
+      if (wall.baseLine is Line line)
+      {
+        DPoint3d start = Point3dToNative(line.start);
+        DPoint3d opposite = Point3dToNative(line.end);
+
+        double height = wall.height;
+        //double thickness = height / 10.0;
+
+        //string type = revitColumn.type;
+
+        TFCatalogList datagroup = new TFCatalogList();
+        datagroup.Init("");
+        ITFCatalog catalog = datagroup as ITFCatalog;
+
+        ITFCatalogTypeList typeList;
+        catalog.GetAllCatalogTypesList(0, out typeList);
+
+        string family = wall.family;
+        string type = wall.type;
+
+        ITFCatalogItemList itemList;
+        //catalog.GetCatalogItemsByTypeName("Wall", 0, out itemList);
+        catalog.GetCatalogItemByNames(family, type, 0, out itemList);
+
+        TFLoadableWallList form = new TFLoadableWallList();
+        form.InitFromCatalogItem(itemList, 0);
+        form.SetWallType(TFdLoadableWallType.TFdLoadableWallType_Line, 0);
+        start.ScaleInPlace(1.0 / UoR);
+        opposite.ScaleInPlace(1.0 / UoR);
+        form.SetEndPoints(ref start, ref opposite, 0);
+        form.SetHeight(height, 0);
+        //form.SetThickness(thickness, 0);
+
+        Element element;
+        bool isDynamic = false;
+        if (isDynamic)
         {
-            Line baseLine = beam.baseLine as Line;
+          form.GetPreviewDescr(out _, 0, out element);
 
-            if (baseLine is Line)
-            {
-                DPoint3d start = Point3dToNative(((Line)baseLine).start);
-                DPoint3d opposite = Point3dToNative(((Line)baseLine).end);
-
-
-                //string type = revitColumn.type;
-
-                TFCatalogList datagroup = new TFCatalogList();
-                datagroup.Init("");
-                ITFCatalog catalog = datagroup as ITFCatalog;
-
-                ITFCatalogTypeList typeList;
-                catalog.GetAllCatalogTypesList(0, out typeList);
-
-                string family = beam.family;
-                string type = beam.type;
-
-                ITFCatalogItemList itemList;
-                //catalog.GetCatalogItemByNames(family, type, 0, out itemList);
-                //catalog.GetCatalogItemByNames("Beam", type, 0, out itemList);
-                catalog.GetCatalogItemByNames("Concrete Beam", type, 0, out itemList);
-
-                //catalog.GetCatalogItemsByTypeName(family, 0, out itemList);
-                //catalog.GetCatalogItemsByTypeName("Beam", 0, out itemList);
-
-                //catalog.GetCatalogItemByNames("Foundation | Concrete Pile", "ARP_Pile_-_Contiguous_Concrete_1500", 0, out itemList);
-                //catalog.GetCatalogItemsByTypeName("Foundation | Concrete Pile", 0, out itemList);
-
-                //catalog.GetCatalogItemByNames("Slab", "ARP_Slab_-_Foundation_Concrete_2000", 0, out itemList);
-                //catalog.GetCatalogItemByNames("Slab", "ARP_Slab_-_Floor_Concrete_600", 0, out itemList);
-                //catalog.GetCatalogItemsByTypeName("Slab", 0, out itemList);
-
-                TFLoadableList form = new TFLoadableList();
-
-
-                form.InitFromCatalogItem(TFdLoadableType.TFdLoadableTypeEnum_UserDefined, itemList, 0);
-
-                //form.SetWallType(TFdLoadableWallType.TFdLoadableWallType_Line, 0);
-                start.ScaleInPlace(1.0 / UoR);
-                opposite.ScaleInPlace(1.0 / UoR);
-                //form.SetEndPoints(ref start, ref opposite, 0);
-
-                Element element;
-
-                form.GetElementWritten(out element, Session.Instance.GetActiveDgnModelRef(), 0);
-
-                return element;
-            }
-            else
-            {
-                throw new SpeckleException("Only lines as base lines supported.");
-            }
+          // setting the modelref on the element is needed later for transient draw code to work
+          var itfe = element as ITFElement;
+          if (itfe != null)
+            itfe.SetModelRef(Session.Instance.GetActiveDgnModelRef(), 0);
         }
-
-        public Element RevitColumnToNative(RevitColumn revitColumn)
+        else
         {
-            Line baseLine = revitColumn.baseLine as Line;
-
-            if (baseLine is Line)
-            {
-                Point start = ((Line)baseLine).start;
-                Point end = ((Line)baseLine).end;
-                //string type = revitColumn.type;
-
-                //LineElement element = LineToNative(baseLine);
-
-
-                Element element = new CellHeaderElement(Model, "cell", new DPoint3d(), DMatrix3d.Identity, new List<Element>() { });
-
-                DPoint3d baseOrigin = new DPoint3d(0, 0, 0);
-                DPoint3d topOrigin = new DPoint3d(0, 0, 2);
-
-                DVector3d vectorX = new DVector3d(1, 1, 0);
-                DVector3d vectorY = new DVector3d(1, 1, 0);
-
-                double baseX = 5;
-                double baseY = 6;
-                double topX = 5;
-                double topY = 6;
-                DgnBoxDetail odata = new DgnBoxDetail(baseOrigin, topOrigin, vectorX, vectorY, baseX, baseY, topX, topY, true);
-                SolidPrimitive sample = SolidPrimitive.CreateDgnBox(odata);
-
-                element = DraftingElementSchema.ToElement(Model, sample, null);
-                //element.AddToModel();
-
-
-                return element;
-            }
-            else
-            {
-                throw new SpeckleException("Only lines as base lines supported.");
-            }
+          form.GetElementWritten(out element, Session.Instance.GetActiveDgnModelRef(), 0);
         }
-
-        public Element RevitWallToNative(RevitWall wall)
-        {
-            Line baseLine = wall.baseLine as Line;
-
-            if (baseLine is Line)
-            {
-                DPoint3d start = Point3dToNative(((Line)baseLine).start);
-                DPoint3d opposite = Point3dToNative(((Line)baseLine).end);
-
-                double height = wall.height;
-                //double thickness = height / 10.0;
-
-                //string type = revitColumn.type;
-
-                TFCatalogList datagroup = new TFCatalogList();
-                datagroup.Init("");
-                ITFCatalog catalog = datagroup as ITFCatalog;
-
-                ITFCatalogTypeList typeList;
-                catalog.GetAllCatalogTypesList(0, out typeList);
-
-                string family = wall.family;
-                string type = wall.type;
-
-                ITFCatalogItemList itemList;
-                //catalog.GetCatalogItemsByTypeName("Wall", 0, out itemList);
-                catalog.GetCatalogItemByNames(family, type, 0, out itemList);
-
-                TFLoadableWallList form = new TFLoadableWallList();
-                form.InitFromCatalogItem(itemList, 0);
-                form.SetWallType(TFdLoadableWallType.TFdLoadableWallType_Line, 0);
-                start.ScaleInPlace(1.0 / UoR);
-                opposite.ScaleInPlace(1.0 / UoR);
-                form.SetEndPoints(ref start, ref opposite, 0);
-                form.SetHeight(height, 0);
-                //form.SetThickness(thickness, 0);
-
-                Element element;
-                bool isDynamic = false;
-                if (isDynamic)
-                {
-                    form.GetPreviewDescr(out _, 0, out element);
-
-                    // setting the modelref on the element is needed later for transient draw code to work
-                    var itfe = element as ITFElement;
-                    if (itfe != null)
-                        itfe.SetModelRef(Session.Instance.GetActiveDgnModelRef(), 0);
-                }
-                else
-                {
-                    form.GetElementWritten(out element, Session.Instance.GetActiveDgnModelRef(), 0);
-                }
-                return element;
-            }
-            else
-            {
-                throw new SpeckleException("Only lines as base lines supported.");
-            }
-        }
+        return element;
+      }
+      else
+      {
+        throw new SpeckleException("Only lines as base lines supported.");
+      }
+    }
 
     public RevitFloor SlabToSpeckle(Dictionary<string, object> properties, List<ICurve> segments, string units = null)
     {
