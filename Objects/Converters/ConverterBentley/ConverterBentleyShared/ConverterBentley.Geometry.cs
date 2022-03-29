@@ -1,4 +1,4 @@
-using Bentley.DgnPlatformNET;
+﻿using Bentley.DgnPlatformNET;
 using Bentley.DgnPlatformNET.DgnEC;
 using Bentley.DgnPlatformNET.Elements;
 using Bentley.ECObjects.Instance;
@@ -35,7 +35,7 @@ namespace Objects.Converter.Bentley
 {
   public partial class ConverterBentley
   {
-    public double tolerance = 0.000;  // tolerance for geometry   
+    public static double Tolerance = 0.000;  // tolerance for geometry   
 
     public double[] PointToArray(DPoint2d pt)
     {
@@ -1688,8 +1688,7 @@ namespace Objects.Converter.Bentley
 
     public CellHeaderElement CellHeaderElementToNative(Base cellHeader, string units = null)
     {
-      var element = new CellHeaderElement(Model, null, new DPoint3d(), new DMatrix3d(), new List<Element>() { });
-
+      var element = new CellHeaderElement(Model, "", new DPoint3d(), new DMatrix3d(), new List<Element>() { });
 
       return element;
     }
@@ -1778,7 +1777,7 @@ namespace Objects.Converter.Bentley
           element = BeamToSpeckle(properties, u);
           break;
 
-        case (Category.CappingBeam):
+        case (Category.CappingBeams):
           element = CappingBeamToSpeckle(properties, u);
           break;
 
@@ -1790,7 +1789,7 @@ namespace Objects.Converter.Bentley
           element = PileToSpeckle(properties, u);
           break;
 
-        case (Category.FoundationSlab):
+        case (Category.FoundationSlabs):
         case (Category.Slabs):
           element = SlabToSpeckle(properties, segments, u);
           break;
@@ -1949,7 +1948,6 @@ namespace Objects.Converter.Bentley
       return containedProperties;
     }
 
-
     private static Dictionary<string, object> GetStructArrayValues(IECPropertyValue container)
     {
       Dictionary<string, object> containedProperties = new Dictionary<string, object>();
@@ -1970,7 +1968,7 @@ namespace Objects.Converter.Bentley
       Category category = Category.None;
       if (part.Contains("CappingBeam"))
       {
-        category = Category.CappingBeam;
+        category = Category.CappingBeams;
       }
       else if (part.Contains("Beam"))
       {
@@ -1986,7 +1984,7 @@ namespace Objects.Converter.Bentley
       }
       else if (part.Contains("FoundationSlab"))
       {
-        category = Category.FoundationSlab;
+        category = Category.FoundationSlabs;
       }
       else if (part.Contains("Slab"))
       {
