@@ -443,7 +443,7 @@ namespace Objects.Converter.Bentley
 
                 Element element;
 
-                form.GetElementWritten(out element, Bentley.MstnPlatformNET.Session.Instance.GetActiveDgnModelRef(), 0);
+                form.GetElementWritten(out element, Session.Instance.GetActiveDgnModelRef(), 0);
 
                 return element;
             }
@@ -543,7 +543,7 @@ namespace Objects.Converter.Bentley
                 }
                 else
                 {
-                    form.GetElementWritten(out element, Bentley.MstnPlatformNET.Session.Instance.GetActiveDgnModelRef(), 0);
+                    form.GetElementWritten(out element, Session.Instance.GetActiveDgnModelRef(), 0);
                 }
                 return element;
             }
