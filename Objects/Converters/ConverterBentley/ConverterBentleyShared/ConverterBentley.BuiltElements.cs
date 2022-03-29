@@ -472,7 +472,7 @@ namespace Objects.Converter.Bentley
         ITFCatalogItemList itemList;
         catalog.GetCatalogItemByNames(family, type, 0, out itemList);
 
-        // if no catalog item is not found, use a random one
+        // if no catalog item is found, use a random one
         if (itemList == null)
           catalog.GetCatalogItemsByTypeName("Wall", 0, out itemList);
 
@@ -519,7 +519,15 @@ namespace Objects.Converter.Bentley
       DisplayableElement outline = CurveToNative(floor.outline);
 
       TFPolyList polyList = new TFPolyList();
-      polyList.InitFromElement(outline, Tolerance, "0");
+      // tolerance is the maximum distance in UORs between the actual curve and the approximating vectors for curved elements
+      int foo = polyList.InitFromElement(outline, Tolerance * UoR, "0");
+      //foo = polyList.InitFromDescr(outline, Tolerance, "0");
+
+      // doesn´t seem to work, since area is 0
+      polyList.GetArea(0, out double area);
+     
+      //foo = polyList.InitFromElement2(outline, 0, "0");
+      //polyList.GetArea(0, out area);
 
       //Array points;
       //polyList.InitFromPoints(points, "0");
@@ -539,13 +547,14 @@ namespace Objects.Converter.Bentley
 
       catalog.GetCatalogItemByNames(family, type, 0, out ITFCatalogItemList itemList);
 
-      // if no catalog item is not found, use a random one
+      // if no catalog item is found, use a random one
       if (itemList == null)
         catalog.GetCatalogItemsByTypeName("Slab", 0, out itemList);
       if (itemList == null)
         catalog.GetCatalogItemsByTypeName("Floor", 0, out itemList);
 
       TFLoadableFloorList form = new TFLoadableFloorList();
+
       form.InitFromCatalogItem(itemList, 0);
       form.SetFloorType(TFdLoadableFloorType.TFdLoadableFloorType_SimpleFloor, 0); // floor type to verify
 
@@ -553,6 +562,13 @@ namespace Objects.Converter.Bentley
       form.SetElevation(level.elevation, 0);
 
       form.GetElementWritten(out Element element, Session.Instance.GetActiveDgnModelRef(), 0);
+
+
+      // alternative?
+      //TFFormRecipeSlabList recipe = new TFFormRecipeSlabList();
+
+
+
       return element;
     }
 
@@ -577,7 +593,7 @@ namespace Objects.Converter.Bentley
 
         catalog.GetCatalogItemByNames(family, type, 0, out ITFCatalogItemList itemList);
 
-        // if no catalog item is not found, use a random one
+        // if no catalog item is found, use a random one
         if (itemList == null)
           catalog.GetCatalogItemsByTypeName("Wall", 0, out itemList);
 
@@ -590,7 +606,7 @@ namespace Objects.Converter.Bentley
         form.SetHeight(height, 0);
         //form.SetThickness(thickness, 0);
 
-        // horizontal offset
+        // todo: horizontal offset
         // revit parameter: WALL_KEY_REF_PARAM  "Location Line"
         // 0. wall centerline
         // 1. core centerline

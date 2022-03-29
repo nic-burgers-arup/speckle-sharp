@@ -35,7 +35,7 @@ namespace Objects.Converter.Bentley
 {
   public partial class ConverterBentley
   {
-    public static double Tolerance = 0.000;  // tolerance for geometry   
+    public static double Tolerance = 0.001;  // tolerance for geometry   
 
     public double[] PointToArray(DPoint2d pt)
     {
