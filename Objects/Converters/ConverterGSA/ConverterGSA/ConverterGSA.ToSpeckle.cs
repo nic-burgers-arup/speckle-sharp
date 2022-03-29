@@ -1,4 +1,5 @@
-﻿using Objects.Geometry;
+﻿using Objects;
+using Objects.Geometry;
 using Objects.Structural;
 using Objects.Structural.Geometry;
 using Objects.Structural.GSA.Geometry;
@@ -423,7 +424,6 @@ namespace ConverterGSA
       {
         //-- App agnostic --
         name = gsaMemb.Name,
-        type = gsaMemb.Type.ToSpeckle1d(),
         end1Releases = GetRestraint(gsaMemb.Releases1, gsaMemb.Stiffnesses1),
         end2Releases = GetRestraint(gsaMemb.Releases2, gsaMemb.Stiffnesses2),
         end1Offset = new Vector() { units = conversionFactors.nativeModelUnits.length},
@@ -439,6 +439,7 @@ namespace ConverterGSA
         isDummy = gsaMemb.Dummy,
         intersectsWithOthers = gsaMemb.IsIntersector,
         memberType = gsaMemb.Type.ToSpeckle(),
+        type = gsaMemb.AnalysisType.ToSpeckle()
       };
 
       //-- App agnostic --
@@ -470,7 +471,7 @@ namespace ConverterGSA
 
       //The following properties aren't part of the structural schema:
       speckleMember1d["Exposure"] = gsaMemb.Exposure.ToString();
-      speckleMember1d["AnalysisType"] = gsaMemb.AnalysisType.ToString();
+      //speckleMember1d["AnalysisType"] = gsaMemb.AnalysisType.ToString();
       speckleMember1d["Fire"] = gsaMemb.Fire.ToString();
       speckleMember1d["CreationFromStartDays"] = gsaMemb.CreationFromStartDays;
       speckleMember1d["StartOfDryingDays"] = gsaMemb.StartOfDryingDays;
@@ -538,7 +539,7 @@ namespace ConverterGSA
       {
         //-- App agnostic --
         name = gsaMemb.Name,
-        //type = gsaMemb.Type.ToSpeckle2d(),
+        analysisType = gsaMemb.AnalysisType.ToSpeckle2d(),
         //displayMesh = DisplayMeshPolygon(gsaMemb.NodeIndices, color),
         orientationAngle = gsaMemb.Angle ?? 0,
         offset = gsaMemb.Offset2dZ ?? 0,
@@ -555,13 +556,14 @@ namespace ConverterGSA
       };
 
       //-- App agnostic --
+      var outline = new List<ICurve> { };
       if (gsaMemb.NodeIndices.Count >= 3)
       {
         var topology = gsaMemb.NodeIndices.Select(i => GetNodeFromIndex(i)).ToList();
         speckleMember2d.topology = topology;
         var coordinates = topology.SelectMany(x => x.basePoint.ToList()).ToList();
         coordinates.AddRange(topology[0].basePoint.ToList());
-        speckleMember2d.outline = new Polyline(coordinates);
+        outline.Add(new Polyline(coordinates));
         AddToMeaningfulNodeIndices(speckleMember2d.topology.Select(n => n.applicationId), GSALayer.Design);
       }
       else
@@ -575,7 +577,14 @@ namespace ConverterGSA
       if (gsaMemb.PropertyIndex.IsIndex()) speckleMember2d.property = GetProperty2dFromIndex(gsaMemb.PropertyIndex.Value);
       if (gsaMemb.Voids.HasValues())
       {
-        speckleMember2d.voids = gsaMemb.Voids.Select(v => v.Select(i => GetNodeFromIndex(i)).ToList()).ToList();
+        var voids = gsaMemb.Voids.Select(v => v.Select(i => GetNodeFromIndex(i)).ToList()).ToList();
+        foreach(var v in voids){
+          var coordinates = v.SelectMany(x => x.basePoint.ToList()).ToList();
+          coordinates.AddRange(v[0].basePoint.ToList());
+          outline.Add(new Polyline(coordinates));
+        }
+        speckleMember2d.voids = voids;
+
         AddToMeaningfulNodeIndices(speckleMember2d.voids.SelectMany(n => n.Select(n2 => n2.applicationId)), GSALayer.Design);
       }
       else
@@ -583,9 +592,12 @@ namespace ConverterGSA
 
       }
 
+      //add list of curves for member and member void outlines
+      speckleMember2d.outline = outline;
+
       //The following properties aren't part of the structural schema:
       speckleMember2d["Exposure"] = gsaMemb.Exposure.ToString();
-      speckleMember2d["AnalysisType"] = gsaMemb.AnalysisType.ToString();
+      //speckleMember2d["AnalysisType"] = gsaMemb.AnalysisType.ToString();
       speckleMember2d["Fire"] = gsaMemb.Fire.ToString();
       speckleMember2d["CreationFromStartDays"] = gsaMemb.CreationFromStartDays;
       speckleMember2d["StartOfDryingDays"] = gsaMemb.StartOfDryingDays;
@@ -595,7 +607,7 @@ namespace ConverterGSA
       if (gsaMemb.Voids.HasValues())
       {
         var speckleVoids = gsaMemb.Voids.Select(v => v.Select(i => GetNodeFromIndex(i)).ToList()).ToList();
-        speckleMember2d["Voids"] = speckleVoids;
+        speckleMember2d.voids = speckleVoids;
         AddToMeaningfulNodeIndices(speckleVoids.SelectMany(n => n.Select(n2 => n2.applicationId)), GSALayer.Design);
       }
       if (gsaMemb.PointNodeIndices.HasValues())
@@ -3342,6 +3354,11 @@ namespace ConverterGSA
           loadCases.Add(GetLoadCombinationFromIndex(gsaIndex));
           loadFactors.Add(gsaCaseFactors[key]);
         }
+        else if (key[0] == 'T')
+        {
+          loadCases.Add(GetAnalysisTaskFromIndex(gsaIndex));
+          loadFactors.Add(gsaCaseFactors[key]);
+        }
       }
 
       return true;
@@ -3364,6 +3381,11 @@ namespace ConverterGSA
       }
 
       return true;
+    }
+
+    private GSAAnalysisTask GetAnalysisTaskFromIndex(int index)
+    {
+      return (Instance.GsaModel.Cache.GetSpeckleObjects<GsaTask, GSAAnalysisTask>(index, out var speckleObjects)) ? speckleObjects.First() : null;
     }
 
     private GSACombinationCase GetLoadCombinationFromIndex(int index)

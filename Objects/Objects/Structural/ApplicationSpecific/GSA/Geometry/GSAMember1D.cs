@@ -16,7 +16,6 @@ namespace Objects.Structural.GSA.Geometry //GSA.Geometry?
     public bool isDummy { get; set; }
     public bool intersectsWithOthers { get; set; }
     public double targetMeshSize { get; set; }
-    public MemberType memberType { get; set; }
 
     public GSAMember1D() { }
 
@@ -28,7 +27,7 @@ namespace Objects.Structural.GSA.Geometry //GSA.Geometry?
       this.baseLine = baseLine;
       this.property = property;
       this.memberType = memberType;
-      this.type = analysisType;      
+      this.type = analysisType;
       this.end1Releases = end1Releases == null ? new Restraint("FFFFFF") : end1Releases;
       this.end2Releases = end2Releases == null ? new Restraint("FFFFFF") : end2Releases;
       this.end1Offset = end1Offset == null ? new Vector(0, 0, 0) : end1Offset;

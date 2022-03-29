@@ -604,6 +604,9 @@ namespace ConverterGSA
         returnObjects.Add(rsa);
       }
 
+      // Prevents duplicate typeGens build-up if stream sent more than once
+      typeGens.Clear();
+
       return true;
     }
 

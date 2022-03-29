@@ -156,6 +156,8 @@ namespace ConnectorGSA
 
     public static bool UpsertSavedReceptionStreamInfo(bool? receive, bool? send, params StreamState[] streamStates)
     {
+      
+      
       var sid = ((GsaProxy)Instance.GsaModel.Proxy).GetTopLevelSid();
       List<StreamState> allSs = null;
       try
@@ -263,7 +265,7 @@ namespace ConnectorGSA
       return convertedObjs;
     }
 
-    public static async Task<bool> SendCommit(Base commitObj, StreamState state, string parent, params ITransport[] transports)
+    public static async Task<(bool status, string commitId)> SendCommit(Base commitObj, StreamState state, string parent, params ITransport[] transports)
     {
       var commitObjId = await Operations.Send(
         @object: commitObj,
@@ -274,6 +276,7 @@ namespace ConnectorGSA
         }
         );
 
+      var commitId = "";
       if (transports.Any(t => t is ServerTransport))
       {
         var actualCommit = new CommitCreateInput
@@ -291,10 +294,10 @@ namespace ConnectorGSA
         }
 
         //if (state.PreviousCommitId != null) { actualCommit.parents = new List<string>() { state.PreviousCommitId }; }
-
+        
         try
         {
-          var commitId = await state.Client.CommitCreate(actualCommit);
+          commitId = await state.Client.CommitCreate(actualCommit);
           ((GsaModel)Instance.GsaModel).LastCommitId = commitId;
         }
         catch (Exception e)
@@ -303,13 +306,16 @@ namespace ConnectorGSA
         }
       }
 
-      return (state.Errors.Count == 0);
+      return (status: (state.Errors.Count == 0), commitId: commitId);
     }
 
     internal static async Task<bool> Receive(TabCoordinator coordinator, IProgress<MessageEventArgs> loggingProgress, IProgress<string> statusProgress, IProgress<double> percentageProgress)
     {
       var kit = KitManager.GetDefaultKit();
       var converter = kit.LoadConverter(VersionedHostApplications.GSA);
+      if (converter == null)
+        throw new Exception("Could not find any Kit!");
+
       var percentage = 0;
 
       Instance.GsaModel.StreamLayer = coordinator.ReceiverTab.TargetLayer;
@@ -396,6 +402,12 @@ namespace ConnectorGSA
                 if (received)
                 {
                   loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Received data from " + streamId + " stream"));
+                } else
+                {
+                  loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "Failed to receive data from " + streamId + " stream"));
+                  loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, "Failed to receive data from " + streamId + " stream"));
+                  percentageProgress.Report(0);
+                  return;
                 }
 
                 if (streamState.Errors != null && streamState.Errors.Count > 0)
@@ -810,8 +822,14 @@ namespace ConnectorGSA
       var startTime = DateTime.Now;
 
       statusProgress.Report("Preparing cache");
-      Commands.LoadDataFromFile(proxyLoggingProgress); //Ensure all nodes
-      loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Loaded data from file into cache"));
+      var loaded = Commands.LoadDataFromFile(proxyLoggingProgress); //Ensure all nodes
+      if (loaded) loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Loaded data from file into cache"));
+      else
+      {
+        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Failed to load data from file into cache"));
+        loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, "Failed to load data from file into cache"));
+        return false;
+      }
 
       percentage += 20;
       percentageProgress.Report(percentage);
@@ -954,7 +972,7 @@ namespace ConnectorGSA
       var serverTransport = new ServerTransport(account, ss.Stream.id);
       var sent = await Commands.SendCommit(commitObj, ss, ((GsaModel)Instance.GsaModel).LastCommitId, serverTransport);
 
-      if (sent)
+      if (sent.status)
       {
         loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Successfully sent data to stream"));
         Commands.UpsertSavedReceptionStreamInfo(true, null, ss);

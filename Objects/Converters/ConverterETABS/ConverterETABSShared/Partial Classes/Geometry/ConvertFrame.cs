@@ -159,26 +159,31 @@ namespace Objects.Converter.ETABS
       {
         case eFrameDesignOrientation.Column:
           {
+            speckleStructFrame.memberType = MemberType.Column;
             speckleStructFrame.type = ElementType1D.Column;
             break;
           }
         case eFrameDesignOrientation.Beam:
           {
+            speckleStructFrame.memberType = MemberType.Beam;
             speckleStructFrame.type = ElementType1D.Beam;
             break;
           }
         case eFrameDesignOrientation.Brace:
           {
+            speckleStructFrame.memberType = MemberType.Generic1D;
             speckleStructFrame.type = ElementType1D.Brace;
             break;
           }
         case eFrameDesignOrientation.Null:
           {
+            speckleStructFrame.memberType = MemberType.NotSet;
             speckleStructFrame.type = ElementType1D.Null;
             break;
           }
         case eFrameDesignOrientation.Other:
           {
+            speckleStructFrame.memberType = MemberType.Generic1D;
             speckleStructFrame.type = ElementType1D.Other;
             break;
           }
