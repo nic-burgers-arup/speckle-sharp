@@ -9,6 +9,7 @@ using Objects.Primitive;
 using Speckle.Core.Logging;
 using Speckle.Core.Models;
 using System;
+using System.Drawing;
 using System.Collections.Generic;
 using System.Linq;
 using Arc = Objects.Geometry.Arc;
@@ -30,6 +31,7 @@ using RevitColumn = Objects.BuiltElements.Revit.RevitColumn;
 using RevitFloor = Objects.BuiltElements.Revit.RevitFloor;
 using Surface = Objects.Geometry.Surface;
 using Vector = Objects.Geometry.Vector;
+using DisplayStyle = Objects.Other.DisplayStyle;
 
 namespace Objects.Converter.Bentley
 {
@@ -354,116 +356,58 @@ namespace Objects.Converter.Bentley
       if (q != null)
       {
         CurveVector vec = q.GetCurveVector();
-        if (vec != null)
+        if(vec != null)
         {
-          vec.GetStartEnd(out DPoint3d startPoint, out DPoint3d endPoint, out DVector3d startTangent, out DVector3d endTangent);
+          var primitive = vec.GetPrimitive(0);
+          primitive.Length(out var length);
 
-          double length = vec.SumOfLengths();
-          double radius = GetElementProperty(arc, "Radius").DoubleValue / UoR;
-
-          // in MicroStation, positive angle is measured in CCW direction
-          double startAngle = GetElementProperty(arc, "StartAngle").DoubleValue;
-          double endAngle = GetElementProperty(arc, "EndAngle").DoubleValue;
-          double sweep = GetElementProperty(arc, "SweepAngle").DoubleValue;
-          DPoint3d center = (DPoint3d)GetElementProperty(arc, "Center").NativeValue;
-          DPoint3d normal = (DPoint3d)GetElementProperty(arc, "Normal").NativeValue;
-          DPlane3d plane = new DPlane3d(center, new DVector3d(normal));
-
-          // an additional arc rotation can be applied in MicroStation, need to rotate the start/end points to correspond to this rotation before conversion                     
-          double rotation = GetElementProperty(arc, "RotationAngle").DoubleValue;
-          startAngle = rotation + startAngle;
-          endAngle = rotation + endAngle;
-
-          // arc rotation can also be specified about each axis
-          var rotationX = GetElementProperty(arc, "RotationX");
-          var rotationY = GetElementProperty(arc, "RotationY");
-          var rotationZ = GetElementProperty(arc, "RotationZ");
-
-          if (rotationX != null)
+          var status = primitive.TryGetArc(out var ellipse);
+          if (status)
           {
-            startAngle = rotationX.DoubleValue + startAngle;
-            endAngle = rotationX.DoubleValue + endAngle;
+            return CircularArcToSpeckle(ellipse, u);
           }
-          else if (rotationY != null)
-          {
-            startAngle = -rotationY.DoubleValue + startAngle;
-            endAngle = -rotationY.DoubleValue + endAngle;
-          }
-          else if (rotationZ != null)
-          {
-            startAngle = rotationZ.DoubleValue + startAngle;
-            endAngle = rotationZ.DoubleValue + endAngle;
-          }
-
-          var _arc = new Arc();
-
-          _arc.radius = radius;
-          _arc.angleRadians = Math.Abs(sweep);
-          _arc.startPoint = Point3dToSpeckle(startPoint);
-          _arc.endPoint = Point3dToSpeckle(endPoint);
-          _arc.units = u;
-
-          if (sweep < 0)
-          {
-            plane.NegateNormalInPlace();
-          }
-
-          _arc.startAngle = startAngle;
-          _arc.endAngle = endAngle;
-          _arc.plane = PlaneToSpeckle(plane);
-
-          CurveLocationDetail curveLoc = vec.GetPrimitive(0).PointAtSignedDistanceFromFraction(0, length / 2, false);
-          var midPoint = curveLoc.Point;
-          _arc.midPoint = Point3dToSpeckle(midPoint);
-
-          _arc.length = length / UoR;
-          _arc.domain = new Interval(0, length / UoR);
-
-          vec.GetRange(out var range);
-          bool worldXY = startPoint.Z == 0 && endPoint.Z == 0 ? true : false;
-          _arc.bbox = BoxToSpeckle(range, worldXY);
-
-          return _arc;
         }
       }
-
       return new Arc();
     }
 
-    public Arc CircularArcToSpeckle(DEllipse3d ellipse, string units = null)
+    public Arc CircularArcToSpeckle(DEllipse3d ellipse,  string units = null)
     {
       ellipse.IsCircular(out double radius, out DVector3d normal);
+      var length = ellipse.ArcLength();
+      var range = DRange3d.FromEllipse(ellipse);
 
       var sweep = ellipse.SweepAngle.Radians;
+      var rotation = Angle.NormalizeRadiansToPositive(ellipse.Vector0.AngleXY.Radians);
+
       var startAngle = ellipse.StartAngle.Radians;
       var endAngle = ellipse.EndAngle.Radians;
+      //var startAngle = sweep < 0 ? ellipse.EndAngle.Radians : ellipse.StartAngle.Radians;
+      //var endAngle = sweep < 0 ? ellipse.StartAngle.Radians : ellipse.EndAngle.Radians;    
+
+      startAngle = startAngle + rotation;
+      endAngle = endAngle + rotation;
+
       var center = ellipse.Center;
 
       var startPoint = ellipse.PointAtAngle(ellipse.StartAngle);
       var endPoint = ellipse.PointAtAngle(ellipse.EndAngle);
+      //var startPoint = sweep < 0 ? ellipse.PointAtAngle(ellipse.EndAngle) : ellipse.PointAtAngle(ellipse.StartAngle);
+      //var endPoint = sweep < 0 ? ellipse.PointAtAngle(ellipse.StartAngle) : ellipse.PointAtAngle(ellipse.EndAngle);
+
       var midPoint = ellipse.PointAtAngle(ellipse.StartAngle + Angle.Multiply(ellipse.SweepAngle, 0.5));
-
-      var length = ellipse.ArcLength();
-
-      var range = DRange3d.FromEllipse(ellipse);
-      DPlane3d plane = new DPlane3d(center, normal);
 
       var _arc = new Arc();
       _arc.radius = radius / UoR;
-      
       _arc.angleRadians = sweep;
       _arc.startPoint = Point3dToSpeckle(startPoint);
       _arc.endPoint = Point3dToSpeckle(endPoint);
       _arc.midPoint = Point3dToSpeckle(midPoint);
-      _arc.units = units ?? ModelUnits;
-
-      if (sweep < 0)
-      {
-        plane.NegateNormalInPlace();
-      }
 
       _arc.startAngle = startAngle;
       _arc.endAngle = endAngle;
+
+      DPlane3d plane = new DPlane3d(center, new DVector3d(normal));
       _arc.plane = PlaneToSpeckle(plane);
 
       _arc.length = length / UoR;
@@ -471,6 +415,7 @@ namespace Objects.Converter.Bentley
 
       bool worldXY = startPoint.Z == 0 && endPoint.Z == 0 ? true : false;
       _arc.bbox = BoxToSpeckle(range, worldXY);
+      _arc.units = units ?? ModelUnits;
 
       return _arc;
     }
@@ -538,13 +483,13 @@ namespace Objects.Converter.Bentley
 
     public EllipseElement EllipseToNative(Ellipse ellipse)
     {
-      var plane = PlaneToNative(ellipse.plane);
+      var plane = PlaneToNative((Plane)ellipse.plane);
 
       DPlacementZX placement = new DPlacementZX(plane.Origin);
-      var e = new DEllipse3d(placement, (double)ellipse.firstRadius, (double)ellipse.secondRadius, Angle.Zero, Angle.TWOPI);
-      var _ellipse = new EllipseElement(Model, null, e);
+      var _ellipse = new DEllipse3d(placement, (double)ellipse.firstRadius, (double)ellipse.secondRadius, Angle.Zero, Angle.TWOPI);
+      var ellipseElement = new EllipseElement(Model, null, _ellipse);
 
-      return _ellipse;
+      return ellipseElement;
     }
 
     // Ellipse element with rotation (converted to curve)
@@ -552,47 +497,43 @@ namespace Objects.Converter.Bentley
     {
       var vec = ellipse.GetCurveVector();
       var primitive = vec.GetPrimitive(0); // assume one primitve in vector for single curve element
-
       primitive.TryGetArc(out DEllipse3d curve);
 
-      var _spline = MSBsplineCurve.CreateFromDEllipse3d(ref curve);
-      var _splineElement = new BSplineCurveElement(Model, null, _spline);
+      var spline = MSBsplineCurve.CreateFromDEllipse3d(ref curve);
+      var splineElement = new BSplineCurveElement(Model, null, spline);
 
-      return BSplineCurveToSpeckle(_splineElement, units);
+      return BSplineCurveToSpeckle(splineElement, units);
     }
 
     // Circle
     public Circle CircleToSpeckle(EllipseElement ellipse, string units = null)
     {
-      double radius = GetElementProperty(ellipse, "Radius").DoubleValue / UoR;
-
       var vec = ellipse.GetCurveVector();
       vec.GetRange(out DRange3d range);
       vec.CentroidNormalArea(out DPoint3d center, out DVector3d normal, out double area);
-
+      double radius = (vec.SumOfLengths() / (Math.PI * 2))  / UoR;
 
       DPlane3d plane = new DPlane3d(center, new DVector3d(normal));
       var specklePlane = PlaneToSpeckle(plane);
 
       var u = units ?? ModelUnits;
-      var _circle = new Circle(specklePlane, radius, u);
-      _circle.domain = new Interval(0, 1);
-      _circle.length = 2 * Math.PI * radius;
-      _circle.area = Math.PI * Math.Pow(radius, 2);
+      var speckleCircle = new Circle(specklePlane, radius, u);
+      speckleCircle.domain = new Interval(0, 1);
+      speckleCircle.length = 2 * Math.PI * radius;
+      speckleCircle.area = Math.PI * Math.Pow(radius, 2);
 
       bool worldXY = range.Low.Z == 0 && range.High.Z == 0 ? true : false;
-      _circle.bbox = BoxToSpeckle(range, worldXY);
+      speckleCircle.bbox = BoxToSpeckle(range, worldXY);
 
-      return _circle;
+      return speckleCircle;
     }
 
     public Circle CircleToSpeckle(ArcElement arc, string units = null)
     {
-      double radius = GetElementProperty(arc, "Radius").DoubleValue / UoR;
-
       CurveVector vec = arc.GetCurveVector();
       vec.GetRange(out DRange3d range);
       vec.WireCentroid(out double length, out DPoint3d center);
+      double radius = (vec.SumOfLengths() / (Math.PI * 2)) / UoR;
 
       CurvePrimitive primitive = vec.GetPrimitive(0);
       primitive.FractionToPoint(0, out DPoint3d startPoint);
@@ -601,15 +542,15 @@ namespace Objects.Converter.Bentley
       Plane specklePlane = PlaneToSpeckle(center, quarterPoint, startPoint);
 
       var u = units ?? ModelUnits;
-      var _circle = new Circle(specklePlane, radius, u);
-      _circle.domain = new Interval(0, 1);
-      _circle.length = 2 * Math.PI * radius;
-      _circle.area = Math.PI * Math.Pow(radius, 2);
+      var speckleCircle = new Circle(specklePlane, radius, u);
+      speckleCircle.domain = new Interval(0, 1);
+      speckleCircle.length = 2 * Math.PI * radius;
+      speckleCircle.area = Math.PI * Math.Pow(radius, 2);
 
       bool worldXY = range.Low.Z == 0 && range.High.Z == 0 ? true : false;
-      _circle.bbox = BoxToSpeckle(range, worldXY);
+      speckleCircle.bbox = BoxToSpeckle(range, worldXY);
 
-      return _circle;
+      return speckleCircle;
     }
 
     public Circle CircleToSpeckle(DEllipse3d ellipse, string units = null)
@@ -622,15 +563,15 @@ namespace Objects.Converter.Bentley
 
       var u = units ?? ModelUnits;
       radius = ScaleToSpeckle(radius, UoR);
-      var _circle = new Circle(specklePlane, radius, u);
-      _circle.domain = new Interval(0, 1);
-      _circle.length = 2 * Math.PI * radius;
-      _circle.area = Math.PI * Math.Pow(radius, 2);
+      var speckleCircle = new Circle(specklePlane, radius, u);
+      speckleCircle.domain = new Interval(0, 1);
+      speckleCircle.length = 2 * Math.PI * radius;
+      speckleCircle.area = Math.PI * Math.Pow(radius, 2);
 
       bool worldXY = range.Low.Z == 0 && range.High.Z == 0 ? true : false;
-      _circle.bbox = BoxToSpeckle(range, worldXY);
+      speckleCircle.bbox = BoxToSpeckle(range, worldXY);
 
-      return _circle;
+      return speckleCircle;
     }
 
     public EllipseElement CircleToNative(Circle ellipse)
@@ -673,48 +614,30 @@ namespace Objects.Converter.Bentley
     // Line string element
     public Polyline PolylineToSpeckle(LineStringElement lineString, string units = null)
     {
-      List<DPoint3d> vertices = new List<DPoint3d>();
-      double totalLength = 0;
-      DPoint3d firstPoint = new DPoint3d();
-      DPoint3d lastPoint = new DPoint3d();
-      bool closed = true;
+      var specklePolyline = new Polyline();
 
-      var segments = GetElementProperty(lineString, "Segments").ContainedValues;
-      for (int i = 0; i < segments.Count(); i++)
+      CurveVector curveVector = CurvePathQuery.ElementToCurveVector(lineString);
+      if(curveVector != null)
       {
-        var segment = segments.ElementAt(i);
-        var segmentValues = segment.ContainedValues;
-        DPoint3d startPoint = (DPoint3d)segmentValues["Start"].NativeValue;
-        double length = segmentValues["Length"].DoubleValue;
-
-        vertices.Add(startPoint);
-        totalLength += length;
-
-        if (i == 0)
-          firstPoint = startPoint;
-        if (i == segments.Count() - 1)
+        var vertices = new List<DPoint3d>();
+        foreach (var primitive in curveVector)
         {
-          DPoint3d endPoint = (DPoint3d)segmentValues["End"].NativeValue;
-          lastPoint = endPoint;
-          if (firstPoint != lastPoint)
-          {
-            closed = false;
-            vertices.Add(endPoint);
-          }
+          var points = new List<DPoint3d>();
+          primitive.TryGetLineString(points);
+          vertices.AddRange(points);
         }
+        specklePolyline.value = PointsToFlatList(vertices);
+
+        specklePolyline.closed = curveVector.IsClosedPath;
+        specklePolyline.length = curveVector.SumOfLengths() / UoR;
+
+        curveVector.GetRange(out var range);
+        bool worldXY = range.Low.Z == 0 && range.High.Z == 0 ? true : false;
+        specklePolyline.bbox = BoxToSpeckle(range, worldXY);
+        specklePolyline.units = units ?? ModelUnits;
       }
 
-      var _polyline = new Polyline(PointsToFlatList(vertices));
-      _polyline.closed = closed;
-      _polyline.length = totalLength / UoR;
-
-      var curves = lineString.GetCurveVector();
-      curves.GetRange(out var range);
-      bool worldXY = range.Low.Z == 0 && range.High.Z == 0 ? true : false;
-      _polyline.bbox = BoxToSpeckle(range, worldXY);
-      _polyline.units = units ?? ModelUnits;
-
-      return _polyline;
+      return specklePolyline;
     }
 
     public Polyline PolylineToSpeckle(List<DPoint3d> pointList)
@@ -734,17 +657,17 @@ namespace Objects.Converter.Bentley
       var end = pointList[count];
       var closed = start.Equals(end);
 
-      var _polyline = new Polyline(PointsToFlatList(pointList), ModelUnits);
+      var specklePolyline = new Polyline(PointsToFlatList(pointList), ModelUnits);
 
-      _polyline.closed = closed;
-      _polyline.length = length / UoR;
+      specklePolyline.closed = closed;
+      specklePolyline.length = length / UoR;
 
       var range = DRange3d.FromArray(pointList);
 
       bool worldXY = range.Low.Z == 0 && range.High.Z == 0 ? true : false;
-      _polyline.bbox = BoxToSpeckle(range, worldXY);
+      specklePolyline.bbox = BoxToSpeckle(range, worldXY);
 
-      return _polyline;
+      return specklePolyline;
     }
 
     public LineStringElement PolylineToNative(Polyline polyline)
@@ -753,55 +676,46 @@ namespace Objects.Converter.Bentley
       if (polyline.closed)
         points.Add(points[0]);
 
-      LineStringElement _lineString = new LineStringElement(Model, null, points.ToArray());
-      return _lineString;
+      LineStringElement nativeLineString = new LineStringElement(Model, null, points.ToArray());
+      return nativeLineString;
     }
 
     // Complex string element (complex chain)
     public Polycurve PolycurveToSpeckle(ComplexStringElement complexString, string units = null)
     {
       var segments = new List<ICurve>();
+      CurveVector curveVector = CurvePathQuery.ElementToCurveVector(complexString);
+      foreach (var primitive in curveVector)
+      {
+        var curvePrimitiveType = primitive.GetCurvePrimitiveType();
+        switch (curvePrimitiveType)
+        {
+          case CurvePrimitive.CurvePrimitiveType.Line:
+            primitive.TryGetLine(out DSegment3d segment);
+            segments.Add(LineToSpeckle(segment));
+            break;
+          case CurvePrimitive.CurvePrimitiveType.Arc:
+            primitive.TryGetArc(out DEllipse3d arc);
+            segments.Add(ArcToSpeckle(arc));
+            break;
+          case CurvePrimitive.CurvePrimitiveType.LineString:
+            var pointList = new List<DPoint3d>();
+            primitive.TryGetLineString(pointList);
+            segments.Add(PolylineToSpeckle(pointList));
+            break;
+          case CurvePrimitive.CurvePrimitiveType.BsplineCurve:
+            var spline = primitive.GetBsplineCurve();
+            segments.Add(BSplineCurveToSpeckle(spline));
+            break;
+          case CurvePrimitive.CurvePrimitiveType.Spiral:
+            var spiralSpline = primitive.GetProxyBsplineCurve();
+            segments.Add(SpiralCurveElementToCurve(spiralSpline));
+            break;
+        }
+      }
 
       Processor processor = new Processor();
       ElementGraphicsOutput.Process(complexString, processor);
-      var curves = processor.curveVectors;
-
-      if (curves.Any())
-      {
-        foreach (var curve in curves)
-        {
-          foreach (var primitive in curve)
-          {
-            var curvePrimitiveType = primitive.GetCurvePrimitiveType();
-
-            switch (curvePrimitiveType)
-            {
-              case CurvePrimitive.CurvePrimitiveType.Line:
-                primitive.TryGetLine(out DSegment3d segment);
-                segments.Add(LineToSpeckle(segment));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.Arc:
-                primitive.TryGetArc(out DEllipse3d arc);
-                if (arc.SweepAngle.Radians < 0) arc.ReverseInPlace();
-                segments.Add(ArcToSpeckle(arc));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.LineString:
-                var pointList = new List<DPoint3d>();
-                primitive.TryGetLineString(pointList);
-                segments.Add(PolylineToSpeckle(pointList));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.BsplineCurve:
-                var spline = primitive.GetBsplineCurve();
-                segments.Add(BSplineCurveToSpeckle(spline));
-                break;
-              case CurvePrimitive.CurvePrimitiveType.Spiral:
-                var spiralSpline = primitive.GetProxyBsplineCurve();
-                segments.Add(SpiralCurveElementToCurve(spiralSpline));
-                break;
-            }
-          }
-        }
-      }
 
       DRange3d range = new DRange3d();
       double length = 0;
@@ -817,34 +731,32 @@ namespace Objects.Converter.Bentley
           closed = vec.IsClosedPath;
         }
       }
-
-      var _polycurve = new Polycurve();
-
-      _polycurve.units = units ?? ModelUnits;
-      _polycurve.closed = closed;
-      _polycurve.length = length;
-      _polycurve.segments = segments;
+     
+      var specklePolycurve = new Polycurve();
+      specklePolycurve.units = units ?? ModelUnits;
+      specklePolycurve.closed = closed;
+      specklePolycurve.length = length;
+      specklePolycurve.segments = segments;
 
       bool worldXY = range.Low.Z == 0 && range.High.Z == 0 ? true : false;
-      _polycurve.bbox = BoxToSpeckle(range, worldXY);
+      specklePolycurve.bbox = BoxToSpeckle(range, worldXY);
 
-      return _polycurve;
+      return specklePolycurve;
     }
-
 
     //// Complex string element (complex chain)
     public ComplexStringElement PolycurveToNative(Polycurve polycurve)
     {
-      var _polycurve = new ComplexStringElement(Model, null);
+      var nativePolycurve = new ComplexStringElement(Model, null);
 
       for (int i = 0; i < polycurve.segments.Count; i++)
       {
         var segment = polycurve.segments[i];
         var _curve = CurveToNative(segment);
-        _polycurve.AddComponentElement(_curve);
+        nativePolycurve.AddComponentElement(_curve);
       }
 
-      return _polycurve;
+      return nativePolycurve;
     }
 
     private List<ICurve> ProcessComplexElementSegments(BIM.Element[] subElements)
@@ -2124,10 +2036,24 @@ namespace Objects.Converter.Bentley
       public List<CurveVector> curveVectors = new List<CurveVector>();
       public List<CurvePrimitive> curvePrimitives = new List<CurvePrimitive>();
       public List<Base> elements = new List<Base>();
+      public DisplayStyle displayStyle;
 
       public override void AnnounceElementDisplayParameters(ElementDisplayParameters displayParams)
       {
-        var asdfsaf = displayParams.ElementClass;
+        var style = new DisplayStyle();
+        var color = displayParams.IsLineColorTBGR ? displayParams.LineColor : displayParams.LineColorTBGR;
+        style.color = (int)color;
+
+        var lineType = displayParams.LineStyle;
+        displayStyle = style;
+
+        var c = Color.FromArgb(style.color);
+        var level = displayParams.Level;
+      }
+
+      public override bool ExpandLineStyles()
+      {
+        return true;
       }
 
       public override void AnnounceElementMatSymbology(ElementMatSymbology matSymb)
@@ -2182,7 +2108,6 @@ namespace Objects.Converter.Bentley
       {
         vector.GetRange(out DRange3d range);
         curveVectors.Add(vector.Clone());
-
         return BentleyStatus.Success;
       }
 
