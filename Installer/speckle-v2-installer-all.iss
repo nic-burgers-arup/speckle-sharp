@@ -19,8 +19,8 @@
 #define Rhino6Version  GetFileVersion("..\ConnectorRhino\ConnectorRhino6\bin\Release\SpeckleConnectorRhino.rhp")
 #define Rhino7Version  GetFileVersion("..\ConnectorRhino\ConnectorRhino7\bin\Release\SpeckleConnectorRhino.rhp")
 
-#define ETABS18Version  GetFileVersion("..\ConnectorETABS\ConnectorETABSv18\bin\Release\SpeckleConnectorETABS.dll")
-#define ETABS19Version  GetFileVersion("..\ConnectorETABS\ConnectorETABSv19\bin\Release\SpeckleConnectorETABS.dll")
+#define ETABSVersion  GetFileVersion("..\ConnectorCSI\ConnectorETABS\bin\Release\SpeckleConnectorCSI.dll")
+#define SAP2000Version  GetFileVersion("..\ConnectorCSI\ConnectorSAP2000\bin\Release\SpeckleConnectorCSI.dll")
 
 #define GSAVersion  GetFileVersion("..\ConnectorGSA\ConnectorGSA\bin\Release\ConnectorGSA.exe")
 
@@ -83,8 +83,8 @@ Name: autocad21; Description: Speckle for AutoCAD 2021 - v{#Autocad2021Version};
 Name: autocad22; Description: Speckle for AutoCAD 2022 - v{#Autocad2022Version};  Types: full
 Name: civil21; Description: Speckle for Civil 3D 2021 - v{#Civil2021Version};  Types: full
 Name: civil22; Description: Speckle for Civil 3D 2022 - v{#Civil2022Version};  Types: full
-Name: etabs18; Description: Speckle for ETABS 18 - v{#ETABS18Version};  Types: full
-Name: etabs19; Description: Speckle for ETABS 19 - v{#ETABS19Version};  Types: full
+Name: etabs; Description: Speckle for ETABS - v{#ETABSVersion};  Types: full
+Name: sap2000; Description: Speckle for SAP2000 - v{#SAP2000Version};  Types: full
 Name: gsa; Description: Speckle for Oasys GSA - v{#GSAVersion};  Types: full
 Name: microstation; Description: Speckle for MicroStation CONNECT Edition Update 14 - v{#MicroStationVersion};  Types: full
 Name: openroads; Description: Speckle for OpenRoads Designer CONNECT Edition 2020 R3 - v{#OpenRoadsVersion};  Types: full
@@ -194,13 +194,13 @@ Source: "..\ConnectorDynamo\ConnectorDynamoFunctions\bin\Release\*"; DestDir: "{
 Source: "..\ConnectorDynamo\ConnectorDynamoFunctions\bin\Release\*"; DestDir: "{userappdata}\Dynamo\Dynamo Revit\2.6\packages\SpeckleDynamo2\bin\"; Flags: ignoreversion recursesubdirs; Components: dynamofunc
 Source: "..\ConnectorDynamo\ConnectorDynamoFunctions\bin\Release\*"; DestDir: "{userappdata}\Dynamo\Dynamo Revit\2.10\packages\SpeckleDynamo2\bin\"; Flags: ignoreversion recursesubdirs; Components: dynamofunc
 
-;etabs18
-Source: "..\ConnectorETABS\ConnectorETABSv18\bin\Release\*"; DestDir: "{localappdata}\Computers and Structures\ETABS 18\Speckle2ETABS\"; Flags: ignoreversion recursesubdirs; Components: etabs18
-Source: "..\Objects\Converters\ConverterETABS\ConverterETABSv18\bin\Release\netstandard2.0\Objects.Converter.ETABSv18.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: etabs18
+;etabs
+Source: "..\ConnectorCSI\ConnectorETABS\bin\Release\*"; DestDir: "{localappdata}\Computers and Structures\ETABS 19\Speckle2ETABS\"; Flags: ignoreversion recursesubdirs; Components: etabs
+Source: "..\Objects\Converters\ConverterCSI\ConverterETABS\bin\Release\netstandard2.0\Objects.Converter.ETABS.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: etabs
 
-;etabs19
-Source: "..\ConnectorETABS\ConnectorETABSv19\bin\Release\*"; DestDir: "{localappdata}\Computers and Structures\ETABS 19\Speckle2ETABS\"; Flags: ignoreversion recursesubdirs; Components: etabs19
-Source: "..\Objects\Converters\ConverterETABS\ConverterETABSv19\bin\Release\netstandard2.0\Objects.Converter.ETABSv19.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: etabs19
+;sap2000
+Source: "..\ConnectorCSI\ConnectorSAP2000\bin\Release\*"; DestDir: "{localappdata}\Computers and Structures\SAP2000 23\Speckle2SAP2000\"; Flags: ignoreversion recursesubdirs; Components: sap2000
+Source: "..\Objects\Converters\ConverterCSI\ConverterSAP2000\bin\Release\netstandard2.0\Objects.Converter.SAP2000.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: sap2000
 
 ;gsa
 Source: "..\ConnectorGSA\ConnectorGSA\bin\Release\*"; DestDir: "{userappdata}\Oasys\SpeckleGSA\"; Flags: ignoreversion recursesubdirs; Components: gsa
