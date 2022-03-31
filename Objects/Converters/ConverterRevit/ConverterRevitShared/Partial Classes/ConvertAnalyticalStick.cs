@@ -1,15 +1,14 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
-using Objects.BuiltElements;
 using Objects.BuiltElements.Revit;
 using Objects.Structural.Geometry;
+using Objects.Structural.Materials;
 using Objects.Structural.Properties;
 using Objects.Structural.Properties.Profiles;
-using Objects.Structural.Materials;
 using Speckle.Core.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using DB = Autodesk.Revit.DB;
 
 namespace Objects.Converter.Revit
@@ -151,7 +150,7 @@ namespace Objects.Converter.Revit
 
       var prop = new Property1D();
 
-      var stickFamily = (Autodesk.Revit.DB.FamilyInstance)Doc.GetElement(revitStick.GetElementId());
+      var stickFamily = (Autodesk.Revit.DB.FamilyInstance)revitStick.Document.GetElement(revitStick.GetElementId());
       var section = stickFamily.Symbol.GetStructuralSection();
       var speckleSection = new SectionProfile();
       speckleSection.name = section.StructuralSectionShapeName;
@@ -246,7 +245,7 @@ namespace Objects.Converter.Revit
       
 
       var materialType = stickFamily.StructuralMaterialType;
-      var structMat = (DB.Material)Doc.GetElement(stickFamily.StructuralMaterialId);
+      var structMat = (DB.Material)stickFamily.Document.GetElement(stickFamily.StructuralMaterialId);
       if (structMat == null)
         structMat = (DB.Material)Doc.GetElement(stickFamily.Symbol.get_Parameter(BuiltInParameter.STRUCTURAL_MATERIAL_PARAM).AsElementId());
 
@@ -366,7 +365,7 @@ namespace Objects.Converter.Revit
       speckleElement1D.property = prop;
 
     GetAllRevitParamsAndIds(speckleElement1D, revitStick);
-    speckleElement1D.displayValue = GetElementDisplayMesh(Doc.GetElement(revitStick.GetElementId()));
+      speckleElement1D.displayValue = GetElementDisplayMesh(revitStick.Document.GetElement(revitStick.GetElementId()));
     return speckleElement1D;
   }
 

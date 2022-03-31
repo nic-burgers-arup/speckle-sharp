@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.PointClouds;
 using Objects.Geometry;
@@ -9,6 +5,10 @@ using Objects.Other;
 using Objects.Primitive;
 using Speckle.Core.Logging;
 using Speckle.Core.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
 using Arc = Objects.Geometry.Arc;
 using Curve = Objects.Geometry.Curve;
 using DB = Autodesk.Revit.DB;
@@ -83,7 +83,7 @@ namespace Objects.Converter.Revit
       if (arr.Count % 3 != 0) throw new SpeckleException("Array malformed: length%3 != 0.");
 
       var u = units ?? ModelUnits;
-      
+
       var points = new List<XYZ>(arr.Count / 3);
       for (int i = 2; i < arr.Count; i += 3)
         points.Add(new XYZ(
@@ -436,7 +436,7 @@ namespace Objects.Converter.Revit
     {
       var polycurve = new Polycurve();
       polycurve.units = units ?? ModelUnits;
-      polycurve.closed = loop.First().GetEndPoint(0).DistanceTo(loop.Last().GetEndPoint(1)) < 0.0164042; //5mm
+      polycurve.closed = loop.First().GetEndPoint(0).DistanceTo(loop.Last().GetEndPoint(1)) < TOLERANCE;
       polycurve.length = ScaleToSpeckle(loop.Sum(x => x.Length));
       polycurve.segments.AddRange(loop.Select(x => CurveToSpeckle(x)));
       return polycurve;
@@ -522,12 +522,12 @@ namespace Objects.Converter.Revit
       return boundingBox;
     }
 
-    public Mesh MeshToSpeckle(DB.Mesh mesh, string units = null)
+    public Mesh MeshToSpeckle(DB.Mesh mesh, Document d, string units = null)
     {
       var vertices = new List<double>(mesh.Vertices.Count * 3);
       foreach (var vert in mesh.Vertices)
         vertices.AddRange(PointToSpeckle(vert).ToList());
-      
+
       var faces = new List<int>(mesh.NumTriangles * 4);
       for (int i = 0; i < mesh.NumTriangles; i++)
       {
@@ -541,13 +541,13 @@ namespace Objects.Converter.Revit
           (int)A, (int)B, (int)C
         });
       }
-      
+
       var u = units ?? ModelUnits;
-      var speckleMesh = new Mesh(vertices, faces, units: u )
+      var speckleMesh = new Mesh(vertices, faces, units: u)
       {
-        ["renderMaterial"] = RenderMaterialToSpeckle(Doc.GetElement(mesh.MaterialElementId ) as Material)
+        ["renderMaterial"] = RenderMaterialToSpeckle(d.GetElement(mesh.MaterialElementId) as Material)
       };
-      
+
       return speckleMesh;
     }
 
@@ -563,39 +563,35 @@ namespace Objects.Converter.Revit
       var vertices = ArrayToPoints(mesh.vertices, mesh.units);
 
       ElementId materialId = RenderMaterialToNative(mesh["renderMaterial"] as RenderMaterial);
-      
+
       int i = 0;
       while (i < mesh.faces.Count)
       {
         int n = mesh.faces[i];
         if (n < 3) n += 3; // 0 -> 3, 1 -> 4 to preserve backwards compatibility
-        
+
         var points = mesh.faces.GetRange(i + 1, n).Select(x => vertices[x]).ToArray();
 
         if (IsNonPlanarQuad(points))
         {
           //Non-planar quads will be triangulated as it's more desirable than `TessellatedShapeBuilder.Build`'s attempt to make them planar.
-          //TODO consider triangulating all n > 3 polygons
+          //TODO consider triangulating all n > 3 polygons that are non-planar
           var triPoints = new List<XYZ> { points[0], points[1], points[3] };
-          var face1 = new TessellatedFace(triPoints, ElementId.InvalidElementId);
-          face1.MaterialId = materialId;
+          var face1 = new TessellatedFace(triPoints, materialId);
           tsb.AddFace(face1);
-        
-          triPoints = new List<XYZ> { points[1], points[2], points[3] };;
-          var face2 = new TessellatedFace(triPoints, ElementId.InvalidElementId);
-          face2.MaterialId = materialId;
+
+          triPoints = new List<XYZ> { points[1], points[2], points[3] }; ;
+          var face2 = new TessellatedFace(triPoints, materialId);
           tsb.AddFace(face2);
         }
         else
         {
-          var face = new TessellatedFace(points, ElementId.InvalidElementId);
-          face.MaterialId = materialId;
+          var face = new TessellatedFace(points, materialId);
           tsb.AddFace(face);
         }
 
         i += n + 1;
       }
-
 
       tsb.CloseConnectedFaceSet();
       try
@@ -609,12 +605,12 @@ namespace Objects.Converter.Revit
       }
       var result = tsb.GetBuildResult();
       return result.GetGeometricalObjects();
-      
-      
+
+
       static bool IsNonPlanarQuad(IList<XYZ> points)
       {
         if (points.Count != 4) return false;
-        
+
         var matrix = new Matrix4x4(
           (float)points[0].X, (float)points[1].X, (float)points[2].X, (float)points[3].X,
           (float)points[0].Y, (float)points[1].Y, (float)points[2].Y, (float)points[3].Y,
@@ -936,15 +932,17 @@ namespace Objects.Converter.Revit
       return result;
     }
 
-    public Brep BrepToSpeckle(Solid solid, string units = null)
+    public Brep BrepToSpeckle(Solid solid, Document d, string units = null)
     {
-#if REVIT2021
+#if REVIT2019 || REVIT2020
+      throw new Speckle.Core.Logging.SpeckleException("Converting BREPs to Speckle is currently only supported in Revit 2021 and above.");
+#else
       // TODO: Incomplete implementation!!
       var u = units ?? ModelUnits;
       var brep = new Brep();
       brep.units = u;
 
-      if (solid is null || solid.Faces.IsEmpty)return null;
+      if (solid is null || solid.Faces.IsEmpty) return null;
 
       var faceIndex = 0;
       var edgeIndex = 0;
@@ -1005,7 +1003,7 @@ namespace Objects.Converter.Revit
               curve3dIndex++;
 
               // Create a trim with just one of the trimIndices set, the second one will be set on the opposite condition.
-              var sEdge = new BrepEdge(brep, sCurveIndex, new [ ] { sTrimIndex }, -1, -1, edge.IsFlippedOnFace(face), null);
+              var sEdge = new BrepEdge(brep, sCurveIndex, new[] { sTrimIndex }, -1, -1, edge.IsFlippedOnFace(face), null);
               speckleEdges.Add(edge, sEdge);
               speckleEdgeIndexes.Add(edge, edgeIndex);
               edgeIndex++;
@@ -1047,10 +1045,9 @@ namespace Objects.Converter.Revit
       brep.Trims = speckleTrims;
       brep.Edges = speckleEdges.Values.ToList();
       brep.Loops = speckleLoops;
-      brep.displayValue = GetMeshesFromSolids(new [] {solid});
+      brep.displayValue = GetMeshesFromSolids(new[] { solid }, d);
       return brep;
-#else
-      throw new Speckle.Core.Logging.SpeckleException("Converting BREPs to Speckle is currently only supported in Revit 2021.");
+
 #endif
     }
 

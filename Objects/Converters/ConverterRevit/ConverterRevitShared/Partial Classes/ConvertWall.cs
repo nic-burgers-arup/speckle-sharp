@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Objects.BuiltElements.Revit;
 using Speckle.Core.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using DB = Autodesk.Revit.DB;
 using Mesh = Objects.Geometry.Mesh;
 
@@ -28,12 +28,12 @@ namespace Objects.Converter.Revit
 
       if (speckleWall is RevitWall speckleRevitWall)
       {
-        level = LevelToNative(speckleRevitWall.level);
+        level = ConvertLevelToRevit(speckleRevitWall.level);
         structural = speckleRevitWall.structural;
       }
       else
       {
-        level = LevelToNative(LevelFromCurve(baseCurve));
+        level = ConvertLevelToRevit(LevelFromCurve(baseCurve));
       }
 
       //if it's a new element, we don't need to update certain properties
@@ -51,12 +51,8 @@ namespace Objects.Converter.Revit
       //is structural update
       TrySetParam(revitWall, BuiltInParameter.WALL_STRUCTURAL_SIGNIFICANT, structural);
 
-
       if (revitWall.WallType.Name != wallType.Name)
-      {
-
         revitWall.ChangeTypeId(wallType.Id);
-      }
 
       if (isUpdate)
       {
@@ -68,7 +64,7 @@ namespace Objects.Converter.Revit
         var newz = baseCurve.GetEndPoint(0).Z;
         var offset = level.Elevation - newz;
         var newCurve = baseCurve;
-        if (Math.Abs(offset) > 0.0164042) // level and curve are not at the same height
+        if (Math.Abs(offset) > TOLERANCE) // level and curve are not at the same height
         {
           newCurve = baseCurve.CreateTransformed(Transform.CreateTranslation(new XYZ(0, 0, offset)));
         }
@@ -86,7 +82,7 @@ namespace Objects.Converter.Revit
 
         if (spklRevitWall.topLevel != null)
         {
-          var topLevel = LevelToNative(spklRevitWall.topLevel);
+          var topLevel = ConvertLevelToRevit(spklRevitWall.topLevel);
           TrySetParam(revitWall, BuiltInParameter.WALL_HEIGHT_TYPE, topLevel);
         }
         else
@@ -151,7 +147,7 @@ namespace Objects.Converter.Revit
       {
         if (revitWall.IsStackedWall)
         {
-          var wallMembers = revitWall.GetStackedWallMemberIds().Select(id => (Wall)Doc.GetElement(id));
+          var wallMembers = revitWall.GetStackedWallMemberIds().Select(id => (Wall)revitWall.Document.GetElement(id));
           speckleWall.elements = new List<Base>();
           foreach (var wall in wallMembers)
             speckleWall.elements.Add(WallToSpeckle(wall));
@@ -167,7 +163,7 @@ namespace Objects.Converter.Revit
         var (panelsMesh, mullionsMesh) = GetCurtainWallDisplayMesh(revitWall);
         speckleWall["renderMaterial"] = new Other.RenderMaterial() { opacity = 0.2, diffuse = System.Drawing.Color.AliceBlue.ToArgb() };
         speckleWall.displayValue = panelsMesh;
-        
+
         var elements = new List<Base>();
         if (mullionsMesh.Count > 0) //Only add mullions object if they have meshes 
         {
@@ -192,27 +188,28 @@ namespace Objects.Converter.Revit
       });
 
       GetHostedElements(speckleWall, revitWall);
-      //Report.Log($"Converted Wall {revitWall.Id}");
+      Report.Log($"Converted Wall {revitWall.Id}");
+
       return speckleWall;
     }
 
     private (List<Mesh>, List<Mesh>) GetCurtainWallDisplayMesh(DB.Wall wall)
     {
       var grid = wall.CurtainGrid;
-      
+
       var solidPanels = new List<Solid>();
       var solidMullions = new List<Solid>();
       foreach (ElementId panelId in grid.GetPanelIds())
       {
-        solidPanels.AddRange(GetElementSolids(Doc.GetElement(panelId)));
+        solidPanels.AddRange(GetElementSolids(wall.Document.GetElement(panelId)));
       }
       foreach (ElementId mullionId in grid.GetMullionIds())
       {
-        solidMullions.AddRange(GetElementSolids(Doc.GetElement(mullionId)));
+        solidMullions.AddRange(GetElementSolids(wall.Document.GetElement(mullionId)));
       }
-      
-      var meshPanels = GetMeshesFromSolids(solidPanels);
-      var meshMullions = GetMeshesFromSolids(solidMullions);
+
+      var meshPanels = GetMeshesFromSolids(solidPanels, wall.Document);
+      var meshMullions = GetMeshesFromSolids(solidMullions, wall.Document);
 
       return (meshPanels, meshMullions);
     }
