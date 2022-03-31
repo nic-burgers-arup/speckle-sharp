@@ -33,7 +33,9 @@ namespace ConnectorGrasshopper
 
     private DebounceDispatcher nicknameChangeDebounce = new DebounceDispatcher();
 
-    private List<string> excludedFromUnitsKeywords = new List<string>() { "structural", "loading" };
+    // classes within these namespaces and classes will be excluded from inheriting units from Rhino model
+    private List<string> excludedFromUnitsNamespaces = new List<string>() { "structural" };
+    private List<string> excludedFromUnitsClasses = new List<string>() { "loading", "properties" };
 
     public CreateSchemaObjectBase(string name, string nickname, string description, string category, string subCategory)
       : base(name, nickname, description, category, subCategory)
@@ -396,7 +398,8 @@ namespace ConnectorGrasshopper
         ((Base)schemaObject).applicationId = $"{Seed}-{SelectedConstructor.DeclaringType.FullName}-{DA.Iteration}";
 
         // Check to ensure default rhino geometric units are not assigned to inappropriate structural objects
-        var isExcludedStructural = excludedFromUnitsKeywords.All(keyword => schemaObject.GetType().Namespace.ToLower().Contains(keyword));
+        var isExcludedStructural = excludedFromUnitsClasses.Any(keyword => schemaObject.GetType().Namespace.ToLower().Contains(keyword)) 
+          && excludedFromUnitsNamespaces.Any(keyword => schemaObject.GetType().Namespace.ToLower().Contains(keyword));
 
         if ((((Base)schemaObject)["units"] == null || ((Base)schemaObject)["units"] == "") && (!isExcludedStructural))
           ((Base)schemaObject)["units"] = units;
