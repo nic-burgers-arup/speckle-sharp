@@ -525,7 +525,7 @@ namespace Objects.Converter.Bentley
 
       // doesn´t seem to work, since area is 0
       polyList.GetArea(0, out double area);
-     
+
       //foo = polyList.InitFromElement2(outline, 0, "0");
       //polyList.GetArea(0, out area);
 
@@ -576,10 +576,13 @@ namespace Objects.Converter.Bentley
     {
       if (wall.baseLine is Line baseLine)
       {
+        baseLine.start.z += wall.baseOffset;
+        baseLine.end.z += wall.baseOffset;
+
         DPoint3d start = Point3dToNative(baseLine.start);
         DPoint3d end = Point3dToNative(baseLine.end);
 
-        double height = wall.height;
+        double height = wall.height + wall.topOffset;
         //double thickness = height / 10.0;
 
         TFCatalogList datagroup = new TFCatalogList();
