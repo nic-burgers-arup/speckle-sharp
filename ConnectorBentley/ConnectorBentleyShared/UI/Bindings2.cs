@@ -174,8 +174,6 @@ namespace Speckle.ConnectorBentley.UI
       filterList.Add(new ListSelectionFilter { Slug = "civilElementType", Name = "Civil Features", Icon = "RailroadVariant", Description = "Selects civil features based on their type.", Values = civilElementTypes });
 #endif
 
-
-
       return filterList;
     }
 
@@ -256,7 +254,6 @@ namespace Speckle.ConnectorBentley.UI
       if (progress.Report.OperationErrorsCount != 0 || commitObject == null)
         return state;
 
-      var flattenedObjects = FlattenCommitObject(commitObject, converter);
       // needs to be set for editing to work 
       converter.SetPreviousContextObjects(previouslyReceivedObjects);
 

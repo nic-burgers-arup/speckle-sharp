@@ -1,4 +1,4 @@
-using Bentley.DgnPlatformNET;
+﻿using Bentley.DgnPlatformNET;
 using Bentley.DgnPlatformNET.DgnEC;
 using Bentley.DgnPlatformNET.Elements;
 using Bentley.ECObjects.Instance;
@@ -37,7 +37,7 @@ namespace Objects.Converter.Bentley
 {
   public partial class ConverterBentley
   {
-    public double tolerance = 0.000;  // tolerance for geometry   
+    public static double Tolerance = 0.001;  // tolerance for geometry   
 
     public double[] PointToArray(DPoint2d pt)
     {
@@ -381,9 +381,7 @@ namespace Objects.Converter.Bentley
       var rotation = Angle.NormalizeRadiansToPositive(ellipse.Vector0.AngleXY.Radians);
 
       var startAngle = ellipse.StartAngle.Radians;
-      var endAngle = ellipse.EndAngle.Radians;
-      //var startAngle = sweep < 0 ? ellipse.EndAngle.Radians : ellipse.StartAngle.Radians;
-      //var endAngle = sweep < 0 ? ellipse.StartAngle.Radians : ellipse.EndAngle.Radians;    
+      var endAngle = ellipse.EndAngle.Radians;  
 
       startAngle = startAngle + rotation;
       endAngle = endAngle + rotation;
@@ -392,8 +390,6 @@ namespace Objects.Converter.Bentley
 
       var startPoint = ellipse.PointAtAngle(ellipse.StartAngle);
       var endPoint = ellipse.PointAtAngle(ellipse.EndAngle);
-      //var startPoint = sweep < 0 ? ellipse.PointAtAngle(ellipse.EndAngle) : ellipse.PointAtAngle(ellipse.StartAngle);
-      //var endPoint = sweep < 0 ? ellipse.PointAtAngle(ellipse.StartAngle) : ellipse.PointAtAngle(ellipse.EndAngle);
 
       var midPoint = ellipse.PointAtAngle(ellipse.StartAngle + Angle.Multiply(ellipse.SweepAngle, 0.5));
 
@@ -1631,7 +1627,7 @@ namespace Objects.Converter.Bentley
 
     public CellHeaderElement CellHeaderElementToNative(Base cellHeader, string units = null)
     {
-      var element = new CellHeaderElement(Model, null, new DPoint3d(), new DMatrix3d(), new List<Element>() { });
+      var element = new CellHeaderElement(Model, "", new DPoint3d(), new DMatrix3d(), new List<Element>() { });
       return element;
     }
 
@@ -1741,7 +1737,7 @@ namespace Objects.Converter.Bentley
             element = BeamToSpeckle(properties, u);
             break;
 
-          case (Category.CappingBeam):
+        case (Category.CappingBeams):
             element = CappingBeamToSpeckle(properties, u);
             break;
 
@@ -1753,7 +1749,7 @@ namespace Objects.Converter.Bentley
             element = PileToSpeckle(properties, u);
             break;
 
-          case (Category.FoundationSlab):
+        case (Category.FoundationSlabs):
           case (Category.Slabs):
             element = SlabToSpeckle(properties, segments, u);
             break;
@@ -1896,7 +1892,6 @@ namespace Objects.Converter.Bentley
       return containedProperties;
     }
 
-
     private static Dictionary<string, object> GetStructArrayValues(IECPropertyValue container)
     {
       Dictionary<string, object> containedProperties = new Dictionary<string, object>();
@@ -1912,12 +1907,13 @@ namespace Objects.Converter.Bentley
       return containedProperties;
     }
 
+#if (OPENBUILDINGS)
     private static Category FindCategory(string part)
     {
       Category category = Category.None;
       if (part.Contains("CappingBeam"))
       {
-        category = Category.CappingBeam;
+        category = Category.CappingBeams;
       }
       else if (part.Contains("Beam"))
       {
@@ -1933,7 +1929,7 @@ namespace Objects.Converter.Bentley
       }
       else if (part.Contains("FoundationSlab"))
       {
-        category = Category.FoundationSlab;
+        category = Category.FoundationSlabs;
       }
       else if (part.Contains("Slab"))
       {
@@ -1945,6 +1941,7 @@ namespace Objects.Converter.Bentley
       }
       return category;
     }
+#endif
 
     private static Dictionary<string, object> AddProperty(Dictionary<string, object> properties, string propertyName, object value)
     {

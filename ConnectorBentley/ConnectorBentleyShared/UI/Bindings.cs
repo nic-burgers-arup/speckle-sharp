@@ -18,6 +18,7 @@ using Speckle.ConnectorBentley.Storage;
 using Bentley.DgnPlatformNET;
 using Bentley.DgnPlatformNET.Elements;
 using Bentley.MstnPlatformNET;
+using Bentley.DgnPlatformNET.DgnEC;
 using Bentley.ECObjects.Instance;
 using Bentley.ECObjects.Schema;
 

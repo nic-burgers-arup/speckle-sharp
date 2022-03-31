@@ -26,6 +26,10 @@ using View3D = Objects.BuiltElements.View3D;
 using Station = Objects.BuiltElements.Station;
 using Surface = Objects.Geometry.Surface;
 using Vector = Objects.Geometry.Vector;
+using RevitBeam = Objects.BuiltElements.Revit.RevitBeam;
+using RevitColumn = Objects.BuiltElements.Revit.RevitColumn;
+using RevitFloor = Objects.BuiltElements.Revit.RevitFloor;
+using RevitWall = Objects.BuiltElements.Revit.RevitWall;
 
 using Bentley.DgnPlatformNET;
 using Bentley.DgnPlatformNET.Elements;
@@ -325,6 +329,19 @@ namespace Objects.Converter.Bentley
           Report.Log($"Created Brep {o.id}");
           return BrepToNative(o);
 
+#if (OPENBUILDINGS)
+        case RevitBeam o:
+           Report.Log($"Created Revit Beam {o.id}");
+           return RevitBeamToNative(o);
+
+        case RevitFloor o:
+          Report.Log($"Created Revit Floor {o.id}");
+          return RevitFloorToNative(o);
+
+        case RevitWall o:
+           Report.Log($"Created Revit Wall {o.id}");
+           return RevitWallToNative(o);
+#endif
 #if (OPENROADS || OPENRAIL || OPENBRIDGE)
         case Alignment o:
         Report.Log($"Created Alignment {o.id}");
@@ -400,6 +417,10 @@ namespace Objects.Converter.Bentley
         case Curve _:
         case Box _:
         case Mesh _:
+        case RevitBeam _:
+        //case RevitColumn _:
+        case RevitFloor _:
+        case RevitWall _:
           //case Surface _:
           //case Alignment _:
           return true;
