@@ -41,6 +41,10 @@ namespace Objects.Converter.Bentley
 {
   public partial class ConverterBentley
   {
+    private static int Decimals = 3;
+
+    private Dictionary<int, Level> levels = new Dictionary<int, Level>();
+
     public RevitBeam BeamToSpeckle(Dictionary<string, object> properties, string units = null)
     {
       var u = units ?? ModelUnits;
@@ -118,12 +122,17 @@ namespace Objects.Converter.Bentley
     public Level CreateLevel(double elevation, string units = null)
     {
       var u = units ?? ModelUnits;
+      elevation = Math.Round(elevation, Decimals);
 
-      double accuracy = 1000.0;
-      elevation = Math.Round(elevation * accuracy) / accuracy;
+      int levelKey = (int)(elevation * Math.Pow(10, Decimals));
+      levels.TryGetValue(levelKey, out Level level);
 
-      Level level = new Level("Level " + elevation + u, elevation);
-      level.units = u;
+      if (level == null)
+      {
+        level = new Level("Level " + elevation + u, elevation);
+        level.units = u;
+        levels.Add(levelKey, level);
+      }
       return level;
     }
 
@@ -226,7 +235,7 @@ namespace Objects.Converter.Bentley
 
         case ("ROTATION"):
           double rotation = (double)GetProperty(properties, "ROTATION");
-          Parameter structuralBendDirAngle = new Parameter("Cross-Section Rotation", 180 * rotation / Math.PI);
+          Parameter structuralBendDirAngle = new Parameter("Cross-Section Rotation", -Math.PI * rotation / 180.0);
           return new List<Parameter>() { structuralBendDirAngle };
 
         default:
@@ -234,29 +243,43 @@ namespace Objects.Converter.Bentley
       }
     }
 
-    public Polycurve CreatePolyCurve(List<ICurve> segments, string units = null)
+    public Polycurve CreateClosedPolyCurve(List<ICurve> lines, string units = null)
     {
       var u = units ?? ModelUnits;
       Polycurve polyCurve = new Polycurve(u);
 
+      // sort lines
+      List<ICurve> segments = Sort(lines);
+      polyCurve.segments = segments;
+
+      //polyCurve.domain
+      polyCurve.closed = true;
+      //polyCurve.bbox
+      //polyCurve.area
+      //polyCurve.length
+
+      return polyCurve;
+    }
+
+    private List<ICurve> Sort(List<ICurve> lines)
+    {
       double eps = 0.001;
 
-      // sort segments
-      if (segments.Count > 0)
+      List<ICurve> sortedLines = new List<ICurve>();
+      if (lines.Count > 0)
       {
-        Line firstSegment = segments[0] as Line;
+        Line firstSegment = lines[0] as Line;
         Point currentEnd = firstSegment.end;
-        List<ICurve> sortedSegments = new List<ICurve>();
-        sortedSegments.Add(firstSegment);
-        segments.Remove(firstSegment);
+        sortedLines.Add(firstSegment);
+        lines.Remove(firstSegment);
         int i = 0;
-        while (segments.Count > 0)
+        while (lines.Count > 0)
         {
-          if (i > segments.Count)
+          if (i == lines.Count)
           {
             break;
           }
-          ICurve nextSegment = segments[i];
+          ICurve nextSegment = lines[i];
           i++;
           Point nextStart = ((Line)nextSegment).start;
           Point nextEnd = ((Line)nextSegment).end;
@@ -267,22 +290,15 @@ namespace Objects.Converter.Bentley
 
           if (dx < eps && dy < eps && dz < eps)
           {
-            sortedSegments.Add(nextSegment);
-            segments.Remove(nextSegment);
+            sortedLines.Add(nextSegment);
+            lines.Remove(nextSegment);
 
             currentEnd = ((Line)nextSegment).end;
             i = 0;
           }
         }
-        polyCurve.segments = sortedSegments;
       }
-      //polyCurve.domain
-      polyCurve.closed = true;
-      //polyCurve.bbox
-      //polyCurve.area
-      //polyCurve.length
-
-      return polyCurve;
+      return sortedLines;
     }
 
     public Line CreateWallBaseLine(List<ICurve> shortEdges, string units = null)
@@ -300,8 +316,17 @@ namespace Objects.Converter.Bentley
       double dy2 = edge2.end.y - edge2.start.y;
       double dz2 = edge2.end.z - edge2.start.z;
 
-      Point start = new Point(edge1.start.x + dx1 / 2, edge1.start.y + dy1 / 2, edge1.start.z + dz1 / 2, u);
-      Point end = new Point(edge2.start.x + dx2 / 2, edge2.start.y + dy2 / 2, edge2.start.z + dz2 / 2, u);
+      // z-coordinates need to be rounded to avoid problems in Revit regarding floating point errors or small deviations
+      double x1 = edge1.start.x + dx1 / 2;
+      double y1 = edge1.start.y + dy1 / 2;
+      double z1 = Math.Round(edge1.start.z + dz1 / 2, Decimals);
+
+      double x2 = edge2.start.x + dx2 / 2;
+      double y2 = edge2.start.y + dy2 / 2;
+      double z2 = Math.Round(edge2.start.z + dz2 / 2, Decimals);
+
+      Point start = new Point(x1, y1, z1, u);
+      Point end = new Point(x2, y2, z2, u);
 
       Line baseLine = new Line(start, end, u);
       return baseLine;
@@ -414,9 +439,7 @@ namespace Objects.Converter.Bentley
         }
         else
         {
-          List<ICurve> lines = new List<ICurve>() { line };
-          elevationMap.Add(elevation, lines);
-
+          elevationMap.Add(elevation, new List<ICurve>() { line });
         }
       }
 
@@ -425,18 +448,32 @@ namespace Objects.Converter.Bentley
         throw new SpeckleException("Slab geometry has more than two different elevations!");
       }
 
-      Polycurve outline = CreatePolyCurve(elevationMap[maxElevation], u);
+      Level level = CreateLevel(maxElevation, u);
+
+      List<ICurve> lines = elevationMap[maxElevation];
+
+      // todo: create bbox and sort by size
+      // for now assuming that outline comes before the openings
+      Polycurve outline = CreateClosedPolyCurve(lines, u);
+
+      // all lines that are not part of the outline must be part of a void
+      List<ICurve> voids = new List<ICurve>();
+      while (lines.Count > 0)
+      {
+        Polycurve opening = CreateClosedPolyCurve(lines);
+        voids.Add(opening);
+      }
+
       floor.outline = outline;
-      //floor.voids
+      floor.voids = voids;
       //floor.elements
       floor.units = u;
       floor.type = part;
       floor.family = family;
       floor.elementId = elementId.ToString();
-      //floor.level = new Level();
-      //floor.level.units = u;
+      floor.level = level;
       floor.structural = true;
-      //floor.slope
+      floor.slope = 0;
       //floor.slopeDirection
 
       return floor;
@@ -448,7 +485,7 @@ namespace Objects.Converter.Bentley
 
       var u = units ?? ModelUnits;
       string part = (string)GetProperty(properties, "PART");
-      string family = (string)GetProperty(properties, "FAMILY");
+      string family = "Basic Wall";
       // for some reason the ElementID is a long
       int elementId = (int)(double)GetProperty(properties, "ElementID");
 

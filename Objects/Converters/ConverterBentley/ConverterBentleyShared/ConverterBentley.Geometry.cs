@@ -2071,6 +2071,10 @@ namespace Objects.Converter.Bentley
 
       public override bool ProcessAsBody(bool isCurved)
       {
+        // needs to return false, so columns get processed as primitive geometry
+        //if (isCurved)
+        //  return true;
+        //else
         return false;
       }
 
