@@ -38,14 +38,16 @@ namespace Objects.Converter.RhinoGh
 {
   public partial class ConverterRhinoGh : ISpeckleConverter
   {
-#if RHINO6
-    public static string RhinoAppName = Applications.Rhino6;
-    public static string GrasshopperAppName = Applications.Grasshopper;
+#if RHINO6 && GRASSHOPPER
+    public static string RhinoAppName = VersionedHostApplications.Grasshopper6;
+#elif RHINO7 && GRASSHOPPER
+    public static string RhinoAppName = VersionedHostApplications.Grasshopper7;
+#elif RHINO6
+    public static string RhinoAppName = VersionedHostApplications.Rhino6;
 #elif RHINO7
-    public static string RhinoAppName = Applications.Rhino7;
-    public static string GrasshopperAppName = Applications.Grasshopper;
+    public static string RhinoAppName = VersionedHostApplications.Rhino7;
 #endif
-    
+
     public enum MeshSettings
     {
       Default,
@@ -68,12 +70,7 @@ namespace Objects.Converter.RhinoGh
 
     public IEnumerable<string> GetServicedApplications()
     {
-      
-#if RHINO6
-      return new string[] {RhinoAppName, Applications.Grasshopper};
-#elif RHINO7
-      return new string[] {RhinoAppName};
-#endif   
+      return new[] {RhinoAppName};
     }
 
     public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
@@ -109,8 +106,8 @@ namespace Objects.Converter.RhinoGh
       Base schema = null;
       if (@object is RhinoObject ro)
       {
-        material = GetMaterial(ro);
-        style = GetStyle(ro);
+        material = RenderMaterialToSpeckle(ro.GetMaterial(true));
+        style = DisplayStyleToSpeckle(ro.Attributes);
 
         if (ro.Attributes.GetUserString(SpeckleSchemaKey) != null) // schema check - this will change in the near future
            schema = ConvertToSpeckleBE(ro) ?? ConvertToSpeckleStr(ro);
@@ -557,8 +554,8 @@ namespace Objects.Converter.RhinoGh
           var b = BrepToNative(o);
           if (b == null)
           {
-            rhinoObj = (o.displayMesh != null) ? MeshToNative(o.displayMesh) : null;
-            Report.Log($"Created Brep {o.id} as Mesh");
+            rhinoObj = o.displayValue?.Select(MeshToNative).ToArray();
+            Report.Log($"Created Brep {o.id} as Meshes");
           }
           else
           {
@@ -566,6 +563,7 @@ namespace Objects.Converter.RhinoGh
             Report.Log($"Created Brep {o.id}");
           }
           break;
+
         case Surface o:
           rhinoObj = SurfaceToNative(o);
           Report.Log($"Created Surface {o.id}");
@@ -588,14 +586,10 @@ namespace Objects.Converter.RhinoGh
           break;
 
         case DirectShape o:
-          if (o.displayMesh != null)
-          {
-            rhinoObj = MeshToNative(o.displayMesh);
-            Report.Log($"Created DirectShape {o.id}");
-          }
-          Report.Log($"Skipping DirectShape {o.id} because it has no displayMesh");
+          rhinoObj = DirectShapeToNative(o);
+          Report.Log($"Created DirectShape {o.id}");
           break;
-
+        
         case View3D o:
           rhinoObj = ViewToNative(o);
           Report.Log($"Created View3D {o.id}");
@@ -614,6 +608,14 @@ namespace Objects.Converter.RhinoGh
         case Text o:
           rhinoObj = TextToNative(o);
           Report.Log($"Created Text {o.id}");
+          break;
+
+        case DisplayStyle o:
+          rhinoObj = DisplayStyleToNative(o);
+          break;
+        
+        case RenderMaterial o:
+          rhinoObj = RenderMaterialToNative(o);
           break;
 
         default:
@@ -666,13 +668,15 @@ case RH.SubD _:
         case RH.Brep _:
         case NurbsSurface _:
           return true;
-        // TODO: This types are not supported in GH!
+        
+#if !GRASSHOPPER
+        // This types are not supported in GH!
         case ViewInfo _:
         case InstanceDefinition _:
         case InstanceObject _:
         case TextEntity _:
           return true;
-
+#endif
         default:
 
           return false;
@@ -703,16 +707,20 @@ case RH.SubD _:
         case Surface _:
           return true;
         
-        //TODO: This types are not supported in GH!
+#if !GRASSHOPPER
+        // This types are not supported in GH!
         case Pointcloud _:
+        case DisplayStyle _:
         case ModelCurve _:
         case DirectShape _:
         case View3D _:
         case BlockDefinition _:
         case BlockInstance _:
         case Alignment _:
+        case RenderMaterial _:
         case Text _:
           return true;
+#endif
         
         default:
           return false;

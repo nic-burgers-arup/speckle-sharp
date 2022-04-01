@@ -1,20 +1,23 @@
-﻿using Speckle.Newtonsoft.Json;
+﻿using System;
+using Speckle.Newtonsoft.Json;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using System.Collections.Generic;
+using System.Linq;
 using Objects.Geometry;
 using Objects.Structural.Properties;
 
 namespace Objects.Structural.Geometry
 {
-  public class Element1D : Base, IDisplayMesh
+  public class Element1D : Base, IDisplayMesh, IDisplayValue<List<Mesh>>
   {
     public string name { get; set; } //add unique id as base identifier, name can change too easily
     public Line baseLine { get; set; }
 
     [DetachProperty]
     public Property1D property { get; set; }
-    public MemberType memberType { get; set; }
+    public MemberType memberType { get; set; } = MemberType.NotSet;
+    public ElementType1D type { get; set; }
     public Restraint end1Releases { get; set; }
     public Restraint end2Releases { get; set; }
     public Vector end1Offset { get; set; }
@@ -36,7 +39,8 @@ namespace Objects.Structural.Geometry
     public List<Node> topology { get; set; }
 
     [DetachProperty]
-    public Mesh displayMesh { get; set; }
+    public List<Mesh> displayValue { get; set; }
+
     public string units { get; set; }
     public Element1D() { }
     public Element1D(Line baseLine)
@@ -127,5 +131,13 @@ namespace Objects.Structural.Geometry
       this.end2Offset = end2Offset == null ? new Vector(0, 0, 0) : end2Offset;
       this.localAxis = localAxis;
     }
+
+    #region Obsolete
+    [JsonIgnore, Obsolete("Use " + nameof(displayValue) + " instead")]
+    public Mesh displayMesh {
+      get => displayValue?.FirstOrDefault();
+      set => displayValue = new List<Mesh> {value};
+    }
+    #endregion
   }
 }

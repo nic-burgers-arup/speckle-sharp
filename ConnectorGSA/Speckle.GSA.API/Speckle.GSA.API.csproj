@@ -49,6 +49,7 @@
     <Compile Include="Enums.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="GsaModelBase.cs" />
+    <Compile Include="GwaSchema\AnalysisStages\GsaAnalStageProp.cs" />
     <Compile Include="GwaSchema\AnalysisStages\GsaAnalStage.cs" />
     <Compile Include="GwaSchema\Bridge\GsaAlign.cs" />
     <Compile Include="GwaSchema\Bridge\GsaPath.cs" />

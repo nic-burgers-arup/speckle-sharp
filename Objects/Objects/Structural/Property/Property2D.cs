@@ -19,10 +19,6 @@ namespace Objects.Structural.Properties
     public Axis orientationAxis { get; set; }
     public ReferenceSurface refSurface { get; set; } = ReferenceSurface.Middle; //system plane
     public double zOffset { get; set; } //relative to reference surface
-    public double modifierInPlane { get; set; } // negative number is a percentage, positive number is a value
-    public double modifierBending { get; set; } // negative number is a percentage, positive number is a value
-    public double modifierShear { get; set; } // negative number is a percentage, positive number is a value
-    public double modifierVolume { get; set; } // negative number is a percentage, positive number is a value
     public string units { get; set; }
     public Property2D() { }
 

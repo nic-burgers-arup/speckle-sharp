@@ -1,9 +1,9 @@
-﻿using Speckle.Core.Kits;
-using Speckle.Core.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using Objects.Other;
+using Speckle.Core.Kits;
+using Speckle.Core.Models;
 using Speckle.Newtonsoft.Json;
 
 namespace Objects.Geometry
@@ -30,7 +30,9 @@ namespace Objects.Geometry
 
     public string units { get; set; }
 
-    public Vector() { }
+    public Vector()
+    {
+    }
 
     public Vector(double x, double y, string units = Units.Meters, string applicationId = null)
     {
@@ -50,69 +52,115 @@ namespace Objects.Geometry
       this.units = units;
     }
 
+    public Vector(Point point, string applicationId = null) : this(point.x, point.y, point.z, point.units,
+      applicationId)
+    {
+    }
+
     public List<double> ToList()
     {
       return new List<double>() { x, y, z };
     }
 
-    public static Vector FromList(List<double> list, string units) => new Vector(list[0], list[1], list[2]);
+    public static Vector FromList(List<double> list, string units) => new Vector(list[0], list[1], list[2], units);
 
-    public double x
-    {
-      get;
-      set;
-    }
-    
-    public double y
-    {
-      get;
-      set;
-    }
-    
-    public double z
-    {
-      get;
-      set;
-    }
+    public double x { get; set; }
 
-    //Overloading operators
+    public double y { get; set; }
+
+    public double z { get; set; }
+
+    public static Vector operator /(Vector vector, double val) => new Vector(
+      vector.x / val,
+      vector.y / val,
+      vector.z / val, vector.units);
+
+    public static Vector operator *(Vector vector, double val) => new Vector(
+      vector.x * val,
+      vector.y * val,
+      vector.z * val, vector.units
+    );
+
+    public static Vector operator *(double val, Vector vector) => new Vector(
+      val * vector.x,
+      val * vector.y,
+      val * vector.z, vector.units
+    );
+
+    public static Vector operator *(Vector vector1, Vector vector2) => new Vector(
+      vector1.y * vector2.z - vector1.z * vector2.y,
+      vector1.z * vector2.x - vector1.x * vector2.z,
+      vector1.x * vector2.y - vector1.y * vector2.x, vector1.units
+    );
+
+    public static Vector operator +(Vector vector1, Vector vector2) => new Vector(
+      vector1.x + vector2.x,
+      vector1.y + vector2.y,
+      vector1.z + vector2.z, vector1.units);
+
+    public static Vector operator -(Vector vector1, Vector vector2) => new Vector(
+      vector1.x - vector2.x,
+      vector1.y - vector2.y,
+      vector1.z - vector2.z, vector1.units);
+
     public static Vector operator +(Vector a) => a;
     public static Vector operator -(Vector a) => new Vector(-a.x, -a.y, -a.z, a.units);
-    public static Vector operator +(Vector a, Vector b)
+
+    /// <summary>
+    /// Gets the Euclidean length of this vector.
+    /// </summary>
+    /// <returns>Length of the vector.</returns>
+    public double Length => Math.Sqrt(DotProduct(this, this));
+
+    /// <summary>
+    /// Gets the scalar product (dot product) of two given vectors
+    /// Dot product = u1*v1 + u2*v2 + u3*v3.
+    /// </summary>
+    /// <param name="u">First vector.</param>
+    /// <param name="v">Second vector.</param>
+    /// <returns>Numerical value of the dot product.</returns>
+    public static double DotProduct(Vector u, Vector v) =>
+      u.x * v.x + u.y * v.y + u.z * v.z;
+
+    /// <summary>
+    /// Computes the vector product (cross product) of two given vectors
+    /// Cross product = { u2 * v3 - u3 * v2; u3 * v1 - u1 * v3; u1 * v2 - u2 * v1 }.
+    /// </summary>
+    /// <param name="u">First vector.</param>
+    /// <param name="v">Second vector.</param>
+    /// <returns>Vector result of the cross product.</returns>
+    public static Vector CrossProduct(Vector u, Vector v)
     {
-      if (a.units == b.units)
-      {
-        return new Vector(a.x + b.x, a.y + b.y, a.z + b.z, a.units);
-      }
-      else
-      {
-        return null;
-      }
+      var x = u.y * v.z - u.z * v.y;
+      var y = u.z * v.x - u.x * v.z;
+      var z = u.x * v.y - u.y * v.x;
+
+      return new Vector(x, y, z);
     }
-    public static Vector operator -(Vector a, Vector b)
+
+    /// <summary>
+    /// Divides this vector by it's euclidean length.
+    /// </summary>
+    public void Unitize()
     {
-      if (a.units == b.units)
-      {
-        return new Vector(a.x - b.x, a.y - b.y, a.z - b.z, a.units);
-      }
-      else
-      {
-        return null;
-      }
+      var length = this.Length;
+      this.x /= length;
+      this.y /= length;
+      this.z /= length;
     }
-    public static Vector operator *(Vector a, Vector b)
+
+    /// <summary>
+    /// Returns a normalized copy of this vector.
+    /// </summary>
+    /// <returns>A copy of this vector unitized.</returns>
+    public Vector Unit()
     {
-      if (a.units == b.units)
-      {
-        return new Vector(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x, a.units);
-      }
-      else
-      {
-        return null;
-      }
+      var length = this.Length;
+      var x = this.x / length;
+      var y = this.y / length;
+      var z = this.z / length;
+      return new Vector(x, y, z);
     }
-    public static Vector operator *(double s, Vector a) => new Vector(s * a.x, s * a.y, s * a.z, a.units);
-    public static Vector operator *(Vector a, double s) => s * a;
 
     public bool TransformTo(Transform transform, out Vector vector)
     {

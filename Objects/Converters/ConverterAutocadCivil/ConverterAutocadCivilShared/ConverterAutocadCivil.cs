@@ -41,13 +41,13 @@ namespace Objects.Converter.AutocadCivil
   public partial class ConverterAutocadCivil : ISpeckleConverter
   {
 #if AUTOCAD2021
-    public static string AutocadAppName = Applications.Autocad2021;
+    public static string AutocadAppName = VersionedHostApplications.Autocad2021;
 #elif AUTOCAD2022
-public static string AutocadAppName = Applications.Autocad2022;
+public static string AutocadAppName = VersionedHostApplications.Autocad2022;
 #elif CIVIL2021
-    public static string AutocadAppName = Applications.Civil2021;
+    public static string AutocadAppName = VersionedHostApplications.Civil2021;
 #elif CIVIL2022
-    public static string AutocadAppName = Applications.Civil2022;
+    public static string AutocadAppName = VersionedHostApplications.Civil2022;
 #endif
 
     public ConverterAutocadCivil()
@@ -97,8 +97,6 @@ public static string AutocadAppName = Applications.Autocad2022;
           if (schema != null)
             return ObjectToSpeckleBuiltElement(o);
           */
-          DisplayStyle style = GetStyle(obj);
-
           switch (obj)
           {
             case DBPoint o:
@@ -166,6 +164,11 @@ public static string AutocadAppName = Applications.Autocad2022;
               Report.Log($"Converted SubD Mesh");
               break;
             case Solid3d o:
+              if (o.IsNull)
+              {
+                Report.Log($"Skipped null Solid");
+                return null;
+              }
               @base = SolidToSpeckle(o);
               Report.Log($"Converted Solid as Mesh");
               break;
@@ -206,6 +209,10 @@ public static string AutocadAppName = Applications.Autocad2022;
               @base = PipeToSpeckle(o);
               Report.Log($"Converted Pipe");
               break;
+            case CivilDB.PressurePipe o:
+              @base = PipeToSpeckle(o);
+              Report.Log($"Converted Pressure Pipe");
+              break;
             case CivilDB.Profile o:
               @base = ProfileToSpeckle(o);
               Report.Log($"Converted Profile as Base");
@@ -216,9 +223,10 @@ public static string AutocadAppName = Applications.Autocad2022;
               break;
 #endif
           }
+
+          DisplayStyle style = DisplayStyleToSpeckle(obj as Entity);
           if (style != null)
             @base["displayStyle"] = style;
-
           break;
 
         case Acad.Geometry.Point3d o:
@@ -332,26 +340,21 @@ public static string AutocadAppName = Applications.Autocad2022;
             Report.Log($"Created Polycurve {o.id} as Polyline");
             break;
           }
-            
-
-        //case Interval o: // TODO: NOT TESTED
-        //  return IntervalToNative(o);
-
-        //case Plane o: // TODO: NOT TESTED
-        //  return PlaneToNative(o);
 
         case Curve o:
           acadObj = CurveToNativeDB(o);
           Report.Log($"Created Curve {o.id}");
           break;
 
-        //case Surface o: 
-        //  return SurfaceToNative(o);
+        /*
+        case Surface o: 
+          return SurfaceToNative(o);
 
         case Brep o:
           acadObj = (o.displayMesh != null) ? MeshToNativeDB(o.displayMesh) : null;
           Report.Log($"Created Brep {o.id} as Mesh");
           break;
+        */
 
         case Mesh o:
           acadObj = MeshToNativeDB(o);
@@ -359,7 +362,7 @@ public static string AutocadAppName = Applications.Autocad2022;
           break;
 
         case BlockInstance o:
-          acadObj = BlockInstanceToNativeDB(o, out BlockReference refernce);
+          acadObj = BlockInstanceToNativeDB(o, out BlockReference reference);
           Report.Log($"Created Block Instance {o.id}");
           break;
 
@@ -449,6 +452,7 @@ public static string AutocadAppName = Applications.Autocad2022;
             case CivilDB.Structure _:
             case CivilDB.Alignment _:
             case CivilDB.Pipe _:
+            case CivilDB.PressurePipe _:
             case CivilDB.Profile _:
             case CivilDB.TinSurface _:
               return true;
@@ -486,7 +490,7 @@ public static string AutocadAppName = Applications.Autocad2022;
         case Polyline _:
         case Polycurve _:
         case Curve _:
-        case Brep _:
+        //case Brep _:
         case Mesh _:
 
         case BlockDefinition _:

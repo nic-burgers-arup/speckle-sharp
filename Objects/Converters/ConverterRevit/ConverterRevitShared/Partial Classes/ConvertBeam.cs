@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
 using Objects.BuiltElements;
 using Objects.BuiltElements.Revit;
 using Speckle.Core.Models;
+using System.Collections.Generic;
 using DB = Autodesk.Revit.DB;
 
 namespace Objects.Converter.Revit
@@ -13,6 +12,7 @@ namespace Objects.Converter.Revit
   {
     public List<ApplicationPlaceholderObject> BeamToNative(Beam speckleBeam, StructuralType structuralType = StructuralType.Beam)
     {
+      
       if (speckleBeam.baseLine == null)
       {
         throw new Speckle.Core.Logging.SpeckleException("Only line based Beams are currently supported.");
@@ -40,10 +40,7 @@ namespace Objects.Converter.Revit
         }
       }
 
-      if (level == null)
-      {
-        level = LevelToNative(LevelFromCurve(baseLine));
-      }
+      level ??= ConvertLevelToRevit(speckleRevitBeam?.level ?? LevelFromCurve(baseLine));
 
       var isUpdate = false;
 
@@ -127,14 +124,14 @@ namespace Objects.Converter.Revit
 
       var speckleBeam = new RevitBeam();
       speckleBeam.family = symbol.FamilyName;
-      speckleBeam.type = Doc.GetElement(revitBeam.GetTypeId()).Name;
+      speckleBeam.type = revitBeam.Document.GetElement(revitBeam.GetTypeId()).Name;
       speckleBeam.baseLine = baseLine;
       speckleBeam.level = ConvertAndCacheLevel(revitBeam, BuiltInParameter.INSTANCE_REFERENCE_LEVEL_PARAM);
-      speckleBeam.displayMesh = GetElementMesh(revitBeam);
+      speckleBeam.displayValue = GetElementMesh(revitBeam);
 
       GetAllRevitParamsAndIds(speckleBeam, revitBeam);
 
-      //Report.Log($"Converted Beam {revitBeam.Id}");
+      Report.Log($"Converted Beam {revitBeam.Id}");
       return speckleBeam;
     }
   }

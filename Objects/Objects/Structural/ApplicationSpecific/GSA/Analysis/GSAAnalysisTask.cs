@@ -66,8 +66,8 @@ namespace Objects.Structural.GSA.Analysis
   public enum SolutionType
   {
     Static = 0,
-    NonlinearStatic,
-    Modal,
+    //NonlinearStatic,
+    //Modal,
     //Ritz,
     //Buckling,
     //StaticPDelta,

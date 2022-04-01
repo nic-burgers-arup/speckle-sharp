@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
-using ConnectorGrasshopper.Extras;
 using GH_IO.Serialization;
 using Grasshopper.Kernel;
-using Grasshopper.Kernel.Data;
-using Grasshopper.Kernel.Types;
 using GrasshopperAsyncComponent;
 using Sentry;
 using Speckle.Core.Kits;
@@ -23,9 +18,9 @@ namespace ConnectorGrasshopper.Objects
     public ISpeckleKit Kit;
 
     public virtual bool CanDisableConversion => true;
-    
+
     public string SelectedKitName;
-    
+
     public SelectKitAsyncComponentBase(string name, string nickname, string description, string category,
       string subCategory) : base(name, nickname, description, category, subCategory)
     {
@@ -36,7 +31,7 @@ namespace ConnectorGrasshopper.Objects
       base.AddedToDocument(document);
       if (SelectedKitName == null)
         SelectedKitName = SpeckleGHSettings.SelectedKitName;
-      
+
       SetConverter();
     }
 
@@ -75,22 +70,24 @@ namespace ConnectorGrasshopper.Objects
     {
       try
       {
-        var kits = KitManager.GetKitsWithConvertersForApp(Applications.Rhino6);
+        var kits = KitManager.GetKitsWithConvertersForApp(Extras.Utilities.GetVersionedAppName());
 
         Menu_AppendSeparator(menu);
         Menu_AppendItem(menu, "Select the converter you want to use:", null, false);
-        if(CanDisableConversion)
+        if (CanDisableConversion)
           Menu_AppendItem(menu, "Do Not Convert", (s, e) =>
           {
             SelectedKitName = "None";
             SetConverter();
             ExpireSolution(true);
           }, true, Kit == null);
-          
+
         foreach (var kit in kits)
         {
-          Menu_AppendItem(menu, $"{kit.Name} ({kit.Description})", (s, e) => { SelectedKitName=kit.Name; SetConverter(); ExpireSolution(true);
-            }, true,
+          Menu_AppendItem(menu, $"{kit.Name} ({kit.Description})", (s, e) =>
+          {
+            SelectedKitName = kit.Name; SetConverter(); ExpireSolution(true);
+          }, true,
             kit.Name == Kit?.Name);
         }
 
@@ -107,7 +104,7 @@ namespace ConnectorGrasshopper.Objects
       if (kitName == Kit?.Name) return;
       Kit = KitManager.Kits.FirstOrDefault(k => k.Name == kitName);
       SelectedKitName = Kit.Name;
-      Converter = Kit.LoadConverter(Applications.Rhino6);
+      Converter = Kit.LoadConverter(Extras.Utilities.GetVersionedAppName());
       Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
       SpeckleGHSettings.OnMeshSettingsChanged +=
         (sender, args) => Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
