@@ -509,7 +509,7 @@ namespace ConnectorGSA
       {
         var castedMapping = (Dictionary<string,object>)mapping;
 
-        // Indexing key will be primary key of native software -- should this be software we are receiving from?
+        // Indexing key will be primary key of native software -- IMPORTANT -- MAPPING SHOULD BE TO SOFTWARE SECTIONS WERE ORIGINALLY SENT FROM
         relationalMappings.Add(castedMapping["GSA"], castedMapping);
       }
 

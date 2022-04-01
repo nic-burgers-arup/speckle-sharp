@@ -2124,6 +2124,15 @@ namespace ConverterGSA
 
       if (speckleProperty.profile != null)
       {
+        // Attempt to map property1d to catalogue based on software mappingDB
+        var mappedStructuralSection = Extensions.MapStructuralSection("");
+
+        // If successfully mapped, apply catalogue profile
+        if(mappedStructuralSection != null)
+        {
+          speckleProperty.profile = mappedStructuralSection;
+        }
+
         Property1dProfileToNative(speckleProperty.profile, out sectionComp.ProfileDetails, out sectionComp.ProfileGroup);
       }
 
