@@ -25,6 +25,12 @@ namespace ConnectorGSA
   {
     public static object Assert { get; private set; }
 
+    #region structural section mapping parameters
+    private static readonly string structuralMappingStreamId = "b2f1981ec3";
+    private static readonly string relationalMappingBranchName = "relational mappings";
+    private static readonly List<string> softwareSectionsBranchNames = new List<string>() { "grs", "gsa" };
+    #endregion
+
     public static async Task<bool> InitialLoad(TabCoordinator coordinator, IProgress<MessageEventArgs> loggingProgress)
     {
       coordinator.Init();
@@ -367,9 +373,17 @@ namespace ConnectorGSA
 
       statusProgress.Report("Accessing streams");
       var streamIds = coordinator.ReceiverTab.StreamList.StreamListItems.Select(i => i.StreamId).ToList();
+
+      // Add stream containing structural mappings to list of streams to fetch
+      streamIds.Add(structuralMappingStreamId);
+      var sectionMappingCompiledBranches = new List<string>() { relationalMappingBranchName };
+
+      // Ensures relational mapping branch is first
+      sectionMappingCompiledBranches.InsertRange(sectionMappingCompiledBranches.Count(), softwareSectionsBranchNames);
+
       var receiveTasks = new List<Task>();
-      
       var topLevelObjects = new List<Base>();
+      var topLevelStructuralSectionObjects = new Dictionary<string, List<Base>>();
 
       foreach (var streamId in streamIds)
       {
@@ -385,22 +399,71 @@ namespace ConnectorGSA
             {
               if (refreshed.Result)
               {
-                streamState.Stream.branch = streamState.Client.StreamGetBranches(streamId, 1).Result.First();
-                if (streamState.Stream.branch.commits == null || streamState.Stream.branch.commits.totalCount == 0)
+                if(streamId == structuralMappingStreamId)
                 {
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "This branch has no commits"));
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, "This branch has no commits"));
-                  percentageProgress.Report(0);
-                  return;
-                }
-                var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
+                  var structuralMappingBranches = new Branches() { items = new List<Branch>() };
 
-                
-                var received = await Commands.Receive(commitId, streamState, transport, topLevelObjects);
-                if (received)
-                {
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Received data from " + streamId + " stream"));
+                  foreach (var branchName in sectionMappingCompiledBranches)
+                  {
+                    var branch = streamState.Client.BranchGet(streamId, branchName).Result;
+                    if (branch != null)
+                    {
+                      structuralMappingBranches.items.Add(branch);
+                    }
+                  }
+                  streamState.Stream.branches = structuralMappingBranches;
                 }
+
+                else
+                {
+                  streamState.Stream.branch = streamState.Client.StreamGetBranches(streamId, 1).Result.First();
+                }
+
+                // Pull user-selected branch
+                if (streamState.Stream.branch != null)
+                {
+                  if (streamState.Stream.branch.commits == null || streamState.Stream.branch.commits.totalCount == 0)
+                  {
+                    loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "This branch has no commits"));
+                    loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, "This branch has no commits"));
+                    percentageProgress.Report(0);
+                    return;
+                  }
+                  var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
+
+
+                  var received = await Commands.Receive(commitId, streamState, transport, topLevelObjects);
+                  if (received)
+                  {
+                    loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Received data from " + streamId + " stream"));
+                  }
+                }
+
+                // Pull structural section mapping branches
+                else
+                {
+                  foreach (var branch in streamState.Stream.branches.items)
+                  {
+                    if (branch.commits == null || branch.commits.totalCount == 0)
+                    {
+                      loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "This branch has no commits"));
+                      loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, "This branch has no commits"));
+                      percentageProgress.Report(0);
+                      return;
+                    }
+                    var commitId = branch.commits.items.FirstOrDefault().referencedObject;
+
+                    var topLevelMappingObject = new List<Base>();
+
+                    var received = await Commands.Receive(commitId, streamState, transport, topLevelMappingObject);
+                    if (received)
+                    {
+                      topLevelStructuralSectionObjects.Add(branch.name, topLevelMappingObject);
+                      loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Received data from " + streamId + " stream"));
+                    }
+                  }
+                }
+                
 
                 if (streamState.Errors != null && streamState.Errors.Count > 0)
                 {
@@ -430,10 +493,34 @@ namespace ConnectorGSA
       statusProgress.Report("Converting");
 
       var flattenedGroups = new List<List<Base>>();
+
       foreach (var tlo in topLevelObjects)
       {
         var flattened = FlattenCommitObject(tlo, (Base o) => converter.CanConvertToNative(o));
         flattenedGroups.Add(flattened);
+      }
+
+      var relationalMappingObject = topLevelStructuralSectionObjects[relationalMappingBranchName];
+      var relationalMappingData = (List<object>)relationalMappingObject.FirstOrDefault()["data"];
+
+      var relationalMappings = new Dictionary<object, Dictionary<string, object>>();
+
+      foreach (var mapping in relationalMappingData)
+      {
+        var castedMapping = (Dictionary<string,object>)mapping;
+
+        // Indexing key will be primary key of native software -- should this be software we are receiving from?
+        relationalMappings.Add(castedMapping["GSA"], castedMapping);
+      }
+
+      // Compiling all software sections into dictionary sorted by software name as key.
+      var allSections = new Dictionary<string, List<object>>();
+      foreach (var softwareName in softwareSectionsBranchNames)
+      {
+        var sectionsObject = topLevelStructuralSectionObjects[softwareName];
+        var softwareSections = (List<object>)sectionsObject.FirstOrDefault()["data"];
+
+        allSections.Add(softwareName, softwareSections);
       }
 
       int numConverted = 0;
