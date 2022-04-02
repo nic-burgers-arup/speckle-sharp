@@ -114,7 +114,7 @@ Source: "..\ConnectorRhino\ConnectorRhino6\bin\Release\*"; DestDir: "{userappdat
 Source: "..\ConnectorRhino\ConnectorRhino7\bin\Release\*"; DestDir: "{userappdata}\McNeel\Rhinoceros\7.0\Plug-ins\SpeckleRhino2 (8dd5f30b-a13d-4a24-abdc-3e05c8c87143)\"; Flags: ignoreversion recursesubdirs; Components: rhino7
 
 ;gh
-Source: "..\ConnectorGrasshopper\ConnectorGrasshopper\bin\*"; DestDir: "{userappdata}\Grasshopper\Libraries\SpeckleGrasshopper2\"; Flags: ignoreversion recursesubdirs; Components: gh
+Source: "..\ConnectorGrasshopper\ConnectorGrasshopper\bin\net472\*"; DestDir: "{userappdata}\Grasshopper\Libraries\SpeckleGrasshopper2\"; Flags: ignoreversion recursesubdirs; Components: gh
 Source: "..\Objects\Converters\ConverterRhinoGh\ConverterRhino6\bin\Release\netstandard2.0\Objects.Converter.Rhino6.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: rhino6 gh
 Source: "..\Objects\Converters\ConverterRhinoGh\ConverterRhino7\bin\Release\net48\Objects.Converter.Rhino7.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: rhino7 gh
 
@@ -265,8 +265,8 @@ Type: filesandordirs; Name: "{userappdata}\Dynamo\Dynamo Revit\2.1\packages\Spec
 Type: filesandordirs; Name: "{userappdata}\Dynamo\Dynamo Revit\2.5\packages\SpeckleDynamo2\*"; Components: dynamo
 Type: filesandordirs; Name: "{userappdata}\Dynamo\Dynamo Revit\2.6\packages\SpeckleDynamo2\*"; Components: dynamo
 Type: filesandordirs; Name: "{userappdata}\Dynamo\*"; Components: dynamo
-Type: filesandordirs; Name: "{localappdata}\Computers and Structures\ETABS 18\Speckle2ETABS\*"; Components: etabs18
-Type: filesandordirs; Name: "{localappdata}\Computers and Structures\ETABS 19\Speckle2ETABS\*"; Components: etabs19
+Type: filesandordirs; Name: "{localappdata}\Computers and Structures\ETABS 19\Speckle2ETABS\*"; Components: etabs
+Type: filesandordirs; Name: "{localappdata}\Computers and Structures\SAP2000 23\Speckle2SAP2000\*"; Components: sap2000
 Type: filesandordirs; Name: "{userappdata}\Oasys\SpeckleGSA\*"; Components: gsa
 Type: filesandordirs; Name: "{userappdata}\Bentley\MicroStation\Addins\Speckle2MicroStation\*";  Components: microstation
 Type: filesandordirs; Name: "{userappdata}\Bentley\OpenRoadsDesigner\Addins\Speckle2OpenRoads\*";  Components: openroads
@@ -299,8 +299,8 @@ Type: filesandordirs; Name: "{userappdata}\Dynamo\Dynamo Revit\2.1\packages\Spec
 Type: filesandordirs; Name: "{userappdata}\Dynamo\Dynamo Revit\2.5\packages\SpeckleDynamo2";
 Type: filesandordirs; Name: "{userappdata}\Dynamo\Dynamo Revit\2.6\packages\SpeckleDynamo2";
 Type: filesandordirs; Name: "{userappdata}\Dynamo";
-Type: filesandordirs; Name: "{localappdata}\Computers and Structures\ETABS 18\Speckle2ETABS";
 Type: filesandordirs; Name: "{localappdata}\Computers and Structures\ETABS 19\Speckle2ETABS";
+Type: filesandordirs; Name: "{localappdata}\Computers and Structures\SAP2000 23\Speckle2SAP2000";
 Type: filesandordirs; Name: "{userappdata}\Oasys\SpeckleGSA";
 Type: filesandordirs; Name: "{userappdata}\Bentley\MicroStation\Addins\Speckle2MicroStation"; 
 Type: filesandordirs; Name: "{userappdata}\Bentley\OpenRoadsDesigner\Addins\Speckle2OpenRoads";
@@ -315,12 +315,6 @@ Type: filesandordirs; Name: "{userappdata}\speckle-connection-manager"
 Type: filesandordirs; Name: "{userappdata}\speckle-connection-manager-ui"
 
 [INI]
-Filename: "{localappdata}\Computers and Structures\ETABS 18\ETABS.ini"; Section: "PlugIn"; Flags: uninsdeletesectionifempty
-Filename: "{localappdata}\Computers and Structures\ETABS 18\ETABS.ini"; Section: "PlugIn"; Key: "NumberPlugIns"; String: "1"; Flags: uninsdeleteentry
-Filename: "{localappdata}\Computers and Structures\ETABS 18\ETABS.ini"; Section: "PlugIn"; Key: "PlugInName"; String: "SpeckleConnectorETABS"; Flags: uninsdeleteentry
-Filename: "{localappdata}\Computers and Structures\ETABS 18\ETABS.ini"; Section: "PlugIn"; Key: "PlugInMenuText"; String: "SpeckleConnectorETABS"; Flags: uninsdeleteentry
-Filename: "{localappdata}\Computers and Structures\ETABS 18\ETABS.ini"; Section: "PlugIn"; Key: "PlugInPath"; String: "{localappdata}\Computers and Structures\ETABS 18\Speckle2ETABS\SpeckleConnectorETABS.dll"; Flags: uninsdeleteentry
-
 Filename: "{localappdata}\Computers and Structures\ETABS 19\ETABS.ini"; Section: "PlugIn"; Flags: uninsdeletesectionifempty 
 Filename: "{localappdata}\Computers and Structures\ETABS 19\ETABS.ini"; Section: "PlugIn"; Key: "NumberPlugIns"; String: "1"; Flags: uninsdeleteentry
 Filename: "{localappdata}\Computers and Structures\ETABS 19\ETABS.ini"; Section: "PlugIn"; Key: "PlugInName"; String: "SpeckleConnectorETABS"; Flags: uninsdeleteentry
