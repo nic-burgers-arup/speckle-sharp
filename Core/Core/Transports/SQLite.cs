@@ -335,6 +335,28 @@ namespace Speckle.Core.Transports
     }
 
     /// <summary>
+    /// Returns all the object hashes in the store.
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerable<string> GetAllHashes()
+    {
+      if (CancellationToken.IsCancellationRequested) yield break; // Check for cancellation
+
+      using var c = new SQLiteConnection(ConnectionString);
+      c.Open();
+
+      using var command = new SQLiteCommand(c);
+      command.CommandText = "SELECT hash FROM objects";
+
+      using var reader = command.ExecuteReader();
+      while (reader.Read())
+      {
+        if (CancellationToken.IsCancellationRequested) yield break; // Check for cancellation
+        yield return reader.GetString(0);
+      }
+    }
+
+    /// <summary>
     /// Deletes an object. Note: do not use for any speckle object transport, as it will corrupt the database.
     /// </summary>
     /// <param name="hash"></param>

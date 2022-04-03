@@ -138,15 +138,12 @@ namespace Objects.Converter.Revit
         }
       }
 
-      var start = baseLine.GetEndPoint(0);
-      var end = baseLine.GetEndPoint(1);
-      var basePoint = start.Z < end.Z ? start : end; // pick the lowest
+      var basePoint = startPoint.Z < endPoint.Z ? startPoint : endPoint; // pick the lowest
       //try with a point based column
       if (speckleRevitColumn != null && revitColumn == null && !isLineBased)
       {
-        var basePoint = startPoint.Z < endPoint.Z ? startPoint : endPoint; // pick the lowest
         revitColumn = Doc.Create.NewFamilyInstance(basePoint, familySymbol, level, structuralType);
-        //
+
         //rotate, we know it must be a RevitColumn
         var axis = DB.Line.CreateBound(new XYZ(basePoint.X, basePoint.Y, 0), new XYZ(basePoint.X, basePoint.Y, 1000));
         var rotationAngle = speckleRevitColumn.rotation - (revitColumn.Location as LocationPoint).Rotation;

@@ -18,6 +18,7 @@ using Speckle.Core.Kits;
 using Speckle.Core.Logging;
 using Speckle.Core.Models;
 using Speckle.Core.Transports;
+using Speckle.Newtonsoft.Json;
 using RevitElement = Autodesk.Revit.DB.Element;
 
 namespace Speckle.ConnectorRevit.UI
@@ -40,7 +41,49 @@ namespace Speckle.ConnectorRevit.UI
       // set converter settings as tuples (setting slug, setting selection)
       var settings = new Dictionary<string, string>();
       foreach (var setting in state.Settings)
+      {
+        if (setting.Slug == "section-mapping")
+        {
+          const string mappingsStreamId = "e53a0242be";
+          const string mappingsBranch = "mappings";
+          const string sectionBranchPrefix = "sections";
+          var key = $"{state.Client.Account.id}-{mappingsStreamId}";
+
+          var mappingsTransport = new ServerTransport(state.Client.Account, mappingsStreamId);
+          var mappingsTransportLocal = new SQLiteTransport(null, "Speckle", "Mappings");
+
+          var mappingsStream = await state.Client.StreamGet(mappingsStreamId);
+          var branches = await state.Client.StreamGetBranches(progress.CancellationTokenSource.Token, mappingsStreamId);
+
+          foreach (var branch in branches)
+          {
+            if (branch.name == mappingsBranch || branch.name.StartsWith(sectionBranchPrefix))
+            {
+              var mappingsCommit = branch.commits.items.FirstOrDefault();
+              var referencedMappingsObject = mappingsCommit.referencedObject;
+
+              var mappingsCommitObject = await Operations.Receive(
+                referencedMappingsObject,
+                progress.CancellationTokenSource.Token,
+                mappingsTransport,
+                onProgressAction: dict => { },
+                onErrorAction: (s, e) =>
+                {
+                  progress.Report.LogOperationError(e);
+                  progress.CancellationTokenSource.Cancel();
+                },
+                disposeTransports: true
+                );
+
+              var hash = $"{key}-{branch.name}";
+              mappingsTransportLocal.SaveObject(hash, JsonConvert.SerializeObject(mappingsCommitObject));
+              //mappingsTransportLocal.UpdateObject(hash, JsonConvert.SerializeObject(mappingsCommitObject));
+            }
+          }
+          setting.Selection = key;
+        }
         settings.Add(setting.Slug, setting.Selection);
+      }
       converter.SetConverterSettings(settings);
 
       var transport = new ServerTransport(state.Client.Account, state.StreamId);
@@ -86,7 +129,7 @@ namespace Speckle.ConnectorRevit.UI
           streamId = stream?.id,
           commitId = myCommit?.id,
           message = myCommit?.message,
-          sourceApplication = ConnectorRevitUtils.RevitAppName 
+          sourceApplication = ConnectorRevitUtils.RevitAppName
         });
       }
       catch
@@ -253,7 +296,7 @@ namespace Speckle.ConnectorRevit.UI
 
       else
       {
-        if(obj != null && !obj.GetType().IsPrimitive)
+        if (obj != null && !obj.GetType().IsPrimitive)
           converter.Report.Log($"Skipped object of type {obj.GetType()}, not supported.");
       }
 

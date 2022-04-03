@@ -24,8 +24,10 @@ namespace Speckle.ConnectorRevit.UI
     const string ProjectBase = "Project Base";
     const string Survey = "Survey";
 
+    const string MappingStream = "Default Section Mapping Stream";
+
     public override List<ISetting> GetSettings()
-    {
+    {     
       List<string> referencePoints = new List<string>() { InternalOrigin };
 
       // find project base point and survey point. these don't always have name props, so store them under custom strings
@@ -36,9 +38,12 @@ namespace Speckle.ConnectorRevit.UI
       if (surveyPoint != null)
         referencePoints.Add(Survey);
 
+      List<string> mappingStream = new List<string>() { MappingStream };
+
       return new List<ISetting>
       {
-        new ListBoxSetting {Slug = "reference-point", Name = "Reference Point", Icon ="LocationSearching", Values = referencePoints, Description = "Sends or receives stream objects in relation to this document point"}
+        new ListBoxSetting {Slug = "reference-point", Name = "Reference Point", Icon ="LocationSearching", Values = referencePoints, Description = "Sends or receives stream objects in relation to this document point"},
+        new ListBoxSetting {Slug = "section-mapping", Name = "Section Mapping", Icon ="Repeat", Values = mappingStream, Description = "Maps the family/family type of any received structural stick objects (ex. columns, beams) using the section name mappings contained in this stream"}
       };
     }
   }

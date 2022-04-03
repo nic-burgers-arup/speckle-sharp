@@ -414,6 +414,7 @@ namespace Objects.Converter.Revit
 
         case BE.Space o:
           return SpaceToNative(o);
+
         //Structural 
         case STR.Geometry.Element1D o:
           return AnalyticalStickToNative(o);

@@ -29,9 +29,10 @@ namespace Objects.Converter.Revit
       // If family name or type not present in Revit model, add speckle section info as instance parameter
       if (familySymbol.FamilyName != speckleRevitBeam.family || familySymbol.Name != speckleRevitBeam.type)
       {
-        speckleRevitBeam.parameters = CreateSpeckleSectionParameter(speckleRevitBeam.family, speckleRevitBeam.type);
+        speckleRevitBeam.parameters = CreateSpeckleSectionParameter(speckleRevitBeam.family, speckleRevitBeam.type);       
+        Report.Log($"Instance parameters containing family name and family type added to Beam");
       }
-
+      
       if (speckleRevitBeam != null)
       {
         if (level != null)
@@ -106,7 +107,7 @@ namespace Objects.Converter.Revit
 
       // TODO: nested elements.
 
-      Report.Log($"{(isUpdate ? "Updated" : "Created")} AdaptiveComponent {revitBeam.Id}");
+      Report.Log($"{(isUpdate ? "Updated" : "Created")} Beam {revitBeam.Id}");
 
       return placeholders;
     }

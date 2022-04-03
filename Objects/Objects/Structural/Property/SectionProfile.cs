@@ -185,6 +185,7 @@ namespace Objects.Structural.Properties.Profiles
     [SchemaInfo("Catalogue (by description)", "Creates a Speckle structural section profile based on a catalogue section description", "Structural", "Section Profile")]
     public Catalogue(string description)
     {
+      this.name = description;
       this.description = description;
       this.shapeType = ShapeType.Catalogue;
     }

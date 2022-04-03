@@ -43,6 +43,11 @@ namespace Objects.Converter.Revit
                 var Application = AnalyticalStickToNative((CSIElement1D)element);
                 placeholderObjects.Concat(Application);
               }
+              else
+              {
+                var Application = AnalyticalStickToNative((Element1D)element);
+                placeholderObjects.Concat(Application);
+              }
             }
             catch { }
 

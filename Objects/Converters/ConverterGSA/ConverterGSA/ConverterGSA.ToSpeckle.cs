@@ -3710,6 +3710,7 @@ namespace ConverterGSA
         catalogueName = items[1].Split('-')[0],
         sectionType = items[1].Split('-')[1],
         sectionName = items[2],
+        name = items[2],
       };
       return speckleProfile;
     }
