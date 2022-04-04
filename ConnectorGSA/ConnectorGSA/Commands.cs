@@ -318,6 +318,8 @@ namespace ConnectorGSA
       Instance.GsaModel.StreamLayer = coordinator.ReceiverTab.TargetLayer;
       Instance.GsaModel.Units = UnitEnumToString(coordinator.ReceiverTab.CoincidentNodeUnits);
       Instance.GsaModel.LoggingMinimumLevel = (int)coordinator.LoggingMinimumLevel;
+     
+      var mappingStream = coordinator.ReceiverTab.MappingStreamId; // "e53a0242be"
 
       //A simplified one just for use by the proxy class
       var proxyLoggingProgress = new Progress<string>();

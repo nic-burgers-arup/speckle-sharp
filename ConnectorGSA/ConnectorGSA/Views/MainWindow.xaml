@@ -18,7 +18,7 @@
 				FontFamily="{DynamicResource MaterialDesignFont}"
 				DataContext="{StaticResource MainWindowViewModel}"
         mc:Ignorable="d" FontSize="13" WindowStartupLocation="CenterScreen"
-        Title="{Binding Title}" Height="774" Width="700" IsEnabled="{Binding MainWindowEnabled, Mode=OneWay}" Icon="/ConnectorGSA;component/icon.ico">
+        Title="{Binding Title}" Height="774" Width="740" IsEnabled="{Binding MainWindowEnabled, Mode=OneWay}" Icon="/ConnectorGSA;component/icon.ico">
 	<Window.Resources>
 		<localUtilities:EnumConverter x:Key="EnumConverter" />
 	</Window.Resources>
@@ -361,7 +361,12 @@
                   <ComboBox ItemsSource="{Binding CoincidentNodeAllowanceUnitOptions}" SelectedValue="{Binding CoincidentNodeAllowanceUnit}" 
 														VerticalContentAlignment="Center"/>
                 </UniformGrid>
-              </StackPanel>
+                                <UniformGrid Columns="2">
+                                    <TextBlock Text="Mapping stream: " Margin="0 5"/>
+                                    <ComboBox ItemsSource="{Binding MappingStreamOptions}" SelectedValue="{Binding MappingStream}" 
+														VerticalContentAlignment="Center"/>
+                                </UniformGrid>
+                            </StackPanel>
             </GroupBox>
             <GroupBox Header="Logging" Margin="5">
               <UniformGrid Columns="2" >
