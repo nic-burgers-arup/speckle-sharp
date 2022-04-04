@@ -148,10 +148,10 @@
                 CommandParameter="{Binding Account}"
                 DataContext="{Binding Accounts[0]}" />
               <Separator />
-              <MenuItem
+              <!--<MenuItem
                 Command="{Binding AddAccountCommand}"
                 Header="Add another account"
-                Icon="{icons:MaterialIconExt AccountPlus}" />
+                Icon="{icons:MaterialIconExt AccountPlus}" />-->
               <MenuItem
                 Command="{Binding LaunchManagerCommand}"
                 Header="Manage accounts in Manager"
@@ -196,10 +196,10 @@
 
                 </MenuItem.DataTemplates>
               </MenuItem>
-              <MenuItem
+              <!--<MenuItem
                 Command="{Binding $parent[local:HomeView].DataContext.AddAccountCommand}"
                 Header="Add another account"
-                Icon="{icons:MaterialIconExt AccountPlus}" />
+                Icon="{icons:MaterialIconExt AccountPlus}" />-->
               <MenuItem
                 Command="{Binding $parent[local:HomeView].DataContext.LaunchManagerCommand}"
                 Header="Manage accounts in Manager"

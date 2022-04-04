@@ -1122,12 +1122,15 @@ namespace Objects.Converter.Revit
     /// <returns></returns>
     public static RenderMaterial GetMEPSystemMaterial(Element e)
     {
-      var material = GetMEPDefaultMaterial();
       ElementId idType = ElementId.InvalidElementId;
 
       if (e is DB.MEPCurve dt)
       {
-        idType = dt.MEPSystem.GetTypeId();
+        var system = dt.MEPSystem;
+        if (system != null)
+        {
+          idType = system.GetTypeId();
+        }
       }
       else if (IsSupportedMEPCategory(e))
       {
@@ -1138,22 +1141,27 @@ namespace Objects.Converter.Revit
           //retrieve the first material from first connector. Could go wrong, but better than nothing ;-)
           foreach (Connector item in m.ConnectorManager.Connectors)
           {
-            if (item.MEPSystem != null)
+            var system = item.MEPSystem;
+            if (system != null)
             {
-              idType = item.MEPSystem.GetTypeId();
+              idType = system.GetTypeId();
               break;
             }
           }
         }
       }
 
-      if (idType != ElementId.InvalidElementId)
+      if (idType == ElementId.InvalidElementId) return null;
+
+      if (e.Document.GetElement(idType) is MEPSystemType mechType)
       {
-        DB.MEPSystemType mechType = e.Document.GetElement(idType) as DB.MEPSystemType;
         var mat = e.Document.GetElement(mechType.MaterialId) as Material;
-        material = RenderMaterialToSpeckle(mat);
+        RenderMaterial material = RenderMaterialToSpeckle(mat);
+
+        return material;
       }
-      return material;
+
+      return null;
     }
 
     private static bool IsSupportedMEPCategory(Element e)
@@ -1172,16 +1180,6 @@ namespace Objects.Converter.Revit
       return supportedCategories.Any(cat => e.Category.Id == categories.get_Item(cat).Id);
     }
 
-    /// <summary>
-    /// creates a standard material with opacity for MEP elements
-    /// used, if no suitable material is found while fetching the systems type material
-    /// </summary>
-    /// <returns></returns>
-    public static RenderMaterial GetMEPDefaultMaterial()
-    {
-      var material = new RenderMaterial() { opacity = 0.8, diffuse = System.Drawing.Color.Gray.ToArgb() };
-      return material;
-    }
     #endregion
   }
 }

@@ -115,6 +115,7 @@ namespace DesktopUI2.ViewModels
       }
     }
 
+    private StreamViewModel _selectedSavedStream;
     public StreamViewModel SelectedSavedStream
     {
       set
@@ -125,6 +126,7 @@ namespace DesktopUI2.ViewModels
           MainWindowViewModel.RouterInstance.Navigate.Execute(value);
           Tracker.TrackPageview("stream", "edit");
           Analytics.TrackEvent(Analytics.Events.DUIAction, new Dictionary<string, object>() { { "name", "Stream Edit" } });
+          _selectedSavedStream = value;
         }
       }
     }
@@ -188,14 +190,12 @@ namespace DesktopUI2.ViewModels
       this.RaisePropertyChanged("SavedStreams");
       Init();
 
-
       var config = ConfigManager.Load();
       ChangeTheme(config.DarkTheme);
-
     }
 
     /// <summary>
-    /// This get usually triggered on file open or view activated
+    /// This usually gets triggered on file open or view activated
     /// </summary>
     /// <param name="streams"></param>
     internal void UpdateSavedStreams(List<StreamState> streams)
@@ -205,6 +205,12 @@ namespace DesktopUI2.ViewModels
       streams.ForEach(x => SavedStreams.Add(new StreamViewModel(x, HostScreen, RemoveSavedStreamCommand)));
       this.RaisePropertyChanged("HasSavedStreams");
       SavedStreams.CollectionChanged += SavedStreams_CollectionChanged;
+    }
+
+    internal void UpdateSelectedStream()
+    {
+      if (_selectedSavedStream != null)
+        _selectedSavedStream.GetBranchesAndRestoreState();
     }
 
     //write changes to file every time they happen
@@ -238,8 +244,6 @@ namespace DesktopUI2.ViewModels
       }
 
       this.RaisePropertyChanged("HasSavedStreams");
-
-
     }
 
     private async Task GetStreams()
@@ -316,7 +320,7 @@ namespace DesktopUI2.ViewModels
       catch { }
 
 
-      HasUpdate = await Helpers.IsConnectorUpdateAvailable(Bindings.GetHostAppName());
+      HasUpdate = false; // await Helpers.IsConnectorUpdateAvailable(Bindings.GetHostAppName());
     }
 
     private void RemoveSavedStream(string id)
@@ -361,7 +365,7 @@ namespace DesktopUI2.ViewModels
 
       if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
       {
-        path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "speckle-manager", "SpeckleManager.exe");
+        path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "speckle-connection-manager-ui", "SpeckleConnectionManagerUI.exe");
       }
 
       if (File.Exists(path))
@@ -369,7 +373,7 @@ namespace DesktopUI2.ViewModels
 
       else
       {
-        Process.Start(new ProcessStartInfo($"https://speckle-releases.netlify.app/") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo($"http://speckle.arup.com/") { UseShellExecute = true });
       }
 
     }

@@ -177,99 +177,101 @@ namespace Objects.Converter.Revit
       }
 
       var prop = new Property1D();
+      var speckleSection = new SectionProfile();
 
       var stickFamily = (Autodesk.Revit.DB.FamilyInstance)revitStick.Document.GetElement(revitStick.GetElementId());
       var section = stickFamily.Symbol.GetStructuralSection();
-      var speckleSection = new SectionProfile();
-      speckleSection.name = section.StructuralSectionShapeName;
-
-      // If section general shape enum is not defined, us section shape enum to derive profile
-      if (section.StructuralSectionGeneralShape != DB.Structure.StructuralSections.StructuralSectionGeneralShape.NotDefined)
+      if (section != null)
       {
-        switch (section.StructuralSectionGeneralShape)
+        speckleSection.name = section.StructuralSectionShapeName;
+
+        // If section general shape enum is not defined, us section shape enum to derive profile
+        if (section.StructuralSectionGeneralShape != DB.Structure.StructuralSections.StructuralSectionGeneralShape.NotDefined)
         {
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralI: // Double T structural sections
-            speckleSection = ISectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralT: // Tees structural sections
-            speckleSection = TeeSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralH: // Rectangular Pipe structural sections
-            speckleSection = RectangularHollowSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralR: // Pipe structural sections
-            speckleSection = CircularHollowSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralF: // Flat Bar structural sections
-            speckleSection = RectangularSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralS: // Round Bar structural sections
-            speckleSection = CircularSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralW: // Angle structural sections
-            speckleSection = AngleSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralU: // Channel  structural sections
-            speckleSection = ChannelSectionToSpeckle(section);
-            break;
-          default:
-            speckleSection.name = section.StructuralSectionShapeName;
-            break;
+          switch (section.StructuralSectionGeneralShape)
+          {
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralI: // Double T structural sections
+              speckleSection = ISectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralT: // Tees structural sections
+              speckleSection = TeeSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralH: // Rectangular Pipe structural sections
+              speckleSection = RectangularHollowSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralR: // Pipe structural sections
+              speckleSection = CircularHollowSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralF: // Flat Bar structural sections
+              speckleSection = RectangularSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralS: // Round Bar structural sections
+              speckleSection = CircularSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralW: // Angle structural sections
+              speckleSection = AngleSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralU: // Channel  structural sections
+              speckleSection = ChannelSectionToSpeckle(section);
+              break;
+            default:
+              speckleSection.name = section.StructuralSectionShapeName;
+              break;
+          }
+        }
+        else
+        {
+          switch (section.StructuralSectionShape)
+          {
+            case DB.Structure.StructuralSections.StructuralSectionShape.IWideFlange:
+              speckleSection = ISectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.IParallelFlange:
+              speckleSection = ISectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.StructuralTees:
+              speckleSection = TeeSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.ISplitParallelFlange:
+              speckleSection = TeeSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.RectangleHSS:
+              speckleSection = RectangularHollowSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.RoundHSS:
+              speckleSection = CircularHollowSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.PipeStandard:
+              speckleSection = CircularHollowSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.RectangularBar:
+              speckleSection = RectangularSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.RoundBar:
+              speckleSection = CircularSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.LAngle:
+              speckleSection = AngleSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.LProfile:
+              speckleSection = AngleSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.CProfile:
+              speckleSection = ChannelSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.ConcreteRectangle:
+              speckleSection = RectangularSectionToSpeckle(section);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.ConcreteRound:
+              speckleSection = CircularSectionToSpeckle(section);
+              break;
+            // Not all structural section types are currently implemented
+            default:
+              speckleSection.name = section.StructuralSectionShapeName;
+              break;
+          }
         }
       }
-      else
-      {
-        switch (section.StructuralSectionShape)
-        {
-          case DB.Structure.StructuralSections.StructuralSectionShape.IWideFlange:
-            speckleSection = ISectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.IParallelFlange:
-            speckleSection = ISectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.StructuralTees:
-            speckleSection = TeeSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.ISplitParallelFlange:
-            speckleSection = TeeSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.RectangleHSS:
-            speckleSection = RectangularHollowSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.RoundHSS:
-            speckleSection = CircularHollowSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.PipeStandard:
-            speckleSection = CircularHollowSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.RectangularBar:
-            speckleSection = RectangularSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.RoundBar:
-            speckleSection = CircularSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.LAngle:
-            speckleSection = AngleSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.LProfile:
-            speckleSection = AngleSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.CProfile:
-            speckleSection = ChannelSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.ConcreteRectangle:
-            speckleSection = RectangularSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.ConcreteRound:
-            speckleSection = CircularSectionToSpeckle(section);
-            break;
-          // Not all structural section types are currently implemented
-          default:
-            speckleSection.name = section.StructuralSectionShapeName;
-            break;
-        }
-      }
-
 
       var materialType = stickFamily.StructuralMaterialType;
       var structMat = (DB.Material)stickFamily.Document.GetElement(stickFamily.StructuralMaterialId);
