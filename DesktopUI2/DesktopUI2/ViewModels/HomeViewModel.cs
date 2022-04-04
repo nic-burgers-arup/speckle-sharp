@@ -316,7 +316,7 @@ namespace DesktopUI2.ViewModels
       catch { }
 
 
-      HasUpdate = await Helpers.IsConnectorUpdateAvailable(Bindings.GetHostAppName());
+      HasUpdate = false; // await Helpers.IsConnectorUpdateAvailable(Bindings.GetHostAppName());
     }
 
     private void RemoveSavedStream(string id)
@@ -361,7 +361,7 @@ namespace DesktopUI2.ViewModels
 
       if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
       {
-        path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "speckle-manager", "SpeckleManager.exe");
+        path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "speckle-connection-manager-ui", "SpeckleConnectionManagerUI.exe");
       }
 
       if (File.Exists(path))
@@ -369,7 +369,7 @@ namespace DesktopUI2.ViewModels
 
       else
       {
-        Process.Start(new ProcessStartInfo($"https://speckle-releases.netlify.app/") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo($"http://speckle.arup.com/") { UseShellExecute = true });
       }
 
     }
