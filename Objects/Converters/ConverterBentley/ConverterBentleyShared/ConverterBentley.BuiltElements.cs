@@ -66,7 +66,7 @@ namespace Objects.Converter.Bentley
       // rotation
       parameters.AddRange(CreateParameter(properties, "ROTATION", u));
 
-      Line baseLine = LineToSpeckle(start, end, false);
+      Line baseLine = LineToSpeckle(start, end);
       Level level = new Level();
       level.units = u;
 
@@ -91,7 +91,7 @@ namespace Objects.Converter.Bentley
       double rotation = (double)GetProperty(properties, "ROTATION");
       double rotationZ = (double)GetProperty(properties, "RotationZ");
 
-      Line baseLine = LineToSpeckle(start, end, false);
+      Line baseLine = LineToSpeckle(start, end);
 
       double bottomElevation, topElevation;
       if (start.Z > end.Z)
@@ -376,11 +376,11 @@ namespace Objects.Converter.Bentley
       Point basePoint;
       if (start.Z > end.Z)
       {
-        basePoint = Point3dToSpeckle(start, false);
+        basePoint = Point3dToSpeckle(start);
       }
       else
       {
-        basePoint = Point3dToSpeckle(end, false);
+        basePoint = Point3dToSpeckle(end);
       }
       string type = part;
 
