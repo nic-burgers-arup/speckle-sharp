@@ -25,6 +25,7 @@ using Speckle.GSA.API;
 using Speckle.Core.Models;
 using Objects.Structural.Properties;
 using Objects.Structural.Materials;
+using Objects.Structural.Properties.Profiles;
 
 namespace ConverterGSA
 {
@@ -264,6 +265,122 @@ namespace ConverterGSA
           throw new Exception(gsaMemberType.ToString() + " is not a valid 2D member type.");
       }
     }
+
+    //public static Catalogue GetMappingFromProfileName(string speckleSectionTypeName)
+    //{
+    //  #region mock variables - move to unit testing
+    //  var mockRelationalMappings = new Dictionary<object, Dictionary<string, object>>()
+    //  {
+    //    { 1, new Dictionary<string, object>()
+    //      {
+    //        { "gsa", 2 },
+    //        { "grs", 1 }
+    //      }
+    //    },
+    //    { 2, new Dictionary<string, object>()
+    //      {
+    //        { "gsa", 1 },
+    //        { "grs", 2 }
+    //      }
+    //    }
+    //  };
+
+    //  var mockSections = new Dictionary<string, List<object>>()
+    //  {
+    //    { "grs",
+    //      new List<object>()
+    //      { new Dictionary<string, object>
+    //        {
+    //          { "grs_key", 1 },
+    //          { "grs_type", "UKB1016x305x584 +" },
+    //          { "grs_catalogue", "GB Master File" },
+    //          { "grs_structural column family", "Arup_Column_Steel I Section_UKB_GB" },
+    //          { "grs_structural framing family", "Arup_Beam_Steel I Section_UKB_GB" }
+    //         },
+    //        new Dictionary<string, object>
+    //        {
+    //          { "grs_key", 2 },
+    //          { "grs_type", "UKB1016x305x494 +" },
+    //          { "grs_catalogue", "GB Master File" },
+    //          { "grs_structural column family", "Arup_Column_Steel I Section_UKB_GB" },
+    //          { "grs_structural framing family", "Arup_Beam_Steel I Section_UKB_GB" }
+    //        }
+    //      }
+    //    },
+    //    { "gsa",
+    //      new List<object>()
+    //      { new Dictionary<string, object>
+    //        {
+    //          { "gsa_key", 1 },
+    //          { "gsa_type", "UB1016x305x494" },
+    //          { "gsa_catalogue", "British" },
+    //          { "gsa_family name", "Universal beams(UB) - EN10365:2017" },
+    //          { "gsa_section abbrev", "BSI-UB" },
+    //          { "gsa_cat abbrev", "BSI" },
+    //          { "gsa_date", "some date" }
+    //         },
+    //        new Dictionary<string, object>
+    //        {
+    //          { "gsa_key", 2 },
+    //          { "gsa_type", "UB1016x305x584" },
+    //          { "gsa_catalogue", "British" },
+    //          { "gsa_family name", "Universal beams(UB) - EN10365:2017" },
+    //          { "gsa_section abbrev", "BSI-UB" },
+    //          { "gsa_cat abbrev", "BSI" },
+    //          { "gsa_date", "some date" }
+    //        }
+    //      }
+    //    }
+    //  };
+
+    //  var mockSectionMapping = new SectionMapping() { NativeSoftware = "grs", NativeCatalogue = "GB Master File" };
+
+    //  // mock override
+    //  speckleSectionTypeName = "UKB1016x305x494 +";
+    //  #endregion
+
+    //  var sectionNativeKey = 0;
+
+    //  var sections = mockSections[mockSectionMapping.NativeSoftware];
+
+    //  foreach (var section in sections)
+    //  {
+    //    var castedSection = (Dictionary<string, object>)section;
+
+    //    if (castedSection[$"{mockSectionMapping.NativeSoftware}_type"] == speckleSectionTypeName)
+    //    {
+    //      sectionNativeKey = (int)castedSection[$"{mockSectionMapping.NativeSoftware}_key"];
+    //      break;
+    //    }
+    //  }
+
+    //  // No mapping exists
+    //  if (sectionNativeKey == 0)
+    //  {
+    //    return null;
+    //  }
+
+    //  // Conversion to int necessary as object to object is based on reference opposed to value.
+    //  var gsaSectionKey = Convert.ToInt32(mockRelationalMappings[sectionNativeKey]["gsa"]);
+
+    //  var gsaSections = mockSections["gsa"];
+
+    //  // TEMP VARIABLE
+    //  var gsaSectionName = "";
+
+    //  foreach (var gsaSection in gsaSections)
+    //  {
+    //    var castedGsaSection = (Dictionary<string, object>)gsaSection;
+    //    if (Convert.ToInt32(castedGsaSection["gsa_key"]) == gsaSectionKey)
+    //    {
+    //      // IMPLEMENT LOGIC TO POPULATE CATALOGUE WITH DESCRIPTION, CATALOGUE ETC.
+    //      // TEMP VARIABLE
+    //      gsaSectionName = castedGsaSection["gsa_type"].ToString();
+    //    }
+    //  }
+
+    //  return new Catalogue();
+    //}
 
     public static PropertyType2D ToSpeckle(this Property2dType gsaType)
     {

@@ -370,7 +370,7 @@ namespace ConnectorGSA
       statusProgress.Report("Accessing streams");
       var streamIds = coordinator.ReceiverTab.StreamList.StreamListItems.Select(i => i.StreamId).ToList();
       var receiveTasks = new List<Task>();
-      
+
       var topLevelObjects = new List<Base>();
 
       foreach (var streamId in streamIds)
@@ -384,42 +384,42 @@ namespace ConnectorGSA
 
         receiveTasks.Add(streamState.RefreshStream(loggingProgress)
           .ContinueWith(async (refreshed) =>
+          {
+            if (refreshed.Result)
             {
-              if (refreshed.Result)
+              streamState.Stream.branch = streamState.Client.StreamGetBranches(streamId, 1).Result.First();
+              if (streamState.Stream.branch.commits == null || streamState.Stream.branch.commits.totalCount == 0)
               {
-                streamState.Stream.branch = streamState.Client.StreamGetBranches(streamId, 1).Result.First();
-                if (streamState.Stream.branch.commits == null || streamState.Stream.branch.commits.totalCount == 0)
-                {
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "This branch has no commits"));
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, "This branch has no commits"));
-                  percentageProgress.Report(0);
-                  return;
-                }
-                var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
+                loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "This branch has no commits"));
+                loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, "This branch has no commits"));
+                percentageProgress.Report(0);
+                return;
+              }
+              var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
 
-                
-                var received = await Commands.Receive(commitId, streamState, transport, topLevelObjects);
-                if (received)
-                {
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Received data from " + streamId + " stream"));
-                }
 
-                if (streamState.Errors != null && streamState.Errors.Count > 0)
-                {
-                  foreach (var se in streamState.Errors)
-                  {
-                    loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, se.Message));
-                    loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, se, se.Message));
-                  }
-                }
+              var received = await Commands.Receive(commitId, streamState, transport, topLevelObjects);
+              if (received)
+              {
+                loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Received data from " + streamId + " stream"));
+              }
 
-                lock (perecentageProgressLock)
+              if (streamState.Errors != null && streamState.Errors.Count > 0)
+              {
+                foreach (var se in streamState.Errors)
                 {
-                  percentage += (50 / streamIds.Count);
-                  percentageProgress.Report(percentage);
+                  loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, se.Message));
+                  loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, se, se.Message));
                 }
               }
-            }));
+
+              lock (perecentageProgressLock)
+              {
+                percentage += (50 / streamIds.Count);
+                percentageProgress.Report(percentage);
+              }
+            }
+          }));
       }
       await Task.WhenAll(receiveTasks.ToArray());
 
