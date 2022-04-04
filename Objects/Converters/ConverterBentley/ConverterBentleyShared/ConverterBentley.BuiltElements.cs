@@ -66,7 +66,7 @@ namespace Objects.Converter.Bentley
       // rotation
       parameters.AddRange(CreateParameter(properties, "ROTATION", u));
 
-      Line baseLine = LineToSpeckle(start, end);
+      Line baseLine = LineToSpeckle(ToInternalCoordinates(start), ToInternalCoordinates(end));
       Level level = new Level();
       level.units = u;
 
@@ -91,7 +91,7 @@ namespace Objects.Converter.Bentley
       double rotation = (double)GetProperty(properties, "ROTATION");
       double rotationZ = (double)GetProperty(properties, "RotationZ");
 
-      Line baseLine = LineToSpeckle(start, end);
+      Line baseLine = LineToSpeckle(ToInternalCoordinates(start), ToInternalCoordinates(end));
 
       double bottomElevation, topElevation;
       if (start.Z > end.Z)
@@ -376,11 +376,11 @@ namespace Objects.Converter.Bentley
       Point basePoint;
       if (start.Z > end.Z)
       {
-        basePoint = Point3dToSpeckle(start);
+        basePoint = Point3dToSpeckle(ToInternalCoordinates(start));
       }
       else
       {
-        basePoint = Point3dToSpeckle(end);
+        basePoint = Point3dToSpeckle(ToInternalCoordinates(end));
       }
       string type = part;
 
@@ -636,6 +636,12 @@ namespace Objects.Converter.Bentley
       wall.elementId = elementId.ToString();
 
       return wall;
+    }
+
+    private DPoint3d ToInternalCoordinates(DPoint3d point)
+    {
+      point.ScaleInPlace(UoR);
+      return point;
     }
 
     enum Category
