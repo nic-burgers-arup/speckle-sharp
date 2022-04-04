@@ -21,7 +21,7 @@ using Objects.Structural.Loading;
 using System.Threading.Tasks;
 using Speckle.Core.Transports;
 using Speckle.Core.Serialisation;
-using Newtonsoft.Json;
+using Speckle.Newtonsoft.Json;
 
 namespace ConverterGSA
 {
@@ -38,15 +38,27 @@ namespace ConverterGSA
 
     public string WebsiteOrEmail => "https://www.oasys-software.com/";
 
+    public Dictionary<string, string> Settings { get; private set; } = new Dictionary<string, string>();
+
     private static SQLiteTransport MappingStorage = new SQLiteTransport(scope: "Mappings");
 
-    private Base mappingData;
+    private bool _useMappings;
+    private bool UseMappings
+    {
+      get { return Settings.ContainsKey("section-mapping") && Settings["section-mapping"] != null; }
+    }
+
+    private Base _mappingData;
     private Base MappingData
     {
       get 
-      { 
-        mappingData = GetMappingData();
-        return mappingData;
+      {
+        if (_mappingData == null)
+        {
+          // get from settings
+          _mappingData = UseMappings ? GetMappingData() : null;
+        }
+        return _mappingData;
       }
     }
 
@@ -54,7 +66,7 @@ namespace ConverterGSA
 
     public void SetConverterSettings(object settings)
     {
-      throw new NotImplementedException("This converter does not have any settings.");
+      Settings = settings as Dictionary<string, string>;
     }
 
     #endregion ISpeckleConverter props
@@ -762,7 +774,7 @@ namespace ConverterGSA
     {
       Dictionary<string, string> mappingData = new Dictionary<string, string>();
 
-      var key = "Arup V2 Server-e53a0242be";
+      var key = Settings["section-mapping"];
       var hash = $"{key}-mappings";
       var objString = MappingStorage.GetObject(hash);
 
@@ -797,7 +809,7 @@ namespace ConverterGSA
 
     private Base GetMappingData()
     {
-      var key = "Arup V2 Server-e53a0242be";
+      var key = Settings["section-mapping"];
       const string mappingsBranch = "mappings";
       const string sectionBranchPrefix = "sections";
 
@@ -821,9 +833,6 @@ namespace ConverterGSA
           mappingData[$"{name}"] = data;
         }
       }
-      //var sqlMappings = MappingStorage.GetAllObjects();
-      //var serializerV2 = new BaseObjectDeserializerV2();
-      //var mappingData = sqlMappings.Select(x => serializerV2.Deserialize(x));
 
       Report.Log($"Using section mapping data from stream: {key}");
 
