@@ -84,6 +84,8 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
     TASK,
     [StringValue("ANAL_STAGE")]
     ANAL_STAGE,
+    [StringValue("ANAL_STAGE_PROP")]
+    ANAL_STAGE_PROP,
     [StringValue("COMBINATION")]
     COMBINATION,
     [StringValue("GEN_REST")]

@@ -161,7 +161,7 @@ namespace ConverterGSA
         default: return ElementType1D.Beam;
       }
     }
-    
+
     public static ElementType2D ToSpeckle2d(this ElementType gsaType)
     {
       switch (gsaType)
@@ -178,11 +178,11 @@ namespace ConverterGSA
       switch (gsaType)
       {
         case Section1dType.Beam:
-        case Section1dType.CompositeBeam: 
+        case Section1dType.CompositeBeam:
           return MemberType.Beam;
         case Section1dType.Column:
           return MemberType.Column;
-        case Section1dType.Slab: 
+        case Section1dType.Slab:
         case Section1dType.RibbedSlab:
           return MemberType.Slab;
         case Section1dType.Pile:
@@ -223,6 +223,22 @@ namespace ConverterGSA
       }
     }
 
+    public static PropertyType ToSpeckle(this ElementPropertyType gsaType)
+    {
+      switch (gsaType)
+      {
+        case ElementPropertyType.Beam: return PropertyType.Beam;
+        case ElementPropertyType.Spring: return PropertyType.Spring;
+        case ElementPropertyType.Mass: return PropertyType.Mass;
+        case ElementPropertyType.TwoD: return PropertyType.TwoD;
+        //case ElementPropertyType.Link: return PropertyType.Link;
+        //case ElementPropertyType.Cable: return PropertyType.Cable;
+        //case ElementPropertyType.ThreeD: return PropertyType.ThreeD;
+        //case ElementPropertyType.Damper: return PropertyType.Damper;
+        default: return PropertyType.Beam;
+      }
+    }
+
     public static ElementType1D ToSpeckle1d(this GwaMemberType gsaMemberType)
     {
       switch (gsaMemberType)
@@ -239,7 +255,7 @@ namespace ConverterGSA
 
     public static ElementType2D ToSpeckle2d(this GwaMemberType gsaMemberType)
     {
-      switch(gsaMemberType)
+      switch (gsaMemberType)
       {
         case GwaMemberType.Generic2d:
         case GwaMemberType.Slab:
@@ -369,7 +385,7 @@ namespace ConverterGSA
 
     public static PropertyType2D ToSpeckle(this Property2dType gsaType)
     {
-      switch(gsaType)
+      switch (gsaType)
       {
         case Property2dType.Curved: return PropertyType2D.Curved;
         case Property2dType.Fabric: return PropertyType2D.Fabric;
@@ -385,12 +401,12 @@ namespace ConverterGSA
     {
       switch (propertyType)
       {
-        case PropertyType2D.Curved : return Property2dType.Curved;
-        case PropertyType2D.Fabric : return Property2dType.Fabric;
-        case PropertyType2D.Load:   return Property2dType.Load; 
-        case PropertyType2D.Plate:  return Property2dType.Plate;
-        case PropertyType2D.Shell:  return Property2dType.Shell;
-        case PropertyType2D.Stress : return Property2dType.Stress;
+        case PropertyType2D.Curved: return Property2dType.Curved;
+        case PropertyType2D.Fabric: return Property2dType.Fabric;
+        case PropertyType2D.Load: return Property2dType.Load;
+        case PropertyType2D.Plate: return Property2dType.Plate;
+        case PropertyType2D.Shell: return Property2dType.Shell;
+        case PropertyType2D.Stress: return Property2dType.Stress;
         default: throw new Exception(propertyType.ToString() + " can not be converted to a valid native 2D property type.");
       }
     }
@@ -417,7 +433,7 @@ namespace ConverterGSA
 
     public static LoadExpansion ToSpeckle(this GridExpansion gsaExpansion)
     {
-      switch(gsaExpansion)
+      switch (gsaExpansion)
       {
         case GridExpansion.Legacy: return LoadExpansion.Legacy;
         case GridExpansion.PlaneAspect: return LoadExpansion.PlaneAspect;
@@ -431,14 +447,14 @@ namespace ConverterGSA
     {
       switch (gsaExpansion)
       {
-        case LoadExpansion.Legacy:      return GridExpansion.Legacy;
+        case LoadExpansion.Legacy: return GridExpansion.Legacy;
         case LoadExpansion.PlaneAspect: return GridExpansion.PlaneAspect;
         case LoadExpansion.PlaneCorner: return GridExpansion.PlaneCorner;
         case LoadExpansion.PlaneSmooth: return GridExpansion.PlaneSmooth;
         default: return GridExpansion.NotSet;
       }
     }
-    
+
     public static LoadType ToSpeckle(this StructuralLoadCaseType gsaLoadType)
     {
       switch (gsaLoadType)
@@ -530,10 +546,10 @@ namespace ConverterGSA
         case GwaAxisDirection6.XX: return LoadDirection.XX;
         case GwaAxisDirection6.YY: return LoadDirection.YY;
         case GwaAxisDirection6.ZZ: return LoadDirection.ZZ;
-        default: throw new Exception(gsaDirection + " can not be converted into LoadDirection enum");        
+        default: throw new Exception(gsaDirection + " can not be converted into LoadDirection enum");
       }
     }
-    
+
     public static GwaAxisDirection6 ToNative(this LoadDirection loadDirection)
     {
       switch (loadDirection)
@@ -544,10 +560,10 @@ namespace ConverterGSA
         case LoadDirection.XX: return GwaAxisDirection6.XX;
         case LoadDirection.YY: return GwaAxisDirection6.YY;
         case LoadDirection.ZZ: return GwaAxisDirection6.ZZ;
-        default: throw new Exception(loadDirection + " can not be converted into GwaAxisDirection6 enum");        
+        default: throw new Exception(loadDirection + " can not be converted into GwaAxisDirection6 enum");
       }
     }
-    
+
 
     public static LoadAxisType ToSpeckle(this AxisRefType gsaType)
     {
@@ -608,9 +624,9 @@ namespace ConverterGSA
     {
       switch (speckleType)
       {
-        case StructuralSolutionType.BUCKLING_NL: return SolutionType.NonlinearStatic;
+        //case StructuralSolutionType.BUCKLING_NL: return SolutionType.NonlinearStatic;
         case StructuralSolutionType.STATIC: return SolutionType.Static;
-        case StructuralSolutionType.MODAL: return SolutionType.Modal;
+        //case StructuralSolutionType.MODAL: return SolutionType.Modal;
         default: return SolutionType.Static;
       }
     }
@@ -757,13 +773,13 @@ namespace ConverterGSA
         case InfluenceType.DISPLACEMENT: return InfType.DISP;
         case InfluenceType.FORCE: return InfType.FORCE;
         default: return InfType.NotSet;
-}
+      }
     }
-    
+
     public static PathType ToSpeckle(this GwaPathType gsaType)
     {
       switch (gsaType)
-      { 
+      {
         case GwaPathType.LANE: return PathType.LANE;
         case GwaPathType.FOOTWAY: return PathType.FOOTWAY;
         case GwaPathType.TRACK: return PathType.TRACK;
@@ -773,11 +789,11 @@ namespace ConverterGSA
         default: return PathType.NotSet;
       }
     }
-    
+
     public static GwaPathType ToNative(this PathType gsaType)
     {
       switch (gsaType)
-      { 
+      {
         case PathType.LANE: return GwaPathType.LANE;
         case PathType.FOOTWAY: return GwaPathType.FOOTWAY;
         case PathType.TRACK: return GwaPathType.TRACK;
@@ -790,7 +806,23 @@ namespace ConverterGSA
     #endregion
 
     #region ToNative
-    
+
+
+    public static ElementPropertyType ToNative(this PropertyType speckleType)
+    {
+      switch (speckleType)
+      {
+        case PropertyType.Beam: return ElementPropertyType.Beam;
+        case PropertyType.Spring: return ElementPropertyType.Spring;
+        case PropertyType.Mass: return ElementPropertyType.Mass;
+        case PropertyType.TwoD: return ElementPropertyType.TwoD;
+        //case PropertyType.Link: return ElementPropertyType.Link;
+        //case PropertyType.Cable: return ElementPropertyType.Cable;
+        //case PropertyType.ThreeD: return ElementPropertyType.ThreeD;
+        //case PropertyType.Damper: return ElementPropertyType.Damper;
+        default: return ElementPropertyType.Beam;
+      }
+    }
 
     public static Section1dType ToNativeSection(this MemberType speckleElementType)
     {
@@ -806,7 +838,7 @@ namespace ConverterGSA
       switch (speckleType)
       {
         case ElementType1D.Beam: return ElementType.Beam;
-        case ElementType1D.Column: return ElementType.Beam;          
+        case ElementType1D.Column: return ElementType.Beam;
         case ElementType1D.Bar: return ElementType.Bar;
         case ElementType1D.Cable: return ElementType.Cable;
         case ElementType1D.Damper: return ElementType.Damper;
@@ -816,7 +848,7 @@ namespace ConverterGSA
         case ElementType1D.Spring: return ElementType.Spring;
         case ElementType1D.Strut: return ElementType.Strut;
         case ElementType1D.Tie: return ElementType.Tie;
-        default: throw new Exception(speckleType.ToString() + " speckle enum can not be converted into native enum"); 
+        default: throw new Exception(speckleType.ToString() + " speckle enum can not be converted into native enum");
       }
     }
 
@@ -833,8 +865,8 @@ namespace ConverterGSA
         case ElementType1D.Rod:
         case ElementType1D.Spacer:
         case ElementType1D.Spring:
-        case ElementType1D.Strut: 
-        case ElementType1D.Tie: 
+        case ElementType1D.Strut:
+        case ElementType1D.Tie:
           return GwaMemberType.Generic1d;
         default: throw new Exception(speckleType.ToString() + " speckle enum can not be converted into native enum");
       }
@@ -903,14 +935,14 @@ namespace ConverterGSA
       {
         case LoadAxisType.Global: return LoadBeamAxisRefType.Global;
         case LoadAxisType.Local: return LoadBeamAxisRefType.Local;
-        case LoadAxisType.DeformedLocal:  return LoadBeamAxisRefType.Local;
+        case LoadAxisType.DeformedLocal: return LoadBeamAxisRefType.Local;
         default: throw new Exception(speckleType.ToString() + " speckle enum can not be converted into native enum");
       }
     }
 
     public static LoadCategory LoadCategoryToNative(this string category)
     {
-      switch(category.ToLowerInvariant())
+      switch (category.ToLowerInvariant())
       {
         case "residential": return LoadCategory.Residential;
         case "office": return LoadCategory.Office;
@@ -927,7 +959,7 @@ namespace ConverterGSA
 
     public static IncludeOption IncludeOptionToNative(this string include)
     {
-      switch(include.ToLowerInvariant())
+      switch (include.ToLowerInvariant())
       {
         case "undefined": return IncludeOption.Undefined;
         case "unfavourable": return IncludeOption.Unfavourable;
@@ -942,8 +974,8 @@ namespace ConverterGSA
       switch (speckleType)
       {
         case SolutionType.Static: return StructuralSolutionType.STATIC;
-        case SolutionType.NonlinearStatic: return StructuralSolutionType.BUCKLING_NL;
-        case SolutionType.Modal: return StructuralSolutionType.MODAL;
+        //case SolutionType.NonlinearStatic: return StructuralSolutionType.BUCKLING_NL;
+        //case SolutionType.Modal: return StructuralSolutionType.MODAL;
         //case SolutionType.Ritz: return StructuralSolutionType.RITZ;
         //case SolutionType.Buckling: return StructuralSolutionType.BUCKLING;
         //case SolutionType.StaticPDelta: return StructuralSolutionType.STATIC_P_DELTA;
@@ -961,8 +993,8 @@ namespace ConverterGSA
       switch (speckleType)
       {
         case SolutionType.Static: return ("GSS");
-        case SolutionType.NonlinearStatic: return ("GSRELAX");
-        case SolutionType.Modal: return ("GSS");
+        //case SolutionType.NonlinearStatic: return ("GSRELAX");
+        //case SolutionType.Modal: return ("GSS");
         default: return ("GSS");
       }
     }
@@ -1216,7 +1248,7 @@ namespace ConverterGSA
 
     public static bool Is3d(this Polyline specklePolyline)
     {
-      for (var i = 0; i < specklePolyline.value.Count(); i+= 3)
+      for (var i = 0; i < specklePolyline.value.Count(); i += 3)
       {
         if (specklePolyline.value[i + 2] != 0) return true;
       }
@@ -1454,7 +1486,7 @@ namespace ConverterGSA
       for (var i = 0; i < source.Count(); i++)
       {
         output.Add(source[i]);
-        if ((i+1) % (step-1) == 0) output.Add(item);
+        if ((i + 1) % (step - 1) == 0) output.Add(item);
       }
       return output;
     }
@@ -1601,7 +1633,7 @@ namespace ConverterGSA
       }
       return new string(src, 0, dstIdx);
     }
-    
+
     //https://stackoverflow.com/questions/23921210/grouping-lists-into-groups-of-x-items-per-group
     public static IEnumerable<IGrouping<int, TSource>> GroupBy<TSource>(this IEnumerable<TSource> source, int itemsPerGroup)
     {

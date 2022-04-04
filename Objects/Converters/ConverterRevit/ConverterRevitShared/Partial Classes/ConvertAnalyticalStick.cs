@@ -1,15 +1,14 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
-using Objects.BuiltElements;
 using Objects.BuiltElements.Revit;
 using Objects.Structural.Geometry;
+using Objects.Structural.Materials;
 using Objects.Structural.Properties;
 using Objects.Structural.Properties.Profiles;
-using Objects.Structural.Materials;
 using Speckle.Core.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using DB = Autodesk.Revit.DB;
 
 namespace Objects.Converter.Revit
@@ -19,48 +18,72 @@ namespace Objects.Converter.Revit
     public List<ApplicationPlaceholderObject> AnalyticalStickToNative(Element1D speckleStick)
     {
       List<ApplicationPlaceholderObject> placeholderObjects = new List<ApplicationPlaceholderObject> { };
+      List<ApplicationPlaceholderObject> placeholders = new List<ApplicationPlaceholderObject> { };
+
       XYZ offset1 = VectorToNative(speckleStick.end1Offset);
       XYZ offset2 = VectorToNative(speckleStick.end2Offset);
-      List<ApplicationPlaceholderObject> placeholders = new List<ApplicationPlaceholderObject> { };
+
+      var profileName = speckleStick.property != null && speckleStick.property.profile != null ? speckleStick.property.profile.name : null;
+      var mappings = UseMappings ? GetMappingFromProfileName(profileName) : null;
 
       switch (speckleStick.memberType)
       {
+        case MemberType.Generic1D:
         case MemberType.Beam:
-          RevitBeam revitBeam = new RevitBeam();
-          revitBeam.applicationId = speckleStick.applicationId;
-          //This only works for CSIC sections now for sure. Need to test on other sections
-          revitBeam.type = ParseFamilyTypeFromProperty(speckleStick.property.name);
-          revitBeam.baseLine = speckleStick.baseLine;
-          //Beam beam = new Beam(speckleStick.baseLine);
-          revitBeam.family = ParseFamilyNameFromProperty(speckleStick.property.name);
-          placeholders = BeamToNative(revitBeam);
-          DB.FamilyInstance nativeRevitBeam = (DB.FamilyInstance)placeholders[0].NativeObject;
-          AnalyticalModelStick analyticalModel = (AnalyticalModelStick)nativeRevitBeam.GetAnalyticalModel();
-          analyticalModel.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));
-          analyticalModel.SetReleases(false, Convert.ToBoolean(speckleStick.end2Releases.stiffnessX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end2Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZZ));
-          analyticalModel.SetOffset(AnalyticalElementSelector.StartOrBase, offset1);
-          analyticalModel.SetOffset(AnalyticalElementSelector.EndOrTop, offset2);
-          return placeholders;
-        //case ElementType1D.Brace:
-        //  RevitBrace revitBrace = new RevitBrace();
-        //  revitBrace.type = speckleStick.property.name.Replace('X', 'x');
-        //  revitBrace.baseLine = speckleStick.baseLine;
-        //  //Brace brace = new Brace(speckleStick.baseLine);
-        //  placeholders = BraceToNative(revitBrace);
-        //  DB.FamilyInstance nativeRevitBrace = (DB.FamilyInstance)placeholders[0].NativeObject;
-        //  analyticalModel = (AnalyticalModelStick)nativeRevitBrace.GetAnalyticalModel();
-        //  analyticalModel.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));
-        //  analyticalModel.SetReleases(false, Convert.ToBoolean(speckleStick.end2Releases.stiffnessX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end2Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZZ));
-        //  analyticalModel.SetOffset(AnalyticalElementSelector.StartOrBase, offset1);
-        //  analyticalModel.SetOffset(AnalyticalElementSelector.EndOrTop, offset2);
-        //  return placeholders;
+          if(speckleStick.type == ElementType1D.Brace) {
+            RevitBrace revitBrace = new RevitBrace();
+            revitBrace.type = speckleStick.property.name.Replace('X', 'x');
+            revitBrace.baseLine = speckleStick.baseLine;
+            placeholders = BraceToNative(revitBrace);
+            DB.FamilyInstance nativeRevitBrace = (DB.FamilyInstance)placeholders[0].NativeObject;
+            AnalyticalModelStick analyticalModel = (AnalyticalModelStick)nativeRevitBrace.GetAnalyticalModel();
+            analyticalModel.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));
+            analyticalModel.SetReleases(false, Convert.ToBoolean(speckleStick.end2Releases.stiffnessX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end2Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZZ));
+            analyticalModel.SetOffset(AnalyticalElementSelector.StartOrBase, offset1);
+            analyticalModel.SetOffset(AnalyticalElementSelector.EndOrTop, offset2);
+            return placeholders;
+          }
+          else
+          {
+            RevitBeam revitBeam = new RevitBeam();
+            revitBeam.applicationId = speckleStick.applicationId;
+            if (mappings != null)
+            {
+              revitBeam.type = mappings["familyType"];
+              revitBeam.family = mappings["familyFraming"];
+              Report.Log($"Found corresponding family {mappings["familyFraming"]} and family type {mappings["familyType"]} for section {profileName} in mapping data");
+            } else
+            {
+              //This only works for CISC sections now for sure. Need to test on other sections
+              revitBeam.type = ParseFamilyTypeFromProperty(speckleStick.property.name);
+              revitBeam.family = ParseFamilyNameFromProperty(speckleStick.property.name);
+            }             
+            revitBeam.baseLine = speckleStick.baseLine;           
+            placeholders = BeamToNative(revitBeam);
+            DB.FamilyInstance nativeRevitBeam = (DB.FamilyInstance)placeholders[0].NativeObject;
+            AnalyticalModelStick analyticalModel = (AnalyticalModelStick)nativeRevitBeam.GetAnalyticalModel();
+            analyticalModel.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));
+            analyticalModel.SetReleases(false, Convert.ToBoolean(speckleStick.end2Releases.stiffnessX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end2Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZZ));
+            analyticalModel.SetOffset(AnalyticalElementSelector.StartOrBase, offset1);
+            analyticalModel.SetOffset(AnalyticalElementSelector.EndOrTop, offset2);
+            return placeholders;
+          }          
         case MemberType.Column:
           RevitColumn revitColumn = new RevitColumn();
           revitColumn.applicationId = speckleStick.applicationId;
-          revitColumn.type = ParseFamilyTypeFromProperty(speckleStick.property.name);
+          if (mappings != null)
+          {
+            revitColumn.type = mappings["familyType"];
+            revitColumn.family = mappings["familyColumn"];
+            Report.Log($"Found corresponding family {mappings["familyColumn"]} and family type {mappings["familyType"]} for column section in mapping data");
+          }
+          else
+          {
+            revitColumn.family = ParseFamilyNameFromProperty(speckleStick.property.name);
+            revitColumn.type = ParseFamilyTypeFromProperty(speckleStick.property.name);
+          }
           revitColumn.baseLine = speckleStick.baseLine;
-          revitColumn.units = speckleStick.end1Offset.units; // column units are used for setting offset
-          revitColumn.family = ParseFamilyNameFromProperty(speckleStick.property.name);
+          revitColumn.units = speckleStick.end1Offset.units; // column units are used for setting offset          
           placeholders = ColumnToNative(revitColumn, StructuralType.Column);
           DB.FamilyInstance nativeRevitColumn = (DB.FamilyInstance)placeholders[0].NativeObject;
           AnalyticalModelColumn analyticalModelCol = (AnalyticalModelColumn)nativeRevitColumn.GetAnalyticalModel();
@@ -155,7 +178,7 @@ namespace Objects.Converter.Revit
 
       var prop = new Property1D();
 
-      var stickFamily = (Autodesk.Revit.DB.FamilyInstance)Doc.GetElement(revitStick.GetElementId());
+      var stickFamily = (Autodesk.Revit.DB.FamilyInstance)revitStick.Document.GetElement(revitStick.GetElementId());
       var section = stickFamily.Symbol.GetStructuralSection();
       var speckleSection = new SectionProfile();
       speckleSection.name = section.StructuralSectionShapeName;
@@ -194,7 +217,6 @@ namespace Objects.Converter.Revit
             break;
         }
       }
-
       else
       {
         switch (section.StructuralSectionShape)
@@ -250,7 +272,7 @@ namespace Objects.Converter.Revit
 
 
       var materialType = stickFamily.StructuralMaterialType;
-      var structMat = (DB.Material)Doc.GetElement(stickFamily.StructuralMaterialId);
+      var structMat = (DB.Material)stickFamily.Document.GetElement(stickFamily.StructuralMaterialId);
       if (structMat == null)
         structMat = (DB.Material)Doc.GetElement(stickFamily.Symbol.get_Parameter(BuiltInParameter.STRUCTURAL_MATERIAL_PARAM).AsElementId());
 
@@ -258,11 +280,9 @@ namespace Objects.Converter.Revit
 
       // If material has no physical properties in revit, assign null
       var materialAsset = structAsset != null ? structAsset.GetStructuralAsset() : null;
-
       //materialAsset = ((PropertySetElement)Doc.GetElement(structMat.StructuralAssetId)).GetStructuralAsset();
 
       Structural.Materials.Material speckleMaterial = null;
-
       switch (materialType)
       {
         case StructuralMaterialType.Concrete:
@@ -347,14 +367,12 @@ namespace Objects.Converter.Revit
       prop.name = $"{stickFamily.Symbol.FamilyName}:{stickFamily.Name}";
       prop.applicationId = stickFamily.Symbol.UniqueId;
 
-
       var structuralElement = Doc.GetElement(revitStick.GetElementId());
       var mark = GetParamValue<string>(structuralElement, BuiltInParameter.ALL_MODEL_MARK);
 
       if (revitStick is AnalyticalModelColumn)
       {
         speckleElement1D.memberType = MemberType.Column;
-        //prop.memberType = MemberType.Column;
         var locationMark = GetParamValue<string>(structuralElement, BuiltInParameter.COLUMN_LOCATION_MARK);
         if (locationMark == null)
           speckleElement1D.name = mark;
@@ -369,10 +387,10 @@ namespace Objects.Converter.Revit
 
       speckleElement1D.property = prop;
 
-      GetAllRevitParamsAndIds(speckleElement1D, revitStick);
-      speckleElement1D.displayMesh = GetElementDisplayMesh(Doc.GetElement(revitStick.GetElementId()));
-      return speckleElement1D;
-    }
+    GetAllRevitParamsAndIds(speckleElement1D, revitStick);
+      speckleElement1D.displayValue = GetElementDisplayMesh(revitStick.Document.GetElement(revitStick.GetElementId()));
+    return speckleElement1D;
+  }
 
     private ISection ISectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
     {

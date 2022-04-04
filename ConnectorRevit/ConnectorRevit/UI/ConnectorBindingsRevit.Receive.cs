@@ -23,7 +23,6 @@ namespace Speckle.ConnectorRevit.UI
   public partial class ConnectorBindingsRevit
   {
 
-
     /// <summary>
     /// Receives a stream and bakes into the existing revit file.
     /// </summary>
@@ -57,8 +56,6 @@ namespace Speckle.ConnectorRevit.UI
 
       var commit = state.Commit;
 
-
-
       var commitObject = await Operations.Receive(
           referencedObject,
           state.CancellationTokenSource.Token,
@@ -84,8 +81,6 @@ namespace Speckle.ConnectorRevit.UI
       {
         return null;
       }
-
-
 
       // Bake the new ones.
       Queue.Add(() =>
@@ -169,7 +164,7 @@ namespace Speckle.ConnectorRevit.UI
       }
     }
 
-    private List<ApplicationPlaceholderObject> ConvertReceivedObjects(List<Base> objects, ISpeckleConverter converter, StreamState state)
+    private List<ApplicationPlaceholderObject> ConvertReceivedObjects(List<Base> objects, ISpeckleConverter converter, StreamState state, string mapping = null)
     {
       var placeholders = new List<ApplicationPlaceholderObject>();
       var conversionProgressDict = new ConcurrentDictionary<string, int>();

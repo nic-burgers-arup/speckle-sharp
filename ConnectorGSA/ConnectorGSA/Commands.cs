@@ -315,7 +315,7 @@ namespace ConnectorGSA
     internal static async Task<bool> Receive(TabCoordinator coordinator, IProgress<MessageEventArgs> loggingProgress, IProgress<string> statusProgress, IProgress<double> percentageProgress)
     {
       var kit = KitManager.GetDefaultKit();
-      var converter = kit.LoadConverter(Applications.GSA);
+      var converter = kit.LoadConverter(VersionedHostApplications.GSA);
       if (converter == null)
         throw new Exception("Could not find any Kit!");
 

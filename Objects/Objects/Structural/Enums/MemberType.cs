@@ -21,9 +21,9 @@ namespace Objects.Structural.Geometry
 
   public enum MemberType2D
   {
+    Generic2D,
     Slab,
     Wall,
-    Generic2D,
     VoidCutter2D
   }
 }

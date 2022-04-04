@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
 using Objects.BuiltElements.Revit;
 using Speckle.Core.Models;
+using System;
+using System.Collections.Generic;
 using Column = Objects.BuiltElements.Column;
 using DB = Autodesk.Revit.DB;
 using Line = Objects.Geometry.Line;
@@ -48,16 +48,16 @@ namespace Objects.Converter.Revit
 
       if (speckleRevitColumn != null)
       {
-        level = LevelToNative(speckleRevitColumn.level);
-        topLevel = LevelToNative(speckleRevitColumn.topLevel);
+        level = ConvertLevelToRevit(speckleRevitColumn.level);
+        topLevel = ConvertLevelToRevit(speckleRevitColumn.topLevel);
         //non slanted columns are point based
         isLineBased = speckleRevitColumn.isSlanted;
       }
 
       if (level == null)
       {
-        level = LevelToNative(LevelFromCurve(baseLine));
-        topLevel = LevelToNative(LevelFromPoint(baseLine.GetEndPoint(1)));
+        level = ConvertLevelToRevit(LevelFromCurve(baseLine));
+        topLevel = ConvertLevelToRevit(LevelFromPoint(baseLine.GetEndPoint(1)));
       }
 
       //try update existing 
@@ -138,12 +138,12 @@ namespace Objects.Converter.Revit
         }
       }
 
+      var basePoint = startPoint.Z < endPoint.Z ? startPoint : endPoint; // pick the lowest
       //try with a point based column
       if (speckleRevitColumn != null && revitColumn == null && !isLineBased)
       {
-        var basePoint = startPoint.Z < endPoint.Z ? startPoint : endPoint; // pick the lowest
         revitColumn = Doc.Create.NewFamilyInstance(basePoint, familySymbol, level, structuralType);
-        //
+
         //rotate, we know it must be a RevitColumn
         var axis = DB.Line.CreateBound(new XYZ(basePoint.X, basePoint.Y, 0), new XYZ(basePoint.X, basePoint.Y, 1000));
         var rotationAngle = speckleRevitColumn.rotation - (revitColumn.Location as LocationPoint).Rotation;
@@ -152,6 +152,17 @@ namespace Objects.Converter.Revit
         if(rotationAngle != 0)
         {
           (revitColumn.Location as LocationPoint).Rotate(axis, rotationAngle);
+        }
+      }
+
+      //rotate
+      if (speckleRevitColumn != null && revitColumn != null)
+      {
+        var currentRotation = (revitColumn.Location as LocationPoint).Rotation;
+        if (currentRotation != speckleRevitColumn.rotation)
+        {
+          var axis = DB.Line.CreateBound(new XYZ(basePoint.X, basePoint.Y, 0), new XYZ(basePoint.X, basePoint.Y, 10000));
+          var s = (revitColumn.Location as LocationPoint).Rotate(axis, speckleRevitColumn.rotation - currentRotation);
         }
       }
 
@@ -230,11 +241,11 @@ namespace Objects.Converter.Revit
 
     public Base ColumnToSpeckle(DB.FamilyInstance revitColumn)
     {
-      var symbol = Doc.GetElement(revitColumn.GetTypeId()) as FamilySymbol;
+      var symbol = revitColumn.Document.GetElement(revitColumn.GetTypeId()) as FamilySymbol;
 
       var speckleColumn = new RevitColumn();
       speckleColumn.family = symbol.FamilyName;
-      speckleColumn.type = Doc.GetElement(revitColumn.GetTypeId()).Name;
+      speckleColumn.type = revitColumn.Document.GetElement(revitColumn.GetTypeId()).Name;
       speckleColumn.level = ConvertAndCacheLevel(revitColumn, BuiltInParameter.FAMILY_BASE_LEVEL_PARAM);
       speckleColumn.topLevel = ConvertAndCacheLevel(revitColumn, BuiltInParameter.FAMILY_TOP_LEVEL_PARAM);
       speckleColumn.baseOffset = GetParamValue<double>(revitColumn, BuiltInParameter.FAMILY_BASE_LEVEL_OFFSET_PARAM);
@@ -270,7 +281,7 @@ namespace Objects.Converter.Revit
         speckleColumn.rotation = ((LocationPoint)revitColumn.Location).Rotation;
       }
 
-      speckleColumn.displayMesh = GetElementMesh(revitColumn);
+      speckleColumn.displayValue = GetElementMesh(revitColumn);
 
       return speckleColumn;
     }

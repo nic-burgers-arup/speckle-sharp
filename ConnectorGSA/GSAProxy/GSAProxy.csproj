@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="Cache\GsaCache.cs" />
     <Compile Include="Cache\GsaCacheRecord.cs" />
+    <Compile Include="GwaParsers\AnalysisStages\GsaAnalStagePropParser.cs" />
     <Compile Include="GwaParsers\Geometry\GsaPolylineParser.cs" />
     <Compile Include="GwaParsers\Loading\Beam\GsaLoad1dThermalParser.cs" />
     <Compile Include="GwaParsers\Specification\GsaTolParser.cs" />

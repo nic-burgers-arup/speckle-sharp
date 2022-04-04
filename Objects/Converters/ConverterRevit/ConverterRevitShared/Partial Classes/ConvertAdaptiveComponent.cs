@@ -1,11 +1,11 @@
 ﻿using Autodesk.Revit.DB;
-using DB = Autodesk.Revit.DB;
-using System.Linq;
-using Speckle.Core.Models;
-using System.Collections.Generic;
-using Point = Objects.Geometry.Point;
 using Objects.BuiltElements.Revit;
+using Speckle.Core.Models;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using DB = Autodesk.Revit.DB;
+using Point = Objects.Geometry.Point;
 
 namespace Objects.Converter.Revit
 {
@@ -76,10 +76,10 @@ namespace Objects.Converter.Revit
       speckleAc.family = Doc.GetElement(revitAc.GetTypeId()).Name;
       speckleAc.basePoints = GetAdaptivePoints(revitAc);
       speckleAc.flipped = AdaptiveComponentInstanceUtils.IsInstanceFlipped(revitAc);
-      speckleAc.displayMesh = GetElementMesh(revitAc);
+      speckleAc.displayValue = GetElementMesh(revitAc);
 
       GetAllRevitParamsAndIds(speckleAc, revitAc);
-     //Report.Log($"Converted AdaptiveComponent {revitAc.Id}");
+      Report.Log($"Converted AdaptiveComponent {revitAc.Id}");
       return speckleAc;
     }
 
@@ -108,7 +108,7 @@ namespace Objects.Converter.Revit
       var points = new List<Point>();
       for (int i = 0; i < pointIds.Count; i++)
       {
-        var point = Doc.GetElement(pointIds[i]) as ReferencePoint;
+        var point = revitAc.Document.GetElement(pointIds[i]) as ReferencePoint;
         points.Add(PointToSpeckle(point.Position));
       }
       return points;

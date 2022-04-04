@@ -105,6 +105,7 @@ namespace ConverterGSA
         { typeof(GSAUserVehicle), GSAUserVehicleToNative },
         // Analysis
         { typeof(GSAStage), AnalStageToNative },
+        { typeof(GSAStageProp), AnalStagePropToNative },
       };
     }
 
@@ -1666,7 +1667,11 @@ namespace ConverterGSA
       var gsaRecords = SteelToNative(speckleObject);
       var gsaSteel = (GsaMatSteel)gsaRecords.First(o => o is GsaMatSteel);
       var speckleSteel = (GSASteel)speckleObject;
-      gsaSteel.Mat = GetMat(speckleSteel.GetDynamicValue<Base>("Mat"));
+      var speckleMat = GetMat(speckleSteel.GetDynamicValue<Base>("Mat"));
+      if (speckleMat != null)
+      {
+        gsaSteel.Mat = speckleMat;
+      }
       return gsaRecords;
     }
 
@@ -2206,8 +2211,6 @@ namespace ConverterGSA
               CurveToGsaOutline(v, ref y, ref z, ref actions);
             }
           }
-
-
         }
         gsaProfileGroup = Section1dProfileGroup.Perimeter;
         gsaProfileDetails = new ProfileDetailsPerimeter()
@@ -2229,7 +2232,6 @@ namespace ConverterGSA
           {
             gsaProfileDetails = new ProfileDetailsTwoThickness() { ProfileType = Section1dStandardProfileType.RectangularHollow };
             ((ProfileDetailsStandard)gsaProfileDetails).SetValues(p.depth * lengthFactor, p.width * lengthFactor, p.webThickness * lengthFactor, p.flangeThickness * lengthFactor);
-
           }
           else
           {
@@ -2307,6 +2309,22 @@ namespace ConverterGSA
       var gsaProp2d = (GsaProp2d)natives.FirstOrDefault(n => n is GsaProp2d);
       if (gsaProp2d != null)
       {
+        //unit conversion scale factors (GSA units are messed up!)
+        var thicknessFactor = conversionFactors.displacements;
+        var inPlaneFactor = Math.Pow(conversionFactors.displacements, 2) / conversionFactors.length;
+        var bendingFactor = Math.Pow(conversionFactors.sections, 4) / conversionFactors.length;
+        var shearFactor = Math.Pow(conversionFactors.displacements, 2) / conversionFactors.length;
+        var volumeFactor = Math.Pow(conversionFactors.sections, 3) / Math.Pow(conversionFactors.length, 2);
+
+        gsaProp2d.InPlane = speckleProperty.modifierInPlane > 0 ? (double?)speckleProperty.modifierInPlane * inPlaneFactor : null;
+        gsaProp2d.Bending = speckleProperty.modifierBending > 0 ? (double?)speckleProperty.modifierBending * bendingFactor : null;
+        gsaProp2d.Shear = speckleProperty.modifierShear > 0 ? (double?)speckleProperty.modifierShear * shearFactor : null;
+        gsaProp2d.Volume = speckleProperty.modifierVolume > 0 ? (double?)speckleProperty.modifierVolume * volumeFactor : null;
+        gsaProp2d.InPlaneStiffnessPercentage = speckleProperty.modifierInPlane < 0 ? -(double?)speckleProperty.modifierInPlane * 100 : null;
+        gsaProp2d.BendingStiffnessPercentage = speckleProperty.modifierBending < 0 ? -(double?)speckleProperty.modifierBending * 100 : null;
+        gsaProp2d.ShearStiffnessPercentage = speckleProperty.modifierShear < 0 ? -(double?)speckleProperty.modifierShear * 100 : null;
+        gsaProp2d.VolumePercentage = speckleProperty.modifierVolume < 0 ? -(double?)speckleProperty.modifierVolume * 100 : null;
+
         gsaProp2d.Colour = (Enum.TryParse(speckleProperty.colour, true, out Colour gsaColour) ? gsaColour : Colour.NO_RGB);
         gsaProp2d.Mass = speckleProperty.additionalMass * conversionFactors.mass / Math.Pow(conversionFactors.length, 2);
         gsaProp2d.Profile = speckleProperty.concreteSlabProp;
@@ -2359,10 +2377,6 @@ namespace ConverterGSA
 
       //unit conversion scale factors (GSA units are messed up!)
       var thicknessFactor = conversionFactors.displacements;
-      var inPlaneFactor = Math.Pow(conversionFactors.displacements, 2) / conversionFactors.length;
-      var bendingFactor = Math.Pow(conversionFactors.sections, 4) / conversionFactors.length;
-      var shearFactor = Math.Pow(conversionFactors.displacements, 2) / conversionFactors.length;
-      var volumeFactor = Math.Pow(conversionFactors.sections, 3) / Math.Pow(conversionFactors.length, 2);
 
       var gsaProp2d = new GsaProp2d()
       {
@@ -2373,14 +2387,6 @@ namespace ConverterGSA
         RefZ = speckleProperty.zOffset * thicknessFactor,
         RefPt = speckleProperty.refSurface.ToNative(),
         Type = speckleProperty.type.ToNative(),
-        InPlane = speckleProperty.modifierInPlane > 0 ? (double?)speckleProperty.modifierInPlane * inPlaneFactor : null,
-        Bending = speckleProperty.modifierBending > 0 ? (double?)speckleProperty.modifierBending * bendingFactor : null,
-        Shear = speckleProperty.modifierShear > 0 ? (double?)speckleProperty.modifierShear * shearFactor : null,
-        Volume = speckleProperty.modifierVolume > 0 ? (double?)speckleProperty.modifierVolume * volumeFactor : null,
-        InPlaneStiffnessPercentage = speckleProperty.modifierInPlane < 0 ? -(double?)speckleProperty.modifierInPlane * 100 : null,
-        BendingStiffnessPercentage = speckleProperty.modifierBending < 0 ? -(double?)speckleProperty.modifierBending * 100 : null,
-        ShearStiffnessPercentage = speckleProperty.modifierShear < 0 ? -(double?)speckleProperty.modifierShear * 100 : null,
-        VolumePercentage = speckleProperty.modifierVolume < 0 ? -(double?)speckleProperty.modifierVolume * 100 : null
       };
 
       if (!string.IsNullOrEmpty(speckleProperty.units))
@@ -2743,6 +2749,45 @@ namespace ConverterGSA
       gsaRecords.Add(gsaAnalStage);
       return gsaRecords;
     }
+
+    public List<GsaRecord> AnalStagePropToNative(Base speckleObject)
+    {
+      var gsaRecords = new List<GsaRecord>();
+      var analStageProp = (GSAStageProp)speckleObject;
+      var gsaAnalStageProp = new GsaAnalStageProp()
+      {
+        ApplicationId = analStageProp.applicationId,
+        Index = analStageProp.GetIndex<GsaAnalStageProp>(),
+        StageIndex = IndexByConversionOrLookup<GSAStage>(analStageProp.stage, ref gsaRecords),
+      };
+
+      var type = analStageProp.type.ToNative();
+      gsaAnalStageProp.Type = type;
+
+      switch (type)
+      {
+        case ElementPropertyType.Beam:
+          gsaAnalStageProp.ElemPropIndex = IndexByConversionOrLookup<GsaPropSec>(analStageProp.elementProperty, ref gsaRecords);
+          gsaAnalStageProp.StagePropIndex = IndexByConversionOrLookup<GsaPropSec>(analStageProp.stageProperty, ref gsaRecords);
+          break;
+        case ElementPropertyType.Spring:
+          gsaAnalStageProp.ElemPropIndex = IndexByConversionOrLookup<GsaPropSpr>(analStageProp.elementProperty, ref gsaRecords);
+          gsaAnalStageProp.StagePropIndex = IndexByConversionOrLookup<GsaPropSpr>(analStageProp.stageProperty, ref gsaRecords);
+          break;
+        case ElementPropertyType.Mass:
+          gsaAnalStageProp.ElemPropIndex = IndexByConversionOrLookup<GsaPropMass>(analStageProp.elementProperty, ref gsaRecords);
+          gsaAnalStageProp.StagePropIndex = IndexByConversionOrLookup<GsaPropMass>(analStageProp.stageProperty, ref gsaRecords);
+          break;
+        case ElementPropertyType.TwoD:
+          gsaAnalStageProp.ElemPropIndex = IndexByConversionOrLookup<GsaProp2d>(analStageProp.elementProperty, ref gsaRecords);
+          gsaAnalStageProp.StagePropIndex = IndexByConversionOrLookup<GsaProp2d>(analStageProp.stageProperty, ref gsaRecords);
+          break;
+      }
+
+      gsaRecords.Add(gsaAnalStageProp);
+      return gsaRecords;
+    }
+
     #endregion
 
     #endregion
