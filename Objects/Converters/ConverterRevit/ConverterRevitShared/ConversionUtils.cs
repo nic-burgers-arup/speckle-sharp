@@ -781,7 +781,7 @@ namespace Objects.Converter.Revit
       var mappingsList = ((List<object>)data["data"]).Select(m => m as Dictionary<string, object>).ToList();
       var mappingDict = mappingsList.Select(m => m as Dictionary<string, object>).ToList();
       var mapping = mappingDict.Where(x => (string)x["section"] == name).FirstOrDefault();
-      if (mapping.ContainsKey(target))
+      if (mapping != null && mapping.ContainsKey(target))
       {
         var targetSection = MappingData[target] as Base;
         var sectionList = ((List<object>)targetSection["data"]).Select(m => m as Dictionary<string, object>).ToList();

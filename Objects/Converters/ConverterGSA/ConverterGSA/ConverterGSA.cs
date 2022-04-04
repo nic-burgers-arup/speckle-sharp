@@ -19,6 +19,9 @@ using Objects.Structural.GSA.Materials;
 using Objects.Structural.GSA.Bridge;
 using Objects.Structural.Loading;
 using System.Threading.Tasks;
+using Speckle.Core.Transports;
+using Speckle.Core.Serialisation;
+using Newtonsoft.Json;
 
 namespace ConverterGSA
 {
@@ -34,6 +37,18 @@ namespace ConverterGSA
     public string Author => "Arup";
 
     public string WebsiteOrEmail => "https://www.oasys-software.com/";
+
+    private static SQLiteTransport MappingStorage = new SQLiteTransport(scope: "Mappings");
+
+    private Base mappingData;
+    private Base MappingData
+    {
+      get 
+      { 
+        mappingData = GetMappingData();
+        return mappingData;
+      }
+    }
 
     public ProgressReport Report { get; private set; } = new ProgressReport();
 
@@ -741,6 +756,82 @@ namespace ConverterGSA
       throw new NotImplementedException();
     }
 
+    #region Section Mapping
+
+    private Dictionary<string, string> GetMappingFromProfileName(string name, string target = "gsa", bool isFraming = true)
+    {
+      Dictionary<string, string> mappingData = new Dictionary<string, string>();
+
+      var key = "Arup V2 Server-e53a0242be";
+      var hash = $"{key}-mappings";
+      var objString = MappingStorage.GetObject(hash);
+
+      var objBase = JsonConvert.DeserializeObject<Base>(objString);
+      var serializerV2 = new BaseObjectDeserializerV2();
+      var data = serializerV2.Deserialize(objString);
+
+      var mappings = MappingData["mappings"];
+
+      var mappingsList = ((List<object>)data["data"]).Select(m => m as Dictionary<string, object>).ToList();
+      var mappingDict = mappingsList.Select(m => m as Dictionary<string, object>).ToList();
+      var mapping = mappingDict.Where(x => (string)x["section"] == name).FirstOrDefault();
+      if (mapping != null && mapping.ContainsKey(target))
+      {
+        var targetSection = MappingData[target] as Base;
+        var sectionList = ((List<object>)targetSection["data"]).Select(m => m as Dictionary<string, object>).ToList();
+        var sectionDict = sectionList.Select(m => m as Dictionary<string, object>).ToList();
+        var section = sectionDict.Where(x => (long)x["key"] == (long)mapping[target]).FirstOrDefault();
+
+        foreach (var sectionParameter in section)
+        {
+          mappingData.Add(sectionParameter.Key, sectionParameter.Value.ToString());
+        }
+      }
+      else
+      {
+        return null;
+      }
+
+      return mappingData;
+    }
+
+    private Base GetMappingData()
+    {
+      var key = "Arup V2 Server-e53a0242be";
+      const string mappingsBranch = "mappings";
+      const string sectionBranchPrefix = "sections";
+
+      var mappingData = new Base();
+
+      var hashes = MappingStorage.GetAllHashes();
+      var matches = hashes.Where(h => h.Contains(key)).ToList();
+      foreach (var match in matches)
+      {
+        var objString = MappingStorage.GetObject(match);
+        var serializerV2 = new BaseObjectDeserializerV2();
+        var data = serializerV2.Deserialize(objString);
+
+        if (match.Contains($"{key}-{mappingsBranch}"))
+        {
+          mappingData[$"{mappingsBranch}"] = data;
+        }
+        else if (match.Contains(sectionBranchPrefix))
+        {
+          var name = match.Replace($"{key}-{sectionBranchPrefix}/", "");
+          mappingData[$"{name}"] = data;
+        }
+      }
+      //var sqlMappings = MappingStorage.GetAllObjects();
+      //var serializerV2 = new BaseObjectDeserializerV2();
+      //var mappingData = sqlMappings.Select(x => serializerV2.Deserialize(x));
+
+      Report.Log($"Using section mapping data from stream: {key}");
+
+      return mappingData;
+
+    }
+    #endregion
+
     #region private_classes
     internal class ToSpeckleResult
     {
@@ -799,5 +890,6 @@ namespace ConverterGSA
       }
     }
     #endregion
+
   }
 }

@@ -2130,12 +2130,19 @@ namespace ConverterGSA
       if (speckleProperty.profile != null)
       {
         // Attempt to map property1d to catalogue based on software mappingDB
-        var mappedStructuralSection = Extensions.MapStructuralSection("");
+        var mappings = GetMappingFromProfileName(speckleProperty.name.Split(':')[1]);
 
         // If successfully mapped, apply catalogue profile
-        if(mappedStructuralSection != null)
+        if (mappings != null)
         {
-          speckleProperty.profile = mappedStructuralSection;
+          var catalogueProfile = new Catalogue()
+          {
+            description = $"CAT {mappings["profileType"]} {mappings["familyType"]} {mappings["timestamp"]}"
+          };
+
+          catalogueProfile.shapeType = ShapeType.Catalogue;
+
+          speckleProperty.profile = catalogueProfile;
         }
 
         Property1dProfileToNative(speckleProperty.profile, out sectionComp.ProfileDetails, out sectionComp.ProfileGroup);

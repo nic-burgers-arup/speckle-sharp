@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using Objects.Structural.Geometry;
 using Objects.Structural.Materials;
 using Objects.Structural.Properties.Profiles;
-using Objects.Structural.Property.SectionMapping;
 
 namespace Objects.Structural.Properties
 {
@@ -18,9 +17,6 @@ namespace Objects.Structural.Properties
 
         [DetachProperty]
         public SectionProfile profile { get; set; } //section description
-
-        [DetachProperty]
-        public SectionMapping sectionMapping { get; set; }
 
         public BaseReferencePoint referencePoint { get; set; }
         public double offsetY { get; set; } = 0; //offset from reference point
