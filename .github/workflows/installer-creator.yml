@@ -142,7 +142,8 @@ jobs:
         $filename = (ls *.exe).Name
         echo "::set-output name=filename::$filename"
       env:
-        ENABLE_TELEMETRY_DOMAIN: arup      
+        ENABLE_TELEMETRY_DOMAIN: arup     
+        POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}           
         EXCEL_ADDIN_APP_TENANT: ${{ secrets.EXCEL_ADDIN_APP_TENANT }}  
         EXCEL_ADDIN_APP_CLIENT_ID: ${{ secrets.EXCEL_ADDIN_APP_CLIENT_ID }}  
         EXCEL_ADDIN_APP_CLIENT_SECRET: ${{ secrets.EXCEL_ADDIN_APP_CLIENT_SECRET }}  
