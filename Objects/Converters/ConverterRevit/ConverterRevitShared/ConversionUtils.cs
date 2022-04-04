@@ -1135,7 +1135,7 @@ namespace Objects.Converter.Revit
       else if (IsSupportedMEPCategory(e))
       {
         MEPModel m = ((DB.FamilyInstance)e).MEPModel;
-        
+
         if (m != null && m.ConnectorManager != null)
         {
           //retrieve the first material from first connector. Could go wrong, but better than nothing ;-)
@@ -1163,7 +1163,7 @@ namespace Objects.Converter.Revit
 
       return null;
     }
-            
+
     private static bool IsSupportedMEPCategory(Element e)
     {
       var categories = e.Document.Settings.Categories;
@@ -1176,7 +1176,7 @@ namespace Objects.Converter.Revit
             BuiltInCategory.OST_PipeAccessory,
             //BuiltInCategory.OST_MechanicalEquipment,
           };
-      
+
       return supportedCategories.Any(cat => e.Category.Id == categories.get_Item(cat).Id);
     }
 
