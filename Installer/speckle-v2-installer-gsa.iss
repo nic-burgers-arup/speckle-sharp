@@ -1,6 +1,5 @@
 ;defining variables
 #define AppName      "Speckle@Arup v2 GSA Connector"
-#define AppVersion  GetFileVersion("..\ConnectorGSA\ConnectorGSA\bin\Release\ConnectorGSA.exe")
 #define AppPublisher "Speckle@Arup"
 #define AppURL       "https://docs.speckle.arup.com"
 #define SpeckleFolder "{localappdata}\Speckle"
