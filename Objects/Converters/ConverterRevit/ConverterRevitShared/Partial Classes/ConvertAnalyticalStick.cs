@@ -106,15 +106,19 @@ namespace Objects.Converter.Revit
       {
         case "Analytical Columns":
           speckleElement1D.memberType = MemberType.Column;
+          speckleElement1D.type = ElementType1D.Column;
           break;
         case "Analytical Beams":
           speckleElement1D.memberType = MemberType.Beam;
+          speckleElement1D.type = ElementType1D.Beam;
           break;
         case "Analytical Braces":
           speckleElement1D.memberType = MemberType.Beam;
+          speckleElement1D.type = ElementType1D.Brace;
           break;
         default:
           speckleElement1D.memberType = MemberType.Generic1D;
+          speckleElement1D.type = ElementType1D.Beam;
           break;
       }
 
@@ -382,6 +386,7 @@ namespace Objects.Converter.Revit
       if (revitStick is AnalyticalModelColumn)
       {
         speckleElement1D.memberType = MemberType.Column;
+        speckleElement1D.type = ElementType1D.Column;
         var locationMark = GetParamValue<string>(structuralElement, BuiltInParameter.COLUMN_LOCATION_MARK);
         if (locationMark == null)
           speckleElement1D.name = mark;
@@ -390,7 +395,6 @@ namespace Objects.Converter.Revit
       }
       else
       {
-        prop.memberType = MemberType.Beam;
         speckleElement1D.name = mark;
       }
 
