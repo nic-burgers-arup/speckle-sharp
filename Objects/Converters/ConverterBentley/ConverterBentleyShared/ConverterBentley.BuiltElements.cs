@@ -1,4 +1,5 @@
-﻿using Bentley.DgnPlatformNET;
+﻿#if (OPENBUILDINGS)
+using Bentley.DgnPlatformNET;
 using Bentley.DgnPlatformNET.DgnEC;
 using Bentley.DgnPlatformNET.Elements;
 using Bentley.ECObjects;
@@ -7,6 +8,9 @@ using Bentley.ECObjects.Schema;
 using Bentley.ECObjects.XML;
 using Bentley.GeometryNET;
 using Bentley.MstnPlatformNET;
+
+using Bentley.Building.Api;
+
 using Objects.Geometry;
 using Objects.Primitive;
 using Speckle.Core.Logging;
@@ -62,7 +66,7 @@ namespace Objects.Converter.Bentley
       // rotation
       parameters.AddRange(CreateParameter(properties, "ROTATION", u));
 
-      Line baseLine = LineToSpeckle(start, end, false);
+      Line baseLine = LineToSpeckle(ToInternalCoordinates(start), ToInternalCoordinates(end));
       Level level = new Level();
       level.units = u;
 
@@ -87,7 +91,7 @@ namespace Objects.Converter.Bentley
       double rotation = (double)GetProperty(properties, "ROTATION");
       double rotationZ = (double)GetProperty(properties, "RotationZ");
 
-      Line baseLine = LineToSpeckle(start, end, false);
+      Line baseLine = LineToSpeckle(ToInternalCoordinates(start), ToInternalCoordinates(end));
 
       double bottomElevation, topElevation;
       if (start.Z > end.Z)
@@ -372,11 +376,11 @@ namespace Objects.Converter.Bentley
       Point basePoint;
       if (start.Z > end.Z)
       {
-        basePoint = Point3dToSpeckle(start, false);
+        basePoint = Point3dToSpeckle(ToInternalCoordinates(start));
       }
       else
       {
-        basePoint = Point3dToSpeckle(end, false);
+        basePoint = Point3dToSpeckle(ToInternalCoordinates(end));
       }
       string type = part;
 
@@ -389,6 +393,64 @@ namespace Objects.Converter.Bentley
       familyInstance.category = "Structural Foundations";
       familyInstance.elementId = elementId.ToString();
       return familyInstance;
+    }
+
+    public Element RevitWallToNative(RevitWall wall)
+    {
+      if (wall.baseLine is Line baseLine)
+      {
+        baseLine.start.z += wall.baseOffset;
+        baseLine.end.z += wall.baseOffset;
+
+        DPoint3d start = Point3dToNative(baseLine.start);
+        DPoint3d end = Point3dToNative(baseLine.end);
+
+        double height = wall.height + wall.topOffset;
+        //double thickness = height / 10.0;
+
+        TFCatalogList datagroup = new TFCatalogList();
+        datagroup.Init("");
+        ITFCatalog catalog = datagroup as ITFCatalog;
+
+        catalog.GetAllCatalogTypesList(0, out ITFCatalogTypeList typeList);
+
+        string family = wall.family;
+        string type = wall.type;
+
+        catalog.GetCatalogItemByNames(family, type, 0, out ITFCatalogItemList itemList);
+
+        // if no catalog item is found, use a random one
+        if (itemList == null)
+          catalog.GetCatalogItemsByTypeName("Wall", 0, out itemList);
+
+        TFLoadableWallList form = new TFLoadableWallList();
+        form.InitFromCatalogItem(itemList, 0);
+        form.SetWallType(TFdLoadableWallType.TFdLoadableWallType_Line, 0);
+        start.ScaleInPlace(1.0 / UoR);
+        end.ScaleInPlace(1.0 / UoR);
+        form.SetEndPoints(ref start, ref end, 0);
+        form.SetHeight(height, 0);
+        //form.SetThickness(thickness, 0);
+
+        // todo: horizontal offset
+        // revit parameter: WALL_KEY_REF_PARAM  "Location Line"
+        // 0. wall centerline
+        // 1. core centerline
+        // 2. finish face: exterior
+        // 3. finish face: interior
+        // 4. core face: exterior
+        // 5. core face: interior
+        // 
+        // todo: determine interior/exterior face?
+        // form.SetOffsetType(TFdFormRecipeOffsetType.tfdFormRecipeOffsetTypeCenter, 0);
+
+        form.GetElementWritten(out Element element, Session.Instance.GetActiveDgnModelRef(), 0);
+        return element;
+      }
+      else
+      {
+        throw new SpeckleException("Only simple lines as base lines supported.");
+      }
     }
 
     public RevitFloor SlabToSpeckle(Dictionary<string, object> properties, List<ICurve> segments, string units = null)
@@ -576,12 +638,18 @@ namespace Objects.Converter.Bentley
       return wall;
     }
 
+    private DPoint3d ToInternalCoordinates(DPoint3d point)
+    {
+      point.ScaleInPlace(UoR);
+      return point;
+    }
+
     enum Category
     {
       Beams,
-      CappingBeam,
+      CappingBeams,
       Columns,
-      FoundationSlab,
+      FoundationSlabs,
       None,
       Piles,
       Slabs,
@@ -589,3 +657,4 @@ namespace Objects.Converter.Bentley
     }
   }
 }
+#endif

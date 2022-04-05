@@ -310,6 +310,9 @@ namespace ConnectorGSA
     {
       var kit = KitManager.GetDefaultKit();
       var converter = kit.LoadConverter(VersionedHostApplications.GSA);
+      if (converter == null)
+        throw new Exception("Could not find any Kit!");
+
       var percentage = 0;
 
       Instance.GsaModel.StreamLayer = coordinator.ReceiverTab.TargetLayer;
@@ -329,6 +332,52 @@ namespace ConnectorGSA
 
       var account = ((GsaModel)Instance.GsaModel).Account;
       var client = new Client(account);
+
+      var mappingsStreamId = String.Empty;
+      if (!String.IsNullOrEmpty(coordinator.ReceiverTab.MappingStreamId))
+      {
+        mappingsStreamId = "e53a0242be"; // "e53a0242be"
+        const string mappingsBranch = "mappings";
+        const string sectionBranchPrefix = "sections";
+        var key = $"{client.Account.id}-{mappingsStreamId}";
+
+        var mappingsTransport = new ServerTransport(client.Account, mappingsStreamId);
+        var mappingsTransportLocal = new SQLiteTransport(null, "Speckle", "Mappings");
+
+        var mappingsStream = await client.StreamGet(mappingsStreamId);
+        var branches = await client.StreamGetBranches(mappingsStreamId);
+        foreach (var branch in branches)
+        {
+          if (branch.name == mappingsBranch || branch.name.StartsWith(sectionBranchPrefix))
+          {
+            var mappingsCommit = branch.commits.items.FirstOrDefault();
+            var referencedMappingsObject = mappingsCommit.referencedObject;
+
+            var mappingsCommitObject = await Operations.Receive(
+              referencedMappingsObject,
+              mappingsTransport,
+              onErrorAction: (s, e) =>
+              {
+                loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, e));
+                loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, e));
+              },
+              disposeTransports: true
+              );
+
+            var hash = $"{key}-{branch.name}";
+            var existingObjString = mappingsTransportLocal.GetObject(hash);
+            if (existingObjString != null)
+              mappingsTransportLocal.UpdateObject(hash, JsonConvert.SerializeObject(mappingsCommitObject));
+            else
+              mappingsTransportLocal.SaveObject(hash, JsonConvert.SerializeObject(mappingsCommitObject));
+          }
+        }
+
+        var settings = new Dictionary<string, string>() { { "section-mapping", key } };
+        converter.SetConverterSettings(settings);
+
+        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, $"Using section mapping data from: {key}"));
+      }
 
       var startTime = DateTime.Now;
 
@@ -365,7 +414,7 @@ namespace ConnectorGSA
       statusProgress.Report("Accessing streams");
       var streamIds = coordinator.ReceiverTab.StreamList.StreamListItems.Select(i => i.StreamId).ToList();
       var receiveTasks = new List<Task>();
-      
+
       var topLevelObjects = new List<Base>();
 
       foreach (var streamId in streamIds)
@@ -379,42 +428,42 @@ namespace ConnectorGSA
 
         receiveTasks.Add(streamState.RefreshStream(loggingProgress)
           .ContinueWith(async (refreshed) =>
+          {
+            if (refreshed.Result)
             {
-              if (refreshed.Result)
+              streamState.Stream.branch = streamState.Client.StreamGetBranches(streamId, 1).Result.First();
+              if (streamState.Stream.branch.commits == null || streamState.Stream.branch.commits.totalCount == 0)
               {
-                streamState.Stream.branch = streamState.Client.StreamGetBranches(streamId, 1).Result.First();
-                if (streamState.Stream.branch.commits == null || streamState.Stream.branch.commits.totalCount == 0)
-                {
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "This branch has no commits"));
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, "This branch has no commits"));
-                  percentageProgress.Report(0);
-                  return;
-                }
-                var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
+                loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "This branch has no commits"));
+                loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, "This branch has no commits"));
+                percentageProgress.Report(0);
+                return;
+              }
+              var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
 
-                
-                var received = await Commands.Receive(commitId, streamState, transport, topLevelObjects);
-                if (received)
-                {
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Received data from " + streamId + " stream"));
-                }
 
-                if (streamState.Errors != null && streamState.Errors.Count > 0)
-                {
-                  foreach (var se in streamState.Errors)
-                  {
-                    loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, se.Message));
-                    loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, se, se.Message));
-                  }
-                }
+              var received = await Commands.Receive(commitId, streamState, transport, topLevelObjects);
+              if (received)
+              {
+                loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Received data from " + streamId + " stream"));
+              }
 
-                lock (perecentageProgressLock)
+              if (streamState.Errors != null && streamState.Errors.Count > 0)
+              {
+                foreach (var se in streamState.Errors)
                 {
-                  percentage += (50 / streamIds.Count);
-                  percentageProgress.Report(percentage);
+                  loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, se.Message));
+                  loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, se, se.Message));
                 }
               }
-            }));
+
+              lock (perecentageProgressLock)
+              {
+                percentage += (50 / streamIds.Count);
+                percentageProgress.Report(percentage);
+              }
+            }
+          }));
       }
       await Task.WhenAll(receiveTasks.ToArray());
 

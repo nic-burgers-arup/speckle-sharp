@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Collections.Concurrent;
@@ -20,6 +19,7 @@ using Bentley.DgnPlatformNET;
 using Bentley.DgnPlatformNET.Elements;
 using Bentley.MstnPlatformNET;
 using Bentley.DgnPlatformNET.DgnEC;
+using Bentley.ECObjects.Instance;
 using Bentley.ECObjects.Schema;
 
 #if (OPENBUILDINGS)
@@ -166,6 +166,7 @@ namespace Speckle.ConnectorBentley.UI
       var elementTypes = new List<string> { "Arc", "Ellipse", "Line", "Spline", "Line String", "Complex Chain", "Shape", "Complex Shape", "Mesh" };
 
       var filterList = new List<ISelectionFilter>();
+      filterList.Add(new AllSelectionFilter { Slug = "all", Name = "Everything", Icon = "CubeScan", Description = "Selects all document objects." });
       filterList.Add(new ListSelectionFilter { Slug = "level", Name = "Levels", Icon = "LayersTriple", Description = "Selects objects based on their level.", Values = levels });
       filterList.Add(new ListSelectionFilter { Slug = "elementType", Name = "Element Types", Icon = "Category", Description = "Selects objects based on their element type.", Values = elementTypes });
 
@@ -174,7 +175,7 @@ namespace Speckle.ConnectorBentley.UI
       filterList.Add(new ListSelectionFilter { Slug = "civilElementType", Name = "Civil Features", Icon = "RailroadVariant", Description = "Selects civil features based on their type.", Values = civilElementTypes });
 #endif
 
-      filterList.Add(new AllSelectionFilter { Slug = "all", Name = "All", Icon = "CubeScan", Description = "Selects all document objects." });
+
 
       return filterList;
     }
@@ -365,8 +366,35 @@ namespace Speckle.ConnectorBentley.UI
       }
     }
 
-    delegate List<ApplicationPlaceholderObject> NativeConversionAndBakeDelegate(List<Base> objects, ISpeckleConverter converter, StreamState state);
+    private string GetItemTypeProperty(Element host, string libraryName, string itemTypeName, string propertyName)
+    {
+      CustomItemHost itemHost = new CustomItemHost(host, false);
+      IDgnECInstance ecInstance = itemHost.GetCustomItem(libraryName, itemTypeName);
+      if (ecInstance != null)
+      {
+        var prop = ecInstance.GetAsString(propertyName);
+        return prop;
+      }
+      return null;
+    }
 
+    private Element FindExistingElementByApplicationId(ISpeckleConverter converter, string applicationId)
+    {
+      var modelObjIds = Model.ConvertibleObjects(converter);
+      foreach (var objId in modelObjIds)
+      {
+        double.TryParse(objId, out double id);
+        var obj = Model.FindElementById((ElementId)(long)id);
+        var prop = GetItemTypeProperty(obj, "Speckle", "Speckle Data", "ApplicationId");
+
+        if (prop == applicationId)
+          return obj;
+      }
+
+      return null;
+    }
+
+    delegate List<ApplicationPlaceholderObject> NativeConversionAndBakeDelegate(List<Base> objects, ISpeckleConverter converter, StreamState state);
     private List<ApplicationPlaceholderObject> ConvertAndBakeReceivedObjects(List<Base> objects, ISpeckleConverter converter, StreamState state)
     {
       var placeholders = new List<ApplicationPlaceholderObject>();
@@ -402,11 +430,58 @@ namespace Speckle.ConnectorBentley.UI
             placeholders.AddRange(placeholderList);
           }
 
-          // creating new elements, not updating existing!
+          var libraryName = "Speckle";
+          var itemTypeName = "Speckle Data";
+          var propertyName = "ApplicationId";
+
+          // try to update existing, fall back to adding new elements if failed
           var convertedElement = convRes as Element;
-          if (convertedElement != null)
+          if (convertedElement != null && convertedElement.IsValid)
           {
-            var status = convertedElement.AddToModel();
+            var status = StatusInt.Error;
+
+            // check for existing speckle generated id in file ec data
+            var existing = FindExistingElementByApplicationId(converter, @base.applicationId);
+            if (existing != null)
+            {
+              status = convertedElement.ReplaceInModel(existing);
+            }
+            else
+            {
+              // check for existing bentley id 
+              var parse = double.TryParse(@base.applicationId, out double id);
+              if (parse)
+              {
+                var appId = (long)id;
+                var existingElement = Model.FindElementById((ElementId)appId);
+
+                if (existingElement != null)
+                {
+                  var oldElement = Element.GetFromElementRef(existingElement.GetNativeElementRef());
+
+                  if (oldElement != null)
+                  {
+                    try
+                    {
+                      status = convertedElement.ReplaceInModel(oldElement);
+                    }
+                    catch
+                    {
+                      status = convertedElement.AddToModel();
+                    }
+                  }
+                }
+                else
+                {
+                  status = convertedElement.AddToModel();
+                }
+              }
+              else
+              {
+                status = convertedElement.AddToModel();
+              }
+            }
+
             if (status == StatusInt.Error)
             {
               state.Errors.Add(new Exception($"Failed to bake object {@base.id} of type {@base.speckle_type}."));
@@ -415,6 +490,44 @@ namespace Speckle.ConnectorBentley.UI
           else
           {
             state.Errors.Add(new Exception($"Failed to convert object {@base.id} of type {@base.speckle_type}."));
+          }
+
+          // add item type property to track applicationId
+          CustomItemHost customItemHost = new CustomItemHost(convertedElement, false);
+          ItemTypeLibrary itemTypeLibrary = ItemTypeLibrary.FindByName(libraryName, File);
+          ItemType itemType = null;
+
+          if (itemTypeLibrary == null)
+          {
+            itemTypeLibrary = ItemTypeLibrary.Create(libraryName, File);
+            itemType = itemTypeLibrary.AddItemType(itemTypeName);
+            CustomProperty customProperty = itemType.AddProperty(propertyName);
+            customProperty.DefaultValue = "applicationId";
+            customProperty.Type = CustomProperty.TypeKind.String;
+            itemTypeLibrary.Write();
+          }
+          else
+          {
+            itemType = itemTypeLibrary.GetItemTypeByName(itemTypeName);
+            if (itemType == null)
+              itemType = itemTypeLibrary.AddItemType(itemTypeName);
+
+            CustomProperty customProperty = itemType.GetPropertyByName(propertyName);
+            if (customProperty == null)
+              customProperty = itemType.AddProperty(propertyName);
+          }
+
+          IDgnECInstance item = customItemHost.GetCustomItem(libraryName, itemTypeName);
+          if (item == null)
+          {
+            item = customItemHost.ApplyCustomItem(itemType, true);
+          }
+
+          if (item != null)
+          {
+            item.SetString("ApplicationId", @base.applicationId);
+            item.SetValue("ApplicationId", @base.applicationId);
+            item.WriteChanges();
           }
         }
         catch (Exception e)
@@ -709,6 +822,7 @@ namespace Speckle.ConnectorBentley.UI
         UpdateProgress(conversionProgressDict, state.Progress);
 
         converted.applicationId = objId;
+        //converted[""]
 
         convertedCount++;
       }

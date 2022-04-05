@@ -164,7 +164,7 @@ namespace Speckle.ConnectorRevit.UI
       }
     }
 
-    private List<ApplicationPlaceholderObject> ConvertReceivedObjects(List<Base> objects, ISpeckleConverter converter, StreamState state)
+    private List<ApplicationPlaceholderObject> ConvertReceivedObjects(List<Base> objects, ISpeckleConverter converter, StreamState state, string mapping = null)
     {
       var placeholders = new List<ApplicationPlaceholderObject>();
       var conversionProgressDict = new ConcurrentDictionary<string, int>();

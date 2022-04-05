@@ -1,16 +1,13 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
-using Objects.BuiltElements;
 using Objects.BuiltElements.Revit;
-using Objects.Structural.Geometry;
-using Objects.Structural.Properties;
-using Objects.Structural.Properties.Profiles;
-using Objects.Structural.Materials;
 using Objects.Geometry;
+using Objects.Structural.Geometry;
+using Objects.Structural.Materials;
+using Objects.Structural.Properties;
 using Speckle.Core.Models;
+using System.Collections.Generic;
+using System.Linq;
 using DB = Autodesk.Revit.DB;
 
 
@@ -58,11 +55,9 @@ namespace Objects.Converter.Revit
 
     public List<ApplicationPlaceholderObject> AnalyticalSurfaceToNative(Element2D speckleElement)
     {
-
-      List<ApplicationPlaceholderObject> placeholderObjects = new List<ApplicationPlaceholderObject> { };
-      switch (speckleElement.property.type)
+      switch (speckleElement.memberType)
       {
-        case Structural.PropertyType2D.Wall:
+        case MemberType.Wall:
           Geometry.Line baseline = GetBottomLine(speckleElement.topology);
           double lowestElvevation = speckleElement.topology.Min(node => node.basePoint.z);
           double topElevation = speckleElement.topology.Max(node => node.basePoint.z);
@@ -70,18 +65,16 @@ namespace Objects.Converter.Revit
           Node topNode = speckleElement.topology.Find(node => node.basePoint.z == topElevation);
           var bottemLevel = LevelFromPoint(PointToNative(bottomNode.basePoint));
           var topLevel = LevelFromPoint(PointToNative(topNode.basePoint));
-          RevitWall revitWall = new RevitWall(speckleElement.property.name, speckleElement.property.name, baseline, bottemLevel, topLevel);
+          RevitWall revitWall = new RevitWall("", speckleElement.property.name, baseline, bottemLevel, topLevel);
+          revitWall.structural = true;
           return WallToNative(revitWall);
-          break;
         default:
           var polycurve = PolycurveFromTopology(speckleElement.topology);
           var level = LevelFromPoint(PointToNative(speckleElement.topology[0].basePoint));
-          RevitFloor revitFloor = new RevitFloor(speckleElement.property.name, speckleElement.property.name, polycurve, level);
+          RevitFloor revitFloor = new RevitFloor("", speckleElement.property.name, polycurve, level);
+          revitFloor.structural = true;
           return FloorToNative(revitFloor);
-          break;
       }
-      return placeholderObjects;
-
     }
 
 	private Element2D AnalyticalSurfaceToSpeckle(AnalyticalModelSurface revitSurface)
@@ -90,7 +83,7 @@ namespace Objects.Converter.Revit
 		return null;
 
       var speckleElement2D = new Element2D();
-      var structuralElement = Doc.GetElement(revitSurface.GetElementId());
+      var structuralElement = revitSurface.Document.GetElement(revitSurface.GetElementId());
       var mark = GetParamValue<string>(structuralElement, BuiltInParameter.ALL_MODEL_MARK);
       speckleElement2D.name = mark;
 
@@ -157,7 +150,7 @@ namespace Objects.Converter.Revit
       if (structuralElement is DB.Floor)
       {
         var floor = structuralElement as DB.Floor;
-        structMaterial = Doc.GetElement(floor.FloorType.StructuralMaterialId) as DB.Material;
+        structMaterial = floor.Document.GetElement(floor.FloorType.StructuralMaterialId) as DB.Material;
         // Revit returns value correctly in mm without needing to scale with this call
         thickness = GetParamValue<double>(structuralElement, BuiltInParameter.STRUCTURAL_FLOOR_CORE_THICKNESS);
         memberType = MemberType.Slab;
@@ -165,7 +158,7 @@ namespace Objects.Converter.Revit
       else if (structuralElement is DB.Wall)
       {
         var wall = structuralElement as DB.Wall;
-        structMaterial = Doc.GetElement(wall.WallType.get_Parameter(BuiltInParameter.STRUCTURAL_MATERIAL_PARAM).AsElementId()) as DB.Material;
+        structMaterial = wall.Document.GetElement(wall.WallType.get_Parameter(BuiltInParameter.STRUCTURAL_MATERIAL_PARAM).AsElementId()) as DB.Material;
         thickness = ScaleToSpeckle(wall.WallType.Width);
         memberType = MemberType.Wall;
       }

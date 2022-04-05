@@ -18,6 +18,7 @@ using Speckle.Core.Kits;
 using Speckle.Core.Logging;
 using Speckle.Core.Models;
 using Speckle.Core.Transports;
+using Speckle.Newtonsoft.Json;
 using RevitElement = Autodesk.Revit.DB.Element;
 
 namespace Speckle.ConnectorRevit.UI
@@ -40,7 +41,15 @@ namespace Speckle.ConnectorRevit.UI
       // set converter settings as tuples (setting slug, setting selection)
       var settings = new Dictionary<string, string>();
       foreach (var setting in state.Settings)
+      {
+        if (setting.Slug == "section-mapping")
+        {
+          var mappingKey  = await GetSectionMappingData(state, progress);
+          setting.Selection = mappingKey;
+        }
         settings.Add(setting.Slug, setting.Selection);
+      }
+
       converter.SetConverterSettings(settings);
 
       var transport = new ServerTransport(state.Client.Account, state.StreamId);
@@ -86,7 +95,7 @@ namespace Speckle.ConnectorRevit.UI
           streamId = stream?.id,
           commitId = myCommit?.id,
           message = myCommit?.message,
-          sourceApplication = ConnectorRevitUtils.RevitAppName 
+          sourceApplication = ConnectorRevitUtils.RevitAppName
         });
       }
       catch
@@ -253,7 +262,7 @@ namespace Speckle.ConnectorRevit.UI
 
       else
       {
-        if(obj != null && !obj.GetType().IsPrimitive)
+        if (obj != null && !obj.GetType().IsPrimitive)
           converter.Report.Log($"Skipped object of type {obj.GetType()}, not supported.");
       }
 

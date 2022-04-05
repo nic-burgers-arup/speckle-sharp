@@ -26,6 +26,10 @@ using View3D = Objects.BuiltElements.View3D;
 using Station = Objects.BuiltElements.Station;
 using Surface = Objects.Geometry.Surface;
 using Vector = Objects.Geometry.Vector;
+using RevitBeam = Objects.BuiltElements.Revit.RevitBeam;
+using RevitColumn = Objects.BuiltElements.Revit.RevitColumn;
+using RevitFloor = Objects.BuiltElements.Revit.RevitFloor;
+using RevitWall = Objects.BuiltElements.Revit.RevitWall;
 
 using Bentley.DgnPlatformNET;
 using Bentley.DgnPlatformNET.Elements;
@@ -71,15 +75,16 @@ namespace Objects.Converter.Bentley
     public HashSet<Exception> ConversionErrors { get; private set; } = new HashSet<Exception>();
     public Session Session { get; private set; }
     public DgnFile Doc { get; private set; }
-    public DgnModel Model { get; private set; }
+    public static DgnModel Model { get; private set; }
 
 #if (OPENROADS || OPENRAIL || OPENBRIDGE)
     public GeometricModel GeomModel { get; private set; }
 #endif
     public double UoR { get; private set; }
     public List<ApplicationPlaceholderObject> ContextObjects { get; set; } = new List<ApplicationPlaceholderObject>();
+    public List<ApplicationPlaceholderObject> PreviousContextObjects { get; set; } = new List<ApplicationPlaceholderObject>();
     public void SetContextObjects(List<ApplicationPlaceholderObject> objects) => ContextObjects = objects;
-    public void SetPreviousContextObjects(List<ApplicationPlaceholderObject> objects) => throw new NotImplementedException();
+    public void SetPreviousContextObjects(List<ApplicationPlaceholderObject> objects) => PreviousContextObjects = objects;
     public void SetConverterSettings(object settings)
     {
       throw new NotImplementedException("This converter does not have any settings.");
@@ -203,8 +208,16 @@ namespace Objects.Converter.Bentley
           break;
         case Type2Element o:
           @base = Type2ElementToSpeckle(o);
+          Report.Log($"Converted Type2 as Base or Mesh");
+          break;
+        case SolidElement o:
+          @base = SolidElementToSpeckle(o);
           Report.Log($"Converted Type2 as Base");
           break;
+        //case SurfaceOrSolidElement o:
+        //  @base = SurfaceOrSolidElementToSpeckle(o);
+        //  Report.Log($"Converted Type2 as Base");
+        //  break;
 #if (OPENBUILDINGS)
         case ITFDrawingGrid o:
           @base = GridSystemsToSpeckle(o);
@@ -297,7 +310,7 @@ namespace Objects.Converter.Bentley
           return PolylineToNative(o);
 
         case Polycurve o:
-          Report.Log($"Created Polycurve {o.id} asn ComplexString");
+          Report.Log($"Created Polycurve {o.id} as ComplexString");
           return PolycurveToNative(o); // polycurve converted to complex chain
 
         case Curve o:
@@ -312,6 +325,16 @@ namespace Objects.Converter.Bentley
           Report.Log($"Created Mesh {o.id}");
           return MeshToNative(o);
 
+        case Brep o:
+          Report.Log($"Created Brep {o.id}");
+          return BrepToNative(o);
+
+#if (OPENBUILDINGS)
+
+        case RevitWall o:
+           Report.Log($"Created Revit Wall {o.id}");
+           return RevitWallToNative(o);
+#endif
 #if (OPENROADS || OPENRAIL || OPENBRIDGE)
         case Alignment o:
         Report.Log($"Created Alignment {o.id}");
@@ -352,6 +375,8 @@ namespace Objects.Converter.Bentley
         case ExtendedElementElement _:
         case CellHeaderElement _:
         case Type2Element _: //Complex header element
+        //case BrepCellHeaderElement _:
+        case SolidElement _:
           return true;
 
 #if (OPENROADS || OPENRAIL || OPENBRIDGE)
@@ -385,19 +410,9 @@ namespace Objects.Converter.Bentley
         case Curve _:
         case Box _:
         case Mesh _:
+        case RevitWall _:
           //case Surface _:
           //case Alignment _:
-          return true;
-
-        //TODO: This types are not supported in Bentley connectors!
-        case Brep _:
-        case Pointcloud _:
-        case ModelCurve _:
-        case DirectShape _:
-        case View3D _:
-        case BlockDefinition _:
-        case BlockInstance _:
-        case Hatch _:
           return true;
 
         default:

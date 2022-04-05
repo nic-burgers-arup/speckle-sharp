@@ -46,7 +46,7 @@ namespace Objects.Geometry
       }
       set
       {
-        if (value == null) return;
+        if (value == null || value.Count == 0) return;
         var list = new List<Surface>();
         var done = false;
         var currentIndex = 0;

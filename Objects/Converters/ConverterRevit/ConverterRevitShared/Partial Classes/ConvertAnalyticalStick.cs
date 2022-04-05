@@ -1,15 +1,14 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
-using Objects.BuiltElements;
 using Objects.BuiltElements.Revit;
 using Objects.Structural.Geometry;
+using Objects.Structural.Materials;
 using Objects.Structural.Properties;
 using Objects.Structural.Properties.Profiles;
-using Objects.Structural.Materials;
 using Speckle.Core.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using DB = Autodesk.Revit.DB;
 
 namespace Objects.Converter.Revit
@@ -19,45 +18,73 @@ namespace Objects.Converter.Revit
     public List<ApplicationPlaceholderObject> AnalyticalStickToNative(Element1D speckleStick)
     {
       List<ApplicationPlaceholderObject> placeholderObjects = new List<ApplicationPlaceholderObject> { };
-      XYZ offset1 = VectorToNative(speckleStick.end1Offset);
-      XYZ offset2 = VectorToNative(speckleStick.end2Offset);
       List<ApplicationPlaceholderObject> placeholders = new List<ApplicationPlaceholderObject> { };
 
-      switch (speckleStick.type)
+      XYZ offset1 = VectorToNative(speckleStick.end1Offset);
+      XYZ offset2 = VectorToNative(speckleStick.end2Offset);
+
+      var profileName = speckleStick.property != null && speckleStick.property.profile != null ? speckleStick.property.profile.name : null;
+      var mappings = UseMappings ? GetMappingFromProfileName(profileName) : null;
+
+      switch (speckleStick.memberType)
       {
-        case ElementType1D.Beam:
-          RevitBeam revitBeam = new RevitBeam();
-          //This only works for CSIC sections now for sure. Need to test on other sections
-          revitBeam.type = speckleStick.property.name.Replace('X', 'x');
-          revitBeam.baseLine = speckleStick.baseLine;
-          //Beam beam = new Beam(speckleStick.baseLine);
-          placeholders = BeamToNative(revitBeam);
-          DB.FamilyInstance nativeRevitBeam = (DB.FamilyInstance)placeholders[0].NativeObject;
-          AnalyticalModelStick analyticalModel = (AnalyticalModelStick)nativeRevitBeam.GetAnalyticalModel();
-          analyticalModel.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));
-          analyticalModel.SetReleases(false, Convert.ToBoolean(speckleStick.end2Releases.stiffnessX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end2Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZZ));
-          analyticalModel.SetOffset(AnalyticalElementSelector.StartOrBase, offset1);
-          analyticalModel.SetOffset(AnalyticalElementSelector.EndOrTop, offset2);
-          //analyticalModel.
-          return placeholders;
-        case ElementType1D.Brace:
-          RevitBrace revitBrace = new RevitBrace();
-          revitBrace.type = speckleStick.property.name.Replace('X', 'x');
-          revitBrace.baseLine = speckleStick.baseLine;
-          //Brace brace = new Brace(speckleStick.baseLine);
-          placeholders = BraceToNative(revitBrace);
-          DB.FamilyInstance nativeRevitBrace = (DB.FamilyInstance)placeholders[0].NativeObject;
-          analyticalModel = (AnalyticalModelStick)nativeRevitBrace.GetAnalyticalModel();
-          analyticalModel.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));
-          analyticalModel.SetReleases(false, Convert.ToBoolean(speckleStick.end2Releases.stiffnessX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end2Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZZ));
-          analyticalModel.SetOffset(AnalyticalElementSelector.StartOrBase, offset1);
-          analyticalModel.SetOffset(AnalyticalElementSelector.EndOrTop, offset2);
-          return placeholders;
-        case ElementType1D.Column:
+        case MemberType.Generic1D:
+        case MemberType.Beam:
+          if(speckleStick.type == ElementType1D.Brace) {
+            RevitBrace revitBrace = new RevitBrace();
+            revitBrace.type = speckleStick.property.name.Replace('X', 'x');
+            revitBrace.baseLine = speckleStick.baseLine;
+            placeholders = BraceToNative(revitBrace);
+            DB.FamilyInstance nativeRevitBrace = (DB.FamilyInstance)placeholders[0].NativeObject;
+            AnalyticalModelStick analyticalModel = (AnalyticalModelStick)nativeRevitBrace.GetAnalyticalModel();
+            analyticalModel.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));
+            analyticalModel.SetReleases(false, Convert.ToBoolean(speckleStick.end2Releases.stiffnessX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end2Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZZ));
+            analyticalModel.SetOffset(AnalyticalElementSelector.StartOrBase, offset1);
+            analyticalModel.SetOffset(AnalyticalElementSelector.EndOrTop, offset2);
+            return placeholders;
+          }
+          else
+          {
+            RevitBeam revitBeam = new RevitBeam();
+            revitBeam.applicationId = speckleStick.applicationId;
+            if (mappings != null)
+            {
+              revitBeam.type = mappings["familyType"];
+              revitBeam.family = mappings["familyFraming"];
+              Report.Log($"Found corresponding family {mappings["familyFraming"]} and family type {mappings["familyType"]} for section {profileName} in mapping data");
+            } else
+            {
+              //This only works for CISC sections now for sure. Need to test on other sections
+              revitBeam.type = ParseFamilyTypeFromProperty(speckleStick.property.name);
+              revitBeam.family = ParseFamilyNameFromProperty(speckleStick.property.name);
+            }             
+            revitBeam.baseLine = speckleStick.baseLine;           
+            placeholders = BeamToNative(revitBeam);
+            DB.FamilyInstance nativeRevitBeam = (DB.FamilyInstance)placeholders[0].NativeObject;
+            AnalyticalModelStick analyticalModel = (AnalyticalModelStick)nativeRevitBeam.GetAnalyticalModel();
+            analyticalModel.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));
+            analyticalModel.SetReleases(false, Convert.ToBoolean(speckleStick.end2Releases.stiffnessX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end2Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end2Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end2Releases.stiffnessZZ));
+            analyticalModel.SetOffset(AnalyticalElementSelector.StartOrBase, offset1);
+            analyticalModel.SetOffset(AnalyticalElementSelector.EndOrTop, offset2);
+            return placeholders;
+          }          
+        case MemberType.Column:
           RevitColumn revitColumn = new RevitColumn();
-          revitColumn.type = speckleStick.property.name.Replace('X', 'x');
+          revitColumn.applicationId = speckleStick.applicationId;
+          if (mappings != null)
+          {
+            revitColumn.type = mappings["familyType"];
+            revitColumn.family = mappings["familyColumn"];
+            Report.Log($"Found corresponding family {mappings["familyColumn"]} and family type {mappings["familyType"]} for column section in mapping data");
+          }
+          else
+          {
+            revitColumn.family = ParseFamilyNameFromProperty(speckleStick.property.name);
+            revitColumn.type = ParseFamilyTypeFromProperty(speckleStick.property.name);
+          }
           revitColumn.baseLine = speckleStick.baseLine;
-          placeholders = ColumnToNative(revitColumn);
+          revitColumn.units = speckleStick.end1Offset.units; // column units are used for setting offset          
+          placeholders = ColumnToNative(revitColumn, StructuralType.Column);
           DB.FamilyInstance nativeRevitColumn = (DB.FamilyInstance)placeholders[0].NativeObject;
           AnalyticalModelColumn analyticalModelCol = (AnalyticalModelColumn)nativeRevitColumn.GetAnalyticalModel();
           analyticalModelCol.SetReleases(true, Convert.ToBoolean(speckleStick.end1Releases.stiffnessX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZ), Convert.ToBoolean(speckleStick.end1Releases.stiffnessXX), Convert.ToBoolean(speckleStick.end1Releases.stiffnessYY), Convert.ToBoolean(speckleStick.end1Releases.stiffnessZZ));
@@ -65,8 +92,6 @@ namespace Objects.Converter.Revit
           analyticalModelCol.SetOffset(AnalyticalElementSelector.StartOrBase, offset1);
           analyticalModelCol.SetOffset(AnalyticalElementSelector.EndOrTop, offset2);
           return placeholders;
-          //Column column = new Column(speckleStick.baseLine);
-          return ColumnToNative(revitColumn);
       }
       return placeholderObjects;
     }
@@ -80,33 +105,35 @@ namespace Objects.Converter.Revit
       switch (revitStick.Category.Name)
       {
         case "Analytical Columns":
-          speckleElement1D.type = ElementType1D.Column;
+          speckleElement1D.memberType = MemberType.Column;
           break;
         case "Analytical Beams":
-          speckleElement1D.type = ElementType1D.Beam;
+          speckleElement1D.memberType = MemberType.Beam;
           break;
         case "Analytical Braces":
-          speckleElement1D.type = ElementType1D.Brace;
+          speckleElement1D.memberType = MemberType.Beam;
           break;
         default:
-          speckleElement1D.type = ElementType1D.Other;
+          speckleElement1D.memberType = MemberType.Generic1D;
           break;
       }
 
-      var curves = revitStick.GetCurves(AnalyticalCurveType.RigidLinkHead).ToList();
-      curves.AddRange(revitStick.GetCurves(AnalyticalCurveType.ActiveCurves));
-      curves.AddRange(revitStick.GetCurves(AnalyticalCurveType.RigidLinkTail));
+      speckleElement1D.baseLine = AnalyticalCurvesToBaseline(revitStick);
 
-      if (curves.Count > 1)
-      {
-        var curveList = CurveListToSpeckle(curves);
-        var firstSegment = (Geometry.Line)curveList.segments[0];
-        var lastSegment = (Geometry.Line)curveList.segments[-1];
-        var baseLine = new Geometry.Line(firstSegment.start, lastSegment.end);
-        speckleElement1D.baseLine = baseLine;
-      }
-      else
-        speckleElement1D.baseLine = LineToSpeckle((Line)curves[0]);
+      //var curves = revitStick.GetCurves(AnalyticalCurveType.RigidLinkHead).ToList();
+      //curves.AddRange(revitStick.GetCurves(AnalyticalCurveType.ActiveCurves));
+      //curves.AddRange(revitStick.GetCurves(AnalyticalCurveType.RigidLinkTail));
+
+      //if (curves.Count > 1)
+      //{
+      //  var curveList = CurveListToSpeckle(curves);
+      //  var firstSegment = (Geometry.Line)curveList.segments[0];
+      //  var lastSegment = (Geometry.Line)curveList.segments[-1];
+      //  var baseLine = new Geometry.Line(firstSegment.start, lastSegment.end);
+      //  speckleElement1D.baseLine = baseLine;
+      //}
+      //else
+      //  speckleElement1D.baseLine = LineToSpeckle((Line)curves[0]);
 
       var coordinateSystem = revitStick.GetLocalCoordinateSystem();
       if (coordinateSystem != null)
@@ -150,103 +177,111 @@ namespace Objects.Converter.Revit
       }
 
       var prop = new Property1D();
-
-      var stickFamily = (Autodesk.Revit.DB.FamilyInstance)Doc.GetElement(revitStick.GetElementId());
-      var section = stickFamily.Symbol.GetStructuralSection();
       var speckleSection = new SectionProfile();
-      speckleSection.name = section.StructuralSectionShapeName;
-      
-      // If section general shape enum is not defined, us section shape enum to derive profile
-      if(section.StructuralSectionGeneralShape != DB.Structure.StructuralSections.StructuralSectionGeneralShape.NotDefined)
-      {
-        switch (section.StructuralSectionGeneralShape)
-        {
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralI: // Double T structural sections
-            speckleSection = ISectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralT: // Tees structural sections
-            speckleSection = TeeSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralH: // Rectangular Pipe structural sections
-            speckleSection = RectangularHollowSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralR: // Pipe structural sections
-            speckleSection = CircularHollowSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralF: // Flat Bar structural sections
-            speckleSection = RectangularSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralS: // Round Bar structural sections
-            speckleSection = CircularSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralW: // Angle structural sections
-            speckleSection = AngleSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralU: // Channel  structural sections
-            speckleSection = ChannelSectionToSpeckle(section);
-            break;
-          default:
-            speckleSection.name = section.StructuralSectionShapeName;
-            break;
-        }
-      }
 
-      else
+      var stickFamily = (Autodesk.Revit.DB.FamilyInstance)revitStick.Document.GetElement(revitStick.GetElementId());
+      var stickType = stickFamily.Symbol.Name;
+
+      var section = stickFamily.Symbol.GetStructuralSection();
+      if (section != null)
       {
-        switch (section.StructuralSectionShape)
+        var familiy = stickFamily.Symbol.FamilyName;
+        var type = stickType;
+
+        var speckleSectionName = UseMappings ? GetProfileNameFromMapping(familiy, type, speckleElement1D.memberType != MemberType.Column) : null;
+        var sectionName = speckleSectionName ?? section.StructuralSectionShapeName;
+        speckleSection.name = sectionName;
+
+        // If section general shape enum is not defined, us section shape enum to derive profile
+        if (section.StructuralSectionGeneralShape != DB.Structure.StructuralSections.StructuralSectionGeneralShape.NotDefined)
         {
-          case DB.Structure.StructuralSections.StructuralSectionShape.IWideFlange:
-            speckleSection = ISectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.IParallelFlange:
-            speckleSection = ISectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.StructuralTees:
-            speckleSection = TeeSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.ISplitParallelFlange:
-            speckleSection = TeeSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.RectangleHSS:
-            speckleSection = RectangularHollowSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.RoundHSS:
-            speckleSection = CircularHollowSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.PipeStandard:
-            speckleSection = CircularHollowSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.RectangularBar:
-            speckleSection = RectangularSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.RoundBar:
-            speckleSection = CircularSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.LAngle:
-            speckleSection = AngleSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.LProfile:
-            speckleSection = AngleSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.CProfile:
-            speckleSection = ChannelSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.ConcreteRectangle:
-            speckleSection = RectangularSectionToSpeckle(section);
-            break;
-          case DB.Structure.StructuralSections.StructuralSectionShape.ConcreteRound:
-            speckleSection = CircularSectionToSpeckle(section);
-            break;
-          // Not all structural section types are currently implemented
-          default:
-            speckleSection.name = section.StructuralSectionShapeName;
-            break;
+          switch (section.StructuralSectionGeneralShape)
+          {
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralI: // Double T structural sections
+              speckleSection = ISectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralT: // Tees structural sections
+              speckleSection = TeeSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralH: // Rectangular Pipe structural sections
+              speckleSection = RectangularHollowSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralR: // Pipe structural sections
+              speckleSection = CircularHollowSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralF: // Flat Bar structural sections
+              speckleSection = RectangularSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralS: // Round Bar structural sections
+              speckleSection = CircularSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralW: // Angle structural sections
+              speckleSection = AngleSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralU: // Channel  structural sections
+              speckleSection = ChannelSectionToSpeckle(section, sectionName);
+              break;
+            default:
+              speckleSection.name = section.StructuralSectionShapeName;
+              break;
+          }
+        }
+        else
+        {
+          switch (section.StructuralSectionShape)
+          {
+            case DB.Structure.StructuralSections.StructuralSectionShape.IWideFlange:
+              speckleSection = ISectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.IParallelFlange:
+              speckleSection = ISectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.StructuralTees:
+              speckleSection = TeeSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.ISplitParallelFlange:
+              speckleSection = TeeSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.RectangleHSS:
+              speckleSection = RectangularHollowSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.RoundHSS:
+              speckleSection = CircularHollowSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.PipeStandard:
+              speckleSection = CircularHollowSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.RectangularBar:
+              speckleSection = RectangularSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.RoundBar:
+              speckleSection = CircularSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.LAngle:
+              speckleSection = AngleSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.LProfile:
+              speckleSection = AngleSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.CProfile:
+              speckleSection = ChannelSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.ConcreteRectangle:
+              speckleSection = RectangularSectionToSpeckle(section, sectionName);
+              break;
+            case DB.Structure.StructuralSections.StructuralSectionShape.ConcreteRound:
+              speckleSection = CircularSectionToSpeckle(section, sectionName);
+              break;
+            // Not all structural section types are currently implemented
+            default:
+              speckleSection.name = sectionName;
+              break;
+          }
         }
       }
-      
 
       var materialType = stickFamily.StructuralMaterialType;
-      var structMat = (DB.Material)Doc.GetElement(stickFamily.StructuralMaterialId);
+      var structMat = (DB.Material)stickFamily.Document.GetElement(stickFamily.StructuralMaterialId);
       if (structMat == null)
         structMat = (DB.Material)Doc.GetElement(stickFamily.Symbol.get_Parameter(BuiltInParameter.STRUCTURAL_MATERIAL_PARAM).AsElementId());
 
@@ -254,11 +289,9 @@ namespace Objects.Converter.Revit
 
       // If material has no physical properties in revit, assign null
       var materialAsset = structAsset != null ? structAsset.GetStructuralAsset() : null;
-
-        //materialAsset = ((PropertySetElement)Doc.GetElement(structMat.StructuralAssetId)).GetStructuralAsset();
+      //materialAsset = ((PropertySetElement)Doc.GetElement(structMat.StructuralAssetId)).GetStructuralAsset();
 
       Structural.Materials.Material speckleMaterial = null;
-
       switch (materialType)
       {
         case StructuralMaterialType.Concrete:
@@ -340,17 +373,15 @@ namespace Objects.Converter.Revit
 
       prop.profile = speckleSection;
       prop.material = speckleMaterial;
-      prop.name = stickFamily.Name;
-      prop.applicationId = $"{stickFamily.Name}:{structMat.UniqueId}";
-
+      prop.name = $"{stickFamily.Symbol.FamilyName}:{stickFamily.Name}";
+      prop.applicationId = stickFamily.Symbol.UniqueId;
 
       var structuralElement = Doc.GetElement(revitStick.GetElementId());
       var mark = GetParamValue<string>(structuralElement, BuiltInParameter.ALL_MODEL_MARK);
 
       if (revitStick is AnalyticalModelColumn)
       {
-        speckleElement1D.type = ElementType1D.Column;
-        //prop.memberType = MemberType.Column;
+        speckleElement1D.memberType = MemberType.Column;
         var locationMark = GetParamValue<string>(structuralElement, BuiltInParameter.COLUMN_LOCATION_MARK);
         if (locationMark == null)
           speckleElement1D.name = mark;
@@ -366,15 +397,15 @@ namespace Objects.Converter.Revit
       speckleElement1D.property = prop;
 
     GetAllRevitParamsAndIds(speckleElement1D, revitStick);
-    speckleElement1D.displayValue = GetElementDisplayMesh(Doc.GetElement(revitStick.GetElementId()));
+      speckleElement1D.displayValue = GetElementDisplayMesh(revitStick.Document.GetElement(revitStick.GetElementId()));
     return speckleElement1D;
   }
 
-    private ISection ISectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private ISection ISectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new ISection()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "I Section",
         shapeType = Structural.ShapeType.I,
         depth = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralI).GetProperty("Height").GetValue(section)),
         width = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralI).GetProperty("Width").GetValue(section)),
@@ -386,13 +417,13 @@ namespace Objects.Converter.Revit
         Izz = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralI).GetProperty("MomentOfInertiaWeakAxis").GetValue(section)),
         J = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralI).GetProperty("TorsionalMomentOfInertia").GetValue(section))
       };
-  }
+    }
 
-    private Tee TeeSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Tee TeeSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new Tee()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "Tee Section",
         shapeType = Structural.ShapeType.Tee,
         depth = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralT).GetProperty("Height").GetValue(section)),
         width = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralT).GetProperty("Width").GetValue(section)),
@@ -406,13 +437,13 @@ namespace Objects.Converter.Revit
       };
     }
 
-    private Rectangular RectangularHollowSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Rectangular RectangularHollowSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
-      var wallThickness = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralH).GetProperty("WallNominalThickness").GetValue(section));
+      var wallThickness = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralH).GetProperty("WallNominalThickness")?.GetValue(section));
 
       return new Rectangular()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "Rectangular Hollow Section",
         shapeType = Structural.ShapeType.Rectangular,
         depth = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralH).GetProperty("Height").GetValue(section)),
         width = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralH).GetProperty("Width").GetValue(section)),
@@ -426,11 +457,11 @@ namespace Objects.Converter.Revit
       };
     }
 
-    private Rectangular RectangularSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Rectangular RectangularSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new Rectangular()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "Rectangular Section",
         shapeType = Structural.ShapeType.Rectangular,
         depth = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralF).GetProperty("Height").GetValue(section)),
         width = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralF).GetProperty("Width").GetValue(section)),
@@ -442,11 +473,11 @@ namespace Objects.Converter.Revit
       };
     }
 
-    private Circular CircularHollowSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Circular CircularHollowSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new Circular()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "Circular Hollow Section",
         shapeType = Structural.ShapeType.Circular,
         radius = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralR).GetProperty("Diameter").GetValue(section) / 2),
         wallThickness = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralR).GetProperty("WallNominalThickness").GetValue(section)),
@@ -458,11 +489,11 @@ namespace Objects.Converter.Revit
       };
     }
 
-    private Circular CircularSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Circular CircularSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new Circular()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "Circular Section",
         shapeType = Structural.ShapeType.Circular,
         radius = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralS).GetProperty("Diameter").GetValue(section) / 2),
         area = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralS).GetProperty("SectionArea").GetValue(section)),
@@ -473,11 +504,11 @@ namespace Objects.Converter.Revit
       };
     }
 
-    private Angle AngleSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Angle AngleSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new Angle()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "",
         shapeType = Structural.ShapeType.Angle,
         depth = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralW).GetProperty("Height").GetValue(section)),
         width = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralW).GetProperty("Width").GetValue(section)),
@@ -491,11 +522,11 @@ namespace Objects.Converter.Revit
       };
     }
 
-    private Channel ChannelSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Channel ChannelSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new Channel()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "",
         shapeType = Structural.ShapeType.Channel,
         depth = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralU).GetProperty("Height").GetValue(section)),
         width = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralU).GetProperty("Width").GetValue(section)),
@@ -507,6 +538,23 @@ namespace Objects.Converter.Revit
         Izz = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralU).GetProperty("MomentOfInertiaWeakAxis").GetValue(section)),
         J = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralU).GetProperty("TorsionalMomentOfInertia").GetValue(section))
       };
+    }
+
+    private Geometry.Line AnalyticalCurvesToBaseline(AnalyticalModelStick analyticalStick)
+    {
+      var curves = analyticalStick.GetCurves(AnalyticalCurveType.RigidLinkHead).ToList();
+      curves.AddRange(analyticalStick.GetCurves(AnalyticalCurveType.ActiveCurves));
+      curves.AddRange(analyticalStick.GetCurves(AnalyticalCurveType.RigidLinkTail));
+
+      if (curves.Count > 1)
+      {
+        var curveList = CurveListToSpeckle(curves);
+        var firstSegment = (Geometry.Line)curveList.segments[0];
+        var lastSegment = (Geometry.Line)curveList.segments[-1];
+        return new Geometry.Line(firstSegment.start, lastSegment.end);
+        
+      }
+      return LineToSpeckle((Line)curves[0]);
     }
   }
 }

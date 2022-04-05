@@ -423,7 +423,6 @@ namespace ConverterGSA
       {
         //-- App agnostic --
         name = gsaMemb.Name,
-        type = gsaMemb.Type.ToSpeckle1d(),
         end1Releases = GetRestraint(gsaMemb.Releases1, gsaMemb.Stiffnesses1),
         end2Releases = GetRestraint(gsaMemb.Releases2, gsaMemb.Stiffnesses2),
         end1Offset = new Vector() { units = conversionFactors.nativeModelUnits.length},
@@ -3709,8 +3708,9 @@ namespace ConverterGSA
         shapeType = ShapeType.Catalogue,
         description = p.Profile,
         catalogueName = items[1].Split('-')[0],
-        sectionType = items[1].Split('-')[1],
+        sectionType = items[1].Split('-').Count() > 1 ? items[1].Split('-')[1] : items[1].Split('-')[0],
         sectionName = items[2],
+        name = items[2],
       };
       return speckleProfile;
     }
