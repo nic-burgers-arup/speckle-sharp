@@ -180,10 +180,17 @@ namespace Objects.Converter.Revit
       var speckleSection = new SectionProfile();
 
       var stickFamily = (Autodesk.Revit.DB.FamilyInstance)revitStick.Document.GetElement(revitStick.GetElementId());
+      var stickType = stickFamily.Symbol.Name;
+
       var section = stickFamily.Symbol.GetStructuralSection();
       if (section != null)
       {
-        speckleSection.name = section.StructuralSectionShapeName;
+        var familiy = stickFamily.Symbol.FamilyName;
+        var type = stickType;
+
+        var speckleSectionName = UseMappings ? GetProfileNameFromMapping(familiy, type, speckleElement1D.memberType != MemberType.Column) : null;
+        var sectionName = speckleSectionName ?? section.StructuralSectionShapeName;
+        speckleSection.name = sectionName;
 
         // If section general shape enum is not defined, us section shape enum to derive profile
         if (section.StructuralSectionGeneralShape != DB.Structure.StructuralSections.StructuralSectionGeneralShape.NotDefined)
@@ -191,28 +198,28 @@ namespace Objects.Converter.Revit
           switch (section.StructuralSectionGeneralShape)
           {
             case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralI: // Double T structural sections
-              speckleSection = ISectionToSpeckle(section);
+              speckleSection = ISectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralT: // Tees structural sections
-              speckleSection = TeeSectionToSpeckle(section);
+              speckleSection = TeeSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralH: // Rectangular Pipe structural sections
-              speckleSection = RectangularHollowSectionToSpeckle(section);
+              speckleSection = RectangularHollowSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralR: // Pipe structural sections
-              speckleSection = CircularHollowSectionToSpeckle(section);
+              speckleSection = CircularHollowSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralF: // Flat Bar structural sections
-              speckleSection = RectangularSectionToSpeckle(section);
+              speckleSection = RectangularSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralS: // Round Bar structural sections
-              speckleSection = CircularSectionToSpeckle(section);
+              speckleSection = CircularSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralW: // Angle structural sections
-              speckleSection = AngleSectionToSpeckle(section);
+              speckleSection = AngleSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionGeneralShape.GeneralU: // Channel  structural sections
-              speckleSection = ChannelSectionToSpeckle(section);
+              speckleSection = ChannelSectionToSpeckle(section, sectionName);
               break;
             default:
               speckleSection.name = section.StructuralSectionShapeName;
@@ -224,50 +231,50 @@ namespace Objects.Converter.Revit
           switch (section.StructuralSectionShape)
           {
             case DB.Structure.StructuralSections.StructuralSectionShape.IWideFlange:
-              speckleSection = ISectionToSpeckle(section);
+              speckleSection = ISectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionShape.IParallelFlange:
-              speckleSection = ISectionToSpeckle(section);
+              speckleSection = ISectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionShape.StructuralTees:
-              speckleSection = TeeSectionToSpeckle(section);
+              speckleSection = TeeSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionShape.ISplitParallelFlange:
-              speckleSection = TeeSectionToSpeckle(section);
+              speckleSection = TeeSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionShape.RectangleHSS:
-              speckleSection = RectangularHollowSectionToSpeckle(section);
+              speckleSection = RectangularHollowSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionShape.RoundHSS:
-              speckleSection = CircularHollowSectionToSpeckle(section);
+              speckleSection = CircularHollowSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionShape.PipeStandard:
-              speckleSection = CircularHollowSectionToSpeckle(section);
+              speckleSection = CircularHollowSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionShape.RectangularBar:
-              speckleSection = RectangularSectionToSpeckle(section);
+              speckleSection = RectangularSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionShape.RoundBar:
-              speckleSection = CircularSectionToSpeckle(section);
+              speckleSection = CircularSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionShape.LAngle:
-              speckleSection = AngleSectionToSpeckle(section);
+              speckleSection = AngleSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionShape.LProfile:
-              speckleSection = AngleSectionToSpeckle(section);
+              speckleSection = AngleSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionShape.CProfile:
-              speckleSection = ChannelSectionToSpeckle(section);
+              speckleSection = ChannelSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionShape.ConcreteRectangle:
-              speckleSection = RectangularSectionToSpeckle(section);
+              speckleSection = RectangularSectionToSpeckle(section, sectionName);
               break;
             case DB.Structure.StructuralSections.StructuralSectionShape.ConcreteRound:
-              speckleSection = CircularSectionToSpeckle(section);
+              speckleSection = CircularSectionToSpeckle(section, sectionName);
               break;
             // Not all structural section types are currently implemented
             default:
-              speckleSection.name = section.StructuralSectionShapeName;
+              speckleSection.name = sectionName;
               break;
           }
         }
@@ -394,11 +401,11 @@ namespace Objects.Converter.Revit
     return speckleElement1D;
   }
 
-    private ISection ISectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private ISection ISectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new ISection()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "I Section",
         shapeType = Structural.ShapeType.I,
         depth = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralI).GetProperty("Height").GetValue(section)),
         width = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralI).GetProperty("Width").GetValue(section)),
@@ -412,11 +419,11 @@ namespace Objects.Converter.Revit
       };
     }
 
-    private Tee TeeSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Tee TeeSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new Tee()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "Tee Section",
         shapeType = Structural.ShapeType.Tee,
         depth = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralT).GetProperty("Height").GetValue(section)),
         width = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralT).GetProperty("Width").GetValue(section)),
@@ -430,13 +437,13 @@ namespace Objects.Converter.Revit
       };
     }
 
-    private Rectangular RectangularHollowSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Rectangular RectangularHollowSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
-      var wallThickness = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralH).GetProperty("WallNominalThickness").GetValue(section));
+      var wallThickness = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralH).GetProperty("WallNominalThickness")?.GetValue(section));
 
       return new Rectangular()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "Rectangular Hollow Section",
         shapeType = Structural.ShapeType.Rectangular,
         depth = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralH).GetProperty("Height").GetValue(section)),
         width = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralH).GetProperty("Width").GetValue(section)),
@@ -450,11 +457,11 @@ namespace Objects.Converter.Revit
       };
     }
 
-    private Rectangular RectangularSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Rectangular RectangularSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new Rectangular()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "Rectangular Section",
         shapeType = Structural.ShapeType.Rectangular,
         depth = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralF).GetProperty("Height").GetValue(section)),
         width = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralF).GetProperty("Width").GetValue(section)),
@@ -466,11 +473,11 @@ namespace Objects.Converter.Revit
       };
     }
 
-    private Circular CircularHollowSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Circular CircularHollowSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new Circular()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "Circular Hollow Section",
         shapeType = Structural.ShapeType.Circular,
         radius = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralR).GetProperty("Diameter").GetValue(section) / 2),
         wallThickness = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralR).GetProperty("WallNominalThickness").GetValue(section)),
@@ -482,11 +489,11 @@ namespace Objects.Converter.Revit
       };
     }
 
-    private Circular CircularSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Circular CircularSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new Circular()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "Circular Section",
         shapeType = Structural.ShapeType.Circular,
         radius = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralS).GetProperty("Diameter").GetValue(section) / 2),
         area = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralS).GetProperty("SectionArea").GetValue(section)),
@@ -497,11 +504,11 @@ namespace Objects.Converter.Revit
       };
     }
 
-    private Angle AngleSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Angle AngleSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new Angle()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "",
         shapeType = Structural.ShapeType.Angle,
         depth = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralW).GetProperty("Height").GetValue(section)),
         width = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralW).GetProperty("Width").GetValue(section)),
@@ -515,11 +522,11 @@ namespace Objects.Converter.Revit
       };
     }
 
-    private Channel ChannelSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section)
+    private Channel ChannelSectionToSpeckle(DB.Structure.StructuralSections.StructuralSection section, string name = null)
     {
       return new Channel()
       {
-        name = section.StructuralSectionShapeName,
+        name = name ?? "",
         shapeType = Structural.ShapeType.Channel,
         depth = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralU).GetProperty("Height").GetValue(section)),
         width = ScaleToSpeckle((double)typeof(DB.Structure.StructuralSections.StructuralSectionGeneralU).GetProperty("Width").GetValue(section)),

@@ -44,46 +44,12 @@ namespace Speckle.ConnectorRevit.UI
       {
         if (setting.Slug == "section-mapping")
         {
-          const string mappingsStreamId = "e53a0242be";
-          const string mappingsBranch = "mappings";
-          const string sectionBranchPrefix = "sections";
-          var key = $"{state.Client.Account.id}-{mappingsStreamId}";
-
-          var mappingsTransport = new ServerTransport(state.Client.Account, mappingsStreamId);
-          var mappingsTransportLocal = new SQLiteTransport(null, "Speckle", "Mappings");
-
-          var mappingsStream = await state.Client.StreamGet(mappingsStreamId);
-          var branches = await state.Client.StreamGetBranches(progress.CancellationTokenSource.Token, mappingsStreamId);
-
-          foreach (var branch in branches)
-          {
-            if (branch.name == mappingsBranch || branch.name.StartsWith(sectionBranchPrefix))
-            {
-              var mappingsCommit = branch.commits.items.FirstOrDefault();
-              var referencedMappingsObject = mappingsCommit.referencedObject;
-
-              var mappingsCommitObject = await Operations.Receive(
-                referencedMappingsObject,
-                progress.CancellationTokenSource.Token,
-                mappingsTransport,
-                onProgressAction: dict => { },
-                onErrorAction: (s, e) =>
-                {
-                  progress.Report.LogOperationError(e);
-                  progress.CancellationTokenSource.Cancel();
-                },
-                disposeTransports: true
-                );
-
-              var hash = $"{key}-{branch.name}";
-              mappingsTransportLocal.SaveObject(hash, JsonConvert.SerializeObject(mappingsCommitObject));
-              //mappingsTransportLocal.UpdateObject(hash, JsonConvert.SerializeObject(mappingsCommitObject));
-            }
-          }
-          setting.Selection = key;
+          var mappingKey  = await GetSectionMappingData(state, progress);
+          setting.Selection = mappingKey;
         }
         settings.Add(setting.Slug, setting.Selection);
       }
+
       converter.SetConverterSettings(settings);
 
       var transport = new ServerTransport(state.Client.Account, state.StreamId);

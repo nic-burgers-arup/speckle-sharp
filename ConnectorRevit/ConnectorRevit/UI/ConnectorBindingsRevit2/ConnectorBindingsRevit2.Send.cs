@@ -31,7 +31,15 @@ namespace Speckle.ConnectorRevit.UI
       // set converter settings as tuples (setting slug, setting selection)
       var settings = new Dictionary<string, string>();
       foreach (var setting in state.Settings)
+      {
+        if (setting.Slug == "section-mapping")
+        {
+          var mappingKey = await GetSectionMappingData(state, progress);
+          setting.Selection = mappingKey;
+        }
         settings.Add(setting.Slug, setting.Selection);
+      }
+        
       converter.SetConverterSettings(settings);
 
       var streamId = state.StreamId;

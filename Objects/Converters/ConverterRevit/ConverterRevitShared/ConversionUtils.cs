@@ -764,7 +764,20 @@ namespace Objects.Converter.Revit
       }
     }
 
-    private Dictionary<string, string> GetMappingFromProfileName(string name, string target = "grs", bool isFraming = true)
+    private string GetProfileNameFromMapping(string family, string type, bool isFraming = true, string target = "grs")
+    {
+      var targetSection = MappingData[$"{target}"] as Base;
+      var sectionList = ((List<object>)targetSection["data"]).Select(m => m as Dictionary<string, object>).ToList();
+      var sectionDict = sectionList.Select(m => m as Dictionary<string, object>).ToList();
+
+      var key = isFraming ? $"familyFraming" : "familyColumn";
+      var section = sectionDict.Where(x => (string)x[key] == family && (string)x["familyType"] == type).FirstOrDefault();
+      var profileName = section != null ? (string)section["speckleSection"] : null;
+
+      return profileName;
+    }
+
+    private Dictionary<string, string> GetMappingFromProfileName(string name, bool isFraming = true, string target = "grs")
     {
       Dictionary<string, string> mappingData = new Dictionary<string, string>();
 
@@ -776,7 +789,7 @@ namespace Objects.Converter.Revit
       var serializerV2 = new BaseObjectDeserializerV2();
       var data = serializerV2.Deserialize(objString);
 
-      var mappings = MappingData["mappings"];
+      //var mappings = MappingData["mappings"];
 
       var mappingsList = ((List<object>)data["data"]).Select(m => m as Dictionary<string, object>).ToList();
       var mappingDict = mappingsList.Select(m => m as Dictionary<string, object>).ToList();
@@ -828,9 +841,6 @@ namespace Objects.Converter.Revit
           mappingData[$"{name}"] = data;
         }
       }
-      //var sqlMappings = MappingStorage.GetAllObjects();
-      //var serializerV2 = new BaseObjectDeserializerV2();
-      //var mappingData = sqlMappings.Select(x => serializerV2.Deserialize(x));
 
       Report.Log($"Using section mapping data from stream: {key}");
 
