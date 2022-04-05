@@ -32,7 +32,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Components]
 Name: gsa; Description: Speckle for Oasys GSA - v{#AppVersion};  Types: full
-Name: kits; Description: Speckle Kit - v{#AppVersion};  Types: full custom; Flags: fixed
+Name: kits; Description: Speckle Kit;  Types: full custom; Flags: fixed
 
 [Types]
 Name: "full"; Description: "Full installation"
