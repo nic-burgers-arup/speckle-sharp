@@ -80,7 +80,7 @@ namespace ConnectorSNAP
       try
       {
         var nativeObjects = converter.ConvertToNative(objects).ToList();
-        ((SnapCache)Instance.SnapModel.Cache).Upsert(nativeObjects);
+        //((SnapCache)Instance.SnapModel.Cache).Upsert(nativeObjects);
       }
       catch (Exception ex)
       {

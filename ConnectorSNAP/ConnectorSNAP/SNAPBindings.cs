@@ -1,6 +1,7 @@
 ﻿using DesktopUI2;
 using DesktopUI2.Models;
 using DesktopUI2.Models.Filters;
+using DesktopUI2.Models.Settings;
 using DesktopUI2.ViewModels;
 using Speckle.Core.Api;
 using Speckle.Core.Kits;
@@ -52,7 +53,7 @@ namespace ConnectorSNAP
       throw new System.NotImplementedException();
     }
 
-    public override string GetHostAppName() => Applications.SNAP;
+    public override string GetHostAppName() => HostApplications.SNAP.Name;
 
     public override List<string> GetObjectsInView()
     {
@@ -82,7 +83,7 @@ namespace ConnectorSNAP
       IProgress<string> loggingProgress = new Progress<string>();
 
       var kit = KitManager.GetDefaultKit();
-      var converter = kit.LoadConverter(Applications.SNAP);
+      var converter = kit.LoadConverter(HostApplications.SNAP.Name);
       
       var previouslyReceiveObjects = state.ReceivedObjects;
 
@@ -180,6 +181,16 @@ namespace ConnectorSNAP
     public override void WriteStreamsToFile(List<StreamState> streams)
     {
       throw new System.NotImplementedException();
+    }
+
+    public override string GetHostAppNameVersion()
+    {
+      return HostApplications.SNAP.Name;
+    }
+
+    public override List<ISetting> GetSettings()
+    {
+      return new List<ISetting>();
     }
   }
 }

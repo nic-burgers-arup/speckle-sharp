@@ -6,12 +6,7 @@ using System.Threading.Tasks;
 
 namespace Speckle.SNAP.API.s8iSchema
 {
-  public interface ISnapRecord
+  public class NodalSupport : VectorSixBase, ISnapRecordNamed
   {
-  }
-
-  public interface ISnapRecordNamed : ISnapRecord
-  { 
-    string Name { get; }
   }
 }
