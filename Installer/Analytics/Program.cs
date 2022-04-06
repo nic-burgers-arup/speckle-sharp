@@ -117,25 +117,32 @@ namespace analytics
         query.GetValues(objs);
 
         var hash = objs[0].ToString();
-        var storedContent = System.Text.Json.JsonSerializer.Deserialize<SqliteContent>(objs[1].ToString());
-        var serverName = storedContent.serverInfo.name;
-
-        // If the url is already stored update hash to be server name
-        if (storedContent != null && hash != serverName)
+        var storedContent = System.Text.Json.JsonSerializer.Deserialize<SqliteContent>(objs[1].ToString());        
+        
+        if (storedContent != null)
         {
-          var updateCommand = connection.CreateCommand();
-          updateCommand.CommandText =
-              @"
+          // If the url is already stored update hash to be server name
+          var serverName = storedContent.serverInfo.name;
+          if (hash != serverName)
+          {
+            storedContent.id = serverName;
+            var updatedContent = System.Text.Json.JsonSerializer.Serialize(storedContent);
+
+            var updateCommand = connection.CreateCommand();
+            updateCommand.CommandText =
+                @"
                 UPDATE objects
-                SET hash = @server
+                SET hash = @server, content = @content
                 WHERE hash = @hash
               ";
 
-          Console.WriteLine(connection.State);
+            Console.WriteLine(connection.State);
 
-          updateCommand.Parameters.AddWithValue("@hash", hash);
-          updateCommand.Parameters.AddWithValue("@server", serverName);
-          updateCommand.ExecuteNonQuery();
+            updateCommand.Parameters.AddWithValue("@hash", hash);
+            updateCommand.Parameters.AddWithValue("@server", serverName);
+            updateCommand.Parameters.AddWithValue("@content", updatedContent);
+            updateCommand.ExecuteNonQuery();
+          }
         }
       }
 
