@@ -43,7 +43,7 @@
       <Version>1.0.115.5</Version>
     </PackageReference>
     <PackageReference Include="System.Data.SQLite.Core">
-      <Version>1.0.115.5</Version>
+      <Version>1.0.115</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
@@ -57,16 +57,14 @@
     <StartProgram>C:\Program Files\Rhino 7\System\Rhino.exe</StartProgram>
     <StartArguments></StartArguments>
     <StartAction>Program</StartAction>
-  <Import Project="..\ConnectorRhino\ConnectorRhinoShared\ConnectorRhinoShared.projitems" Label="Shared" />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  </PropertyGroup>	
   <PropertyGroup>
     <PostBuildEvent>
       Copy "$(TargetPath)" "$(TargetDir)$(TargetName).rhp"
       Erase "$(TargetPath)"
 	  Erase "$(TargetDir)RhinoCommon.dll"
-	  Erase "$(TargetDir)Rhino.UI.dll"
-	  
-</PostBuildEvent>
+	  Erase "$(TargetDir)Rhino.UI.dll"	
+	</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DefineConstants>TRACE;RHINO6</DefineConstants>
