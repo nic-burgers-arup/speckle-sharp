@@ -14,6 +14,17 @@ namespace SpeckleConnectionManagerUI.Services
 {
   class RefreshTokenAction
   {
+    public class Info
+    {
+      public Speckle.Core.Credentials.UserInfo user { get; set; }
+      public Speckle.Core.Credentials.ServerInfo serverInfo { get; set; }
+    }
+
+    public class InfoData
+    {
+      public Info data { get; set; }
+    }
+
     public async Task<string> Run()
     {
       HttpClient client = new();
@@ -103,7 +114,7 @@ namespace SpeckleConnectionManagerUI.Services
           continue;
         }
 
-        var infoContent = await info.Content.ReadFromJsonAsync<SpeckleConnectionManager.InfoData>();
+        var infoContent = await info.Content.ReadFromJsonAsync<InfoData>();
 
         if (infoContent == null) return "";
 

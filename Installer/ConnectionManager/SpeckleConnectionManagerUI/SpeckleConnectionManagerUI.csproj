@@ -24,7 +24,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Core\Core\Core.csproj" />
-    <ProjectReference Include="..\SpeckleConnectionManager\SpeckleConnectionManager.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Views\ConnectStatusView.xaml.cs">
