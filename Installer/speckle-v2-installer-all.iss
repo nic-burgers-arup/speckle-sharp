@@ -117,6 +117,8 @@ Source: "..\ConnectorRhino\ConnectorRhino7\bin\Release\*"; DestDir: "{userappdat
 Source: "..\ConnectorGrasshopper\ConnectorGrasshopper\bin\net472\*"; DestDir: "{userappdata}\Grasshopper\Libraries\SpeckleGrasshopper2\"; Flags: ignoreversion recursesubdirs; Components: gh
 Source: "..\Objects\Converters\ConverterRhinoGh\ConverterRhino6\bin\Release\netstandard2.0\Objects.Converter.Rhino6.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: rhino6 gh
 Source: "..\Objects\Converters\ConverterRhinoGh\ConverterRhino7\bin\Release\net48\Objects.Converter.Rhino7.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: rhino7 gh
+Source: "..\Objects\Converters\ConverterRhinoGh\ConverterGrasshopper6\bin\Release\netstandard2.0\Objects.Converter.Grasshopper6.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: rhino6 gh
+Source: "..\Objects\Converters\ConverterRhinoGh\ConverterGrasshopper7\bin\Release\net48\Objects.Converter.Grasshopper7.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects\"; Flags: ignoreversion recursesubdirs; Components: rhino7 gh
 
 ;revit19
 Source: "..\ConnectorRevit\ConnectorRevit2019\bin\Release\*"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2019\SpeckleRevit2\"; Flags: ignoreversion recursesubdirs; Components: revit19
@@ -238,11 +240,11 @@ Source: "ExcelAddin\ExcelAddinRequest\bin\Release\net5.0\win-x64\*"; DestDir: "{
 Source: "..\Objects\Objects\bin\Release\netstandard2.0\Objects.dll"; DestDir: "{userappdata}\Speckle\Kits\Objects"; Flags: ignoreversion recursesubdirs; Components: kits
 
 ;connectionmanager
-Source: "ConnectionManager\SpeckleConnectionManager\bin\Release\net5.0\win10-x64\publish\*"; DestDir: "{userappdata}\speckle-connection-manager\"; Flags: ignoreversion recursesubdirs; Components: connectionmanager
-Source: "ConnectionManager\SpeckleConnectionManagerUI\bin\Release\net5.0\win10-x64\publish\*"; DestDir: "{userappdata}\speckle-connection-manager-ui\"; Flags: ignoreversion recursesubdirs; Components: connectionmanager
+Source: "ConnectionManager\SpeckleConnectionManager\bin\Release\net5.0\win10-x64\*"; DestDir: "{userappdata}\speckle-connection-manager\"; Flags: ignoreversion recursesubdirs; Components: connectionmanager
+Source: "ConnectionManager\SpeckleConnectionManagerUI\bin\Release\net5.0\win10-x64\*"; DestDir: "{userappdata}\speckle-connection-manager-ui\"; Flags: ignoreversion recursesubdirs; Components: connectionmanager
 
 ;analytics
-Source: "Analytics\bin\Release\net461\win-x64\*"; DestDir: "{#AnalyticsFolder}"; Flags: ignoreversion recursesubdirs;
+Source: "Analytics\bin\Release\net461\*"; DestDir: "{#AnalyticsFolder}"; Flags: ignoreversion recursesubdirs;
 
 ;updater
 Source: "Updater\bin\Release\*"; DestDir: "{#SpeckleFolder}"; Flags: ignoreversion recursesubdirs;
