@@ -86,5 +86,5 @@ jobs:
       working-directory: Installer/ConnectionManager/SpeckleConnectionManagerUI
 
     - name: Build SpeckleConnectionManagerUI
-      run: dotnet publish -c Release -r win10-x64 --self-contained true -p:Version=${{ github.event.inputs.version }}       
+      run: dotnet publish -c Release -r win10-x64 -p:Version=${{ github.event.inputs.version }}       
       working-directory: Installer/ConnectionManager/SpeckleConnectionManagerUI
