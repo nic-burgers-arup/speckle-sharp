@@ -130,7 +130,7 @@ jobs:
       working-directory: Installer/ConnectionManager
 
     - name: Build SpeckleConnectionManager and SpeckleConnectionManagerUI
-      run: dotnet publish -c Release -p:Version=${{ github.event.inputs.version }}
+      run: dotnet build -c Release -p:Version=${{ github.event.inputs.version }}
       working-directory: Installer/ConnectionManager
 
     - name: Create Installer
