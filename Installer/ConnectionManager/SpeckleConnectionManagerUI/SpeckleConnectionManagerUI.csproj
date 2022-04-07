@@ -23,6 +23,10 @@
     <PackageReference Include="System.Net.Http.Json" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\Core\Core.csproj" />
+    <ProjectReference Include="..\SpeckleConnectionManager\SpeckleConnectionManager.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Update="Views\ConnectStatusView.xaml.cs">
       <DependentUpon>ConnectStatusView.axaml</DependentUpon>
     </Compile>

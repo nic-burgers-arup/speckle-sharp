@@ -114,7 +114,7 @@ jobs:
       working-directory: Installer/Analytics
 
     - name: Analytics CLI - Compile CLI
-      run: dotnet build --configuration Release --runtime win-x64
+      run: msbuild analytics.sln /p:Configuration=Release 
       working-directory: Installer/Analytics     
 
     - name: Excel Addin Request CLI - Restore NuGets
