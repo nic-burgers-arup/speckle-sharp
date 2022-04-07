@@ -1696,6 +1696,19 @@ public class Material1SchemaComponent: CreateSchemaObjectBase {
 }
 
 // This is generated code:
+public class ModelSchemaComponent: CreateSchemaObjectBase {
+     
+    public ModelSchemaComponent(): base("Model", "Model", "Creates a Speckle structural model object", "Speckle 2 Structural", "Analysis") { }
+    
+    public override Guid ComponentGuid => new Guid("af7f27db-7897-fcad-1839-3b5213188ef8");
+    
+    public override void AddedToDocument(GH_Document document){
+        SelectedConstructor = CSOUtils.FindConstructor("Objects.Structural.Analysis.Model.ctor(Objects.Structural.Analysis.ModelInfo,System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Collections.Generic.List`1[Speckle.Core.Models.Base],System.Collections.Generic.List`1[Speckle.Core.Models.Base])","Objects.Structural.Analysis.Model");
+        base.AddedToDocument(document);
+    }
+}
+
+// This is generated code:
 public class ModelCurveSchemaComponent: CreateSchemaObjectBase {
      
     public ModelCurveSchemaComponent(): base("ModelCurve", "ModelCurve", "Creates a Revit model curve", "Speckle 2 Revit", "Curves") { }
