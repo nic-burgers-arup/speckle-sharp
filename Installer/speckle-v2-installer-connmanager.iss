@@ -8,7 +8,7 @@
 #define AnalyticsFilename       "analytics.exe"
 
 [Setup]
-AppId={96fff0bc-c9f2-4654-868c-1aeb9554c0c5}
+AppId={{96fff0bc-c9f2-4654-868c-1aeb9554c0c5}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
