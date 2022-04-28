@@ -26,7 +26,7 @@ namespace ConverterSNAP
 
     public HashSet<Exception> ConversionErrors { get; } = new HashSet<Exception>();
 
-    public ProgressReport Report => new ProgressReport();
+    public ProgressReport Report { get; } = new ProgressReport();
 
     public void SetConverterSettings(object settings)
     {

@@ -1,4 +1,5 @@
-﻿using DesktopUI2;
+﻿using Avalonia.Threading;
+using DesktopUI2;
 using DesktopUI2.Models;
 using DesktopUI2.Models.Filters;
 using DesktopUI2.Models.Settings;
@@ -35,7 +36,7 @@ namespace ConnectorSNAP
 
     public override List<DesktopUI2.Models.MenuItem> GetCustomStreamMenuItems()
     {
-      throw new System.NotImplementedException();
+      return new List<MenuItem>();
     }
 
     public override string GetDocumentId()
@@ -77,10 +78,9 @@ namespace ConnectorSNAP
 
     public override async Task<StreamState> ReceiveStream(StreamState state, ProgressViewModel progress)
     {
+      
       ConversionErrors.Clear();
       OperationErrors.Clear();
-
-      IProgress<string> loggingProgress = new Progress<string>();
 
       var kit = KitManager.GetDefaultKit();
       var converter = kit.LoadConverter(HostApplications.SNAP.Name);
@@ -138,16 +138,8 @@ namespace ConnectorSNAP
         }
       }
 
-      Commands.ConvertToNative(topLevelObjects, converter, loggingProgress);
-
-      if (converter.Report.ConversionErrors != null && converter.Report.ConversionErrors.Count > 0)
-      {
-        foreach (var ce in converter.Report.ConversionErrors)
-        {
-          loggingProgress.Report(ce.Message);
-          loggingProgress.Report(ce.Message);
-        }
-      }
+      Commands.ConvertToNative(topLevelObjects, converter);
+      progress.Report.Merge(converter.Report);
 
       //The cache is filled with natives
       if (Instance.SnapModel.Cache.GetNatives(out var snapRecords) && snapRecords != null && snapRecords.Count > 0)
@@ -158,12 +150,16 @@ namespace ConnectorSNAP
 
         var saved = ((SnapProxy)Instance.SnapModel.Proxy).SaveAs(saveAsFilePath);
 
-        Console.WriteLine("Receiving complete");;
+        progress.Report.Log(@"Received data has been saved in c:\Temp\Received.s8i");
+        Console.WriteLine("Receiving complete");
       }
       else
       {
-        Console.WriteLine("Conversion resulted in no records to be written to file");
+        Console.WriteLine("Receiving complete: conversion resulted in no records to be written to file");
       }
+
+      await Dispatcher.UIThread.InvokeAsync(() => Dialogs.ShowDialog("Receiving complete", 
+        @"Converted data has been saved in c:\Temp\Received.s8i", Material.Dialog.Icons.DialogIconKind.Success));
 
       return state;
     }
@@ -173,14 +169,14 @@ namespace ConnectorSNAP
       throw new System.NotImplementedException();
     }
 
-    public override Task SendStream(StreamState state, ProgressViewModel progress)
+    public override Task<string> SendStream(StreamState state, ProgressViewModel progress)
     {
       throw new System.NotImplementedException();
     }
 
     public override void WriteStreamsToFile(List<StreamState> streams)
     {
-      throw new System.NotImplementedException();
+      
     }
 
     public override string GetHostAppNameVersion()

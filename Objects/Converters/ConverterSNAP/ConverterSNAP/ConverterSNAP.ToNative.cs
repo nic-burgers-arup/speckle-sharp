@@ -1,6 +1,5 @@
 ﻿using Objects.Structural.Analysis;
 using Objects.Structural.Geometry;
-using Objects.Structural.GSA.Materials;
 using Objects.Structural.GSA.Properties;
 using Objects.Structural.Materials;
 using Objects.Structural.Properties;
@@ -12,8 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ConverterSNAP
 {
@@ -99,7 +96,7 @@ namespace ConverterSNAP
               }
               catch
               {
-                ConversionErrors.Add(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id)
+                Report.LogConversionError(new Exception("Unable to convert " + t.Name + " " + (so.applicationId ?? so.id)
                   + " - refer to logs for more information"));
               }
             }
@@ -156,6 +153,8 @@ namespace ConverterSNAP
 
       //materialSteelNames.Add(snapSteel.Name);
       retList.Add(snapSteel);
+
+      Report.Log($"Created {snapSteel.GetType().Name} {snapSteel.Name}");
         
       return retList;
     }
@@ -201,6 +200,8 @@ namespace ConverterSNAP
         };
 
         retList.Add(snapSecondaryNode);
+
+        Report.Log($"Created {snapSecondaryNode.GetType().Name} {snapSecondaryNode.Name}");
       }
       else
       {
@@ -224,11 +225,15 @@ namespace ConverterSNAP
             var nodalSupport = nodalSupportObjs.Cast<NodalSupport>().FirstOrDefault();
             nodalSupportNameByCode.Add(speckleNode.restraint.code, nodalSupport.Name);
             retList.AddRange(nodalSupportObjs);
+
+            Report.Log($"Created {nodalSupport.GetType().Name} {nodalSupport.Name}");
           }
           snapNode.Restraint = nodalSupportNameByCode[speckleNode.restraint.code];
         }
 
         retList.Add(snapNode);
+
+        Report.Log($"Created {snapNode.GetType().Name} {snapNode.Name}");
       }
       return retList;
     }
@@ -275,6 +280,8 @@ namespace ConverterSNAP
             var endRel1 = endRel1Objs.Cast<EndReleases>().FirstOrDefault();
             endReleasesNameByCode.Add(speckleElement.end1Releases.code, endRel1.Name);
             retList.AddRange(endRel1Objs);
+
+            Report.Log($"Created {endRel1.GetType().Name} {endRel1.Name}");
           }
           snapGirder.BoundaryConditionI = endReleasesNameByCode[speckleElement.end1Releases.code];
         }
@@ -287,6 +294,8 @@ namespace ConverterSNAP
             var endRel2 = endRel2Objs.Cast<EndReleases>().FirstOrDefault();
             endReleasesNameByCode.Add(speckleElement.end2Releases.code, endRel2.Name);
             retList.AddRange(endRel2Objs);
+
+            Report.Log($"Created {endRel2.GetType().Name} {endRel2.Name}");
           }
           snapGirder.BoundaryConditionJ = endReleasesNameByCode[speckleElement.end2Releases.code];
         }
@@ -306,6 +315,8 @@ namespace ConverterSNAP
         }
 
         retList.Add(snapGirder);
+
+        Report.Log($"Created {snapGirder.GetType().Name} between nodes {snapGirder.NodeI} & {snapGirder.NodeJ}");
       }
       else if (speckleElement.type == ElementType1D.Null) //At the moment, this block won't actually get invoked but left here for future use if the logic check is upgraded
       {
@@ -338,6 +349,8 @@ namespace ConverterSNAP
         }
 
         retList.Add(snapBeam);
+
+        Report.Log($"Created {snapBeam.GetType().Name} between nodes {snapBeam.NodeI} & {snapBeam.NodeJ}");
       }
 
       return retList;
@@ -395,6 +408,8 @@ namespace ConverterSNAP
       }
 
       retList.Add(snapSection);
+
+      Report.Log($"Created {snapSection.GetType().Name} {snapSection.Name}");
 
       return retList;
     }

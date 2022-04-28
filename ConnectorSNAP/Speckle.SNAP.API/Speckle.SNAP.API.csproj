@@ -59,7 +59,6 @@
     <Compile Include="s8iSchema\Node.cs" />
     <Compile Include="s8iSchema\SecondaryNode.cs" />
     <Compile Include="s8iSchema\Section.cs" />
-    <Compile Include="s8iSchema\SnapRecord.cs" />
     <Compile Include="s8iSchema\VectorSixBase.cs" />
     <Compile Include="StringValue.cs" />
   </ItemGroup>
