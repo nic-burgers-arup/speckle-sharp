@@ -10,5 +10,6 @@ namespace Speckle.SNAP.API
     bool Upsert(object record);
     bool Upsert(List<object> records);
     bool Contains<T>(string name, out object snapRecord) where T : ISnapRecordNamed;
+    void Clear();
   }
 }

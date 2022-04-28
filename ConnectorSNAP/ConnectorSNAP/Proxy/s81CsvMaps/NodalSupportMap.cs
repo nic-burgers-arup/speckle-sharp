@@ -15,7 +15,7 @@ namespace ConnectorSNAP.Proxy.s81CsvMaps
       Map(m => m.Restraints).Index(1).TypeConverter<BoolArrConverter>();
 
       //Writing-only overrides
-      Map(m => m.Name).Convert(o => Keyword.BD.GetStringValue() + " / " + o.Value.Name);
+      Map(m => m.Name).Convert(o => Keyword.SP.GetStringValue() + " / " + o.Value.Name);
       Map(m => m.Restraints).TypeConverter<BoolArrConverter>();
     }
   }

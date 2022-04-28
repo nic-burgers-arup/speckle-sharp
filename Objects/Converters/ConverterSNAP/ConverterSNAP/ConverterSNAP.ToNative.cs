@@ -22,20 +22,19 @@ namespace ConverterSNAP
     private const double geoTolerance = 0.01;
     private Dictionary<Objects.Structural.ShapeType, Action<Property1D, Section>> profileFns = new Dictionary<Objects.Structural.ShapeType, Action<Property1D, Section>>();
     //This is like its own mini-cache - similar to the provisionals that was part of the cache for the GSA connector
-    private Dictionary<byte, string> endReleasesAppIdByBools = new Dictionary<byte, string>();
-    //private List<string> materialSteelNames = new List<string>();
-    //private Dictionary<string, string> materialsBySection = new Dictionary<string, string>();
-    //private Dictionary<string, string> sectionsByPropertyAppId = new Dictionary<string, string>();
+    //private Dictionary<byte, string> endReleasesAppIdByBools = new Dictionary<byte, string>();
+    //private Dictionary<byte, string> nodalSupportAppIdByBools = new Dictionary<byte, string>();
+    private Dictionary<string, string> endReleasesNameByCode = new Dictionary<string, string>();
+    private Dictionary<string, string> nodalSupportNameByCode = new Dictionary<string, string>();
+
 
     private ModelUnits modelUnits;
     private int decimalRoundingPlaces = 6;
 
     private void SetupToNativeFns()
     {
-      endReleasesAppIdByBools.Clear();
-      //materialSteelNames.Clear();
-      //materialsBySection.Clear();
-      //sectionsByPropertyAppId.Clear();
+      endReleasesNameByCode.Clear();
+      nodalSupportNameByCode.Clear();
 
       profileFns = new Dictionary<Objects.Structural.ShapeType, Action<Property1D, Section>>()
       {
@@ -50,7 +49,6 @@ namespace ConverterSNAP
         { typeof(Model), ModelToNative },
         { typeof(Element1D), Element1DToNative },
         { typeof(Objects.Structural.Geometry.Node), NodeToNative },
-        { typeof(Restraint), RestraintToNative },
         { typeof(Property1D), Property1DToNative },
         { typeof(Steel), SteelToNative }
       };
@@ -147,16 +145,26 @@ namespace ConverterSNAP
 
       //Currently hard-wired to produce this one steel type
 
-      var snapSteel = new MaterialSteel() { Name = speckleSteel.name };
+      var snapSteel = new MaterialSteel() { Name = speckleSteel.name.Trim() };
+
+      if (JapaneseSteelCodes.ContainsKey(snapSteel.Name))
+      {
+        var code = JapaneseSteelCodes[snapSteel.Name];
+        snapSteel.WebCode = code;
+        snapSteel.FlangeCode = code;
+      }
+
       //materialSteelNames.Add(snapSteel.Name);
       retList.Add(snapSteel);
-
+        
       return retList;
     }
 
     private string ToS8iName(string v)
     {
-      var rv = v.Replace("/", "").Replace("-", "");
+      //Special case for GSA, which shouldn't harm any other cases
+      var rv = v.Replace("gsa/NODE-", "");
+      rv = rv.Replace("/", "").Replace("-", "");
       return rv.Substring(0, Math.Min(rv.Length, 15));
     }
 
@@ -169,13 +177,17 @@ namespace ConverterSNAP
       }
       var speckleNode = (Objects.Structural.Geometry.Node)speckleObject;
 
-      double scalingFactor = 1;
+      double scalingFactorLength = 1;
+      double scalingFactorMass = 1;
       if (modelUnits != null)
       {
-        if (modelUnits.length == "m") scalingFactor = 1000;
-        else if (modelUnits.length == "cm") scalingFactor = 100;
-        else if (modelUnits.length == "in") scalingFactor = 25.4;
-        else if (modelUnits.length == "ft") scalingFactor = 304.8;
+        if (modelUnits.length == "m") scalingFactorLength = 1000;
+        else if (modelUnits.length == "cm") scalingFactorLength = 100;
+        else if (modelUnits.length == "in") scalingFactorLength = 25.4;
+        else if (modelUnits.length == "ft") scalingFactorLength = 304.8;
+
+        if (modelUnits.mass == "kg") scalingFactorMass = 0.001;
+        //TO DO: other units here for mass
       }
 
       if (MapsToSecondaryNode(speckleNode))
@@ -183,9 +195,9 @@ namespace ConverterSNAP
         var snapSecondaryNode = new SecondaryNode()
         {
           Name = ToS8iName(speckleNode.applicationId),
-          X = Math.Round(speckleNode.basePoint.x * scalingFactor, decimalRoundingPlaces),
-          Y = Math.Round(speckleNode.basePoint.y * scalingFactor, decimalRoundingPlaces),
-          Z = Math.Round(speckleNode.basePoint.z * scalingFactor, decimalRoundingPlaces)
+          X = Math.Round(speckleNode.basePoint.x * scalingFactorLength, decimalRoundingPlaces),
+          Y = Math.Round(speckleNode.basePoint.y * scalingFactorLength, decimalRoundingPlaces),
+          Z = Math.Round(speckleNode.basePoint.z * scalingFactorLength, decimalRoundingPlaces)
         };
 
         retList.Add(snapSecondaryNode);
@@ -195,14 +207,25 @@ namespace ConverterSNAP
         var snapNode = new Speckle.SNAP.API.s8iSchema.Node()
         {
           Name = ToS8iName(speckleNode.applicationId),
-          X = Math.Round(speckleNode.basePoint.x * scalingFactor, decimalRoundingPlaces),
-          Y = Math.Round(speckleNode.basePoint.y * scalingFactor, decimalRoundingPlaces), 
-          Z = Math.Round(speckleNode.basePoint.z * scalingFactor, decimalRoundingPlaces)
+          X = Math.Round(speckleNode.basePoint.x * scalingFactorLength, decimalRoundingPlaces),
+          Y = Math.Round(speckleNode.basePoint.y * scalingFactorLength, decimalRoundingPlaces), 
+          Z = Math.Round(speckleNode.basePoint.z * scalingFactorLength, decimalRoundingPlaces)
         };
 
         if (speckleNode.massProperty != null)
         {
-          snapNode.AdditionalMass = speckleNode.massProperty.mass;
+          snapNode.AdditionalMass = Math.Round(speckleNode.massProperty.mass * scalingFactorMass, decimalRoundingPlaces);
+        }
+        if (speckleNode.restraint != null && !string.IsNullOrEmpty(speckleNode.restraint.code) && !speckleNode.restraint.code.Equals("RRRRRR", StringComparison.InvariantCultureIgnoreCase))
+        {
+          if (!nodalSupportNameByCode.ContainsKey(speckleNode.restraint.code))
+          {
+            var nodalSupportObjs = RestraintToNodalSupport(speckleNode.restraint);
+            var nodalSupport = nodalSupportObjs.Cast<NodalSupport>().FirstOrDefault();
+            nodalSupportNameByCode.Add(speckleNode.restraint.code, nodalSupport.Name);
+            retList.AddRange(nodalSupportObjs);
+          }
+          snapNode.Restraint = nodalSupportNameByCode[speckleNode.restraint.code];
         }
 
         retList.Add(snapNode);
@@ -243,37 +266,29 @@ namespace ConverterSNAP
         {
           snapGirder.NodeJ = ToS8iName(speckleElement.end2Node.applicationId);
         }
-        if (speckleElement.end1Releases != null)
+        if (speckleElement.end1Releases != null && !string.IsNullOrEmpty(speckleElement.end1Releases.code) 
+          && !speckleElement.end1Releases.code.Equals("FFFFFF", StringComparison.InvariantCultureIgnoreCase))
         {
-          var endRel1Objs = RestraintToNative(speckleElement.end1Releases);
-          if ((endRel1Objs != null) && (endRel1Objs.Count > 0) && (endRel1Objs.First() != null) && (endRel1Objs.First() is EndReleases))
+          if (!endReleasesNameByCode.ContainsKey(speckleElement.end1Releases.code))
           {
+            var endRel1Objs = RestraintToEndRelease(speckleElement.end1Releases);
             var endRel1 = endRel1Objs.Cast<EndReleases>().FirstOrDefault();
-            var boolVals = ConvertBoolArrayToByte(endRel1.Restraints);
-            if (!endReleasesAppIdByBools.ContainsKey(boolVals))
-            {
-              endRel1.Name = ToS8iName(Guid.NewGuid().ToString());
-              endReleasesAppIdByBools.Add(boolVals, endRel1.Name);
-              retList.AddRange(endRel1Objs);
-            }
-            snapGirder.BoundaryConditionI = endReleasesAppIdByBools[boolVals];
+            endReleasesNameByCode.Add(speckleElement.end1Releases.code, endRel1.Name);
+            retList.AddRange(endRel1Objs);
           }
+          snapGirder.BoundaryConditionI = endReleasesNameByCode[speckleElement.end1Releases.code];
         }
-        if (speckleElement.end2Releases != null)
+        if (speckleElement.end2Releases != null && !string.IsNullOrEmpty(speckleElement.end2Releases.code) 
+          && !speckleElement.end2Releases.code.Equals("FFFFFF", StringComparison.InvariantCultureIgnoreCase))
         {
-          var endRel2Objs = RestraintToNative(speckleElement.end2Releases);
-          if ((endRel2Objs != null) && (endRel2Objs.Count > 0) && (endRel2Objs.First() != null) && (endRel2Objs.First() is EndReleases))
+          if (!endReleasesNameByCode.ContainsKey(speckleElement.end2Releases.code))
           {
+            var endRel2Objs = RestraintToEndRelease(speckleElement.end2Releases);
             var endRel2 = endRel2Objs.Cast<EndReleases>().FirstOrDefault();
-            var boolVals = ConvertBoolArrayToByte(endRel2.Restraints);
-            if (!endReleasesAppIdByBools.ContainsKey(boolVals))
-            {
-              endRel2.Name = ToS8iName(Guid.NewGuid().ToString());
-              endReleasesAppIdByBools.Add(boolVals, endRel2.Name);
-              retList.AddRange(endRel2Objs);
-            }
-            snapGirder.BoundaryConditionJ = endReleasesAppIdByBools[boolVals];
+            endReleasesNameByCode.Add(speckleElement.end2Releases.code, endRel2.Name);
+            retList.AddRange(endRel2Objs);
           }
+          snapGirder.BoundaryConditionJ = endReleasesNameByCode[speckleElement.end2Releases.code];
         }
         if (speckleElement.property != null)
         {
@@ -410,28 +425,78 @@ namespace ConverterSNAP
       section.SectionType = SectionType.UserDefined;
       var speckleSection = (Circular)speckleProperty.profile;
       section.CustomCatalogueFields = new string[2] { "9003", "1" };
-      section.CatalogueItemName = string.Join("_", "STD", "CHS", speckleSection.radius, speckleSection.wallThickness);
+      section.CatalogueItemName = string.Join("_", "STD", "CHS", speckleSection.radius * 2, speckleSection.wallThickness);
     }
 
-    private List<object> RestraintToNative(Base speckleObject)
+    private List<object> RestraintToEndRelease(Base speckleObject)
+      => new List<object>() { new EndReleases(RestraintCodeToName((Restraint)speckleObject, true), RestraintValuesToBoolArr((Restraint)speckleObject)) };
+
+    private List<object> RestraintToNodalSupport(Base speckleObject) 
+      => new List<object> { new NodalSupport(RestraintCodeToName((Restraint)speckleObject), RestraintValuesToBoolArr((Restraint)speckleObject)) };
+
+    //F = free, R = restrained
+    private string RestraintCodeToName(Restraint speckleRestraint, bool invert = false)
     {
-      var speckleRestraint = (Restraint)speckleObject;
-
-      var snapEndReleases = new EndReleases()
+      if (speckleRestraint.code.Equals("FFFRRR", StringComparison.InvariantCultureIgnoreCase))
       {
-        Name = ToS8iName(speckleRestraint.applicationId),
-        Restraints = new bool[6]
+        return "PIN";
+      }
+      else if (speckleRestraint.code.Equals("FFFFFF"))
+      {
+        return invert ? "RigidConnected" : "ENCASTRE";
+      }
+      else if (speckleRestraint.code.Equals("RRRRRR") && !invert)
+      {
+        return "FREE";
+      }
+      string name = "";
+      var dirs = new List<string> { "X", "Y", "Z", "XX", "YY", "ZZ" };
+      List<char> keyChars = new List<char> { invert ? 'R' : 'F', invert ? 'r' : 'f' };
+      for (int i = 0; i < dirs.Count; i++)
+      {
+        if (keyChars.Any(c => speckleRestraint.code[i] == c))
         {
-          speckleRestraint.stiffnessX.ToBoolean(),
-          speckleRestraint.stiffnessY.ToBoolean(),
-          speckleRestraint.stiffnessZ.ToBoolean(),
-          speckleRestraint.stiffnessXX.ToBoolean(),
-          speckleRestraint.stiffnessYY.ToBoolean(),
-          speckleRestraint.stiffnessZZ.ToBoolean()
+          name += dirs[i];
         }
-      };
+      }
+      return name;
+    }
 
-      return new List<object> { snapEndReleases };
+    private string RestraintValuesToName(Restraint speckleRestraint)
+    {
+
+      if (speckleRestraint.code.Equals("FFFRRR", StringComparison.InvariantCultureIgnoreCase))
+      {
+        return "PIN";
+      }
+      else if (speckleRestraint.code.Equals("FFFFFF"))
+      {
+        return "ENCASTRE";
+      }
+      else if (speckleRestraint.code.Equals("RRRRRR"))
+      {
+        return "FREE";
+      }
+      string name = "";
+      var dirs = new List<string> { "X", "Y", "Z", "XX", "YY", "ZZ" };
+      for (int i = 0; i < dirs.Count; i++)
+      {
+        if (speckleRestraint.code[i] == 'F' || speckleRestraint.code[i] == 'f')
+        {
+          name += dirs[i];
+        }
+      }
+      return name;
+    }
+
+    private bool[] RestraintValuesToBoolArr(Restraint speckleRestraint)
+    {
+      var boolArr = new bool[6];
+      for (int i = 0; i < Math.Min(speckleRestraint.code.Length, 6); i++)
+      {
+        boolArr[i] = (speckleRestraint.code[i] == 'R' || speckleRestraint.code[i] == 'r');
+      }
+      return boolArr;
     }
 
     private bool MapsToSecondaryNode(Objects.Structural.Geometry.Node n)
@@ -473,5 +538,45 @@ namespace ConverterSNAP
 
       return result;
     }
+
+    //If steel material names match specific Japanese names, then write corresponding values
+    //to the s8i file
+    private static readonly Dictionary<string, int> JapaneseSteelCodes = new Dictionary<string, int>(StringComparer.InvariantCultureIgnoreCase)
+    {
+      { "SS400", 0 },
+      { "SS490", 1 },
+      { "SM400", 2 },
+      { "SM490", 3 },
+      { "SM520", 4 },
+      { "SN400", 5 },
+      { "SN490", 6 },
+      { "STKR400", 7 },
+      { "STKR490", 8 },
+      { "STK400", 7 },
+      { "STK490", 8 },
+      { "STKN400", 7 },
+      { "STKN490", 8 },
+      { "BCR295", 9 },
+      { "BCP235", 10 },
+      { "BCP325", 11 },
+      { "BCP325T", 12 },
+      { "NBCP325EX", 13 },
+      { "NBCP440", 14 },
+      { "SHC400", 15 },
+      { "SHC490", 16 },
+      { "SHCK490", 17 },
+      { "SHC275-EN", 18 },
+      { "SHC355-EN", 19 },
+      { "SUS304A", 20 },
+      { "SUS316A", 21 },
+      { "SUS304N2A", 22 },
+      { "SSC400", 23 },
+      { "HBL385", 24 },
+      { "P-385", 25 },
+      { "G385", 26 },
+      { "G385T", 27 },
+      { "UBCR365", 28 },
+    };
   }
+
 }

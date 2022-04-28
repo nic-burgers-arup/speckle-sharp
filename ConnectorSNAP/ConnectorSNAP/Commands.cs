@@ -77,6 +77,7 @@ namespace ConnectorSNAP
 
     public static bool ConvertToNative(List<Base> objects, ISpeckleConverter converter, IProgress<string> loggingProgress) //Includes writing to Cache
     {
+      Instance.SnapModel.Cache.Clear();
       try
       {
         var nativeObjects = converter.ConvertToNative(objects).ToList();

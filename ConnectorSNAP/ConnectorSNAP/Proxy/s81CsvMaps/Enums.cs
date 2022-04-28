@@ -24,6 +24,8 @@ namespace ConnectorSNAP.Proxy.s81CsvMaps
     [StringValue("DGRS")] //Sections
     DGRS,
     [StringValue("MS")] //Material Steel
-    MS
+    MS,
+    [StringValue("SP")] //Node support
+    SP
   }
 }

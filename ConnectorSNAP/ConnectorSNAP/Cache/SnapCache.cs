@@ -16,6 +16,17 @@ namespace ConnectorSNAP
 
     public bool GetNatives(out List<object> snapRecords)
     {
+      /*
+      var namedRecords = new List<object>();
+      var otherRecords = new List<object>();
+      var namedIntType = typeof(ISnapRecordNamed);
+      var namedTypes = recordIndicesByType.Keys.Where(k => k.InheritsOrImplements(namedIntType)).ToList();
+
+      foreach (var nt in namedTypes)
+      {
+        var orderedObjs = recordIndicesByType[nt].OrderBy(i => ((ISnapRecordNamed)records[i].SnapRecord)
+      }
+      */
       snapRecords = records.Select(cr => cr.SnapRecord).ToList();
       return true;
     }
@@ -64,6 +75,12 @@ namespace ConnectorSNAP
       }
       snapRecord = null;
       return false;
+    }
+
+    public void Clear()
+    {
+      records.Clear();
+      recordIndicesByType.Clear();
     }
   }
 }
