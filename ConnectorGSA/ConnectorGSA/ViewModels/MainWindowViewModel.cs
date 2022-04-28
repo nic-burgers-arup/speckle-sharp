@@ -143,6 +143,8 @@ namespace ConnectorGSA.ViewModels
     public double CoincidentNodeAllowance { get => Coordinator.ReceiverTab.CoincidentNodeAllowance; set { Coordinator.ReceiverTab.CoincidentNodeAllowance = value; } }
     public List<GsaUnit> CoincidentNodeAllowanceUnitOptions { get => new List<GsaUnit> { GsaUnit.Millimetres, GsaUnit.Metres, GsaUnit.Inches }; }
     public GsaUnit CoincidentNodeAllowanceUnit { get => Coordinator.ReceiverTab.CoincidentNodeUnits; set { Coordinator.ReceiverTab.CoincidentNodeUnits = value; } }
+    public List<string> MappingStreamOptions { get => new List<string> { "", "Default Mapping Stream" }; }
+    public string MappingStream { get => Coordinator.ReceiverTab.MappingStreamId; set { Coordinator.ReceiverTab.MappingStreamId = value; } }
     public LoggingMinimumLevel LoggingMinimumLevel { get => Coordinator.LoggingMinimumLevel; set { Coordinator.LoggingMinimumLevel = value; } }
     public List<LoggingMinimumLevel> LoggingMinimumLevelOptions
     {

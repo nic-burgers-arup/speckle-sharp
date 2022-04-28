@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+	<LangVersion>8.0</LangVersion>
     <AssemblyName>Objects.Converter.MicroStation</AssemblyName>
     <RootNamespace>Objects.Converter.MicroStation</RootNamespace>
     <PackageId>Speckle.Objects.Converter.MicroStation</PackageId>
@@ -35,6 +36,11 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsDesktopBuild)' == true OR  $(IsDesktopBuild) == ''">
+    <Reference Include="Bentley.DgnDisplayNet, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9bfed12b64a9b7df, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(ProgramW6432)\Bentley\MicroStation CONNECT Edition\MicroStation\Bentley.DgnDisplayNet.dll</HintPath>
+      <Private>False</Private>
+    </Reference>  
     <Reference Include="Bentley.DgnPlatformNET, Version=1.0.0.0, Culture=neutral, PublicKeyToken=4bf6c96a266e58d4, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(ProgramW6432)\Bentley\MicroStation CONNECT Edition\MicroStation\Bentley.DgnPlatformNET.dll</HintPath>

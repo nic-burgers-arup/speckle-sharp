@@ -32,7 +32,6 @@ using Objects.Structural.Results;
 using Speckle.Core.Models;
 using Objects.Structural.GSA.Analysis;
 using Objects.Structural.GSA.Bridge;
-using Piwik.Tracker;
 using ActionType = Objects.Structural.Loading.ActionType;
 
 namespace ConverterGSATests
@@ -442,7 +441,7 @@ namespace ConverterGSATests
       //Checks - Member 1
       Assert.Equal("member 1", speckleMember1d.applicationId);
       Assert.Equal(gsaMembers[0].Name, speckleMember1d.name);
-      Assert.Equal(ElementType1D.Beam, speckleMember1d.type);
+      Assert.Equal(MemberType.Beam, speckleMember1d.memberType);
       Assert.Equal("FFFFFF", speckleMember1d.end1Releases.code);
       Assert.Equal("FFFFFF", speckleMember1d.end2Releases.code);
       Assert.Equal(gsaMembers[0].End1OffsetX.Value, speckleMember1d.end1Offset.x);

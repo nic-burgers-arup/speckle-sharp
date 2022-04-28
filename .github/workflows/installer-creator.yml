@@ -73,11 +73,17 @@ jobs:
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v1.0.2
       
+    - name: Update Version
+      shell: powershell
+      working-directory: ConnectorGSA/ConnectorGSA/Properties
+      run: |
+        (Get-content .\AssemblyInfo.cs) -replace '1\.0\.0\.0', '${{ steps.calculateTagVersion.outputs.tag }}' | Out-File -encoding ASCII .\AssemblyInfo.cs      
+      
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore all the applications
       shell: cmd
       run: |
-        for %%x in (Objects, ConnectorAutocadCivil, ConnectorDynamo, ConnectorGrasshopper, ConnectorRevit, ConnectorRhino, ConnectorETABS, ConnectorGSA, ConnectorBentley) do (
+        for %%x in (Objects, ConnectorAutocadCivil, ConnectorDynamo, ConnectorGrasshopper, ConnectorRevit, ConnectorRhino, ConnectorCSI, ConnectorGSA, ConnectorBentley) do (
           cd %%x && msbuild %%x.sln /t:Restore /p:Configuration=Release /p:WarningLevel=0 /p:IsDesktopBuild=false && cd ../ 
         )
 
@@ -85,7 +91,7 @@ jobs:
       shell: cmd
       run: |
         SET _version=${{ github.event.inputs.version }}
-        for %%x in (Objects, ConnectorAutocadCivil, ConnectorDynamo, ConnectorGrasshopper, ConnectorRevit, ConnectorRhino, ConnectorETABS, ConnectorGSA, ConnectorBentley) do (
+        for %%x in (Objects, ConnectorAutocadCivil, ConnectorDynamo, ConnectorGrasshopper, ConnectorRevit, ConnectorRhino, ConnectorCSI, ConnectorGSA, ConnectorBentley) do (
           cd %%x && msbuild %%x.sln /p:Configuration=Release /p:WarningLevel=0 /p:IsDesktopBuild=false /p:AssemblyVersionNumber=%_version% /p:AssemblyInformationalVersion=%_version% /p:Version=%_version% && cd ../ 
         )            
         
@@ -108,7 +114,7 @@ jobs:
       working-directory: Installer/Analytics
 
     - name: Analytics CLI - Compile CLI
-      run: dotnet build --configuration Release --runtime win-x64
+      run: msbuild analytics.sln /p:Configuration=Release 
       working-directory: Installer/Analytics     
 
     - name: Excel Addin Request CLI - Restore NuGets
@@ -121,19 +127,11 @@ jobs:
 
     - name: Restore SpeckleConnectionManager
       run: dotnet restore        
-      working-directory: Installer/ConnectionManager/SpeckleConnectionManager
+      working-directory: Installer/ConnectionManager
 
-    - name: Build SpeckleConnectionManager
-      run: dotnet publish -c Release -r win10-x64 --self-contained true -p:Version=${{ github.event.inputs.version }}
-      working-directory: Installer/ConnectionManager/SpeckleConnectionManager
-
-    - name: Restore SpeckleConnectionManagerUI
-      run: dotnet restore        
-      working-directory: Installer/ConnectionManager/SpeckleConnectionManagerUI
-
-    - name: Build SpeckleConnectionManagerUI
-      run: dotnet publish -c Release -r win10-x64 --self-contained true -p:Version=${{ github.event.inputs.version }}       
-      working-directory: Installer/ConnectionManager/SpeckleConnectionManagerUI
+    - name: Build SpeckleConnectionManager and SpeckleConnectionManagerUI
+      run: dotnet build -c Release -p:Version=${{ github.event.inputs.version }}
+      working-directory: Installer/ConnectionManager
 
     - name: Create Installer
       id: installer
@@ -142,7 +140,8 @@ jobs:
         $filename = (ls *.exe).Name
         echo "::set-output name=filename::$filename"
       env:
-        ENABLE_TELEMETRY_DOMAIN: arup      
+        ENABLE_TELEMETRY_DOMAIN: arup     
+        POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}           
         EXCEL_ADDIN_APP_TENANT: ${{ secrets.EXCEL_ADDIN_APP_TENANT }}  
         EXCEL_ADDIN_APP_CLIENT_ID: ${{ secrets.EXCEL_ADDIN_APP_CLIENT_ID }}  
         EXCEL_ADDIN_APP_CLIENT_SECRET: ${{ secrets.EXCEL_ADDIN_APP_CLIENT_SECRET }}  
@@ -198,7 +197,7 @@ jobs:
           - [Revit 2019/2020/2021/2022](https://github.com/arup-group/speckle-sharp/tree/master/ConnectorRevit)
           - [Dynamo](https://github.com/arup-group/speckle-sharp/tree/master/ConnectorDynamo)
           - [AutoCAD 2021/2022 and Civil3D 2021/2022](https://github.com/arup-group/speckle-sharp/tree/master/ConnectorAutocadCivil)
-          - [ETABS 18/19](https://github.com/arup-group/speckle-sharp/tree/master/ConnectorETABS)
+          - [ETABS 19/SAP2000 23](https://github.com/arup-group/speckle-sharp/tree/master/ConnectorCSI)
           - [Oasys GSA 10.1](https://github.com/arup-group/speckle-sharp/tree/master/ConnectorGSA)
           - [MicroStation, OpenRoads, OpenRail, OpenBridge and OpenBuildings (CONNECT Edition)](https://github.com/arup-group/speckle-sharp/tree/master/ConnectorBentley)
           - [Excel](https://github.com/specklesystems/speckle-excel)

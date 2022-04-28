@@ -209,6 +209,10 @@ public static string AutocadAppName = VersionedHostApplications.Autocad2022;
               @base = PipeToSpeckle(o);
               Report.Log($"Converted Pipe");
               break;
+            case CivilDB.PressurePipe o:
+              @base = PipeToSpeckle(o);
+              Report.Log($"Converted Pressure Pipe");
+              break;
             case CivilDB.Profile o:
               @base = ProfileToSpeckle(o);
               Report.Log($"Converted Profile as Base");
@@ -220,10 +224,9 @@ public static string AutocadAppName = VersionedHostApplications.Autocad2022;
 #endif
           }
 
-          DisplayStyle style = GetStyle(obj);
+          DisplayStyle style = DisplayStyleToSpeckle(obj as Entity);
           if (style != null)
             @base["displayStyle"] = style;
-
           break;
 
         case Acad.Geometry.Point3d o:
@@ -324,11 +327,15 @@ public static string AutocadAppName = VersionedHostApplications.Autocad2022;
           break;
 
         case Polycurve o:
-          var splineSegments = o.segments.Where(s => s is Curve);
-          if (splineSegments.Count() > 0)
+          bool convertAsSpline = (o.segments.Where(s => !(s is Line) && !(s is Arc)).Count() > 0) ? true : false;
+          if (!convertAsSpline) convertAsSpline = IsPolycurvePlanar(o) ? false : true;
+          if (convertAsSpline)
           {
             acadObj = PolycurveSplineToNativeDB(o);
-            Report.Log($"Created Polycurve {o.id} as Spline");
+            if (acadObj == null)
+              Report.Log($"Created Polycurve {o.id} as individual segments");
+            else
+              Report.Log($"Created Polycurve {o.id} as Spline");
             break;
           }
           else
@@ -337,13 +344,6 @@ public static string AutocadAppName = VersionedHostApplications.Autocad2022;
             Report.Log($"Created Polycurve {o.id} as Polyline");
             break;
           }
-            
-
-        //case Interval o: // TODO: NOT TESTED
-        //  return IntervalToNative(o);
-
-        //case Plane o: // TODO: NOT TESTED
-        //  return PlaneToNative(o);
 
         case Curve o:
           acadObj = CurveToNativeDB(o);
@@ -366,7 +366,7 @@ public static string AutocadAppName = VersionedHostApplications.Autocad2022;
           break;
 
         case BlockInstance o:
-          acadObj = BlockInstanceToNativeDB(o, out BlockReference refernce);
+          acadObj = BlockInstanceToNativeDB(o, out BlockReference reference);
           Report.Log($"Created Block Instance {o.id}");
           break;
 
@@ -456,6 +456,7 @@ public static string AutocadAppName = VersionedHostApplications.Autocad2022;
             case CivilDB.Structure _:
             case CivilDB.Alignment _:
             case CivilDB.Pipe _:
+            case CivilDB.PressurePipe _:
             case CivilDB.Profile _:
             case CivilDB.TinSurface _:
               return true;

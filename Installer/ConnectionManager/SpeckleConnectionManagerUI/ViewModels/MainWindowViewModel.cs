@@ -52,15 +52,16 @@ namespace SpeckleConnectionManagerUI.ViewModels
     }
 
     private void RunConnectToServer(int identifier)
-    {
+    {      
       var connectionStatusItem = List.Items.FirstOrDefault(i => i.Identifier == identifier);
       if (connectionStatusItem == null) return;
+      connectionStatusItem.Colour = "Orange";
 
       if (connectionStatusItem.ServerUrl != null)
         _authenticate.RedirectToAuthPage(connectionStatusItem.ServerUrl);
 
       connectionStatusItem.Disconnected = false;
-      connectionStatusItem.Colour = "Orange";
+      connectionStatusItem.Colour = "Green";
     }
 
     private async Task<Unit> GetNewServerUrl_Execute(Unit arg)

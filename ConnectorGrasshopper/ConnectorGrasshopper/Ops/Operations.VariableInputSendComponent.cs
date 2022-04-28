@@ -15,14 +15,11 @@ using Grasshopper.GUI.Canvas;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Attributes;
 using Grasshopper.Kernel.Data;
-using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Types;
 using GrasshopperAsyncComponent;
 using Rhino;
-using Sentry.PlatformAbstractions;
 using Speckle.Core.Api;
 using Speckle.Core.Credentials;
-using Speckle.Core.Kits;
 using Speckle.Core.Logging;
 using Speckle.Core.Models;
 using Speckle.Core.Transports;
@@ -244,7 +241,7 @@ namespace ConnectorGrasshopper.Ops
 
       return new SendReceiveDataParam
       {
-        Name = "Data" + uniqueName,
+        Name = uniqueName,
         NickName = uniqueName,
         MutableNickName = true,
         Optional = false
@@ -258,6 +255,30 @@ namespace ConnectorGrasshopper.Ops
 
     public void VariableParameterMaintenance()
     {
+    }
+
+    private DebounceDispatcher nicknameChangeDebounce = new DebounceDispatcher();
+
+    public override void AddedToDocument(GH_Document document)
+    {
+      base.AddedToDocument(document); // This would set the converter already.
+      Params.ParameterChanged += (sender, args) =>
+      {
+        if (args.ParameterSide != GH_ParameterSide.Input) return;
+        switch (args.OriginalArguments.Type)
+        {
+          case GH_ObjectEventType.NickName:
+            // This means the user is typing characters, debounce until it stops for 400ms before expiring the solution.
+            // Prevents UI from locking too soon while writing new names for inputs.
+            args.Parameter.Name = args.Parameter.NickName;
+            nicknameChangeDebounce.Debounce(400, (e) => ExpireSolution(true));
+            break;
+          case GH_ObjectEventType.NickNameAccepted:
+            args.Parameter.Name = args.Parameter.NickName;
+            ExpireSolution(true);
+            break;
+        }
+      };
     }
   }
 
@@ -300,7 +321,7 @@ namespace ConnectorGrasshopper.Ops
       for (var i = 2; i < Params.Input.Count; i++)
       {
         DA.GetDataTree(i, out GH_Structure<IGH_Goo> input);
-        DataInputs.Add(Params.Input[i].NickName, input);
+        DataInputs.Add(Params.Input[i].Name, input);
       }
       DA.GetDataTree(0, out _TransportsInput);
       DA.GetDataTree(1, out _MessageInput);
@@ -326,8 +347,6 @@ namespace ConnectorGrasshopper.Ops
           sendComponent.CurrentComponentState = "expired";
           return;
         }
-
-        Tracker.TrackPageview("send", sendComponent.AutoSend ? "auto" : "manual");
 
         //the active document may have changed
         sendComponent.Converter.SetContextDocument(RhinoDoc.ActiveDoc);
@@ -436,6 +455,8 @@ namespace ConnectorGrasshopper.Ops
             var serverTransport = new ServerTransport(acc, sw.StreamId) { TransportName = $"T{t}" };
             transportBranches.Add(serverTransport, sw.BranchName ?? "main");
             Transports.Add(serverTransport);
+
+            Speckle.Core.Logging.Analytics.TrackEvent(acc, Speckle.Core.Logging.Analytics.Events.Send, new Dictionary<string, object>() { { "auto", sendComponent.AutoSend } });
           }
           else if (transport is ITransport otherTransport)
           {
@@ -538,7 +559,7 @@ namespace ConnectorGrasshopper.Ops
                 message = message,
                 objectId = BaseId,
                 streamId = ((ServerTransport)transport).StreamId,
-                sourceApplication = VersionedHostApplications.Grasshopper
+                sourceApplication = Extras.Utilities.GetVersionedAppName()
               };
 
               // Check to see if we have a previous commit; if so set it.

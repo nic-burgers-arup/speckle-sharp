@@ -17,10 +17,8 @@ namespace Objects.Converter.Revit
   {
     public List<ApplicationPlaceholderObject> AnalyticalNodeToNative(Node speckleNode)
     {
-            List<ApplicationPlaceholderObject> placeholderObjects = new List<ApplicationPlaceholderObject> { };
-
-            return placeholderObjects;
-      
+      List<ApplicationPlaceholderObject> placeholderObjects = new List<ApplicationPlaceholderObject> { };
+      return placeholderObjects;
     }
 
     private Node AnalyticalNodeToSpeckle(ReferencePoint revitNode)
@@ -39,13 +37,13 @@ namespace Objects.Converter.Revit
     {
       var points = new List<XYZ> { };
       var nodes = new List<Node> { };
-     
+
       var cs = revitBoundary.GetDegreesOfFreedomCoordinateSystem();
       var localAxis = new Axis(revitBoundary.Name, Structural.AxisType.Cartesian, new Plane(PointToSpeckle(cs.Origin), VectorToSpeckle(cs.BasisZ), VectorToSpeckle(cs.BasisX), VectorToSpeckle(cs.BasisY)));
 
       var restraintType = revitBoundary.GetBoundaryConditionsType();
       var state = 0;
-      switch (restraintType) 
+      switch (restraintType)
       {
         case BoundaryConditionsType.Point:
           var point = revitBoundary.Point;
@@ -77,7 +75,7 @@ namespace Objects.Converter.Revit
       var restraint = GetRestraintCode(revitBoundary, restraintType, state);
 
       foreach (var point in points)
-      {                
+      {
         var speckleNode = new Node(PointToSpeckle(point), null, restraint, localAxis);
 
         GetAllRevitParamsAndIds(speckleNode, revitBoundary);
@@ -101,7 +99,7 @@ namespace Objects.Converter.Revit
         return new Restraint(RestraintType.Fixed);
       else if (presetState == 1)
         return new Restraint(RestraintType.Pinned);
-      else if(presetState == 2)
+      else if (presetState == 2)
         return new Restraint(RestraintType.Roller);
 
       var boundaryParams = new BuiltInParameter[] {
@@ -151,7 +149,7 @@ namespace Objects.Converter.Revit
             break;
           case 2:
             code = code + "K"; //spring
-            if(type == BoundaryConditionsType.Line)
+            if (type == BoundaryConditionsType.Line)
             {
               switch (boundaryParams[i])
               {
@@ -171,7 +169,8 @@ namespace Objects.Converter.Revit
                   springStiffness[i] = 0;
                   break;
               }
-            } else if (type == BoundaryConditionsType.Area)
+            }
+            else if (type == BoundaryConditionsType.Area)
             {
               switch (boundaryParams[i])
               {

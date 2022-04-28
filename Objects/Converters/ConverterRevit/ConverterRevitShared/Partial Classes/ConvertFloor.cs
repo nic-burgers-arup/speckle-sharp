@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Autodesk.Revit.DB;
-using Objects.BuiltElements;
-using Objects.BuiltElements.Revit;
+﻿using Autodesk.Revit.DB;
 using Objects.BuiltElements.Revit;
 using Objects.Geometry;
 using Speckle.Core.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using DB = Autodesk.Revit.DB;
-using Opening = Objects.BuiltElements.Opening;
 
 namespace Objects.Converter.Revit
 {
@@ -29,14 +26,14 @@ namespace Objects.Converter.Revit
       DB.Line slopeDirection = null;
       if (speckleFloor is RevitFloor speckleRevitFloor)
       {
-        level = LevelToNative(speckleRevitFloor.level);
+        level = ConvertLevelToRevit(speckleRevitFloor.level);
         structural = speckleRevitFloor.structural;
         slope = speckleRevitFloor.slope;
         slopeDirection = (speckleRevitFloor.slopeDirection != null) ? LineToNative(speckleRevitFloor.slopeDirection) : null;
       }
       else
       {
-        level = LevelToNative(LevelFromCurve(outline.get_Item(0)));
+        level = ConvertLevelToRevit(LevelFromCurve(outline.get_Item(0)));
       }
 
       var floorType = GetElementType<FloorType>(speckleFloor);
@@ -83,7 +80,7 @@ namespace Objects.Converter.Revit
 
       var hostedElements = SetHostedElements(speckleFloor, revitFloor);
       placeholders.AddRange(hostedElements);
-      //Report.Log($"Created Floor {revitFloor.Id}");
+      Report.Log($"Created Floor {revitFloor.Id}");
       return placeholders;
     }
 
@@ -92,7 +89,7 @@ namespace Objects.Converter.Revit
       var profiles = GetProfiles(revitFloor);
 
       var speckleFloor = new RevitFloor();
-      speckleFloor.type = Doc.GetElement(revitFloor.GetTypeId()).Name;
+      speckleFloor.type = revitFloor.Document.GetElement(revitFloor.GetTypeId()).Name;
       speckleFloor.outline = profiles[0];
       if (profiles.Count > 1)
       {
@@ -107,7 +104,7 @@ namespace Objects.Converter.Revit
       speckleFloor.displayValue = GetElementDisplayMesh(revitFloor, new Options() { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false });
 
       GetHostedElements(speckleFloor, revitFloor);
-      //Report.Log($"Converted Floor {revitFloor.Id}");
+      Report.Log($"Converted Floor {revitFloor.Id}");
       return speckleFloor;
     }
 

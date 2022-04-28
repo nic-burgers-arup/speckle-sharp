@@ -21,7 +21,7 @@ namespace Objects.Converter.Revit
       speckleCurve.elementId = revitCurve.Id.ToString();
       speckleCurve.applicationId = revitCurve.UniqueId;
       speckleCurve.units = ModelUnits;
-      //Report.Log($"Converted ModelCurve {revitCurve.Id}");
+      Report.Log($"Converted ModelCurve {revitCurve.Id}");
       return speckleCurve;
     }
 
@@ -44,7 +44,9 @@ namespace Objects.Converter.Revit
         DB.ModelCurve revitCurve = Doc.Create.NewModelCurve(baseCurve, NewSketchPlaneFromCurve(baseCurve, Doc));
         var lineStyles = revitCurve.GetLineStyleIds().First();
         placeholders.Add(new ApplicationPlaceholderObject() { applicationId = alignment.applicationId, ApplicationGeneratedId = revitCurve.UniqueId, NativeObject = revitCurve });
+        Report.Log($"Created Alignment {revitCurve.Id}");
       }
+
       return placeholders;
     }
 
@@ -73,7 +75,7 @@ namespace Objects.Converter.Revit
           revitCurve.LineStyle = Doc.GetElement(lineStyleId);
         }
         placeholders.Add(new ApplicationPlaceholderObject() { applicationId = speckleCurve.applicationId, ApplicationGeneratedId = revitCurve.UniqueId, NativeObject = revitCurve });
-        //Report.Log($"Created ModelCurve {revitCurve.Id}");
+        Report.Log($"Created ModelCurve {revitCurve.Id}");
       }
 
       return placeholders;
@@ -98,6 +100,10 @@ namespace Objects.Converter.Revit
       }
       catch (Exception e)
       {
+        if (e.Message.Contains("lies outside")) // this happens if curves are very far from origin
+        {
+          Report.LogConversionError(e); return null;
+        }
         // use display value if curve fails (prob a closed, periodic curve or a non-planar nurbs)
         return ModelCurvesFromEnumerator(CurveToNative(((Geometry.Curve)speckleLine).displayValue).GetEnumerator(),
           speckleLine);

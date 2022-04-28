@@ -533,36 +533,40 @@ namespace Speckle.ConnectorGSA.Proxy
         nativeTypeDependencyGenerations.Add(layer, new List<List<Type>>());
       }
 
-      var retCol = new TypeTreeCollection<GwaKeyword>(typeInfo[layer].Select(d => d.TableKeyword));
-      foreach (var d in typeInfo[layer])
+      // If > 0, typeGens have already been collected so skip to avoid adding duplicates
+      if (nativeTypeDependencyGenerations.Any(x => x.Value.Count == 0))
       {
-        retCol.Integrate(d.TableKeyword, d.RefTableKeywords.ToArray());
-      }
-
-      var gens = retCol.Generations();
-      if (gens == null || gens.Count == 0)
-      {
-        return false;
-      }
-
-      foreach (var gen in gens)
-      {
-        var genSchemaTypes = new List<Type>();
-
-        foreach (var keyword in gen.Where(kw => typeInfo[layer].Any(d => d.TableKeyword == kw)))
+        var retCol = new TypeTreeCollection<GwaKeyword>(typeInfo[layer].Select(d => d.TableKeyword));
+        foreach (var d in typeInfo[layer])
         {
-          //var ktd = typeInfo[layer].FirstOrDefault(d => d.TableKeyword == keyword);
-          var ktd = typeInfo[layer][typeInfoIndicesByKeyword[layer][keyword]];
-          if (ktd.HasDifferentatedKeywords)
-          {
-            genSchemaTypes.AddRange(ktd.LineSchemaTypes);
-          }
-          else
-          {
-            genSchemaTypes.Add(ktd.TableSchemaType);
-          }
+          retCol.Integrate(d.TableKeyword, d.RefTableKeywords.ToArray());
         }
-        nativeTypeDependencyGenerations[layer].Add(genSchemaTypes);
+
+        var gens = retCol.Generations();
+        if (gens == null || gens.Count == 0)
+        {
+          return false;
+        }
+
+        foreach (var gen in gens)
+        {
+          var genSchemaTypes = new List<Type>();
+
+          foreach (var keyword in gen.Where(kw => typeInfo[layer].Any(d => d.TableKeyword == kw)))
+          {
+            //var ktd = typeInfo[layer].FirstOrDefault(d => d.TableKeyword == keyword);
+            var ktd = typeInfo[layer][typeInfoIndicesByKeyword[layer][keyword]];
+            if (ktd.HasDifferentatedKeywords)
+            {
+              genSchemaTypes.AddRange(ktd.LineSchemaTypes);
+            }
+            else
+            {
+              genSchemaTypes.Add(ktd.TableSchemaType);
+            }
+          }
+          nativeTypeDependencyGenerations[layer].Add(genSchemaTypes);
+        }
       }
 
       return (!initialisedError);

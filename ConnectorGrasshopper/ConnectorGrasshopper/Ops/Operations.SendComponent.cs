@@ -17,13 +17,11 @@ using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
 using GrasshopperAsyncComponent;
 using Rhino;
-using Sentry.PlatformAbstractions;
 using Speckle.Core.Api;
 using Speckle.Core.Credentials;
-using Speckle.Core.Kits;
-using Logging = Speckle.Core.Logging;
 using Speckle.Core.Models;
 using Speckle.Core.Transports;
+using Logging = Speckle.Core.Logging;
 using Utilities = ConnectorGrasshopper.Extras.Utilities;
 
 namespace ConnectorGrasshopper.Ops
@@ -35,7 +33,7 @@ namespace ConnectorGrasshopper.Ops
     protected override Bitmap Icon => Properties.Resources.Sender;
     public override bool Obsolete => true;
 
-    public override GH_Exposure Exposure => GH_Exposure.primary;
+    public override GH_Exposure Exposure => GH_Exposure.hidden;
     public override bool CanDisableConversion => false;
     public bool AutoSend { get; set; } = false;
 
@@ -286,8 +284,6 @@ namespace ConnectorGrasshopper.Ops
           return;
         }
 
-        Logging.Tracker.TrackPageview("send", sendComponent.AutoSend ? "auto" : "manual");
-
         //the active document may have changed
         sendComponent.Converter.SetContextDocument(RhinoDoc.ActiveDoc);
 
@@ -490,7 +486,7 @@ namespace ConnectorGrasshopper.Ops
                 message = message,
                 objectId = BaseId,
                 streamId = ((ServerTransport)transport).StreamId,
-                sourceApplication = VersionedHostApplications.Grasshopper
+                sourceApplication = Extras.Utilities.GetVersionedAppName()
               };
 
               // Check to see if we have a previous commit; if so set it.
