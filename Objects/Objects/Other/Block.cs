@@ -41,8 +41,8 @@ namespace Objects.Other
     /// the 3x3 sub-matrix determines scaling
     /// the 4th column defines translation, where the last value could be a divisor
     /// </remarks>
-
     public Transform transform { get; set; } = new Transform();
+
 
     public string units { get; set; }
 

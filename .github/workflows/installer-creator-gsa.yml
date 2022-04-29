@@ -60,6 +60,11 @@ jobs:
       uses: nuget/setup-nuget@v1
       with:
         nuget-version: 'latest'       
+
+    - name: NuGet restore
+      run: |
+        nuget restore ConnectorGSA/ConnectorGSA.sln
+        nuget restore Objects/Converters/ConverterGSA/ConverterGSA/ConverterGSA.csproj
         
     # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
@@ -148,6 +153,7 @@ jobs:
         release_name: gsa/${{ steps.calculate-tag-version.outputs.tag }}
         body: |
           Automated release of Speckle v2 Connector for Oasys GSA 10.1
+
         draft: false
         prerelease: true
 
