@@ -1,13 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Threading.Tasks;
 using ConnectorGrasshopper.Extras;
 using Grasshopper.Kernel;
-using Grasshopper.Kernel.Types;
 using Speckle.Core.Api;
-using Speckle.Core.Credentials;
-using Speckle.Core.Logging;
+using Logging = Speckle.Core.Logging;
 
 namespace ConnectorGrasshopper.Streams
 {
@@ -73,19 +71,11 @@ namespace ConnectorGrasshopper.Streams
         Message = "Fetching";
         Task.Run(async () =>
         {
-          var account = string.IsNullOrEmpty(streamWrapper.UserId) ? AccountManager.GetAccounts().FirstOrDefault(a => a.serverInfo.url == streamWrapper.ServerUrl) :
-            AccountManager.GetAccounts().FirstOrDefault(a => a.userInfo.id == streamWrapper.UserId);
-
-          if (account == null)
-          {
-            AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Could not find the specified account in this machine. Use the Speckle Manager to add an account, or modify the input stream with your credentials.");
-            return;
-          }
-
-          var client = new Client(account);
-          var input = new StreamUpdateInput();
           try
           {
+            var account = streamWrapper.GetAccount().Result;
+            var client = new Client(account);
+            var input = new StreamUpdateInput();
             stream = await client.StreamGet(streamWrapper.StreamId);
             input.id = streamWrapper.StreamId;
 
@@ -95,10 +85,12 @@ namespace ConnectorGrasshopper.Streams
             if (stream.isPublic != isPublic) input.isPublic = isPublic;
 
             await client.StreamUpdate(input);
+
+            Logging.Analytics.TrackEvent(account, Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Stream Update" } });
           }
           catch (Exception e)
           {
-            error = e;
+            error = e.InnerException ?? e;
           }
           finally
           {
@@ -114,11 +106,5 @@ namespace ConnectorGrasshopper.Streams
         DA.SetData(0, streamWrapper.StreamId);
       }
     }
-    protected override void BeforeSolveInstance()
-    {
-      Tracker.TrackPageview(Tracker.STREAM_UPDATE);
-      base.BeforeSolveInstance();
-    }
-
   }
 }

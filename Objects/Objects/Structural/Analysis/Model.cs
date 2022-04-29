@@ -7,14 +7,15 @@ namespace Objects.Structural.Analysis
 {
     public class Model : Base
     {        
+        [DetachProperty]
         public ModelInfo specs { get; set; } //container for model and project specifications
 
         [DetachProperty]
-        [Chunkable(5000)]
+        [Chunkable(1000)]
         public List<Base> nodes { get; set; } //nodes list
 
         [DetachProperty]
-        [Chunkable(5000)]
+        [Chunkable(1000)]
         public List<Base> elements { get; set; } //element (or member) list
 
         [DetachProperty]
@@ -49,7 +50,7 @@ namespace Objects.Structural.Analysis
         /// <param name="properties"></param>
         /// <param name="materials"></param>
         [SchemaInfo("Model", "Creates a Speckle structural model object", "Structural", "Analysis")]
-        public Model(ModelInfo specs, List<Base> nodes, List<Base> elements, List<Base> loads, List<Base> restraints, List<Base> properties, List<Base> materials) 
+        public Model(ModelInfo specs= null, List<Base> nodes = null, List<Base> elements = null, List<Base> loads= null, List<Base> restraints = null, List<Base> properties= null, List<Base> materials= null) 
         {
             this.specs = specs;
             this.nodes = nodes;

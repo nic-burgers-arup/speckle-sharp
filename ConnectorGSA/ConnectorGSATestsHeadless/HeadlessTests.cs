@@ -13,9 +13,11 @@ namespace ConnectorGSATestsHeadless
   public class HeadlessTests
   {
     //private string rxStreamId = "44ac187897";
-    private string rxStreamId = "789a7f35e6";
-    private string rxServerUrl = "https://speckle.xyz";
-      
+    //private string rxStreamId = "789a7f35e6";
+    private string rxStreamId = "44913bae98";
+    private string rxServerUrl = "https://v2.staging-speckle.arup.com/";
+    private string apiToken = "312abe069a6f5f73007693de8a05aed27b05a820c1";
+
     private string saveAsAlternativeFilepath(string fn)
     {
       return Path.Combine(TestDataDirectory, fn.Split('.').First() + "_test.gwb");
@@ -34,9 +36,8 @@ namespace ConnectorGSATestsHeadless
     {
       var headless = new Headless();
       var cliResult = headless.RunCLI("sender",
-        "--server", v2ServerUrl,
+
         "--file", Path.Combine(TestDataDirectory, modelWithoutResultsFile),
-        "--saveAs", saveAsAlternativeFilepath(modelWithoutResultsFile),
         "--designLayerOnly");
 
       Assert.True(cliResult);
@@ -49,7 +50,6 @@ namespace ConnectorGSATestsHeadless
       var account = AccountManager.GetDefaultAccount();
       var cliResult = headless.RunCLI("sender",
         "--server", account.serverInfo.url,
-        "--email", account.userInfo.email,
         "--token", account.token,
         "--file", Path.Combine(TestDataDirectory, modelWithoutResultsFile),
         "--saveAs", saveAsAlternativeFilepath(modelWithoutResultsFile));
@@ -64,7 +64,6 @@ namespace ConnectorGSATestsHeadless
       var account = AccountManager.GetDefaultAccount();
       var cliResult = headless.RunCLI("sender",
         "--server", account.serverInfo.url,
-        "--email", account.userInfo.email,
         "--token", account.token,
         "--file", Path.Combine(TestDataDirectory, modelWithResultsFile),
         "--saveAs", saveAsAlternativeFilepath(modelWithResultsFile),
@@ -99,7 +98,6 @@ namespace ConnectorGSATestsHeadless
       var account = AccountManager.GetDefaultAccount();
       var cliResult = headless.RunCLI("sender",
         "--server", account.serverInfo.url,
-        "--email", account.userInfo.email,
         "--token", account.token,
         "--file", @"C:\Temp\200518 SJC v10.1.gwb",
         "--saveAs", saveAsAlternativeFilepath(@"C:\Temp\200518 SJC v10.1.modified.gwb"),
@@ -119,7 +117,6 @@ namespace ConnectorGSATestsHeadless
       var account = AccountManager.GetDefaultAccount();
       var cliResult = headless.RunCLI("receiver",
         "--server", account.serverInfo.url,
-        "--email", account.userInfo.email,
         "--token", account.token,
         "--file", Path.Combine(TestDataDirectory, "Received.gwb"),
         "--streamIDs", rxStreamId,

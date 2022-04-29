@@ -35,7 +35,7 @@ namespace Speckle.ConnectorDynamo.Functions
       var responses = new List<string>();
 
       var objectId = Operations.Send(data, cancellationToken, new List<ITransport>(transports), true,
-        onProgressAction, onErrorAction, disposeTransports: true).Result;
+        onProgressAction, onErrorAction).Result;
 
       if (cancellationToken.IsCancellationRequested)
         return null;
@@ -70,6 +70,7 @@ namespace Speckle.ConnectorDynamo.Functions
               CommitId = res
             };
           commitWrappers.Add(wrapper.ToString());
+          Analytics.TrackEvent(client.Account, Analytics.Events.Send);
         }
         catch (Exception ex)
         {
@@ -162,11 +163,28 @@ namespace Speckle.ConnectorDynamo.Functions
         disposeTransports: true
       ).Result;
 
+      try
+      {
+        client.CommitReceived(new CommitReceivedInput
+        {
+          streamId = stream.StreamId,
+          commitId = commit?.id,
+          message = commit?.message,
+          sourceApplication = VersionedHostApplications.DynamoRevit
+        }).Wait();
+      }
+      catch
+      {
+        // Do nothing!
+      }
+
       if (cancellationToken.IsCancellationRequested)
         return null;
 
       var converter = new BatchConverter();
       var data = converter.ConvertRecursivelyToNative(@base);
+
+      Analytics.TrackEvent(client.Account, Analytics.Events.Receive);
 
       return new Dictionary<string, object> { { "data", data }, { "commit", commit } };
     }

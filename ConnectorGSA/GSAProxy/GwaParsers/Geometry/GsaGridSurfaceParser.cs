@@ -36,7 +36,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       }
 
       //GRID_SURFACE.1 | num | name | plane | type | elements | tol | span | angle | grid
-      AddItems(ref items, record.Name,
+      AddItems(ref items, record.Name ?? $"Grid surface {record.Index}",
         AddPlane(),
         ((record.Type == GridSurfaceElementsType.OneD) ? 1 : 2).ToString(),
         AddEntities(record.MemberIndices, record.ElementIndices),

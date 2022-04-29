@@ -1,4 +1,5 @@
-﻿using Speckle.GSA.API.GwaSchema;
+﻿using Speckle.GSA.API;
+using Speckle.GSA.API.GwaSchema;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -24,7 +25,16 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       //Only basic level of support is offered now - the arguments after type are ignored
       //LOAD_TITLE.2 | case | title | type | source | category | dir | include | bridge
       //Note: case is deserialised into the Index field
-      return FromGwaByFuncs(items, out _, AddTitle, AddType, v => AddNullableIntValue(v, out record.Source), AddCategory, AddDirection, AddInclude, AddBridge);
+      
+      if (!FromGwaByFuncs(items, out remainingItems, AddTitle, AddType, v => AddNullableIntValue(v, out record.Source), AddCategory, AddDirection, AddInclude))
+      {
+        return false;
+      }
+      if (remainingItems.Count > 0)
+      {
+        return FromGwaByFuncs(remainingItems, out _, AddBridge);
+      }
+      return true;
     }
 
     public override bool Gwa(out List<string> gwa, bool includeSet = false)
@@ -37,7 +47,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
 
       //LOAD_TITLE.2 | case | title | type | source | category | dir | include | bridge
       //Note: case will be serialised from the Index field
-      AddItems(ref items, record.Title, LoadCaseTypeToString(record.CaseType), record.Source ?? 0, record.Category.GetStringValue(), 
+      AddItems(ref items, record.Title, LoadCaseTypeToString(record.CaseType), record.Source ?? 1, record.Category.GetStringValue(), 
         AddDirection(), record.Include.GetStringValue());
       if (record.Bridge != null) AddItems(ref items, AddBridge());
 
@@ -126,18 +136,18 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
         case "LC_VAR_ROOF": 
           return StructuralLoadCaseType.Live;
         case "WIND":
-        case "LC_VAR_WIND":
+        case "LC_VAR_WIND": 
           return StructuralLoadCaseType.Wind;
         case "SNOW":
-        case "LC_VAR_SNOW":
+        case "LC_VAR_SNOW": 
           return StructuralLoadCaseType.Snow;
-        case "LC_VAR_RAIN":
-          return StructuralLoadCaseType.Rain;
+        case "LC_VAR_RAIN": return StructuralLoadCaseType.Rain;
         case "SEISMIC":
-        case "LC_EQE_ACC":
-        case "LC_EQE_STAT":
-        case "LC_EQE_RSA":
+        case "LC_EQE_STAT": 
           return StructuralLoadCaseType.Earthquake;
+        case "LC_EQE_ACC": return StructuralLoadCaseType.EarthquakeAccTors;
+        case "LC_EQE_RSA": return StructuralLoadCaseType.EarthquakeRSA;
+        case "LC_ACCIDENTAL": return StructuralLoadCaseType.Accidental;
         case "LC_PERM_SOIL": return StructuralLoadCaseType.Soil;
         case "LC_VAR_TEMP": return StructuralLoadCaseType.Thermal;
         default:
@@ -163,8 +173,11 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
         case StructuralLoadCaseType.Snow: return ("LC_VAR_SNOW");
         case StructuralLoadCaseType.Rain: return ("LC_VAR_RAIN");
         case StructuralLoadCaseType.Earthquake: return ("LC_EQE_STAT");
+        case StructuralLoadCaseType.EarthquakeAccTors: return ("LC_EQE_ACC");
+        case StructuralLoadCaseType.EarthquakeRSA: return ("LC_EQE_RSA");
         case StructuralLoadCaseType.Soil: return ("LC_PERM_SOIL");
         case StructuralLoadCaseType.Thermal: return ("LC_VAR_TEMP");
+        case StructuralLoadCaseType.Accidental: return ("LC_ACCIDENTAL");
         default: return ("LC_UNDEF");
       }
     }

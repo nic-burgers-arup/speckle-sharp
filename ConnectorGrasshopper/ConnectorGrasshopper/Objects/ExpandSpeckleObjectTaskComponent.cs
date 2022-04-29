@@ -8,8 +8,8 @@ using ConnectorGrasshopper.Extras;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
-using Speckle.Core.Logging;
 using Speckle.Core.Models;
+using Logging = Speckle.Core.Logging;
 using Utilities = ConnectorGrasshopper.Extras.Utilities;
 
 namespace ConnectorGrasshopper.Objects
@@ -40,27 +40,39 @@ namespace ConnectorGrasshopper.Objects
 
     protected override void SolveInstance(IGH_DataAccess DA)
     {
- 
+
       if (InPreSolve)
       {
         GH_SpeckleBase ghSpeckleBase = null;
-        if(!DA.GetData(0, ref ghSpeckleBase)) return;
-        var @base = ghSpeckleBase.Value;
+        var x = DA.GetData(0, ref ghSpeckleBase);
+        var @base = ghSpeckleBase?.Value;
+        if (!x || @base == null)
+        {
+          AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Some input values are not Speckle objects or are null.");
+          OnDisplayExpired(true);
+          return;
+        }
+
+        if (DA.Iteration == 0)
+        {
+          Logging.Analytics.TrackEvent(Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Expand Object" } });
+        }
+
 
         var task = Task.Run(() => DoWork(@base));
         TaskList.Add(task);
         return;
       }
-      if(Converter != null)
+      if (Converter != null)
       {
-        foreach (var error in Converter.ConversionErrors)
+        foreach (var error in Converter.Report.ConversionErrors)
         {
           AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
             error.Message + ": " + error.InnerException?.Message);
         }
-        Converter.ConversionErrors.Clear();
+        Converter.Report.ConversionErrors.Clear();
       }
-      
+
       if (!GetSolveResults(DA, out Dictionary<string, object> result))
       {
         // Normal mode not supported
@@ -71,18 +83,31 @@ namespace ConnectorGrasshopper.Objects
       {
         foreach (var key in result.Keys)
         {
-          var indexOfOutputParam = Params.IndexOfOutputParam(key);
-          
-          if(indexOfOutputParam != -1)
+          var isDetached = key.StartsWith("@");
+          var name = isDetached ? key.Substring(1) : key;
+          var indexOfOutputParam = Params.IndexOfOutputParam(name);
+
+          if (indexOfOutputParam != -1)
           {
             var obj = result[key];
             switch (obj)
             {
+              case IGH_Structure structure:
+                var path = DA.ParameterTargetPath(indexOfOutputParam);
+                structure.Paths.ToList().ForEach(p =>
+                {
+                  var indices = path.Indices.ToList();
+                  indices.AddRange(p.Indices);
+                  var newPath = new GH_Path(indices.ToArray());
+                  p.Indices = indices.ToArray();
+                });
+                DA.SetDataTree(indexOfOutputParam, structure);
+                break;
               case IList list:
                 DA.SetDataList(indexOfOutputParam, list);
                 break;
               default:
-                DA.SetDataList(indexOfOutputParam, new List<object>{ obj });
+                DA.SetDataList(indexOfOutputParam, new List<object> { obj });
                 break;
             }
           }
@@ -103,6 +128,7 @@ namespace ConnectorGrasshopper.Objects
         Optional = true,
       };
       myParam.NickName = myParam.Name;
+      myParam.Attributes = new GenericAccessParamAttributes(myParam, Attributes);
       return myParam;
     }
 
@@ -111,21 +137,60 @@ namespace ConnectorGrasshopper.Objects
     public void VariableParameterMaintenance()
     {
       // Perform parameter maintenance here!
+      Params.Input
+        .Where(param => !(param.Attributes is GenericAccessParamAttributes))
+        .ToList()
+        .ForEach(param => param.Attributes = new GenericAccessParamAttributes(param, Attributes)
+        );
     }
 
     public List<string> outputList = new List<string>();
 
     private bool OutputMismatch() =>
       outputList.Count != Params.Output.Count
-      || outputList.Where((t, i) => Params.Output[i].NickName != t).Any();
+      || outputList.Where((t, i) =>
+      {
+        var isDetached = t.StartsWith("@");
+        var name = isDetached ? t.Substring(1) : t;
+        var nickChange = Params.Output[i].NickName != t;
+        var detachChange = (Params.Output[i] as GenericAccessParam).Detachable != isDetached;
+        return nickChange || detachChange;
+      }).Any();
 
+    private bool HasSingleRename()
+    {
+      var equalLength = outputList.Count == Params.Output.Count;
+      if (!equalLength) return false;
+
+      var diffParams = Params.Output.Where(param => !outputList.Contains(param.NickName) && !outputList.Contains("@" + param.NickName));
+      return diffParams.Count() == 1;
+    }
     private void AutoCreateOutputs()
     {
-      var tokenCount = outputList?.Count ?? 0;
+      if (!OutputMismatch())
+        return;
 
-      if (tokenCount == 0 || !OutputMismatch()) return;
       RecordUndoEvent("Creating Outputs");
 
+      // Check for single param rename, if so, just rename it and go on.
+      if (HasSingleRename())
+      {
+        var diffParams = Params.Output.Where(param => !outputList.Contains(param.NickName) && !outputList.Contains("@" + param.NickName));
+        var diffOut = outputList
+          .Where(name =>
+            !Params.Output.Select(p => p.NickName)
+              .Contains(name.StartsWith("@") ? name.Substring(1) : name));
+
+        var newName = diffOut.First();
+        var renameParam = diffParams.First();
+        var isDetached = newName.StartsWith("@");
+        var cleanName = isDetached ? newName.Substring(1) : newName;
+        renameParam.NickName = cleanName;
+        renameParam.Name = cleanName;
+        renameParam.Description = $"Data from property: {cleanName}";
+        (renameParam as GenericAccessParam).Detachable = isDetached;
+        return;
+      }
       // Check what params must be deleted, and do so when safe.
       var remove = Params.Output.Select((p, i) =>
       {
@@ -142,16 +207,24 @@ namespace ConnectorGrasshopper.Objects
       outputList.Sort();
       outputList.ForEach(s =>
       {
-        var param = Params.Output.Find(p => p.Name == s);
+        var isDetached = s.StartsWith("@");
+        var name = isDetached ? s.Substring(1) : s;
+        var param = Params.Output.Find(p => p.Name == name);
         if (param == null)
         {
-          var newParam = CreateParameter(GH_ParameterSide.Output, Params.Output.Count);
-          newParam.Name = s;
-          newParam.NickName = s;
-          newParam.Description = $"Data from property: {s}";
+          var newParam = CreateParameter(GH_ParameterSide.Output, Params.Output.Count) as GenericAccessParam;
+          newParam.Name = name;
+          newParam.NickName = name;
+          newParam.Description = $"Data from property: {name}";
           newParam.MutableNickName = false;
           newParam.Access = GH_ParamAccess.list;
+          newParam.Detachable = isDetached;
+          newParam.Optional = false;
           Params.RegisterOutputParam(newParam);
+        }
+        if (param is GenericAccessParam srParam)
+        {
+          srParam.Detachable = isDetached;
         }
       });
       var paramNames = Params.Output.Select(p => p.Name).ToList();
@@ -175,32 +248,25 @@ namespace ConnectorGrasshopper.Objects
       base.BeforeSolveInstance();
     }
 
-    protected override void AfterSolveInstance()
-    {
-      base.AfterSolveInstance();
-    }
-
     private List<string> GetOutputList(GH_Structure<GH_SpeckleBase> speckleObjects)
     {
       // Get the full list of output parameters
       var fullProps = new List<string>();
-      
+
       foreach (var ghGoo in speckleObjects.AllData(true))
       {
-        var b = (ghGoo as GH_SpeckleBase).Value;
+        var b = (ghGoo as GH_SpeckleBase)?.Value;
         b?.GetMemberNames().ToList().ForEach(prop =>
         {
-          if (!fullProps.Contains(prop) && b[prop] != null)
+          if (!fullProps.Contains(prop))
             fullProps.Add(prop);
-          else if (fullProps.Contains(prop) && b[prop] == null)
-            fullProps.Remove(prop);
         });
       }
 
       fullProps.Sort();
       return fullProps;
     }
-    
+
     public Dictionary<string, object> DoWork(Base @base)
     {
       try
@@ -210,12 +276,12 @@ namespace ConnectorGrasshopper.Objects
       catch (Exception e)
       {
         // If we reach this, something happened that we weren't expecting...
-        Log.CaptureException(e);
+        Logging.Log.CaptureException(e);
         AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Something went terribly wrong... " + e.Message);
         return null;
       }
     }
-    
+
     private Dictionary<string, object> CreateOutputDictionary(Base @base)
     {
       // Create empty data tree placeholders for output.
@@ -223,6 +289,7 @@ namespace ConnectorGrasshopper.Objects
 
       // Assign all values to it's corresponding dictionary entry and branch path.
       var obj = @base;
+      if (obj == null) return new Dictionary<string, object>();
       foreach (var prop in obj.GetMembers())
       {
         // Convert and add to corresponding output structure
@@ -231,8 +298,17 @@ namespace ConnectorGrasshopper.Objects
         switch (value)
         {
           case null:
-            continue;
-          case System.Collections.IList list:
+            outputDict[prop.Key] = null;
+            break;
+          case IList list:
+            var items = list as List<object>;
+            if (items != null && items.Where(l => l is IList).Any())
+            {
+              // Nested lists need to be converted into trees :)
+              var treeBuilder = new TreeBuilder(Converter) { ConvertToNative = Converter != null };
+              outputDict[prop.Key] = treeBuilder.Build(list);
+              break;
+            }
             var result = new List<IGH_Goo>();
             foreach (var x in list)
             {
@@ -263,7 +339,7 @@ namespace ConnectorGrasshopper.Objects
             break;
         }
       }
-      
+
       return outputDict;
     }
   }

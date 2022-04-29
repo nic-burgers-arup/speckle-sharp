@@ -25,11 +25,12 @@
     public double? InPlane;
     public double? VolumePercentage;
     public double? Volume;
+    public string Units = "";
 
     public GsaProp2d() : base()
     {
       //Defaults
-      Version = 7;
+      Version = 8;
     }
   }
 }

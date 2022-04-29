@@ -1,6 +1,8 @@
 ﻿using Speckle.GSA.API;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ConnectorGSA.Models
 {
@@ -10,7 +12,7 @@ namespace ConnectorGSA.Models
     public StreamMethod StreamMethod { get; set; } = StreamMethod.Single;
     public StreamList StreamList { get; set; } = new StreamList();
 
-    protected List<StreamState> sidSpeckleRecords = new List<StreamState>();
+    protected List<StreamState> StreamStates = new List<StreamState>();
 
     public double PollingRateMilliseconds { get; set; } = 2000;
     public TabBase(GSALayer defaultLayer)
@@ -18,42 +20,37 @@ namespace ConnectorGSA.Models
       TargetLayer = defaultLayer;
     }
 
-    public bool ChangeSidRecordStreamName(string streamId, string streamName)
+    public async Task<bool> RefreshStream(string streamId, IProgress<MessageEventArgs> loggingProgress)
     {
-      var matching = sidSpeckleRecords.FirstOrDefault(r => r.StreamId.Equals(streamId, System.StringComparison.InvariantCultureIgnoreCase));
+      var matching = StreamStates.FirstOrDefault(r => r.StreamId.Equals(streamId, StringComparison.InvariantCultureIgnoreCase));
       if (matching == null)
       {
         return false;
       }
-      matching.SetName(streamName);
-      return true;
+      var refreshed = await matching.RefreshStream(loggingProgress);
+      return refreshed;
     }
 
-    public bool SidRecordsToStreamList()
+    public bool StreamStatesToStreamList()
     {
       StreamList.SeletedStreamListItem = null;
       StreamList.StreamListItems.Clear();
-      foreach (var sidr in sidSpeckleRecords)
+      foreach (var sidr in StreamStates)
       {
         StreamList.StreamListItems.Add(new StreamListItem(sidr.StreamId, sidr.Stream.name));
       }
       return true;
     }
 
-    public void StreamListToSidRecords()
+    public bool RemoveStreamState(StreamState r)
     {
-      sidSpeckleRecords = StreamList.StreamListItems.Select(sli => new StreamState(sli.StreamId, sli.StreamName)).ToList();
-    }
-
-    public bool RemoveSidSpeckleRecord(StreamState r)
-    {
-      var matching = sidSpeckleRecords.Where(ssr => ssr.StreamId.Equals(r.StreamId, System.StringComparison.InvariantCultureIgnoreCase)).ToList();
+      var matching = StreamStates.Where(ssr => ssr.StreamId.Equals(r.StreamId, System.StringComparison.InvariantCultureIgnoreCase)).ToList();
       if (matching.Count > 0)
       {
-        var indices = matching.Select(m => sidSpeckleRecords.IndexOf(m)).OrderByDescending(i => i).ToList();
+        var indices = matching.Select(m => StreamStates.IndexOf(m)).OrderByDescending(i => i).ToList();
         foreach (var i in indices)
         {
-          sidSpeckleRecords.RemoveAt(i);
+          StreamStates.RemoveAt(i);
         }
       }
       return true;

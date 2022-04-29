@@ -210,7 +210,6 @@ namespace Speckle.ConnectorDynamo.ReceiveNode
     /// </summary>
     public Receive()
     {
-      Tracker.TrackPageview(Tracker.RECEIVE_ADDED);
 
       AddInputs();
       AddOutputs();
@@ -256,11 +255,6 @@ namespace Speckle.ConnectorDynamo.ReceiveNode
       //if already receiving, stop and start again
       if (Transmitting)
         CancelReceive();
-
-      if (AutoUpdate)
-        Tracker.TrackPageview(Tracker.RECEIVE_AUTO);
-      else
-        Tracker.TrackPageview(Tracker.RECEIVE_MANUAL);
 
       Transmitting = true;
       Message = "Receiving...";
@@ -313,7 +307,7 @@ namespace Speckle.ConnectorDynamo.ReceiveNode
         if (!_cancellationToken.IsCancellationRequested)
         {
           _cancellationToken.Cancel();
-          Message = e.Message;
+          Message = e.InnerException != null ? e.InnerException.Message : e.Message;
           if (e.InnerException != null) Warning(e.InnerException.Message);
           if (e is AggregateException agrException)
             agrException.InnerExceptions.ToList().ForEach(ex =>

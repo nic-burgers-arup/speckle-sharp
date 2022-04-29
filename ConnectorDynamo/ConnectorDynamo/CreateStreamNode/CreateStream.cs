@@ -1,16 +1,16 @@
-﻿using Dynamo.Graph.Nodes;
-using ProtoCore.AST.AssociativeAST;
-using Speckle.Core.Credentials;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using Speckle.Core.Logging;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Reactive.Linq;
+using Dynamo.Graph.Nodes;
 using Dynamo.Utilities;
-using Speckle.Core.Api;
-using Account = Speckle.Core.Credentials.Account;
 using Newtonsoft.Json;
+using ProtoCore.AST.AssociativeAST;
+using Speckle.Core.Api;
+using Speckle.Core.Credentials;
+using Speckle.Core.Logging;
+using Account = Speckle.Core.Credentials.Account;
 
 namespace Speckle.ConnectorDynamo.CreateStreamNode
 {
@@ -136,18 +136,19 @@ namespace Speckle.ConnectorDynamo.CreateStreamNode
         return;
       }
 
-      Tracker.TrackPageview(Tracker.STREAM_CREATE);
-
       var client = new Client(SelectedAccount);
       try
       {
-        var res = client.StreamCreate(new StreamCreateInput()).Result;
+        var res = client.StreamCreate(new StreamCreateInput { isPublic = false }).Result;
 
         Stream = new StreamWrapper(res, SelectedAccount.userInfo.id, SelectedAccount.serverInfo.url);
         CreateEnabled = false;
         SelectedUserId = SelectedAccount.userInfo.id;
 
         this.Name = "Stream Created";
+
+        Analytics.TrackEvent(SelectedAccount, Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Stream Create" } });
+
         OnNodeModified(true);
       }
       catch (Exception ex)

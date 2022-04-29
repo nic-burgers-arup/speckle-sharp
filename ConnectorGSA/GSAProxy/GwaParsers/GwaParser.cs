@@ -163,15 +163,8 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
     #endregion
 
     #region common_to_gwa_fns
-
-    protected string AddEntities(List<int> memberIndices, List<int> elementIndices)
+    protected string AddNonEmptyEntities(List<int> memberIndices, List<int> elementIndices)
     {
-      //For now assume that an empty list means "all"
-      if ((memberIndices == null || memberIndices.Count() == 0) && (elementIndices == null || elementIndices.Count() == 0))
-      {
-        return "all";
-      }
-
       var entityLists = new List<string>();
       if (memberIndices != null && memberIndices.Count > 0)
       {
@@ -183,13 +176,34 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       }
       if (elementIndices != null && elementIndices.Count > 0)
       {
-        var listStr = AddEntities(memberIndices, GSALayer.Analysis);
+        var listStr = AddEntities(elementIndices, GSALayer.Analysis);
         if (!string.IsNullOrEmpty(listStr))
         {
           entityLists.Add(listStr);
         }
       }
       return string.Join(" ", entityLists);
+    }
+
+    protected string AddEntities(List<int> memberIndices, List<int> elementIndices)
+    {
+      //For now assume that an empty list means "all"
+      if ((memberIndices == null || memberIndices.Count() == 0) && (elementIndices == null || elementIndices.Count() == 0))
+      {
+        return "all";
+      }
+
+      return AddNonEmptyEntities(memberIndices, elementIndices);
+    }
+
+    protected string AddLockedEntities(List<int> memberIndices, List<int> elementIndices)
+    {
+      //For now assume that an empty list means "none"
+      if ((memberIndices == null || memberIndices.Count() == 0) && (elementIndices == null || elementIndices.Count() == 0))
+      {
+        return "none";
+      }
+      return AddNonEmptyEntities(memberIndices, elementIndices);
     }
 
     private string AddEntities(List<int> entities, GSALayer layer)
@@ -237,10 +251,6 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       {
         var releaseCode = (releases != null && releases.Count() > 0 && releases.ContainsKey(d)) ? releases[d] : ReleaseCode.Fixed;
         rls += releaseCode.GetStringValue();
-        if (releaseCode == ReleaseCode.Stiff && releases.ContainsKey(d) && (++stiffnessIndex) < stiffnesses.Count())
-        {
-          stiffnesses.Add(stiffnesses[stiffnessIndex]);
-        }
       }
       items.Add(rls);
       if (stiffnesses != null && stiffnesses.Count() > 0)
@@ -339,9 +349,10 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
         }
         else
         {
+
           //Only recognise the groups, as these represent the members
           //TO DO: for all elements, find if they have parents and include them
-          var members = string.Join(" ", entityItems.Where(ei => ei.StartsWith("G")).Select(ei => ei.Substring(1)));
+          var members = string.Join(" ", entityItems.Where(ei => ei.StartsWith("G")));
           indices = Instance.GsaModel.Proxy.ConvertGSAList(members, GSAEntity.MEMBER).ToList();
         }
       }

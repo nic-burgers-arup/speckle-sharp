@@ -159,6 +159,14 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       {
         return AxisRefType.Global.ToString().ToUpperInvariant();
       }
+      else if (record.AxisRefType == NodeAxisRefType.XElevation)
+      {
+        return "X_ELEV";
+      }
+      else if (record.AxisRefType == NodeAxisRefType.YElevation)
+      {
+        return "Y_ELEV";
+      }
       return record.AxisRefType.ToString().ToUpperInvariant();
     }
     #endregion

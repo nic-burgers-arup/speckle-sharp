@@ -9,22 +9,101 @@ using Speckle.Core.Models;
 using Speckle.Core.Kits;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using BlockDefinition = Objects.Other.BlockDefinition;
 using BlockInstance = Objects.Other.BlockInstance;
+using DisplayStyle = Objects.Other.DisplayStyle;
 using Hatch = Objects.Other.Hatch;
+using HatchLoop = Objects.Other.HatchLoop;
 using Polyline = Objects.Geometry.Polyline;
 using Text = Objects.Other.Text;
 using RH = Rhino.DocObjects;
+using RenderMaterial = Objects.Other.RenderMaterial;
 using Rhino;
 
 namespace Objects.Converter.RhinoGh
 {
   public partial class ConverterRhinoGh
   {
-    public Rhino.Geometry.Hatch HatchToNative(Hatch hatch)
+    public ObjectAttributes DisplayStyleToNative(DisplayStyle display)
     {
-      var curves = hatch.curves.Select(o => CurveToNative(o));
+      var attributes = new ObjectAttributes();
+
+      attributes.ColorSource = ObjectColorSource.ColorFromObject;
+      attributes.ObjectColor = System.Drawing.Color.FromArgb(display.color);
+      attributes.PlotWeight = display.lineweight;
+      attributes.LinetypeSource = ObjectLinetypeSource.LinetypeFromObject;
+      var lineStyle = Doc.Linetypes.FindName(display.linetype);
+      attributes.LinetypeIndex = (lineStyle != null) ? lineStyle.Index : 0;
+
+      return attributes;
+    }
+
+    public DisplayStyle DisplayStyleToSpeckle(ObjectAttributes attributes)
+    {
+      var style = new DisplayStyle();
+
+      style.color = attributes.DrawColor(Doc).ToArgb();
+      var lineType = Doc.Linetypes[attributes.LinetypeIndex];
+      if (lineType.HasName)
+        style.linetype = lineType.Name;
+      style.lineweight = attributes.PlotWeight;
+
+      return style;
+    }
+
+    public Rhino.Render.RenderMaterial RenderMaterialToNative(RenderMaterial speckleMaterial)
+    {
+      var commitInfo = GetCommitInfo();
+      var speckleName = $"{commitInfo} - {speckleMaterial.name}";
+      
+      // check if the doc already has a material with speckle material name, or a previously created speckle material
+      var existing = Doc.RenderMaterials.FirstOrDefault(x => x.Name == speckleMaterial.name);
+      if (existing != null)
+        return existing;
+      else
+        existing = Doc.RenderMaterials.FirstOrDefault(x => x.Name == speckleName);
+      if (existing != null)
+        return existing;
+      
+      var rhinoMaterial = new Material
+      {
+        Name = speckleName,
+        DiffuseColor = Color.FromArgb(speckleMaterial.diffuse),
+        EmissionColor = Color.FromArgb(speckleMaterial.emissive),
+        Transparency = 1 - speckleMaterial.opacity,
+        Reflectivity = speckleMaterial.metalness
+      };
+      
+      var renderMaterial = Rhino.Render.RenderMaterial.CreateBasicMaterial(rhinoMaterial, Doc);
+      Doc.RenderMaterials.Add(renderMaterial);
+
+      return renderMaterial;
+    }
+    public RenderMaterial RenderMaterialToSpeckle(Material material)
+    {
+      var renderMaterial = new RenderMaterial();
+      if (material == null) return renderMaterial;
+
+      renderMaterial.name = (material.Name == null) ? "default" : material.Name; // default rhino material has no name or id
+      renderMaterial.diffuse = material.DiffuseColor.ToArgb();
+      renderMaterial.emissive = material.EmissionColor.ToArgb();
+      renderMaterial.opacity = 1 - material.Transparency;
+      renderMaterial.metalness = material.Reflectivity;
+
+      // for some reason some default material transparency props are 1 when they shouldn't be - use this hack for now
+      if ((renderMaterial.name.ToLower().Contains("glass") || renderMaterial.name.ToLower().Contains("gem")) && renderMaterial.opacity == 0)
+        renderMaterial.opacity = 0.3;
+
+      return renderMaterial;
+    }
+
+    public Rhino.Geometry.Hatch[] HatchToNative(Hatch hatch)
+    {
+
+      var curves = new List<Rhino.Geometry.Curve>();
+      curves = (hatch.loops != null) ? hatch.loops.Select(o => CurveToNative(o.Curve)).ToList() : hatch.curves.Select(o => CurveToNative(o)).ToList();
       var pattern = Doc.HatchPatterns.FindName(hatch.pattern);
       int index;
       if (pattern == null)
@@ -36,15 +115,21 @@ namespace Objects.Converter.RhinoGh
       else
         index = pattern.Index;
       var hatches = Rhino.Geometry.Hatch.Create(curves, index, hatch.rotation, hatch.scale, 0.001);
-      return hatches.First();
+
+      return hatches;
     }
     public Hatch HatchToSpeckle(Rhino.Geometry.Hatch hatch)
     {
       var _hatch = new Hatch();
 
-      var curves = hatch.Get3dCurves(true).ToList();
-      curves.AddRange(hatch.Get3dCurves(false));
-      _hatch.curves = curves.Select(o => CurveToSpeckle(o)).ToList();
+      // retrieve hatch loops
+      var loops = new List<HatchLoop>();
+      foreach (var outer in hatch.Get3dCurves(true).ToList())
+        loops.Add(new HatchLoop(CurveToSpeckle(outer), Other.HatchLoopType.Outer));
+      foreach (var inner in hatch.Get3dCurves(false).ToList())
+        loops.Add(new HatchLoop(CurveToSpeckle(inner), Other.HatchLoopType.Inner));
+
+      _hatch.loops = loops;
       _hatch.scale = hatch.PatternScale;
       _hatch.pattern = Doc.HatchPatterns.ElementAt(hatch.PatternIndex).Name;
       _hatch.rotation = hatch.PatternRotation;
@@ -53,7 +138,7 @@ namespace Objects.Converter.RhinoGh
     }
     private HatchPattern FindDefaultPattern(string patternName)
     {
-      var defaultPattern = typeof(HatchPattern.Defaults).GetProperties().Where(o => o.Name.Equals(patternName, StringComparison.OrdinalIgnoreCase)).ToList()?.First();
+      var defaultPattern = typeof(HatchPattern.Defaults).GetProperties()?.Where(o => o.Name.Equals(patternName, StringComparison.OrdinalIgnoreCase))?.ToList().FirstOrDefault();
       if (defaultPattern != null)
         return defaultPattern.GetValue(this, null) as HatchPattern;
       else
@@ -107,32 +192,50 @@ namespace Objects.Converter.RhinoGh
       {
         if (CanConvertToNative(geo))
         {
-          GeometryBase converted = null;
+          List<GeometryBase> converted = new List<GeometryBase>();
           switch (geo)
           {
             case BlockInstance o:
               var instance = BlockInstanceToNative(o);
               if (instance != null)
               {
-                converted = instance.DuplicateGeometry();
+                converted.Add(instance.DuplicateGeometry());
                 Doc.Objects.Delete(instance);
               }
               break;
             default:
-              converted = (GeometryBase)ConvertToNative(geo);
+              var convertedObj = ConvertToNative(geo);
+              if (convertedObj.GetType().IsArray)
+                foreach (object o in (Array)convertedObj)
+                  converted.Add((GeometryBase)o);
+              else
+                converted.Add((GeometryBase)convertedObj);
               break;
           }
-          if (converted == null)
+          if (converted.Count == 0)
             continue;
           var layerName = (geo["Layer"] != null) ? $"{commitInfo}{Layer.PathSeparator}{geo["Layer"] as string}" : $"{commitInfo}";
           int index = 1;
           if (layerName != null)
             GetLayer(Doc, layerName, out index, true);
-          var attribute = new ObjectAttributes()
+
+          var attribute = new ObjectAttributes();
+          if (geo[@"displayStyle"] is Base display)
           {
-            LayerIndex = index
-          };
-          geometry.Add(converted);
+            if (ConvertToNative(display) is ObjectAttributes displayAttribute)
+              attribute = displayAttribute;
+          }
+          else if (geo[@"renderMaterial"] is Base renderMaterial)
+          {
+            if (renderMaterial["diffuse"] is int color)
+            {
+              attribute.ColorSource = ObjectColorSource.ColorFromObject;
+              attribute.ObjectColor = Color.FromArgb(color);
+            }
+          }
+          attribute.LayerIndex = index;
+
+          geometry.AddRange(converted);
           attributes.Add(attribute);
         }
       }
@@ -162,8 +265,7 @@ namespace Objects.Converter.RhinoGh
 
       var _instance = new BlockInstance()
       {
-        insertionPoint = PointToSpeckle(instance.InsertionPoint),
-        transform = transformArray,
+        transform = new Other.Transform(transformArray, ModelUnits),
         blockDefinition = def,
         units = ModelUnits
       };
@@ -179,7 +281,8 @@ namespace Objects.Converter.RhinoGh
       // get the transform
       // rhino doesn't seem to handle transform matrices where the translation vector last value is a divisor instead of 1, so make sure last value is set to 1
       Transform transform = Transform.Identity;
-      double[] t = instance.transform;
+      double[] t = instance.transform.value;
+
       if (t.Length == 16)
       {
         int count = 0;

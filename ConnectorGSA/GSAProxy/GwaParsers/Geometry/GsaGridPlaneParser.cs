@@ -32,7 +32,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       }
 
       //GRID_PLANE.4 | num | name | type | axis | elev | below | above
-      AddItems(ref items, record.Name, AddType(), AddAxis(), record.Elevation ?? 0, 
+      AddItems(ref items, record.Name ?? $"Grid plane {record.Index}", AddType(), AddAxis(), record.Elevation ?? 0, 
         record.StoreyToleranceBelowAuto ? 0 : record.StoreyToleranceBelow, 
         record.StoreyToleranceAboveAuto ? 0 : record.StoreyToleranceAbove);
 

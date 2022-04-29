@@ -14,6 +14,14 @@ namespace ConnectorGrasshopper.Extras
     public override bool Crossed => false;
     public override string Letter => "?";
   }
+  public class SchemaTagStateTag : SpeckleStateTag
+  {
+    public override string Description => "Will output the main geometry with the schema attached as a 'SpeckleSchema' property";
+    public override string Name => "Schema Tag";
+    public override Bitmap Icon => Properties.Resources.StateTag_Optional;
+    public override bool Crossed => false;
+    public override string Letter => "#";
+  }
 
   public class DetachedStateTag : SpeckleStateTag
   {
@@ -88,8 +96,10 @@ namespace ConnectorGrasshopper.Extras
     public void RenderSpeckleTagContents(Graphics graphics)
     {
       var p = new GraphicsPath();
+      var format = StringFormat.GenericDefault;
+      format.Alignment = StringAlignment.Center;
       p.AddString(Letter, FontFamily.GenericMonospace, 1, Stage.Height - 2,
-        new Point(Stage.Location.X + 1, this.Stage.Location.Y), null);
+        new Point(Stage.Location.X + Stage.Width / 2, Stage.Location.Y - 1), format);
       
       LinearGradientBrush blueGradient = new LinearGradientBrush(Stage, Color.FromArgb(100, 10, 107, 252),
         Color.FromArgb(Convert.ToInt32((double) GH_Canvas.ZoomFadeLow), Color.FromArgb(0, 10, 107, 252)),

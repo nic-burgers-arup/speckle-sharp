@@ -34,7 +34,7 @@ namespace ConverterGSATests
 
     public List<int> ConvertGSAList(string list, GSAEntity entityType) => new List<int>() { 1 };
 
-    public int NodeAt(double x, double y, double z, double coincidenceTol) => 1;
+    public int NodeAt(double x, double y, double z, double coincidenceTol) => (NodeAtFn == null) ? 1 : NodeAtFn(x, y, z);
 
     public void Close() { }
 
@@ -49,7 +49,7 @@ namespace ConverterGSATests
       NativesByKeywordId = null;
     }
 
-    public bool GetGwaData(out List<GsaRecord> records, IProgress<int> incrementProgress = null)
+    public bool GetGwaData(GSALayer layer, out List<GsaRecord> records, IProgress<int> incrementProgress = null)
     {
       records = null;
       return true;
@@ -181,11 +181,9 @@ namespace ConverterGSATests
 
     public bool SaveAs(string filePath) => true;
 
-    bool IGSAProxy.Clear() => true;
-
     public string GetTopLevelSid() => "";
 
-    public bool SetTopLevelSid(string sidRecord) => true;
+    public bool SetTopLevelSid(string StreamState) => true;
 
     public bool Save() => true;
 

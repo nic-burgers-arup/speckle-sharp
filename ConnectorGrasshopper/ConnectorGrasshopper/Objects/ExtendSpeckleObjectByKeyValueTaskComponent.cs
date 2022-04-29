@@ -6,8 +6,8 @@ using ConnectorGrasshopper.Extras;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
-using Speckle.Core.Logging;
 using Speckle.Core.Models;
+using Logging = Speckle.Core.Logging;
 using Utilities = ConnectorGrasshopper.Extras.Utilities;
 
 namespace ConnectorGrasshopper.Objects
@@ -49,20 +49,26 @@ namespace ConnectorGrasshopper.Objects
         DA.GetDataList(1, keys);
         DA.GetDataTree(2, out valueTree);
 
+        if (DA.Iteration == 0)
+        {
+          Logging.Analytics.TrackEvent(Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Extend Object By Key Value" } });
+        }
+
+
         TaskList.Add(Task.Run(() => DoWork(@base.Value.ShallowCopy(), keys, valueTree)));
         return;
       }
 
-      if(Converter != null)
+      if (Converter != null)
       {
-        foreach (var error in Converter.ConversionErrors)
+        foreach (var error in Converter.Report.ConversionErrors)
         {
           AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
             error.Message + ": " + error.InnerException?.Message);
         }
-        Converter.ConversionErrors.Clear();
+        Converter.Report.ConversionErrors.Clear();
       }
-      
+
       if (!GetSolveResults(DA, out var result))
       {
         // Normal mode not supported
@@ -155,7 +161,7 @@ namespace ConnectorGrasshopper.Objects
       catch (Exception e)
       {
         // If we reach this, something happened that we weren't expecting...
-        Log.CaptureException(e);
+        Logging.Log.CaptureException(e);
         AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Something went terribly wrong... " + e.Message);
         return null;
       }

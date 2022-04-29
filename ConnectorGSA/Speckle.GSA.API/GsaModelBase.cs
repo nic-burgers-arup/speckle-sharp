@@ -11,7 +11,7 @@ namespace Speckle.GSA.API
 
     public abstract IGSACache Cache { get; set; }
     public abstract IGSAProxy Proxy { get; set; }
-    public abstract IGSAMessenger Messenger { get; set; }
+    //public abstract IGSAMessenger Messenger { get; set; }
 
     public string Units { get; set; } = "mm";
     public double CoincidentNodeAllowance { get; set; }
@@ -37,9 +37,13 @@ namespace Speckle.GSA.API
             {
               retList.Add(ResultGroup.Assembly);
             }
-            else if (!retList.Contains(ResultGroup.Node) && !retList.Contains(ResultGroup.Node))
+            else if ((rts.Contains("nodal") || rts.Contains("constraint")) && !retList.Contains(ResultGroup.Node) && !retList.Contains(ResultGroup.Node))
             {
               retList.Add(ResultGroup.Node);
+            }
+            else if (!retList.Contains(ResultGroup.Global) && !retList.Contains(ResultGroup.Global))
+            {
+              retList.Add(ResultGroup.Global);
             }
           }
         }
@@ -53,39 +57,18 @@ namespace Speckle.GSA.API
     public int Result1DNumPosition { get; set; } = 3;
 
     public char GwaDelimiter { get; set; } = '\t';
-    public int LoggingMinimumLevel { get; set; }
+    public virtual int LoggingMinimumLevel { get; set; }
     public bool SendOnlyMeaningfulNodes { get; set; }
-    
+    public IProgress<bool> ConversionProgress { get; set; }
+    public IProgress<int> NumberToConvertProgress { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+    //public object KitManager { get; private set; }
 
     public virtual GsaRecord GetNative<T>(int value) => Cache.GetNative<T>(value);
-    public virtual List<int> LookupIndices<T>() => Cache.LookupIndices<T>();
+    //public virtual List<int> LookupIndices<T>() => Cache.LookupIndices<T>();
     public virtual List<int> ConvertGSAList(string v, GSAEntity e) => Proxy.ConvertGSAList(v, e);
     public virtual string GetApplicationId<T>(int value) => Cache.GetApplicationId<T>(value);
 
-    /*
-    public abstract bool ClearResults(ResultGroup group);
-
-    public abstract List <int> ConvertGSAList(string list, GSAEntity entityType);
-
-    public abstract GsaRecord GetNative<T>(int index);
-    public abstract bool GetNative(Type t, out List<GsaRecord> gsaRecords);
-    public abstract bool GetNative(Type t, int index, out GsaRecord gsaRecords);
-    
-
-    public abstract string GetApplicationId<T>(int index);
-
-    public abstract bool GetResultHierarchy(ResultGroup group, int index, out Dictionary<string, Dictionary<string, object>> valueHierarchy, int dimension = 1);
-
-    public abstract List<int> LookupIndices<T>();
-
-    public abstract int NodeAt(double x, double y, double z, double coincidenceTol);
-
-    public abstract bool LoadResults(ResultGroup group, out int numErrorRows, List<string> cases = null, List<int> elemIds = null);
-
-
-    public abstract bool SetSpeckleObjects(GsaRecord gsaRecords, IEnumerable<object> speckleObjects);
-
-    public abstract bool GetGwaData(bool nodeApplicationIdFilter, out List<GsaRecord> records, IProgress<int> incrementProgress = null);
-    */
+    public abstract List<List<Type>> SpeckleDependencyTree();
   }
 }

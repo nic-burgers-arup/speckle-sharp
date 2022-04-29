@@ -5,7 +5,7 @@ using System.Linq;
 namespace Speckle.ConnectorGSA.Proxy.GwaParsers
 {
   //This needs review: seems to be a SET keyword but the index is of a load case, not a ANAL index
-  [GsaType(GwaKeyword.ANAL, GwaSetCommandType.Set, true, GwaKeyword.LOAD_TITLE)]
+  [GsaType(GwaKeyword.ANAL, GwaSetCommandType.Set, true, GwaKeyword.LOAD_TITLE, GwaKeyword.TASK)]
   public class GsaAnalParser : GwaParser<GsaAnal>
   {
     public GsaAnalParser(GsaAnal gsaAnal) : base(gsaAnal) { }
@@ -32,7 +32,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       }
 
       //ANAL | case | name | task | desc
-      AddItems(ref items, record.Name, record.TaskIndex ?? 0, record.Desc);
+      AddItems(ref items, record.Name ?? $"Analysis Case {record.Index}", record.TaskIndex ?? 0, record.Desc);
 
       gwa = Join(items, out var gwaLine) ? new List<string>() { gwaLine } : new List<string>();
       return (gwa.Count() > 0);

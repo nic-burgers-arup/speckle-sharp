@@ -27,6 +27,13 @@ namespace Speckle.Core.Serialisation
       bool isList = value is List<object>;
       List<object> valueList = value as List<object>;
 
+      //strings
+      if (type == typeof(string))
+      {
+        convertedValue = Convert.ToString(value);
+        return true;
+      }
+
       #region Enum
       if (type.IsEnum)
       {
@@ -68,7 +75,7 @@ namespace Speckle.Core.Serialisation
           if (valueType == typeof(double)) { convertedValue = (Single)(double)value; return true; }
           if (valueType == typeof(long)) { convertedValue = (Single)(long)value; return true; }
           else return false;
-        #endregion
+          #endregion
       }
 
       // Handle List<?>
@@ -95,7 +102,7 @@ namespace Speckle.Core.Serialisation
           return false;
         Dictionary<string, object> valueDict = (Dictionary<string, object>)value;
 
-        if (type.GenericTypeArguments[0] != typeof(string))
+        if (type.GenericTypeArguments[0] != typeof(string) && !type.GenericTypeArguments[0].IsEnum)
           throw new Exception("Dictionaries with non-string keys are not supported");
         Type dictValueType = type.GenericTypeArguments[1];
         IDictionary ret = Activator.CreateInstance(type) as IDictionary;
@@ -105,7 +112,27 @@ namespace Speckle.Core.Serialisation
           object convertedDictValue;
           if (!ConvertValue(dictValueType, kv.Value, out convertedDictValue))
             return false;
-          ret[kv.Key] = convertedDictValue;
+          if (type.GenericTypeArguments[0].IsEnum)
+          {
+            object key = null;
+            if (Enum.IsDefined(type.GenericTypeArguments[0], kv.Key))
+            {
+              var keyObj = Enum.Parse(type.GenericTypeArguments[0], kv.Key);
+              key = Convert.ChangeType(keyObj, type.GenericTypeArguments[0]);
+              if (key != null)
+              {
+                ret[key] = convertedDictValue;
+              }
+            }
+            if (key == null)
+            {
+              return false;
+            }
+          }
+          else
+          {
+            ret[kv.Key] = convertedDictValue;
+          }
         }
         convertedValue = ret;
         return true;
@@ -126,6 +153,25 @@ namespace Speckle.Core.Serialisation
           ret.SetValue(convertedListElement, i);
         }
         convertedValue = ret;
+        return true;
+      }
+
+      // Handle simple classes/structs
+      if (type == typeof(Guid) && valueType == typeof(string))
+      {
+        convertedValue = Guid.Parse(value as string);
+        return true;
+      }
+
+      if (type == typeof(System.Drawing.Color) && valueType == typeof(long))
+      {
+        convertedValue = System.Drawing.Color.FromArgb((int)(long)value);
+        return true;
+      }
+
+      if (type == typeof(DateTime) && valueType == typeof(string))
+      {
+        convertedValue = DateTime.ParseExact((string)value, "o", System.Globalization.CultureInfo.InvariantCulture);
         return true;
       }
 

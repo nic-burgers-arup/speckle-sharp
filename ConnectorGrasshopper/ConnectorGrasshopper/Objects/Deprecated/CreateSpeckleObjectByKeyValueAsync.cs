@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
 using ConnectorGrasshopper.Extras;
 using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
@@ -187,7 +185,7 @@ namespace ConnectorGrasshopper.Objects
             
       // Report all conversion errors as warnings
       if(Converter != null)
-        foreach (var error in Converter.ConversionErrors)
+        foreach (var error in Converter.Report.ConversionErrors)
         {
           Parent.AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, error.Message + ": " + error.InnerException?.Message);
         }

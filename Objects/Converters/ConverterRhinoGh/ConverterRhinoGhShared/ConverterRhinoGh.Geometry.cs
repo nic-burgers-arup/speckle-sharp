@@ -1,16 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
-using System.Reflection;
 using Grasshopper.Kernel.Types;
 using Objects.Geometry;
 using Objects.Primitive;
-using Rhino;
-using Rhino.DocObjects;
+using Objects.Utils;
 using Rhino.Geometry;
 using Rhino.Geometry.Collections;
 using Speckle.Core.Kits;
-using Speckle.Core.Logging;
 using Speckle.Core.Models;
 using Arc = Objects.Geometry.Arc;
 using Box = Objects.Geometry.Box;
@@ -33,6 +31,7 @@ using Plane = Objects.Geometry.Plane;
 using Point = Objects.Geometry.Point;
 using Pointcloud = Objects.Geometry.Pointcloud;
 using Polyline = Objects.Geometry.Polyline;
+using Spiral = Objects.Geometry.Spiral;
 
 using RH = Rhino.Geometry;
 
@@ -65,10 +64,10 @@ namespace Objects.Converter.RhinoGh
 
       return points;
     }
-
-    public double[] PointsToFlatArray(IEnumerable<Point3d> points)
+    
+    public List<double> PointsToFlatList(IEnumerable<Point3d> points)
     {
-      return points.SelectMany(pt => PointToArray(pt)).ToArray();
+      return points.SelectMany(PointToArray).ToList();
     }
 
     // Points
@@ -192,7 +191,7 @@ namespace Objects.Converter.RhinoGh
       var u = units ?? ModelUnits;
       var length = rect.Height * 2 + rect.Width * 2;
       var sPoly = new Polyline(
-        PointsToFlatArray(new Point3d[] { rect.Corner(0), rect.Corner(1), rect.Corner(2), rect.Corner(3) }), u)
+        PointsToFlatList(new Point3d[] { rect.Corner(0), rect.Corner(1), rect.Corner(2), rect.Corner(3) }), u)
       {
         closed = true,
         area = rect.Area,
@@ -270,7 +269,6 @@ namespace Objects.Converter.RhinoGh
 
     public ArcCurve ArcToNative(Arc arc)
     {
-      // RH.Arc arc = new RH.Arc(PlaneToNative(a.plane), ScaleToNative((double)a.radius, a.units), (double)a.angleRadians); Not using this constructor due to angle tolerance rounding issues
       var _arc = new RH.Arc(PointToNative(arc.startPoint).Location, PointToNative(arc.midPoint).Location, PointToNative(arc.endPoint).Location);
 
       var arcCurve = new ArcCurve(_arc);
@@ -307,6 +305,28 @@ namespace Objects.Converter.RhinoGh
       return myEllp;
     }
 
+    // Spiral
+    public RH.Curve SpiralToNative(Spiral s)
+    {
+      /* Using display value polyline for now
+      var axisStart = PointToNative(s.plane.origin).Location;
+      var axisDir = VectorToNative(s.plane.normal);
+      var radiusPoint = PointToNative(s.startPoint).Location;
+      var pitch = ScaleToNative(s.pitch, s.units);
+      var endPoint = PointToNative(s.endPoint).Location;
+      var r1 = axisStart.DistanceTo(radiusPoint);
+      double r2 = 0;
+      if (pitch == 0)
+        r2 = axisStart.DistanceTo(endPoint);
+      var nurbs = NurbsCurve.CreateSpiral(axisStart, axisDir, radiusPoint, pitch, s.turns, r1, r2);
+      if (nurbs != null && nurbs.IsValid)
+        if (nurbs.SetEndPoint(endPoint)) // try to adjust endpoint to match exactly the spiral endpoint
+          return nurbs;
+      */
+      return PolylineToNative(s.displayValue);
+    }
+
+
     // Polyline
     // Gh Capture
     public ICurve PolylineToSpeckle(RH.Polyline poly, string units = null) => PolylineToSpeckle(poly, null, units);
@@ -322,7 +342,7 @@ namespace Objects.Converter.RhinoGh
         return l;
       }
 
-      var myPoly = new Polyline(PointsToFlatArray(poly), u);
+      var myPoly = new Polyline(PointsToFlatList(poly), u);
       myPoly.closed = poly.IsClosed;
 
       if (myPoly.closed)
@@ -347,7 +367,7 @@ namespace Objects.Converter.RhinoGh
         var intervalToSpeckle = IntervalToSpeckle(poly.Domain);
         if (polyline.Count == 2)
         {
-          var polylineToSpeckle = new Line(PointsToFlatArray(polyline), u)
+          var polylineToSpeckle = new Line(PointsToFlatList(polyline), u)
           {
             domain = intervalToSpeckle
           };
@@ -357,7 +377,7 @@ namespace Objects.Converter.RhinoGh
           return polylineToSpeckle;
         }
 
-        var myPoly = new Polyline(PointsToFlatArray(polyline), u);
+        var myPoly = new Polyline(PointsToFlatList(polyline), u);
         myPoly.closed = polyline.IsClosed;
 
         if (myPoly.closed)
@@ -375,7 +395,7 @@ namespace Objects.Converter.RhinoGh
     // Deserialise
     public PolylineCurve PolylineToNative(Polyline poly)
     {
-      List<Point3d> points = poly.points.Select(o => PointToNative(o).Location).ToList();
+      List<Point3d> points = poly.GetPoints().Select(o => PointToNative(o).Location).ToList();
       if (poly.closed) points.Add(points[0]);
 
       var myPoly = new PolylineCurve(points);
@@ -413,7 +433,7 @@ namespace Objects.Converter.RhinoGh
         try
         {
           //let the converter pick the best type of curve
-          myPolyc.AppendSegment((RH.Curve)ConvertToNative((Base)segment));
+          myPolyc.Append((RH.Curve)ConvertToNative((Base)segment));
         }
         catch
         { }
@@ -439,6 +459,9 @@ namespace Objects.Converter.RhinoGh
         case Ellipse ellipse:
           return EllipseToNative(ellipse);
 
+        case Spiral spiral:
+          return SpiralToNative(spiral);
+
         case Curve crv:
           return NurbsToNative(crv);
 
@@ -459,7 +482,7 @@ namespace Objects.Converter.RhinoGh
     public ICurve CurveToSpeckle(RH.Curve curve, string units = null)
     {
       var u = units ?? ModelUnits;
-      var tolerance = RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
+      var tolerance = Doc.ModelAbsoluteTolerance;
       Rhino.Geometry.Plane pln = Rhino.Geometry.Plane.Unset;
       curve.TryGetPlane(out pln, tolerance);
       
@@ -536,7 +559,7 @@ namespace Objects.Converter.RhinoGh
       //nurbsCurve = nurbsCurve.Rebuild(nurbsCurve.Points.Count, max, true);
 
       myCurve.weights = nurbsCurve.Points.Select(ctp => ctp.Weight).ToList();
-      myCurve.points = PointsToFlatArray(nurbsCurve.Points.Select(ctp => ctp.Location)).ToList();
+      myCurve.points = PointsToFlatList(nurbsCurve.Points.Select(ctp => ctp.Location));
       myCurve.knots = knots;
       myCurve.degree = nurbsCurve.Degree;
       myCurve.periodic = nurbsCurve.IsPeriodic;
@@ -595,19 +618,32 @@ namespace Objects.Converter.RhinoGh
     public Mesh MeshToSpeckle(RH.Mesh mesh, string units = null)
     {
       var u = units ?? ModelUnits;
-      var verts = PointsToFlatArray(mesh.Vertices.ToPoint3dArray());
+      var verts = PointsToFlatList(mesh.Vertices.ToPoint3dArray());
 
-      var Faces = mesh.Faces.SelectMany(face =>
+      var faces = new List<int>();
+      foreach (MeshNgon polygon in mesh.GetNgonAndFacesEnumerable())
       {
-        if (face.IsQuad) return new int[] { 1, face.A, face.B, face.C, face.D };
-        return new int[] { 0, face.A, face.B, face.C };
-      }).ToArray();
+        var vertIndices = polygon.BoundaryVertexIndexList();
+        int n = vertIndices.Length;
+        if (n <= 4) n -= 3;
+        faces.Add(n);
+        faces.AddRange(vertIndices.Select(vertIndex => (int) vertIndex));
+      }
+      
+      var textureCoordinates = new List<double>(mesh.TextureCoordinates.Count * 2);
+      foreach (var texCoord in mesh.TextureCoordinates)
+      {
+        textureCoordinates.Add(texCoord.X);
+        textureCoordinates.Add(texCoord.Y);
+      }
+      
+      var colors = mesh.VertexColors.Select(cl => cl.ToArgb()).ToList();
 
-      var Colors = mesh.VertexColors.Select(cl => cl.ToArgb()).ToArray();
-
-      var speckleMesh = new Mesh(verts, Faces, Colors, null, u);
-      speckleMesh.volume = mesh.Volume();
-      speckleMesh.bbox = BoxToSpeckle(new RH.Box(mesh.GetBoundingBox(true)), u);
+      var speckleMesh = new Mesh(verts, faces, colors, textureCoordinates, u)
+      {
+        volume = mesh.Volume(),
+        bbox = BoxToSpeckle(new RH.Box(mesh.GetBoundingBox(true)), u)
+      };
 
       return speckleMesh;
     }
@@ -624,13 +660,13 @@ namespace Objects.Converter.RhinoGh
         vertices.Add(mesh.Vertices.Find(i).ControlNetPoint);
         subDVertices.Add(mesh.Vertices.Find(i));
       }
-      var verts = PointsToFlatArray(vertices);
+      var verts = PointsToFlatList(vertices);
 
       var Faces = mesh.Faces.SelectMany(face =>
       {
         if (face.VertexCount == 4) return new int[] { 1, subDVertices.IndexOf(face.VertexAt(0)), subDVertices.IndexOf(face.VertexAt(1)), subDVertices.IndexOf(face.VertexAt(2)), subDVertices.IndexOf(face.VertexAt(3)) };
         return new int[] { 0, subDVertices.IndexOf(face.VertexAt(0)), subDVertices.IndexOf(face.VertexAt(1)), subDVertices.IndexOf(face.VertexAt(2)) };
-      }).ToArray();
+      }).ToList();
 
       var speckleMesh = new Mesh(verts, Faces, null, null, u);
       speckleMesh.bbox = BoxToSpeckle(new RH.Box(mesh.GetBoundingBox(true)), u);
@@ -641,40 +677,57 @@ namespace Objects.Converter.RhinoGh
 
     public RH.Mesh MeshToNative(Mesh mesh)
     {
+      mesh.AlignVerticesWithTexCoordsByIndex();
+
       RH.Mesh m = new RH.Mesh();
       m.Vertices.AddVertices(PointListToNative(mesh.vertices, mesh.units));
-
+      m.VertexColors.SetColors(mesh.colors.Select(Color.FromArgb).ToArray());
+      
+      var textureCoordinates = new Point2f[mesh.TextureCoordinatesCount];
+      for(int ti = 0; ti < mesh.TextureCoordinatesCount; ti++)
+      {
+        var (u, v) = mesh.GetTextureCoordinate(ti); 
+        textureCoordinates[ti] = new Point2f(u,v);
+      }
+      m.TextureCoordinates.SetTextureCoordinates(textureCoordinates);
+     
+      
       int i = 0;
-
       while (i < mesh.faces.Count)
       {
-        if (mesh.faces[i] == 0)
+        int n = mesh.faces[i];
+        if (n < 3) n += 3; // 0 -> 3, 1 -> 4
+        
+        if (n == 3)
         {
           // triangle
           m.Faces.AddFace(new MeshFace(mesh.faces[i + 1], mesh.faces[i + 2], mesh.faces[i + 3]));
-          i += 4;
         }
-        else
+        else if(n == 4)
         {
           // quad
           m.Faces.AddFace(new MeshFace(mesh.faces[i + 1], mesh.faces[i + 2], mesh.faces[i + 3], mesh.faces[i + 4]));
-          i += 5;
         }
-      }
-
-      try
-      {
-        m.VertexColors.AppendColors(mesh.colors.Select(c => System.Drawing.Color.FromArgb((int)c)).ToArray());
-      }
-      catch
-      { }
-
-      if (mesh.textureCoordinates != null)
-        for (int j = 0; j < mesh.textureCoordinates.Count; j += 2)
-        {
-          m.TextureCoordinates.Add(mesh.textureCoordinates[j], mesh.textureCoordinates[j + 1]);
+        else
+        {      
+          // n-gon
+          var triangles = MeshTriangulationHelper.TriangulateFace(i, mesh, false);
+          
+          var faceIndices = new List<int>(triangles.Count);
+          for (int t = 0; t < triangles.Count; t += 3)
+          {
+            var face = new MeshFace(triangles[t], triangles[t + 1], triangles[t + 2]);
+            faceIndices.Add(m.Faces.AddFace(face));
+          }
+          
+           MeshNgon ngon = MeshNgon.Create(mesh.faces.GetRange(i + 1, n), faceIndices);
+           m.Ngons.AddNgon(ngon);
         }
 
+        i += n + 1;
+      }
+      m.Faces.CullDegenerateFaces();
+      
       return m;
     }
 
@@ -700,7 +753,7 @@ namespace Objects.Converter.RhinoGh
 
       var _pointcloud = new Pointcloud()
       {
-        points = PointsToFlatArray(pointcloud.GetPoints().ToList()).ToList(),
+        points = PointsToFlatList(pointcloud.GetPoints()),
         colors = pointcloud.GetColors().Select(o => o.ToArgb()).ToList(),
         bbox = BoxToSpeckle(new RH.Box(pointcloud.GetBoundingBox(true)), u),
         units = u
@@ -754,7 +807,7 @@ namespace Objects.Converter.RhinoGh
     /// <returns></returns>
     public Brep BrepToSpeckle(RH.Brep brep, string units = null)
     {
-      var tol = RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
+      var tol = Doc.ModelAbsoluteTolerance;
       //tol = 0;
       var u = units ?? ModelUnits;
       brep.Repair(tol); //should maybe use ModelAbsoluteTolerance ?
@@ -764,11 +817,18 @@ namespace Objects.Converter.RhinoGh
       // }
       // Create complex
       var joinedMesh = new RH.Mesh();
-      var mySettings = MeshingParameters.Minimal;
+      var mySettings = MeshingParameters.Default;
+      switch (SelectedMeshSettings)
+      {
+        case MeshSettings.Default:
+          mySettings = new MeshingParameters(0.05, 0.05);
+          break;
+        case MeshSettings.CurrentDoc:
+          mySettings = MeshingParameters.DocumentCurrentSetting(Doc);
+          break;
+      }
       joinedMesh.Append(RH.Mesh.CreateFromBrep(brep, mySettings));
       joinedMesh.Weld(Math.PI);
-      joinedMesh.Vertices.CombineIdentical(true, true);
-      joinedMesh.Compact();
 
       var spcklBrep = new Brep(displayValue: MeshToSpeckle(joinedMesh, u), provenance: RhinoAppName, units: u);
 
@@ -892,7 +952,7 @@ namespace Objects.Converter.RhinoGh
     /// <exception cref="Exception">Throws exception if the provenance is not Rhino</exception>
     public RH.Brep BrepToNative(Brep brep)
     {
-      var tol = RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
+      var tol = Doc.ModelAbsoluteTolerance;
       try
       {
         // TODO: Provenance exception is meaningless now, must change for provenance build checks.
@@ -946,7 +1006,7 @@ namespace Objects.Converter.RhinoGh
       }
       catch (Exception e)
       {
-        ConversionErrors.Add(new Exception("Failed to convert brep.", e));
+        Report.LogConversionError(new Exception("Failed to convert brep.", e));
         return null;
       }
     }

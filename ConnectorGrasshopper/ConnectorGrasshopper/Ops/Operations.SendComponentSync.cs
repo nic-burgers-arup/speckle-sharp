@@ -4,19 +4,18 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using ConnectorGrasshopper.Extras;
 using ConnectorGrasshopper.Properties;
 using GH_IO.Serialization;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
 using Rhino;
-using Rhino.Geometry;
 using Speckle.Core.Api;
 using Speckle.Core.Credentials;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using Speckle.Core.Transports;
+using Logging = Speckle.Core.Logging;
 
 namespace ConnectorGrasshopper.Ops
 {
@@ -71,7 +70,10 @@ namespace ConnectorGrasshopper.Ops
       }
 
       Kit = KitManager.Kits.FirstOrDefault(k => k.Name == kitName);
-      Converter = Kit.LoadConverter(Applications.Rhino6);
+      Converter = Kit.LoadConverter(Extras.Utilities.GetVersionedAppName());
+      Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
+      SpeckleGHSettings.OnMeshSettingsChanged +=
+        (sender, args) => Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
 
       Message = $"Using the {Kit.Name} Converter";
       ExpireSolution(true);
@@ -80,9 +82,9 @@ namespace ConnectorGrasshopper.Ops
     protected override void AppendAdditionalComponentMenuItems(ToolStripDropDown menu)
     {
       Menu_AppendSeparator(menu);
-      var menuItem = Menu_AppendItem(menu, "Select the converter you want to use:");
+      var menuItem = Menu_AppendItem(menu, "Select the converter you want to use:", null, false);
       menuItem.Enabled = false;
-      var kits = KitManager.GetKitsWithConvertersForApp(Applications.Rhino6);
+      var kits = KitManager.GetKitsWithConvertersForApp(Extras.Utilities.GetVersionedAppName());
 
       foreach (var kit in kits)
       {
@@ -168,7 +170,10 @@ namespace ConnectorGrasshopper.Ops
       try
       {
         Kit = KitManager.GetDefaultKit();
-        Converter = Kit.LoadConverter(Applications.Rhino6);
+        Converter = Kit.LoadConverter(Extras.Utilities.GetVersionedAppName());
+        Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
+        SpeckleGHSettings.OnMeshSettingsChanged +=
+          (sender, args) => Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
         Converter.SetContextDocument(Rhino.RhinoDoc.ActiveDoc);
         foundKit = true;
       }
@@ -190,13 +195,13 @@ namespace ConnectorGrasshopper.Ops
     protected override void SolveInstance(IGH_DataAccess DA)
     {
       DA.DisableGapLogic();
-      
+
       if (!foundKit)
       {
         AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No kit found on this machine.");
         return;
       }
-      
+
       if (RunCount == 1)
       {
         CreateCancelationToken();
@@ -225,6 +230,7 @@ namespace ConnectorGrasshopper.Ops
         DA.GetData(2, ref messageInput);
         var transportsInput = new List<IGH_Goo> { transportInput };
         //var transportsInput = Params.Input[1].VolatileData.AllData(true).Select(x => x).ToList();
+
 
         var task = Task.Run(async () =>
         {
@@ -303,6 +309,8 @@ namespace ConnectorGrasshopper.Ops
                 continue;
               }
 
+              Logging.Analytics.TrackEvent(acc, Logging.Analytics.Events.Send, new Dictionary<string, object>() { { "sync", true } });
+
               var serverTransport = new ServerTransport(acc, sw.StreamId) { TransportName = $"T{t}" };
               transportBranches.Add(serverTransport, sw.BranchName ?? "main");
               Transports.Add(serverTransport);
@@ -372,7 +380,7 @@ namespace ConnectorGrasshopper.Ops
                 message = message,
                 objectId = BaseId,
                 streamId = ((ServerTransport)transport).StreamId,
-                sourceApplication = Applications.Grasshopper
+                sourceApplication = Extras.Utilities.GetVersionedAppName()
               };
 
               // Check to see if we have a previous commit; if so set it.

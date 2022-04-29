@@ -29,10 +29,10 @@ namespace ConnectorGrasshopper.Objects
     {
       try
       {
-        var kits = KitManager.GetKitsWithConvertersForApp(Applications.Rhino6);
+        var kits = KitManager.GetKitsWithConvertersForApp(Extras.Utilities.GetVersionedAppName());
 
         Menu_AppendSeparator(menu);
-        Menu_AppendItem(menu, "Select the converter you want to use:");
+        Menu_AppendItem(menu, "Select the converter you want to use:", null, false);
         foreach (var kit in kits)
         {
           Menu_AppendItem(menu, $"{kit.Name} ({kit.Description})", (s, e) => { SetConverterFromKit(kit.Name); }, true,
@@ -50,14 +50,16 @@ namespace ConnectorGrasshopper.Objects
 
     public void SetConverterFromKit(string kitName)
     {
-      if (kitName == Kit.Name)return;
+      if (kitName == Kit.Name) return;
 
       try
       {
         Kit = KitManager.Kits.FirstOrDefault(k => k.Name == kitName);
-        Converter = Kit.LoadConverter(Applications.Rhino6);
+        Converter = Kit.LoadConverter(Extras.Utilities.GetVersionedAppName());
+        Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
+        SpeckleGHSettings.OnMeshSettingsChanged +=
+          (sender, args) => Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
         Converter.SetContextDocument(RhinoDoc.ActiveDoc);
-
         Message = $"Using the {Kit.Name} Converter";
         ExpireSolution(true);
       }
@@ -91,14 +93,14 @@ namespace ConnectorGrasshopper.Objects
     public override void AddedToDocument(GH_Document document)
     {
       base.AddedToDocument(document);
-      var key = "Speckle2:kit.default.name";
-      var n = Grasshopper.Instances.Settings.GetValue(key, "Objects");
-      
       try
       {
-        Kit = KitManager.GetKitsWithConvertersForApp(Applications.Rhino6).FirstOrDefault(kit => kit.Name == n);
-        Converter = Kit.LoadConverter(Applications.Rhino6);
+        Kit = KitManager.GetKitsWithConvertersForApp(Extras.Utilities.GetVersionedAppName()).FirstOrDefault(kit => kit.Name == SpeckleGHSettings.SelectedKitName);
+        Converter = Kit.LoadConverter(Extras.Utilities.GetVersionedAppName());
         Converter.SetContextDocument(Rhino.RhinoDoc.ActiveDoc);
+        Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
+        SpeckleGHSettings.OnMeshSettingsChanged +=
+          (sender, args) => Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
         Message = $"{Kit.Name} Kit";
       }
       catch

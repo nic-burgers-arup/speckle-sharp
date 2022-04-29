@@ -40,9 +40,12 @@ namespace Speckle.ConnectorAutocadCivil.Entry
         //the below should fix it! This affects Avalonia and Material 
         AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(OnAssemblyResolve);
 
-        // set up bindings and subscribe to doument events
-        SpeckleAutocadCommand.Bindings = new ConnectorBindingsAutocad();
-        SpeckleAutocadCommand.Bindings.SetExecutorAndInit();
+        // DUI2
+        SpeckleAutocadCommand.InitAvalonia();
+        var bindings = new ConnectorBindingsAutocad();
+        bindings.RegisterAppEvents();
+        SpeckleAutocadCommand.Bindings = bindings;
+        OneClickCommand.Bindings = bindings;
       }
       catch(System.Exception e)
       {
@@ -92,7 +95,9 @@ namespace Speckle.ConnectorAutocadCivil.Entry
       if (panel == null)
         return;
       RibbonToolTip speckleTip = CreateToolTip("Speckle", "Speckle Connector for " + Utils.AppName);
+      RibbonToolTip oneClickTip = CreateToolTip("Send", "Sends your selected objects to your account's document stream. If nothing is selected, sends everything in the document.");
       RibbonButton button = CreateButton("Connector " + Utils.AppName, "Speckle", panel, null, speckleTip, "logo");
+      RibbonButton oneClickSendButton = CreateButton("Send", "SpeckleSend", panel, null, oneClickTip, "send");
 
       // help and resources buttons
       RibbonSplitButton helpButton = new RibbonSplitButton();
@@ -111,7 +116,6 @@ namespace Speckle.ConnectorAutocadCivil.Entry
       RibbonButton community = CreateButton("Community", "SpeckleCommunity", null, helpButton, communityTip, "forum");
       RibbonButton tutorials = CreateButton("Tutorials", "SpeckleTutorials", null, helpButton, tutorialsTip, "tutorials");
       RibbonButton docs = CreateButton("Docs", "SpeckleDocs", null, helpButton, docsTip, "docs");
-      
     }
 
     public void Terminate()
@@ -178,7 +182,6 @@ namespace Speckle.ConnectorAutocadCivil.Entry
         button.CommandParameter = CommandParameter;
         button.CommandHandler = new ButtonCommandHandler(CommandParameter);
         sourcePanel.Items.Add(button);
-
       }
       else if (sourceButton != null)
       {
@@ -226,6 +229,9 @@ namespace Speckle.ConnectorAutocadCivil.Entry
           {
             case "Speckle":
               SpeckleAutocadCommand.SpeckleCommand();
+              break;
+            case "SpeckleSend":
+              OneClickCommand.SendCommand();
               break;
             case "SpeckleCommunity":
               SpeckleAutocadCommand.SpeckleCommunity();
