@@ -20,15 +20,18 @@ namespace Speckle.DesktopUI
 
     public Window RootWindow
     {
-      get => _rootWindow ?? ( _rootWindow = ( Window ) RootViewModel.View );
+      get => _rootWindow ?? (_rootWindow = (Window)RootViewModel.View);
     }
 
     protected override void OnStart()
     {
       base.OnStart();
-      Core.Logging.Setup.Init(Bindings.GetHostAppName());
+
+
+      Core.Logging.Setup.Init(Bindings.GetHostAppName(),
+        //quick hack, dui1 will be depracted soon so this works for now
+        Bindings.GetHostAppName().ToLowerInvariant().Replace(" ", "").Replace("2019", "").Replace("2020", "").Replace("2021", "").Replace("2022", "").Replace("6", "").Replace("7", "").Replace("DynamoRevit", "dynamo").Replace("v18", "").Replace("v19", "").Replace("civil", "civil3d"));
       InitializeMaterialDesign();
-      LoadThemeResources();
       Stylet.Logging.LogManager.Enabled = true;
     }
 
@@ -78,15 +81,7 @@ namespace Speckle.DesktopUI
       var behavior = new Microsoft.Xaml.Behaviors.Media.PlaySoundAction(); //force loading of behaviors reference
     }
 
-    private void LoadThemeResources()
-    {
-      Application.Current.Resources.MergedDictionaries.Add(
-        Application.LoadComponent(
-          new Uri("SpeckleDesktopUI;component/Themes/Generic.xaml", UriKind.Relative)
-        ) as ResourceDictionary);
-    }
-
-    public override void Start(string[ ] args)
+    public override void Start(string[] args)
     {
       // stop. get help.
       // this is getting triggered from _somewhere_ so I'm overriding it to prevent it from messing things up
@@ -101,7 +96,7 @@ namespace Speckle.DesktopUI
       {
         app.Resources.Add(View.ViewManagerResourceKey, GetInstance(typeof(IViewManager)));
       }
-      catch ( Exception e )
+      catch (Exception e)
       {
         // already been added somewhere...
       }
@@ -110,9 +105,13 @@ namespace Speckle.DesktopUI
       Launch();
       OnLaunch();
     }
+
+    public void SetParent(IntPtr parent)
+    {
+      var helper = new System.Windows.Interop.WindowInteropHelper(RootWindow);
+      helper.Owner = parent;
+    }
   }
-
-
 
   /// <summary>
   /// Taken from stylet and modified to not use the application.
@@ -160,7 +159,7 @@ namespace Speckle.DesktopUI
       set
       {
         _loadStyletResources = value;
-        if ( _loadStyletResources )
+        if (_loadStyletResources)
           MergedDictionaries.Add(styletResourceDictionary);
         else
           MergedDictionaries.Remove(styletResourceDictionary);

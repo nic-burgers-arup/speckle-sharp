@@ -1,11 +1,14 @@
-﻿using Objects.Geometry;
+﻿using System;
+using Objects.Geometry;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using System.Collections.Generic;
+using System.Linq;
+using Speckle.Newtonsoft.Json;
 
 namespace Objects.BuiltElements.Revit
 {
-  public class RevitStair : Base, IDisplayMesh
+  public class RevitStair : Base, IDisplayMesh, IDisplayValue<List<Mesh>>
   {
     public string family { get; set; }
     public string type { get; set; }
@@ -20,16 +23,26 @@ namespace Objects.BuiltElements.Revit
     public bool beginsWithRiser { get; set; }
     public double height { get; set; }
     public int numberOfStories { get; set; }
-    public List<Parameter> parameters { get; set; }
+    public Base parameters { get; set; }
     public List<RevitStairRun> runs { get; set; }
     public List<RevitStairLanding> landings { get; set; }
     public List<RevitStairSupport> supports { get; set; }
     public string elementId { get; set; }
 
     [DetachProperty]
-    public Mesh displayMesh { get; set; }
+    public List<Mesh> displayValue { get; set; }
+
+    public string units { get; set; }
 
     public RevitStair() { }
+    
+    #region Obsolete Members
+    [JsonIgnore, Obsolete("Use " + nameof(displayValue) + " instead")]
+    public Mesh displayMesh {
+      get => displayValue?.FirstOrDefault();
+      set => displayValue = new List<Mesh> {value};
+    }
+    #endregion
   }
 
   public class RevitStairRun : Base
@@ -49,8 +62,10 @@ namespace Objects.BuiltElements.Revit
     public double extensionBelowTreadBase { get; set; }
     public double height { get; set; }
     public string runStyle { get; set; }
-    public List<Parameter> parameters { get; set; }
+    public Base parameters { get; set; }
     public string elementId { get; set; }
+
+    public string units { get; set; }
 
     public RevitStairRun() { }
   }
@@ -63,8 +78,10 @@ namespace Objects.BuiltElements.Revit
     public double baseElevation { get; set; }
     public double thickness { get; set; }
     public Polycurve outline { get; set; }
-    public List<Parameter> parameters { get; set; }
+    public Base parameters { get; set; }
     public string elementId { get; set; }
+
+    public string units { get; set; }
 
     public RevitStairLanding() { }
   }
@@ -73,8 +90,10 @@ namespace Objects.BuiltElements.Revit
   {
     public string family { get; set; }
     public string type { get; set; }
-    public List<Parameter> parameters { get; set; }
+    public Base parameters { get; set; }
     public string elementId { get; set; }
+
+    public string units { get; set; }
 
     public RevitStairSupport() { }
   }

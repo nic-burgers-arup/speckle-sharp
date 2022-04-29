@@ -142,14 +142,26 @@
   <data name="DiskTransport" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\DiskTransport.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="docs16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\docs16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="ExpandSpeckleObject" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\ExpandSpeckleObject.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="ExtendSpeckleObject" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\ExtendSpeckleObject.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="ExtendSpeckleObjectByKeyValue" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ExtendSpeckleObjectByKeyValue.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="forum16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\forum16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="GetObjectValueByKey" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\GetObjectValueByKey.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\help16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="LocalReceiver" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\LocalReceiver.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -160,6 +172,9 @@
   <data name="MemoryTransport" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\MemoryTransport.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="receiveFromTransport" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\receiveFromTransport.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="Receiver" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Receiver.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -168,6 +183,9 @@
   </data>
   <data name="Sender" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Sender.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="sendToTransport" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\sendToTransport.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="Serialize" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Serialize.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -214,10 +232,19 @@
   <data name="StreamUpdate" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\StreamUpdate.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="SynchronousReceiver" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\SynchronousReceiver.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="SynchronousSender" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\SynchronousSender.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="ToNative" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\ToNative.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="ToSpeckle" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\ToSpeckle.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="tutorials16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\tutorials16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

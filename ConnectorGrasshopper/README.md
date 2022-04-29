@@ -4,7 +4,7 @@
 
 ## Introduction
 
-This repo holds Speckle's Grasshopper Connector and it is currently released as ⚠ **ALPHA** ⚠, please use at your own risk!
+This repo holds Speckle's Grasshopper Connector and it is currently released as ⚠ **BETA** ⚠, please use at your own risk!
 
 The connector is structured in 1 c# project:
 
@@ -18,11 +18,11 @@ Comprehensive developer and user documentation can be found in our:
 
 ## Developing & Debugging
 
-We encourage everyone interested to debug / hack /contribute / give feedback to this project.
+We encourage everyone interested to debug / hack / contribute / give feedback to this project.
 
 ### Requirements
 
-- Rhino 6 or above (we're currently testing with 6.30)
+- Rhino 6 or above (we're currently testing with 6.28)
 - A Speckle Server running (more on this below)
 - Speckle Manager (more on this below)
 
@@ -32,11 +32,21 @@ Following instructions on how to get started debugging and contributing to this 
 
 #### Dependencies
 
-The c# projects have local dependencies, in the future these will be referenced as NuGet packages, but for the time being **make sure also to clone the following repos** in a folder adjacent to the one of this repo:
+All dependencies exist either on this repo (such as `Core`, `Objects`, etc...) or are installed via NuGet.
+
+Worth mentioning is the use of our own asyncronous grasshopper component, which you can find here:
 
 - https://github.com/specklesystems/GrasshopperAsyncComponent
 
-It'd be a good solution to just clone all the Speckle repos you're working on in one folder.
+We also make use of the following `dotnet tools` in this project:
+
+- https://github.com/mono/t4
+
+These are declared on the manifest file `.config/dotnet-tools.json`. To install them in your computer just run the following command on your terminal:
+
+```
+dotnet tools restore
+```
 
 #### Server
 
@@ -107,3 +117,5 @@ The Speckle Community hangs out on [the forum](https://discourse.speckle.works),
 ## License
 
 Unless otherwise described, the code in this repository is licensed under the Apache-2.0 License. Please note that some modules, extensions or code herein might be otherwise licensed. This is indicated either in the root of the containing folder under a different license file, or in the respective file's header. If you have any questions, don't hesitate to get in touch with us via [email](mailto:hello@speckle.systems).
+
+<!-- Fake change to force CI to run -->

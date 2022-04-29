@@ -1,8 +1,9 @@
-﻿using Grasshopper.Kernel;
-using Speckle.Core.Logging;
-using Speckle.Core.Transports;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
+using Grasshopper.Kernel;
+using Speckle.Core.Transports;
+using Logging = Speckle.Core.Logging;
 
 namespace ConnectorGrasshopper.Transports
 {
@@ -12,9 +13,9 @@ namespace ConnectorGrasshopper.Transports
 
     protected override Bitmap Icon => Properties.Resources.SQLiteTransport;
 
-    public override GH_Exposure Exposure => GH_Exposure.primary;
+    public override GH_Exposure Exposure => GH_Exposure.secondary;
 
-    public SqliteTransportComponent() : base("Sqlite Transport", "Sqlite", "Creates a Sqlite Transport.", ComponentCategories.SECONDARY_RIBBON, ComponentCategories.TRANSPORTS) { }
+    public SqliteTransportComponent() : base("Sqlite Transport", "Sqlite", "Creates a Sqlite Transport. This transport will store its objects in a sqlite database at the location you will specify (including a network drive!).", ComponentCategories.SECONDARY_RIBBON, ComponentCategories.TRANSPORTS) { }
 
     protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
@@ -36,6 +37,11 @@ namespace ConnectorGrasshopper.Transports
         return;
       }
 
+      if (DA.Iteration == 0)
+      {
+        Logging.Analytics.TrackEvent(Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "SQLite Transport" } });
+      }
+
       string basePath = null, applicationName = null, scope = null;
 
       DA.GetData(0, ref basePath);
@@ -49,7 +55,6 @@ namespace ConnectorGrasshopper.Transports
 
     protected override void BeforeSolveInstance()
     {
-      Tracker.TrackPageview("transports", "sqlite");
       base.BeforeSolveInstance();
     }
 

@@ -1,11 +1,15 @@
-﻿using Objects.Geometry;
+﻿using System;
+using Objects.Geometry;
+using Objects.Utils;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using System.Collections.Generic;
+using System.Linq;
+using Speckle.Newtonsoft.Json;
 
 namespace Objects.BuiltElements.Revit
 {
-  public class FamilyInstance : Base, IDisplayMesh
+  public class FamilyInstance : Base, IDisplayMesh, IDisplayValue<List<Mesh>>
   {
     public Point basePoint { get; set; }
     public string family { get; set; }
@@ -15,18 +19,21 @@ namespace Objects.BuiltElements.Revit
     public double rotation { get; set; }
     public bool facingFlipped { get; set; }
     public bool handFlipped { get; set; }
-    public List<Parameter> parameters { get; set; }
+    public bool mirrored { get; set; }
+    public Base parameters { get; set; }
     public string elementId { get; set; }
 
     [DetachProperty]
     public List<Base> elements { get; set; }
-
+    
     [DetachProperty]
-    public Mesh displayMesh { get; set; }
+    public List<Mesh> displayValue { get; set; }
+
+    public string units { get; set; }
 
     public FamilyInstance() { }
 
-    [SchemaInfo("FamilyInstance", "Creates a Revit family instance")]
+    [SchemaInfo("FamilyInstance", "Creates a Revit family instance", "Revit", "Families")]
     public FamilyInstance(Point basePoint, string family, string type, Level level,
       double rotation = 0, bool facingFlipped = false, bool handFlipped = false,
       List<Parameter> parameters = null)
@@ -38,7 +45,16 @@ namespace Objects.BuiltElements.Revit
       this.rotation = rotation;
       this.facingFlipped = facingFlipped;
       this.handFlipped = handFlipped;
-      this.parameters = parameters;
+      this.mirrored = false;
+      this.parameters = parameters.ToBase();
     }
+    
+    #region Obsolete Members
+    [JsonIgnore, Obsolete("Use " + nameof(displayValue) + " instead")]
+    public Mesh displayMesh {
+      get => displayValue?.FirstOrDefault();
+      set => displayValue = new List<Mesh> {value};
+    }
+    #endregion
   }
 }

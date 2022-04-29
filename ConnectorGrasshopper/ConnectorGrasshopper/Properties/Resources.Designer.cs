@@ -143,6 +143,16 @@ namespace ConnectorGrasshopper.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap docs16 {
+            get {
+                object obj = ResourceManager.GetObject("docs16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap ExpandSpeckleObject {
             get {
                 object obj = ResourceManager.GetObject("ExpandSpeckleObject", resourceCulture);
@@ -163,9 +173,39 @@ namespace ConnectorGrasshopper.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap ExtendSpeckleObjectByKeyValue {
+            get {
+                object obj = ResourceManager.GetObject("ExtendSpeckleObjectByKeyValue", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap forum16 {
+            get {
+                object obj = ResourceManager.GetObject("forum16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap GetObjectValueByKey {
             get {
                 object obj = ResourceManager.GetObject("GetObjectValueByKey", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap help16 {
+            get {
+                object obj = ResourceManager.GetObject("help16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -203,6 +243,16 @@ namespace ConnectorGrasshopper.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap receiveFromTransport {
+            get {
+                object obj = ResourceManager.GetObject("receiveFromTransport", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Receiver {
             get {
                 object obj = ResourceManager.GetObject("Receiver", resourceCulture);
@@ -226,6 +276,16 @@ namespace ConnectorGrasshopper.Properties {
         internal static System.Drawing.Bitmap Sender {
             get {
                 object obj = ResourceManager.GetObject("Sender", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap sendToTransport {
+            get {
+                object obj = ResourceManager.GetObject("sendToTransport", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -383,6 +443,26 @@ namespace ConnectorGrasshopper.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap SynchronousReceiver {
+            get {
+                object obj = ResourceManager.GetObject("SynchronousReceiver", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap SynchronousSender {
+            get {
+                object obj = ResourceManager.GetObject("SynchronousSender", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap ToNative {
             get {
                 object obj = ResourceManager.GetObject("ToNative", resourceCulture);
@@ -396,6 +476,16 @@ namespace ConnectorGrasshopper.Properties {
         internal static System.Drawing.Bitmap ToSpeckle {
             get {
                 object obj = ResourceManager.GetObject("ToSpeckle", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap tutorials16 {
+            get {
+                object obj = ResourceManager.GetObject("tutorials16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

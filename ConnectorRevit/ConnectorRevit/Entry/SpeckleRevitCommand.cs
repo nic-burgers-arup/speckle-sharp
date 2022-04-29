@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Reflection;
 using System.Windows;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
@@ -17,14 +19,16 @@ namespace Speckle.ConnectorRevit.Entry
 
     public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
     {
-      OpenOrFocusSpeckle();
+      OpenOrFocusSpeckle(commandData.Application);
       return Result.Succeeded;
     }
 
-    public static void OpenOrFocusSpeckle()
+    public static void OpenOrFocusSpeckle(UIApplication app)
     {
       try
       {
+        AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(OnAssemblyResolve);
+
         if (Bootstrapper != null)
         {
           Bootstrapper.ShowRootView();
@@ -39,11 +43,26 @@ namespace Speckle.ConnectorRevit.Entry
           new DesktopUI.App(Bootstrapper);
 
         Bootstrapper.Start(Application.Current);
+        Bootstrapper.SetParent(app.MainWindowHandle);
       }
       catch (Exception e)
       {
         Bootstrapper = null;
       }
+    }
+
+    static Assembly OnAssemblyResolve(object sender, ResolveEventArgs args)
+    {
+      Assembly a = null;
+      var name = args.Name.Split(',')[0];
+      string path = Path.GetDirectoryName(typeof(App).Assembly.Location);
+
+      string assemblyFile = Path.Combine(path, name + ".dll");
+
+      if (File.Exists(assemblyFile))
+        a = Assembly.LoadFrom(assemblyFile);
+
+      return a;
     }
   }
 

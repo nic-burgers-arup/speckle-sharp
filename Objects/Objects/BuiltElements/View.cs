@@ -20,7 +20,10 @@ namespace Objects.BuiltElements
     public Point target { get; set; }
     public Vector upDirection { get; set; }
     public Vector forwardDirection { get; set; }
+    public Box boundingBox { get; set; } // x is right, y is top of screen, z is towards viewer
     public bool isOrthogonal { get; set; } = false;
+
+    public string units { get; set; }
 
     public View3D() { }
   }
@@ -43,7 +46,7 @@ namespace Objects.BuiltElements
 //  {
 //    public bool createView { get; set; }
 
-//    public List<Parameter> parameters { get; set; }
+//    public Base parameters { get; set; }
 
 //    public string elementId { get; set; }
 
@@ -61,7 +64,7 @@ namespace Objects.BuiltElements
 //      this.name = name;
 //      this.elevation = elevation;
 //      this.createView = createView;
-//      this.parameters = parameters;
+//      this.parameters = parameters.ToBase();
 //      this.referenceOnly = false;
 //    }
 

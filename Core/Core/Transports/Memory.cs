@@ -9,7 +9,7 @@ namespace Speckle.Core.Transports
   /// <summary>
   /// An in memory storage of speckle objects.
   /// </summary>
-  public class MemoryTransport : ITransport
+  public class MemoryTransport : ITransport, IDisposable, ICloneable
   {
     public Dictionary<string, string> Objects;
 
@@ -39,7 +39,7 @@ namespace Speckle.Core.Transports
 
     public void SaveObject(string hash, string serializedObject)
     {
-      if (CancellationToken.IsCancellationRequested)return; // Check for cancellation
+      if (CancellationToken.IsCancellationRequested) return; // Check for cancellation
 
       Objects[hash] = serializedObject;
 
@@ -54,11 +54,11 @@ namespace Speckle.Core.Transports
 
     public string GetObject(string hash)
     {
-      if (CancellationToken.IsCancellationRequested)return null; // Check for cancellation
+      if (CancellationToken.IsCancellationRequested) return null; // Check for cancellation
 
-      if (Objects.ContainsKey(hash))return Objects[hash];
+      if (Objects.ContainsKey(hash)) return Objects[hash];
       else
-        throw new SpeckleException("No object found in this memory transport.");
+        return null;
     }
 
     public Task<string> CopyObjectAndChildren(string id, ITransport targetTransport, Action<int> onTotalChildrenCountKnown = null)
@@ -79,6 +79,38 @@ namespace Speckle.Core.Transports
     public override string ToString()
     {
       return $"Memory Transport {TransportName}";
+    }
+
+    public async Task<Dictionary<string, bool>> HasObjects(List<string> objectIds)
+    {
+      Dictionary<string, bool> ret = new Dictionary<string, bool>();
+      foreach (string objectId in objectIds)
+      {
+        ret[objectId] = Objects.ContainsKey(objectId);
+      }
+
+      return ret;
+    }
+
+    public void Dispose()
+    {
+      Objects = null;
+      OnErrorAction = null;
+      OnProgressAction = null;
+      SavedObjectCount = 0;
+    }
+
+    public object Clone()
+    {
+      return new MemoryTransport()
+      {
+        TransportName = TransportName,
+        OnErrorAction = OnErrorAction,
+        OnProgressAction = OnProgressAction,
+        CancellationToken = CancellationToken,
+        Objects = Objects,
+        SavedObjectCount = SavedObjectCount
+      };
     }
   }
 

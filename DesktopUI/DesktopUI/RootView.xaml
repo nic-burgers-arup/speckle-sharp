@@ -7,8 +7,6 @@
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
   xmlns:s="https://github.com/canton7/Stylet"
-  xmlns:settings="[settings ]clr-namespace:Speckle.DesktopUI.Settings"
-  xmlns:stylet="clr-namespace:Stylet;assembly=Stylet"
   xmlns:utils="clr-namespace:Speckle.DesktopUI.Utils"
   x:Name="RootWindow"
   Title="Speckle"
@@ -28,7 +26,13 @@
   TextOptions.TextRenderingMode="Auto"
   mc:Ignorable="d">
   <Window.Resources>
-    <utils:StringToUpperConverter x:Key="StringToUpperConverter" />
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="pack://application:,,,/SpeckleDesktopUI;component/Themes/DynamicStyles.xaml" />
+        <ResourceDictionary Source="pack://application:,,,/SpeckleDesktopUI;component/Themes/StaticStyles.xaml" />
+      </ResourceDictionary.MergedDictionaries>
+      <utils:StringToUpperConverter x:Key="StringToUpperConverter" />
+    </ResourceDictionary>
   </Window.Resources>
   <md:DialogHost
     CloseOnClickAway="True"
@@ -44,41 +48,66 @@
         md:ShadowAssist.ShadowDepth="Depth1"
         Background="{DynamicResource MaterialDesignCardBackground}"
         DockPanel.Dock="Top">
-        <DockPanel>
-          <ToggleButton
-            x:Name="MenuToggleButton"
-            Width="30"
-            Height="30"
-            Margin="12,0,0,0"
-            HorizontalAlignment="Left"
-            md:ShadowAssist.ShadowDepth="Depth0"
-            Foreground="Gray"
-            Background="Transparent"
-            BorderBrush="Transparent"
-            Command="{s:Action GoToSettingsOrBack}"
-            Content="{Binding  MainButtonIcon}"
-            IsChecked="{Binding MainButton_Checked}"
-            Style="{StaticResource MaterialDesignFloatingActionDarkButton}" />
-          <TextBlock
-            Margin="12,0,0,0"
-            VerticalAlignment="Center"
-            FontSize="20"
-            Style="{StaticResource MaterialDesignHeadline3TextBlock}"
-            Text="{Binding ViewName, Converter={StaticResource StringToUpperConverter}}" />
-          <Button
-            Width="30"
-            Height="30"
-            Margin="0 0 12 0 "
-            md:ShadowAssist.ShadowDepth="Depth0"
-            Background="Transparent"
-            BorderBrush="Transparent"
-            VerticalAlignment="Center"
-            HorizontalAlignment="Right"
-            Foreground="Gray"
-            Content="{md:PackIcon Kind=Refresh}"
-            Command="{s:Action RefreshActiveView}"
-            ToolTip="Refresh streams and local accounts"
-            Style="{StaticResource MaterialDesignFloatingActionDarkButton}" />
+        <DockPanel HorizontalAlignment="Stretch">
+          <Grid HorizontalAlignment="Stretch">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+              Grid.Column="0"
+              Margin="20,0,0,0"
+              HorizontalAlignment="Left"
+              FontSize="20"
+              Style="{StaticResource MaterialDesignHeadline3TextBlock}"
+              Text="{Binding ViewName, Converter={StaticResource StringToUpperConverter}}" />
+            <StackPanel
+              Grid.Column="1"
+              VerticalAlignment="Center"
+              Orientation="Horizontal">
+              <ToggleButton
+                x:Name="MenuToggleButton"
+                Width="30"
+                Height="30"
+                HorizontalAlignment="Right"
+                md:ShadowAssist.ShadowDepth="Depth0"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                Command="{s:Action GoToSettingsOrBack}"
+                Content="{Binding MainButtonIcon}"
+                Foreground="Gray"
+                IsChecked="{Binding MainButton_Checked}"
+                Style="{StaticResource MaterialDesignFloatingActionDarkButton}"
+                ToolTip="Settings" />
+
+              <Button
+                Width="30"
+                Height="30"
+                HorizontalAlignment="Right"
+                md:ShadowAssist.ShadowDepth="Depth0"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                Command="{s:Action RefreshActiveView}"
+                Content="{md:PackIcon Kind=Refresh}"
+                Foreground="Gray"
+                Style="{StaticResource MaterialDesignFloatingActionDarkButton}"
+                ToolTip="Refresh streams and local accounts" />
+
+              <Button
+                Width="30"
+                Height="30"
+                HorizontalAlignment="Right"
+                md:ShadowAssist.ShadowDepth="Depth0"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                Command="{s:Action GetHelp}"
+                Content="{md:PackIcon Kind=Lifebuoy}"
+                Foreground="Gray"
+                Style="{StaticResource MaterialDesignFloatingActionDarkButton}"
+                ToolTip="Get help on our community forum!" />
+
+            </StackPanel>
+          </Grid>
 
         </DockPanel>
       </md:Card>

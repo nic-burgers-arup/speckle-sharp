@@ -42,7 +42,6 @@ namespace Objects.Converter.Dynamo
 
 #if !(REVIT2022)
 
-
     private DisplayUnitType _revitUnitsTypeId = DisplayUnitType.DUT_UNDEFINED;
     public DisplayUnitType RevitLengthTypeId
     {
@@ -67,12 +66,18 @@ namespace Objects.Converter.Dynamo
           return Speckle.Core.Kits.Units.Centimeters;
         case DisplayUnitType.DUT_METERS:
           return Speckle.Core.Kits.Units.Meters;
+        case DisplayUnitType.DUT_METERS_CENTIMETERS:
+          return Speckle.Core.Kits.Units.Meters;
         case DisplayUnitType.DUT_DECIMAL_INCHES:
           return Speckle.Core.Kits.Units.Inches;
         case DisplayUnitType.DUT_DECIMAL_FEET:
           return Speckle.Core.Kits.Units.Feet;
+        case DisplayUnitType.DUT_FEET_FRACTIONAL_INCHES:
+          return Speckle.Core.Kits.Units.Feet;
+        case DisplayUnitType.DUT_FRACTIONAL_INCHES:
+          return Speckle.Core.Kits.Units.Inches;
         default:
-          throw new Speckle.Core.Logging.SpeckleException("The current Unit System is unsupported.");
+          throw new Speckle.Core.Logging.SpeckleException($"The Unit System \"{type}\" is unsupported.");
       }
 
     }
@@ -100,32 +105,29 @@ namespace Objects.Converter.Dynamo
         return Speckle.Core.Kits.Units.Centimeters;
       else if (typeId == UnitTypeId.Meters)
         return Speckle.Core.Kits.Units.Meters;
+      else if (typeId == UnitTypeId.MetersCentimeters)
+        return Speckle.Core.Kits.Units.Meters;
       else if (typeId == UnitTypeId.Inches)
         return Speckle.Core.Kits.Units.Inches;
       else if (typeId == UnitTypeId.Feet)
         return Speckle.Core.Kits.Units.Feet;
+      else if (typeId == UnitTypeId.FeetFractionalInches)
+        return Speckle.Core.Kits.Units.Feet;
+      else if (typeId == UnitTypeId.FractionalInches)
+        return Speckle.Core.Kits.Units.Inches;
 
-      throw new Speckle.Core.Logging.SpeckleException("The current Unit System is unsupported.");
+      throw new Speckle.Core.Logging.SpeckleException($"The Unit System \"{typeId}\" is unsupported.");
     }
 
 #endif
 
-
-
 #endif
-
-
 
     private double ScaleToNative(double value, string units)
     {
       var f = Speckle.Core.Kits.Units.GetConversionFactor(units, ModelUnits);
       return value * f;
     }
-
-
-
-
-
 
   }
 }

@@ -23,7 +23,6 @@ namespace Speckle.ConnectorRevit.UI
   public partial class ConnectorBindingsRevit
   {
 
-
     /// <summary>
     /// Receives a stream and bakes into the existing revit file.
     /// </summary>
@@ -57,8 +56,6 @@ namespace Speckle.ConnectorRevit.UI
 
       var commit = state.Commit;
 
-
-
       var commitObject = await Operations.Receive(
           referencedObject,
           state.CancellationTokenSource.Token,
@@ -70,7 +67,8 @@ namespace Speckle.ConnectorRevit.UI
             state.Errors.Add(e);
             state.CancellationTokenSource.Cancel();
           },
-          onTotalChildrenCountKnown: count => Execute.PostToUIThread(() => state.Progress.Maximum = count)
+          onTotalChildrenCountKnown: count => Execute.PostToUIThread(() => state.Progress.Maximum = count),
+          disposeTransports: true
           );
 
       if (OperationErrors.Count != 0)
@@ -83,8 +81,6 @@ namespace Speckle.ConnectorRevit.UI
       {
         return null;
       }
-
-
 
       // Bake the new ones.
       Queue.Add(() =>
@@ -104,9 +100,9 @@ namespace Speckle.ConnectorRevit.UI
           converter.SetContextObjects(flattenedObjects.Select(x => new ApplicationPlaceholderObject { applicationId = x.applicationId, NativeObject = x }).ToList());
           var newPlaceholderObjects = ConvertReceivedObjects(flattenedObjects, converter, state);
           // receive was cancelled by user
-          if ( newPlaceholderObjects == null )
+          if (newPlaceholderObjects == null)
           {
-            converter.ConversionErrors.Add(new Exception("fatal error: receive cancelled by user"));
+            converter.Report.LogConversionError(new Exception("fatal error: receive cancelled by user"));
             t.RollBack();
             return;
           }
@@ -117,7 +113,7 @@ namespace Speckle.ConnectorRevit.UI
 
           t.Commit();
 
-          state.Errors.AddRange(converter.ConversionErrors);
+          state.Errors.AddRange(converter.Report.ConversionErrors);
         }
 
       });
@@ -129,7 +125,7 @@ namespace Speckle.ConnectorRevit.UI
         //wait to let queue finish
       }
 
-      if (converter.ConversionErrors.Any(x => x.Message.Contains("fatal error")))
+      if (converter.Report.ConversionErrorsString.Contains("fatal error"))
       {
         // the commit is being rolled back
         return null;
@@ -176,7 +172,7 @@ namespace Speckle.ConnectorRevit.UI
 
       foreach (var @base in objects)
       {
-        if ( state.CancellationTokenSource.Token.IsCancellationRequested )
+        if (state.CancellationTokenSource.Token.IsCancellationRequested)
         {
           placeholders = null;
           break;

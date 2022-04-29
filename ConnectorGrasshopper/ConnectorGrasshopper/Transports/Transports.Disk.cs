@@ -1,7 +1,8 @@
-﻿using Grasshopper.Kernel;
-using Speckle.Core.Logging;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
+using Grasshopper.Kernel;
+using Logging = Speckle.Core.Logging;
 
 namespace ConnectorGrasshopper.Transports
 {
@@ -13,7 +14,7 @@ namespace ConnectorGrasshopper.Transports
 
     public override GH_Exposure Exposure => GH_Exposure.secondary;
 
-    public DiskTransportComponent() : base("Disk Transport", "Disk", "Creates a Disk Transport.", ComponentCategories.SECONDARY_RIBBON, ComponentCategories.TRANSPORTS) { }
+    public DiskTransportComponent() : base("Disk Transport", "Disk", "Creates a Disk Transport. This transport will store objects in files in a folder that you can specify (including one on a network drive!). It's useful for understanding how Speckle's decomposition api works. It's not meant to be performant - it's useful for debugging purposes - e.g., when developing a new class/object model you can understand easily the relative sizes of the resulting objects.", ComponentCategories.SECONDARY_RIBBON, ComponentCategories.TRANSPORTS) { }
 
     protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
@@ -35,6 +36,11 @@ namespace ConnectorGrasshopper.Transports
         return;
       }
 
+      if (DA.Iteration == 0)
+      {
+        Logging.Analytics.TrackEvent(Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Disk Transport" } });
+      }
+
       string basePath = null;
       DA.GetData(0, ref basePath);
 
@@ -42,12 +48,5 @@ namespace ConnectorGrasshopper.Transports
 
       DA.SetData(0, myTransport);
     }
-
-    protected override void BeforeSolveInstance()
-    {
-      Tracker.TrackPageview("transports", "disk");
-      base.BeforeSolveInstance();
-    }
-
   }
 }

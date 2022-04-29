@@ -7,16 +7,15 @@ using GH_IO.Serialization;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Special;
-using Rhino;
 using Speckle.Core.Credentials;
-using Speckle.Core.Logging;
+using Logging = Speckle.Core.Logging;
 
 namespace ConnectorGrasshopper.Accounts
 {
   public class AccountListComponent : GH_ValueList
   {
     protected override Bitmap Icon => Properties.Resources.Accounts;
-  
+
     public override Guid ComponentGuid => new Guid("734C6CB6-2430-40B3-BE2F-255B27302131");
 
     public override string Category { get => ComponentCategories.SECONDARY_RIBBON; }
@@ -46,16 +45,18 @@ namespace ConnectorGrasshopper.Accounts
       return true;
     }
 
+
     private void SetAccountList()
     {
       ListItems.Clear();
-      ListItems.Add(new GH_ValueListItem("No account selected", null));
+      ListItems.Add(new GH_ValueListItem("No account selected", ""));
       var accounts = AccountManager.GetAccounts().ToList();
       var defaultAccount = AccountManager.GetDefaultAccount();
-      int index = 1, defaultAccountIndex = 0;
+      int index = 0, defaultAccountIndex = 0;
 
       if (accounts.Count == 0)
       {
+
         SelectItem(0);
         AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No accounts found. Please use the Speckle Manager to manage your accounts on this computer.");
         return;
@@ -72,13 +73,16 @@ namespace ConnectorGrasshopper.Accounts
         index++;
       }
 
+      Logging.Analytics.TrackEvent(Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Account List" } });
+
       if (string.IsNullOrEmpty(selectedServerUrl) && string.IsNullOrEmpty(selectedUserId))
       {
         // This is a new component, use default account
         SelectItem(defaultAccountIndex);
+
         return;
       }
-      
+
       // Not a new component, should have account set.
       var selectedIndex = GetSelectedAccountIndex(accounts);
       SelectItem(selectedIndex != -1 ? selectedIndex : 0);
@@ -88,13 +92,13 @@ namespace ConnectorGrasshopper.Accounts
     {
       //TODO: Refactor this into a method
       // Check for the specific user ID that was selected before.
-      var acc = accounts.FirstOrDefault(a => a.userInfo.id == selectedUserId);
+      var acc = accounts.Find(a => a.userInfo.id == selectedUserId);
       if (acc != null)
       {
         var accIndex = accounts.IndexOf(acc);
         return accIndex + 1;
       }
-      
+
       // If the selected account doesn't work, try with another account in the same server
       acc = accounts.FirstOrDefault(a => a.serverInfo.url == selectedServerUrl);
       if (acc != null)
@@ -107,11 +111,10 @@ namespace ConnectorGrasshopper.Accounts
       // If no accounts exist on the selected server, throw error in node.
       return -1;
     }
-    
+
     private string selectedUserId;
     private string selectedServerUrl;
-    
-        
+
     public override bool Read(GH_IReader reader)
     {
       try
@@ -121,10 +124,11 @@ namespace ConnectorGrasshopper.Accounts
       }
       catch (Exception e)
       {
+        Console.WriteLine(e);
       }
       return base.Read(reader);
     }
-    
+
     public override bool Write(GH_IWriter writer)
     {
       try
@@ -138,8 +142,8 @@ namespace ConnectorGrasshopper.Accounts
         }
         else
         {
-          writer.SetString("selectedId", this.selectedUserId);
-          writer.SetString("selectedServer", this.selectedServerUrl);
+          writer.SetString("selectedId", "-");
+          writer.SetString("selectedServer", "-");
         }
       }
       catch (Exception e)
@@ -152,14 +156,13 @@ namespace ConnectorGrasshopper.Accounts
     protected override void CollectVolatileData_Custom()
     {
       m_data.ClearData();
-      
-      if(FirstSelectedItem.Value != null)
+
+      if (FirstSelectedItem.Value != null)
         m_data.Append(this.FirstSelectedItem.Value, new GH_Path(0));
     }
 
     public override void AddedToDocument(GH_Document document)
     {
-      Tracker.TrackPageview(Tracker.ACCOUNT_LIST);
       base.AddedToDocument(document);
       SetAccountList();
     }

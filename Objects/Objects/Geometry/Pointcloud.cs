@@ -2,10 +2,12 @@
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using System.Collections.Generic;
+using Objects.Other;
+using Speckle.Core.Logging;
 
 namespace Objects.Geometry
 {
-  public class Pointcloud : Base, IHasBoundingBox
+  public class Pointcloud : Base, IHasBoundingBox, ITransformable<Pointcloud>
   {
 
     [DetachProperty]
@@ -22,19 +24,38 @@ namespace Objects.Geometry
 
     public Box bbox { get; set; }
 
+    public string units { get; set; }
+
     public Pointcloud()
     {
     }
-
-    public IEnumerable<Point> GetPoints()
+    
+    /// <returns><see cref="points"/> as list of <see cref="Point"/>s</returns>
+    /// <exception cref="SpeckleException">when list is malformed</exception>
+    public List<Point> GetPoints()
     {
-      if (points.Count % 3 != 0) throw new Speckle.Core.Logging.SpeckleException("Array malformed: length%3 != 0.");
-
-      Point[] pts = new Point[points.Count / 3];
-      var asArray = points.ToArray();
-      for (int i = 2, k = 0; i < points.Count; i += 3)
-        pts[k++] = new Point(asArray[i - 2], asArray[i - 1], asArray[i], units);
+      if (points.Count % 3 != 0) throw new SpeckleException($"{nameof(Pointcloud)}.{nameof(points)} list is malformed: expected length to be multiple of 3");
+      
+      var pts = new List<Point>(points.Count / 3);
+      for (int i = 2; i < points.Count; i += 3)
+      {
+        pts.Add(new Point(points[i - 2], points[i - 1], points[i], units));
+      }
       return pts;
+    }
+
+    public bool TransformTo(Transform transform, out Pointcloud pointcloud)
+    {
+      pointcloud = new Pointcloud
+      {
+        units = units,
+        points = transform.ApplyToPoints(points),
+        colors = colors,
+        sizes = sizes,
+        applicationId = applicationId
+      };
+      
+      return true;
     }
   }
 }

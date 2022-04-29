@@ -1,14 +1,59 @@
-﻿using Speckle.Core.Kits;
+﻿using System.Text.RegularExpressions;
+
+using Objects.Other;
+using Speckle.Core.Kits;
 using Speckle.Core.Models;
 
+using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.DatabaseServices;
-using System.Drawing;
-using System.Text.RegularExpressions;
+using System;
+using System.Linq;
+using System.Collections.Generic;
+#if (CIVIL2021 || CIVIL2022)
+using Autodesk.Aec.ApplicationServices;
+#endif
 
 namespace Objects.Converter.AutocadCivil
 {
+  public static class Utils
+  {
+    public static BlockTableRecord GetModelSpace(this Database db)
+    {
+      return (BlockTableRecord)SymbolUtilityServices.GetBlockModelSpaceId(db).GetObject(OpenMode.ForWrite);
+    }
+    public static ObjectId Append(this BlockTableRecord owner, Entity entity)
+    {
+      if (!entity.IsNewObject)
+        return entity.Id;
+      var tr = owner.Database.TransactionManager.TopTransaction;
+      var id = owner.AppendEntity(entity);
+      tr.AddNewlyCreatedDBObject(entity, true);
+      return id;
+    }
+  }
+
   public partial class ConverterAutocadCivil
   {
+    public static string invalidAutocadChars = @"<>/\:;""?*|=,‘";
+
+    private Dictionary<string, ObjectId> _lineTypeDictionary = new Dictionary<string, ObjectId>();
+    public Dictionary<string, ObjectId> LineTypeDictionary
+    {
+      get
+      {
+        if (_lineTypeDictionary.Values.Count == 0)
+        {
+          var lineTypeTable = (LinetypeTable)Trans.GetObject(Doc.Database.LinetypeTableId, OpenMode.ForRead);
+          foreach (ObjectId lineTypeId in lineTypeTable)
+          {
+            var linetype = (LinetypeTableRecord)Trans.GetObject(lineTypeId, OpenMode.ForRead);
+            _lineTypeDictionary.Add(linetype.Name, lineTypeId);
+          }
+        }
+        return _lineTypeDictionary;
+      }
+    }
+
     #region units
     private string _modelUnits;
     public string ModelUnits
@@ -16,13 +61,30 @@ namespace Objects.Converter.AutocadCivil
       get
       {
         if (string.IsNullOrEmpty(_modelUnits))
+        {
           _modelUnits = UnitToSpeckle(Doc.Database.Insunits);
+
+#if (CIVIL2021 || CIVIL2022)
+          if (_modelUnits == Units.None)
+          {
+            // try to get the drawing unit instead
+            using (Transaction tr = Doc.Database.TransactionManager.StartTransaction())
+            {
+              var id = DrawingSetupVariables.GetInstance(Doc.Database, false);
+              var setupVariables = (DrawingSetupVariables)tr.GetObject(id, OpenMode.ForRead);
+              var linearUnit = setupVariables.LinearUnit;
+              _modelUnits = Units.GetUnitsFromString(linearUnit.ToString());
+              tr.Commit();
+            }
+          }
+#endif
+        }
         return _modelUnits;
       }
     }
     private void SetUnits(Base geom)
     {
-      geom.units = ModelUnits;
+      geom["units"] = ModelUnits;
     }
 
     private double ScaleToNative(double value, string units)
@@ -31,6 +93,7 @@ namespace Objects.Converter.AutocadCivil
       return value * f;
     }
 
+    // Note: Difference between International Foot and US Foot is ~ 0.0000006 as described in: https://www.pobonline.com/articles/98788-us-survey-feet-versus-international-feet
     private string UnitToSpeckle(UnitsValue units)
     {
       switch (units)
@@ -44,17 +107,38 @@ namespace Objects.Converter.AutocadCivil
         case UnitsValue.Kilometers:
           return Units.Kilometers;
         case UnitsValue.Inches:
+        case UnitsValue.USSurveyInch:
           return Units.Inches;
         case UnitsValue.Feet:
+        case UnitsValue.USSurveyFeet:
           return Units.Feet;
         case UnitsValue.Yards:
+        case UnitsValue.USSurveyYard:
           return Units.Yards;
         case UnitsValue.Miles:
+        case UnitsValue.USSurveyMile:
           return Units.Miles;
+        case UnitsValue.Undefined:
+          return Units.None;
         default:
-          throw new System.Exception("The current Unit System is unsupported.");
+          throw new Speckle.Core.Logging.SpeckleException($"The Unit System \"{units}\" is unsupported.");
       }
     }
-#endregion 
+    #endregion
+
+    /// <summary>
+    /// Removes invalid characters for Autocad layer and block names
+    /// </summary>
+    /// <param name="str"></param>
+    /// <returns></returns>
+    public static string RemoveInvalidAutocadChars(string str)
+    {
+      // using this to handle rhino nested layer syntax
+      // replace "::" layer delimiter with "$" (acad standard)
+      string cleanDelimiter = str.Replace("::", "$");
+
+      // remove all other invalid chars
+      return Regex.Replace(cleanDelimiter, $"[{invalidAutocadChars}]", string.Empty);
+    }
   }
 }

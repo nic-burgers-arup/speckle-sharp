@@ -19,25 +19,30 @@ namespace Speckle.Core.Logging
       if (_initialized)
         return;
 
-      var dsn = Environment.GetEnvironmentVariable("SENTRY_DSN");
+      var dsn = "https://f29ec716d14d4121bb2a71c4f3ef7786@o436188.ingest.sentry.io/5396846";
 
-      SentrySdk.ConfigureScope(scope =>
-      {
-        scope.User = new User { Id = Setup.SUUID, };
-        scope.SetTag("hostApplication", Setup.HostApplication);
-      });
       var env = "production";
-
+      var debug = false;
 #if DEBUG
       env = "dev";
+      dsn = null;
+      debug = true;
 #endif
 
       SentrySdk.Init(o =>
       {
         o.Dsn = dsn;
         o.Environment = env;
-        o.Debug = true;
+        o.Debug = debug;
         o.Release = "SpeckleCore@" + Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        o.StackTraceMode = StackTraceMode.Enhanced;
+        o.AttachStacktrace = true;
+      });
+
+      SentrySdk.ConfigureScope(scope =>
+      {
+        scope.User = new User { Id = Setup.SUUID, };
+        scope.SetTag("hostApplication", Setup.HostApplication);
       });
 
       _initialized = true;
@@ -51,6 +56,10 @@ namespace Speckle.Core.Logging
       List<KeyValuePair<string, object>> extra = null)
     {
       Initialize();
+
+      //ignore infos as they're hogging us
+      if (level == SentryLevel.Info)
+        return;
 
       SentrySdk.WithScope(s =>
       {

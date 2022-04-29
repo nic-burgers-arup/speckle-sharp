@@ -1,4 +1,5 @@
 ﻿using Objects.Geometry;
+using Objects.Utils;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using System;
@@ -11,9 +12,11 @@ namespace Objects.BuiltElements
   {
     public ICurve outline { get; set; }
 
+    public string units { get; set; }
+
     public Opening() { }
 
-    //[SchemaInfo("Opening", "Creates a Speckle opening")]
+    [SchemaInfo("Arch Opening", "Creates a Speckle opening", "BIM", "Architecture")]
     public Opening(ICurve outline)
     {
       this.outline = outline;
@@ -27,7 +30,7 @@ namespace Objects.BuiltElements.Revit
   {
     //public string family { get; set; }
     //public string type { get; set; }
-    public List<Parameter> parameters { get; set; }
+    public Base parameters { get; set; }
     public string elementId { get; set; }
 
     public RevitOpening() { }
@@ -42,6 +45,13 @@ namespace Objects.BuiltElements.Revit
     public RevitWall host { get; set; }
 
     public RevitWallOpening() { }
+    
+    [SchemaInfo("Revit Wall Opening", "Creates a Speckle Wall opening for revit", "BIM", "Architecture")]
+    public RevitWallOpening(ICurve outline , RevitWall host = null)
+    {
+      this.outline = outline;
+      this.host = host;
+    }
   }
 
   public class RevitShaft : RevitOpening
@@ -59,13 +69,13 @@ namespace Objects.BuiltElements.Revit
     /// <param name="bottomLevel"></param>
     /// <param name="topLevel"></param>
     /// <param name="parameters"></param>
-    [SchemaInfo("RevitShaft", "Creates a Revit shaft from a bottom and top level")]
-    public RevitShaft(ICurve outline, Level bottomLevel, Level topLevel, List<Parameter> parameters = null)
+    [SchemaInfo("RevitShaft", "Creates a Revit shaft from a bottom and top level", "Revit", "Architecture")]
+    public RevitShaft([SchemaMainParam] ICurve outline, Level bottomLevel, Level topLevel, List<Parameter> parameters = null)
     {
       this.outline = outline;
       this.bottomLevel = bottomLevel;
       this.topLevel = topLevel;
-      this.parameters = parameters;
+      this.parameters = parameters.ToBase();
     }
 
     /*
@@ -83,8 +93,29 @@ namespace Objects.BuiltElements.Revit
       this.outline = outline;
       this.bottomLevel = bottomLevel;
       this.height = height;
-      this.parameters = parameters;
+      this.parameters = parameters.ToBase();
     }
     */
   }
+}
+
+namespace Objects.BuiltElements.TeklaStructures
+{
+    public class TeklaOpening : Opening
+    {
+        public string openingHostId { get; set; }
+        public TeklaOpeningTypeEnum openingType { get; set; }
+        public TeklaOpening() { }
+    }
+    public class TeklaContourOpening : TeklaOpening
+    {
+        public TeklaContourPlate cuttingPlate { get; set; }
+        public double thickness { get; set; }
+        public TeklaContourOpening() { }
+    }
+    public class TeklaBeamOpening : TeklaOpening
+    {
+        public TeklaBeam cuttingBeam { get; set; }
+        public TeklaBeamOpening() { }
+    }
 }

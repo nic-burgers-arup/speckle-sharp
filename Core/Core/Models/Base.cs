@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Speckle.Core.Api;
 using Speckle.Core.Kits;
@@ -37,15 +38,28 @@ namespace Speckle.Core.Models
     /// </summary>
     /// <param name="decompose">If true, will decompose the object in the process of hashing.</param>
     /// <returns></returns>
-    public string GetId(bool decompose = false)
+    public string GetId(bool decompose = false, SerializerVersion serializerVersion = SerializerVersion.V2)
     {
-      var (s, t) = Operations.GetSerializerInstance();
-      if (decompose)
+      if (serializerVersion == SerializerVersion.V1)
       {
-        s.WriteTransports = new List<ITransport>() { new MemoryTransport() };
+        var (s, t) = Operations.GetSerializerInstance();
+        if (decompose)
+        {
+          s.WriteTransports = new List<ITransport>() { new MemoryTransport() };
+        }
+        var obj = JsonConvert.SerializeObject(this, t);
+        return JObject.Parse(obj).GetValue("id").ToString();
       }
-      var obj = JsonConvert.SerializeObject(this, t);
-      return JObject.Parse(obj).GetValue("id").ToString();
+      else
+      {
+        var s = new Serialisation.BaseObjectSerializerV2();
+        if (decompose)
+        {
+          s.WriteTransports = new List<ITransport>() { new MemoryTransport() };
+        }
+        var obj = s.Serialize(this);
+        return JObject.Parse(obj).GetValue("id").ToString();
+      }
     }
 
     /// <summary>
@@ -69,7 +83,7 @@ namespace Speckle.Core.Models
 
       long count = 0;
       var typedProps = @base.GetInstanceMembers();
-      foreach (var prop in typedProps)
+      foreach (var prop in typedProps.Where(p => p.CanRead))
       {
         var detachAttribute = prop.GetCustomAttribute<DetachProperty>(true);
         var chunkAttribute = prop.GetCustomAttribute<Chunkable>(true);
@@ -234,30 +248,6 @@ namespace Speckle.Core.Models
     [SchemaIgnore]
     public string applicationId { get; set; }
 
-
-    private string _units;
-    /// <summary>
-    /// The units in which any spatial values within this object are expressed. 
-    /// </summary>
-    [SchemaIgnore]
-    public string units
-    {
-      get
-      {
-        try
-        {
-          return Units.GetUnitsFromString(_units);
-        }
-        catch
-        {
-          return _units;
-        }
-      }
-      set
-      {
-        _units = Units.GetUnitsFromString(value);
-      }
-    }
 
     private string __type;
 

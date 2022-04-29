@@ -10,7 +10,8 @@ namespace Objects.Converter.Revit
   {
     public static readonly List<BuiltInCategory> columnCategories = new List<BuiltInCategory> { BuiltInCategory.OST_Columns, BuiltInCategory.OST_StructuralColumns };
     public static readonly List<BuiltInCategory> beamCategories = new List<BuiltInCategory> { BuiltInCategory.OST_StructuralFraming };
-    public static readonly List<BuiltInCategory> ductCategories = new List<BuiltInCategory> { BuiltInCategory.OST_DuctCurves };
+    public static readonly List<BuiltInCategory> ductCategories = new List<BuiltInCategory> { BuiltInCategory.OST_DuctCurves, BuiltInCategory.OST_FlexDuctCurves };
+    public static readonly List<BuiltInCategory> pipeCategories = new List<BuiltInCategory> { BuiltInCategory.OST_PipeCurves, BuiltInCategory.OST_FlexPipeCurves };
     public static readonly List<BuiltInCategory> wallCategories = new List<BuiltInCategory> { BuiltInCategory.OST_Walls };
     public static readonly List<BuiltInCategory> floorCategories = new List<BuiltInCategory> { BuiltInCategory.OST_Floors };
     public static readonly List<BuiltInCategory> curtainWallSubElements = new List<BuiltInCategory> { BuiltInCategory.OST_CurtainWallMullions, BuiltInCategory.OST_CurtainWallPanels };
@@ -25,7 +26,6 @@ namespace Objects.Converter.Revit
       {
         return false;
       }
-
     }
 
     public static bool IsElementSupported(this Element e)
@@ -43,6 +43,7 @@ namespace Objects.Converter.Revit
     //until issue https://github.com/specklesystems/speckle-sharp/issues/392 is resolved
     private static List<BuiltInCategory> SupportedBuiltInCategories = new List<BuiltInCategory>{
 
+      BuiltInCategory.OST_Areas,
       BuiltInCategory.OST_CableTray,
       BuiltInCategory.OST_Ceilings,
       BuiltInCategory.OST_Columns,
@@ -50,6 +51,7 @@ namespace Objects.Converter.Revit
       BuiltInCategory.OST_Conduit,
       BuiltInCategory.OST_CurtaSystem,
       BuiltInCategory.OST_DataDevices,
+      BuiltInCategory.OST_Doors,
       BuiltInCategory.OST_DuctSystem,
       BuiltInCategory.OST_DuctCurves,
       BuiltInCategory.OST_ElectricalCircuit,
@@ -63,7 +65,7 @@ namespace Objects.Converter.Revit
       BuiltInCategory.OST_GenericModel,
       BuiltInCategory.OST_Grids,
       BuiltInCategory.OST_Gutter,
-      BuiltInCategory.OST_HVAC_Zones,
+      //BuiltInCategory.OST_HVAC_Zones,
       BuiltInCategory.OST_IOSModelGroups,
       BuiltInCategory.OST_LightingDevices,
       BuiltInCategory.OST_LightingFixtures,
@@ -78,6 +80,7 @@ namespace Objects.Converter.Revit
       BuiltInCategory.OST_StairsRailing,
       BuiltInCategory.OST_RailingSupport,
       BuiltInCategory.OST_RailingTermination,
+      BuiltInCategory.OST_Rebar,
       BuiltInCategory.OST_Roads,
       BuiltInCategory.OST_RoofSoffit,
       BuiltInCategory.OST_Roofs,
@@ -140,6 +143,7 @@ namespace Objects.Converter.Revit
       "OST_Mass",
       "OST_StairsRailing",
       "OST_Ramps",
+      "OST_Rebar",
       "OST_Roads",
       "OST_RoofSoffit",
       "OST_Roofs",

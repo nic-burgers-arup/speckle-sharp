@@ -31,6 +31,8 @@ namespace Speckle.DesktopUI.Utils
     /// </summary>
     public static StreamsRepository Repo { get; set; }
 
+    public static ResourceDictionary RootResourceDict { get; set; }
+
     /// <summary>
     /// Sends a notification to the main view's snack bar.
     /// </summary>
@@ -145,7 +147,7 @@ namespace Speckle.DesktopUI.Utils
       return num != 1 ? "s" : "";
     }
 
-    public static string CommitLayer(string stream, string branch, string commitId)
+    public static string CommitInfo(string stream, string branch, string commitId)
     {
       string formatted = $"{stream}[ {branch} @ {commitId} ]";
       string clean = Regex.Replace(formatted, @"[^\u0000-\u007F]+", string.Empty).Trim(); // remove emojis and trim :( 

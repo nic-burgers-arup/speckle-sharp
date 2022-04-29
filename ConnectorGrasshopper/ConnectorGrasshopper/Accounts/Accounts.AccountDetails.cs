@@ -2,13 +2,10 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Threading.Tasks;
-using ConnectorGrasshopper.Extras;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
-using Speckle.Core.Api;
 using Speckle.Core.Credentials;
-using Speckle.Core.Logging;
+using Logging = Speckle.Core.Logging;
 
 namespace ConnectorGrasshopper.Streams
 {
@@ -28,8 +25,6 @@ namespace ConnectorGrasshopper.Streams
     protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
       var acc = pManager.AddTextParameter("Account", "A", "Account to get stream with.", GH_ParamAccess.item);
-
-      Params.Input[acc].Optional = true;
     }
 
     protected override void RegisterOutputParams(GH_OutputParamManager pManager)
@@ -49,7 +44,8 @@ namespace ConnectorGrasshopper.Streams
     protected override void SolveInstance(IGH_DataAccess DA)
     {
       string userId = null;
-      DA.GetData(0, ref userId);
+      if (!DA.GetData(0, ref userId)) return;
+
 
       if (string.IsNullOrEmpty(userId))
       {
@@ -64,6 +60,12 @@ namespace ConnectorGrasshopper.Streams
         AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Could not find default account in this machine. Use the Speckle Manager to add an account.");
         return;
       }
+
+      if (DA.Iteration == 0) // Only report on first iteration of the component.
+      {
+        Logging.Analytics.TrackEvent(account, Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Account Details" } });
+      }
+
       Params.Input[0].AddVolatileData(new GH_Path(0), 0, account.userInfo.id);
 
       DA.SetData(0, account.isDefault);
@@ -78,7 +80,6 @@ namespace ConnectorGrasshopper.Streams
 
     protected override void BeforeSolveInstance()
     {
-      Tracker.TrackPageview(Tracker.ACCOUNT_DETAILS);
       base.BeforeSolveInstance();
     }
   }

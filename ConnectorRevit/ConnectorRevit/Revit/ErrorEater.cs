@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Autodesk.Revit.DB;
@@ -35,7 +35,7 @@ namespace ConnectorRevit.Revit
         //if (failID == BuiltInFailures.RoomFailures.RoomNotEnclosed)
         //{
         var t = failure.GetDescriptionText();
-        _converter.ConversionErrors.Add(new Exception(t));
+        _converter.Report.LogConversionError(new Exception(t));
 
         var s = failure.GetSeverity();
         if (s == FailureSeverity.Warning) continue;
@@ -48,10 +48,15 @@ namespace ConnectorRevit.Revit
           // currently, the whole commit is rolled back. this should be investigated further at a later date
           // to properly proceed with commit
           failedElements.AddRange(failure.GetFailingElementIds());
-          _converter.ConversionErrors.Clear();
-          _converter.ConversionErrors.Add(new Exception("Objects failed to bake due to fatal error: " + t));
+          //_converter.ConversionErrors.Clear();
+          _converter.Report.LogConversionError(new Exception(
+            "Objects failed to bake due to a fatal error!\n" +
+            "This is likely due to scaling issues - please ensure you've set the correct units on your objects or remove any invalid objects.\n\n" +
+            "Revit error: " + t));
           // logging the error
-          var exception = new Speckle.Core.Logging.SpeckleException("Revit commit failed: " + t, e, level: Sentry.SentryLevel.Warning);
+          var exception =
+            new Speckle.Core.Logging.SpeckleException("Revit commit failed: " + t, e,
+              level: Sentry.SentryLevel.Warning);
           return FailureProcessingResult.ProceedWithCommit;
         }
       }

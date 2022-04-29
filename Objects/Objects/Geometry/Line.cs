@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Objects.Other;
 using Objects.Primitive;
 using Speckle.Core.Kits;
 using Speckle.Core.Logging;
@@ -10,7 +11,7 @@ using Speckle.Newtonsoft.Json;
 
 namespace Objects.Geometry
 {
-  public class Line : Base, ICurve, IHasBoundingBox
+  public class Line : Base, ICurve, IHasBoundingBox, ITransformable
   {
     /// <summary>
     /// OBSOLETE - This is just here for backwards compatibility.
@@ -26,6 +27,8 @@ namespace Objects.Geometry
       }
       set
       {
+        if (value == null)
+          return;
         start = new Point(value[0], value[1], value[2]);
         end = new Point(value[3], value[4], value[5]);
       }
@@ -37,6 +40,8 @@ namespace Objects.Geometry
 
     public double area { get; set; }
     public double length { get; set; }
+
+    public string units { get; set; }
 
     public Point start { get; set; }
     public Point end { get; set; }
@@ -58,23 +63,27 @@ namespace Objects.Geometry
       this.units = units;
     }
 
-    public Line(IEnumerable<double> coordinatesArray, string units = Units.Meters, string applicationId = null)
+    public Line(IList<double> coordinates, string units = Units.Meters, string applicationId = null)
     {
-      var enumerable = coordinatesArray.ToList();
-      if (enumerable.Count < 6)
+      if (coordinates.Count < 6)
         throw new SpeckleException("Line from coordinate array requires 6 coordinates.");
-      this.start = new Point(enumerable[0], enumerable[1], enumerable[2], units, applicationId);
-      this.end = new Point(enumerable[3], enumerable[4], enumerable[5], units, applicationId);
+      this.start = new Point(coordinates[0], coordinates[1], coordinates[2], units, applicationId);
+      this.end = new Point(coordinates[3], coordinates[4], coordinates[5], units, applicationId);
       this.applicationId = applicationId;
       this.units = units;
     }
+    
+    [Obsolete("Use IList constructor")]
+    public Line(IEnumerable<double> coordinatesArray, string units = Units.Meters, string applicationId = null)
+    : this(coordinatesArray.ToList(), units, applicationId)
+    { }
 
     public List<double> ToList()
     {
       var list = new List<double>();
       list.AddRange(start.ToList());
       list.AddRange(end.ToList());
-      list.Add( domain.start ?? 0);
+      list.Add(domain.start ?? 0);
       list.Add(domain.end ?? 1);
       list.Add(Units.GetEncodingFromUnit(units));
       list.Insert(0, CurveTypeEncoding.Line);
@@ -90,6 +99,18 @@ namespace Objects.Geometry
       var line = new Line(startPt, endPt, units);
       line.domain = new Interval(list[8], list[9]);
       return line;
+    }
+
+    public bool TransformTo(Transform transform, out ITransformable line)
+    {
+      line = new Line
+      {
+        start = transform.ApplyToPoint(start),
+        end = transform.ApplyToPoint(end),
+        applicationId = applicationId,
+        units = units
+      };
+      return true;
     }
   }
 }

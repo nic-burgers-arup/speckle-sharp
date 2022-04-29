@@ -1,8 +1,9 @@
-﻿using Grasshopper.Kernel;
-using Speckle.Core.Logging;
-using Speckle.Core.Transports;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
+using Grasshopper.Kernel;
+using Speckle.Core.Transports;
+using Logging = Speckle.Core.Logging;
 
 namespace ConnectorGrasshopper.Transports
 {
@@ -14,7 +15,7 @@ namespace ConnectorGrasshopper.Transports
 
     public override GH_Exposure Exposure => GH_Exposure.secondary;
 
-    public MemoryTransportComponent() : base("Memory Transport", "Memory", "Creates an Memory Transport.", ComponentCategories.SECONDARY_RIBBON, ComponentCategories.TRANSPORTS) { }
+    public MemoryTransportComponent() : base("Memory Transport", "Memory", "Creates a Memory Transport. This is useful for debugging, or just sending data around one grasshopper defintion. We don't recommend you use it!", ComponentCategories.SECONDARY_RIBBON, ComponentCategories.TRANSPORTS) { }
 
     protected override void RegisterInputParams(GH_InputParamManager pManager)
     {
@@ -35,19 +36,19 @@ namespace ConnectorGrasshopper.Transports
         AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Cannot create multiple transports at the same time. This is an explicit guard against possibly unintended behaviour. If you want to create another transport, please use a new component.");
         return;
       }
+
+      if (DA.Iteration == 0)
+      {
+        Logging.Analytics.TrackEvent(Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Memory Transport" } });
+      }
+
       string name = null;
       DA.GetData(0, ref name);
 
       var myTransport = new MemoryTransport();
-      myTransport.TransportName = name;
+      myTransport.TransportName = name == null ? "Gh Memory Transport" : name;
 
       DA.SetData(0, myTransport);
-    }
-
-    protected override void BeforeSolveInstance()
-    {
-      Tracker.TrackPageview("transports", "memory");
-      base.BeforeSolveInstance();
     }
   }
 }

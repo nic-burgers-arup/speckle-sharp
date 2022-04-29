@@ -46,6 +46,8 @@ namespace Objects.Geometry
     /// <inheritdoc />
     public double length { get; set; }
 
+    public string units { get; set; }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="Ellipse"/> class.
     /// This constructor is only intended for serialization/deserialization purposes.
@@ -112,7 +114,7 @@ namespace Objects.Geometry
       ellipse.secondRadius = list[3];
       ellipse.domain = new Interval(list[4], list[5]);
 
-      ellipse.plane = Plane.FromList(list.GetRange(6, 12));
+      ellipse.plane = Plane.FromList(list.GetRange(6, 13));
       ellipse.units = Units.GetUnitFromEncoding(list[list.Count - 1]);
       return ellipse;
     }

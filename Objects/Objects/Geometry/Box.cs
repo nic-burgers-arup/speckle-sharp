@@ -4,6 +4,7 @@ using Speckle.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Objects.Geometry
 {
@@ -18,10 +19,11 @@ namespace Objects.Geometry
     public Interval zSize { get; set; }
 
     public Box bbox { get; }
-
+    
     public double area { get; set; }
 
     public double volume { get; set; }
+    public string units { get; set; }
 
     public Box() { }
 
