@@ -1,11 +1,11 @@
 ﻿using Autodesk.Revit.DB;
-using Objects.BuiltElements.Revit;
-using Speckle.Core.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using DB = Autodesk.Revit.DB;
+using System.Linq;
+using Speckle.Core.Models;
+using System.Collections.Generic;
 using Point = Objects.Geometry.Point;
+using Objects.BuiltElements.Revit;
+using System;
 
 namespace Objects.Converter.Revit
 {
@@ -19,12 +19,12 @@ namespace Objects.Converter.Revit
       DB.FamilySymbol familySymbol = GetElementType<DB.FamilySymbol>(speckleAc);
       if (familySymbol.FamilyName != familyName)
       {
-        Report.LogConversionError(new Exception($"Could not find adaptive component {familyName}"));
+        ConversionErrors.Add(new Exception($"Could not find adaptive component {familyName}"));
         return null;
       }
 
       DB.FamilyInstance revitAc = null;
-      var isUpdate = false;
+
       //try update existing 
       if (docObj != null)
       {
@@ -45,8 +45,6 @@ namespace Objects.Converter.Revit
             if (speckleAc.type != null && speckleAc.type != revitType.Name)
               revitAc.ChangeTypeId(familySymbol.Id);
           }
-
-          isUpdate = true;
         }
         catch
         {
@@ -65,21 +63,19 @@ namespace Objects.Converter.Revit
 
       SetInstanceParameters(revitAc, speckleAc);
 
-      Report.Log($"Successfully {(isUpdate ? "updated" : "created")} AdaptiveComponent {revitAc.Id}");
-
       return new ApplicationPlaceholderObject { applicationId = speckleAc.applicationId, ApplicationGeneratedId = revitAc.UniqueId, NativeObject = revitAc };
     }
 
     private AdaptiveComponent AdaptiveComponentToSpeckle(DB.FamilyInstance revitAc)
     {
       var speckleAc = new AdaptiveComponent();
-      speckleAc.family = Doc.GetElement(revitAc.GetTypeId()).Name;
+      speckleAc.type = Doc.GetElement(revitAc.GetTypeId()).Name;
       speckleAc.basePoints = GetAdaptivePoints(revitAc);
       speckleAc.flipped = AdaptiveComponentInstanceUtils.IsInstanceFlipped(revitAc);
-      speckleAc.displayValue = GetElementMesh(revitAc);
+      speckleAc.displayMesh = GetElementMesh(revitAc);
 
       GetAllRevitParamsAndIds(speckleAc, revitAc);
-      Report.Log($"Converted AdaptiveComponent {revitAc.Id}");
+
       return speckleAc;
     }
 
@@ -89,7 +85,7 @@ namespace Objects.Converter.Revit
 
       if (pointIds.Count != points.Count)
       {
-        Report.LogConversionError(new Exception("Adaptive family error\nWrong number of points supplied to adaptive family"));
+        ConversionErrors.Add(new Exception("Adaptive family error\nWrong number of points supplied to adaptive family"));
         return;
       }
 
@@ -108,7 +104,7 @@ namespace Objects.Converter.Revit
       var points = new List<Point>();
       for (int i = 0; i < pointIds.Count; i++)
       {
-        var point = revitAc.Document.GetElement(pointIds[i]) as ReferencePoint;
+        var point = Doc.GetElement(pointIds[i]) as ReferencePoint;
         points.Add(PointToSpeckle(point.Position));
       }
       return points;

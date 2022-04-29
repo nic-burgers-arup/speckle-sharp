@@ -14,14 +14,10 @@ namespace Objects.Converter.Revit
       var docObj = GetExistingElementByApplicationId(((Base)speckleSurface).applicationId);
 
       var pts = new List<XYZ>();
-      foreach (Geometry.Mesh displayMesh in speckleSurface.displayValue)
+      for (int i = 0; i < speckleSurface.displayMesh.vertices.Count; i += 3)
       {
-        pts.Capacity += displayMesh.vertices.Count / 3;
-        for (int i = 0; i < displayMesh.vertices.Count; i += 3)
-        {
-          var point = new Geometry.Point(displayMesh.vertices[i], displayMesh.vertices[i + 1], displayMesh.vertices[i + 2], displayMesh.units);
-          pts.Add(PointToNative(point));
-        }
+        var point = new Geometry.Point(speckleSurface.displayMesh.vertices[i], speckleSurface.displayMesh.vertices[i + 1], speckleSurface.displayMesh.vertices[i + 2], speckleSurface.displayMesh.units);
+        pts.Add(PointToNative(point));
       }
 
       if (docObj != null)
@@ -34,16 +30,16 @@ namespace Objects.Converter.Revit
       {
         SetInstanceParameters(revitSurface, rt);
       }
-      Report.Log($"Created Topography {revitSurface.Id}");
+
       return new ApplicationPlaceholderObject { applicationId = ((Base)speckleSurface).applicationId, ApplicationGeneratedId = revitSurface.UniqueId, NativeObject = revitSurface };
     }
 
     public RevitTopography TopographyToSpeckle(TopographySurface revitTopo)
     {
       var speckleTopo = new RevitTopography();
-      speckleTopo.displayValue = GetElementMesh(revitTopo);
+      speckleTopo.displayMesh = GetElementMesh(revitTopo);
       GetAllRevitParamsAndIds(speckleTopo, revitTopo);
-      Report.Log($"Converted Topography {revitTopo.Id}");
+
       return speckleTopo;
     }
   }

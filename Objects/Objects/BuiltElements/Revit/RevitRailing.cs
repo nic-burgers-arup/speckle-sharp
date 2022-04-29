@@ -1,14 +1,11 @@
-﻿using System;
-using Objects.Geometry;
+﻿using Objects.Geometry;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using System.Collections.Generic;
-using System.Linq;
-using Speckle.Newtonsoft.Json;
 
 namespace Objects.BuiltElements.Revit
 {
-  public class RevitRailing : Base, IDisplayMesh, IDisplayValue<List<Mesh>>
+  public class RevitRailing : Base, IDisplayMesh
   {
     //public string family { get; set; }
     public string type { get; set; }
@@ -17,9 +14,9 @@ namespace Objects.BuiltElements.Revit
     public bool flipped { get; set; }
     public string elementId { get; set; }
     public Base parameters { get; set; }
-    
+
     [DetachProperty]
-    public List<Mesh> displayValue { get; set; }
+    public Mesh displayMesh { get; set; }
 
     public string units { get; set; }
 
@@ -33,13 +30,5 @@ namespace Objects.BuiltElements.Revit
       this.level = level;
       this.flipped = flipped;
     }
-    
-    #region Obsolete Members
-    [JsonIgnore, Obsolete("Use " + nameof(displayValue) + " instead")]
-    public Mesh displayMesh {
-      get => displayValue?.FirstOrDefault();
-      set => displayValue = new List<Mesh> {value};
-    }
-    #endregion
   }
 }

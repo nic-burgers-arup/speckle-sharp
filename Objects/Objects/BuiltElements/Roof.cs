@@ -4,13 +4,11 @@ using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using Speckle.Newtonsoft.Json;
 
 namespace Objects.BuiltElements
 {
-  public class Roof : Base, IDisplayMesh, IDisplayValue<List<Mesh>>
+  public class Roof : Base, IDisplayMesh
   {
     public ICurve outline { get; set; }
     public List<ICurve> voids { get; set; } = new List<ICurve>();
@@ -19,13 +17,12 @@ namespace Objects.BuiltElements
     public List<Base> elements { get; set; }
 
     [DetachProperty]
-    public List<Mesh> displayValue { get; set; }
-    
+    public Mesh displayMesh { get; set; }
+
     public string units { get; set; }
 
     public Roof() { }
-    
-    [SchemaDeprecated]
+
     [SchemaInfo("Roof", "Creates a Speckle roof", "BIM", "Architecture")]
     public Roof([SchemaMainParam] ICurve outline, List<ICurve> voids = null, List<Base> elements = null)
     {
@@ -33,14 +30,6 @@ namespace Objects.BuiltElements
       this.voids = voids;
       this.elements = elements;
     }
-    
-    #region Obsolete Members
-    [JsonIgnore, Obsolete("Use " + nameof(displayValue) + " instead")]
-    public Mesh displayMesh {
-      get => displayValue?.FirstOrDefault();
-      set => displayValue = new List<Mesh> {value};
-    }
-    #endregion
   }
 }
 
@@ -81,7 +70,7 @@ namespace Objects.BuiltElements.Revit.RevitRoof
     public RevitExtrusionRoof(string family, string type,
       [SchemaParamInfo("Extrusion start")] double start,
       [SchemaParamInfo("Extrusion end")] double end,
-      [SchemaParamInfo("Profile along which to extrude the roof"), SchemaMainParam] Line referenceLine,
+      [SchemaParamInfo("Profile along which to extrude the roof")][SchemaMainParam] Line referenceLine,
       Level level,
       List<Base> elements = null,
       List<Parameter> parameters = null)

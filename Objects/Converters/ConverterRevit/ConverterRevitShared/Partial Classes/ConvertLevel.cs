@@ -14,89 +14,49 @@ namespace Objects.Converter.Revit
 
     /// <summary>
     /// Tries to find a level by ELEVATION only, otherwise it creates it.
-    /// Unless it was created before and we still have its app id in memory
-    /// Reason for not matching levels by name instead: 
+    /// Unless it was created with schema builder and has `referenceOnly=true`, in which case it gets it by name only
+    /// Reason for this approach, take the example below: 
     /// source file has L0 @0m and L1 @4m
     /// dest file has L1 @0m and L2 @4m
     /// attempting to move or rename levels would just be a mess, hence, we don't do that!
     /// </summary>
     /// <param name="speckleLevel"></param>
     /// <returns></returns>
-    public DB.Level ConvertLevelToRevit(BuiltElements.Level speckleLevel)
+    public Level LevelToNative(BuiltElements.Level speckleLevel)
     {
-      var docLevels = new FilteredElementCollector(Doc).OfClass(typeof(DB.Level)).ToElements().Cast<DB.Level>();
-      //level by name component
-      if (speckleLevel is RevitLevel speckleRevitLevel && speckleRevitLevel.referenceOnly)
-      {
-        var l = docLevels.FirstOrDefault(x => x.Name == speckleLevel.name);
-        if (l != null)
-          return l;
-      }
-
-
       if (speckleLevel == null) return null;
+      var docLevels = new FilteredElementCollector(Doc).OfClass(typeof(DB.Level)).ToElements().Cast<DB.Level>();
+
+      // it's a level created with schema builder for reference only
+      // we only try to match it by name
+      var rl = speckleLevel as RevitLevel;
+      if (rl != null && rl.referenceOnly)
+      {
+        var existingLevel = docLevels.FirstOrDefault(docLevel => docLevel.Name == speckleLevel.name);
+        if (existingLevel != null)
+          return existingLevel;
+        else
+        {
+          ConversionErrors.Add(new Exception($"Could not find level '{speckleLevel.name}' in this document."));
+          return null;
+        }
+      }
+
       var speckleLevelElevation = ScaleToNative((double)speckleLevel.elevation, speckleLevel.units);
+      var existingLevelByElevation = docLevels.FirstOrDefault(l => Math.Abs(l.Elevation - (double)speckleLevelElevation) < 0.0164042);
+      if (existingLevelByElevation != null)
+        return existingLevelByElevation;
 
-      var hasLevelWithSameName = docLevels.Any(x => x.Name == speckleLevel.name);
-      var existingLevelWithSameElevation = docLevels.FirstOrDefault(l => Math.Abs(l.Elevation - (double)speckleLevelElevation) < TOLERANCE);
-
-      //a level that had been previously received
-      var revitLevel = GetExistingElementByApplicationId(speckleLevel.applicationId) as DB.Level;
-
-      //the level has been received before (via schema builder probably)
-      //match by appid => update level
-      if (revitLevel != null)
+      // If we don't have an existing level, create it.
+      var level = Level.Create(Doc, (double)speckleLevelElevation);
+      if (!docLevels.Any(x => x.Name == speckleLevel.name))
+        level.Name = speckleLevel.name;
+      if (rl != null && rl.createView)
       {
-        //update name
-        if (!hasLevelWithSameName)
-          revitLevel.Name = speckleLevel.name;
-
-        if (Math.Abs(revitLevel.Elevation - (double)speckleLevelElevation) >= TOLERANCE)
-        {
-          revitLevel.Elevation = speckleLevelElevation;
-        }
-
-        Report.Log($"Updated Level {revitLevel.Name} {revitLevel.Id}");
+        CreateViewPlan(speckleLevel.name, level.Id);
       }
-      //match by elevation
-      else if (existingLevelWithSameElevation != null)
-      {
-        revitLevel = existingLevelWithSameElevation;
-        if (!hasLevelWithSameName)
-        {
-          revitLevel.Name = speckleLevel.name;
-          Report.Log($"Updated Level {revitLevel.Name} {revitLevel.Id}");
-        }
+      return level;
 
-
-      }
-
-      else
-      {
-        // If we don't have an existing level, create it.
-        revitLevel = Level.Create(Doc, (double)speckleLevelElevation);
-        if (!hasLevelWithSameName)
-          revitLevel.Name = speckleLevel.name;
-        var rl = speckleLevel as RevitLevel;
-        if (rl != null && rl.createView)
-        {
-          CreateViewPlan(speckleLevel.name, revitLevel.Id);
-        }
-
-        Report.Log($"Created Level {revitLevel.Name} {revitLevel.Id}");
-      }
-
-
-      return revitLevel;
-
-    }
-
-    public List<ApplicationPlaceholderObject> LevelToNative(BuiltElements.Level speckleLevel)
-    {
-      var revitLevel = ConvertLevelToRevit(speckleLevel);
-      var placeholders = new List<ApplicationPlaceholderObject>() { new ApplicationPlaceholderObject { applicationId = speckleLevel.applicationId, ApplicationGeneratedId = revitLevel.UniqueId, NativeObject = revitLevel } };
-
-      return placeholders;
     }
 
     public RevitLevel LevelToSpeckle(DB.Level revitLevel)
@@ -108,8 +68,6 @@ namespace Objects.Converter.Revit
       speckleLevel.createView = true;
 
       GetAllRevitParamsAndIds(speckleLevel, revitLevel);
-
-      Report.Log($"Converted Level {revitLevel.Id}");
       return speckleLevel;
     }
 
@@ -123,8 +81,6 @@ namespace Objects.Converter.Revit
         view.Name = name;
       }
       catch { }
-
-      Report.Log($"Created ViewPlan {view.Id}");
     }
 
     private Level GetLevelByName(string name)
@@ -145,7 +101,7 @@ namespace Objects.Converter.Revit
         return revitLevel;
       }
 
-      Report.LogConversionError(new Exception($"Could not find level `{name}`, a default level will be used."));
+      ConversionErrors.Add(new Exception($"Could not find level `{name}`, a default level will be used."));
 
       return collector.FirstOrDefault();
     }

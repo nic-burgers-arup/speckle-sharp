@@ -27,7 +27,6 @@ namespace ConnectorGSA
         Headless.AttachConsole(-1);
 
         headless.RunCLI(e.Args);
-        System.Windows.Forms.SendKeys.SendWait("{ENTER}"); //TODO: not great, figure out a better way to signal completion of process in console (we should have two binaries, for headless and GUI app, anyways?)
         Current.Shutdown();
       }
     }

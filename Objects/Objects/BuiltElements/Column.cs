@@ -2,19 +2,18 @@
 using Objects.Utils;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
-using Speckle.Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text;
 
 namespace Objects.BuiltElements
 {
-  public class Column : Base, IDisplayMesh, IDisplayValue<List<Mesh>>
+  public class Column : Base, IDisplayMesh
   {
     public ICurve baseLine { get; set; }
 
     [DetachProperty]
-    public List<Mesh> displayValue { get; set; }
+    public Mesh displayMesh { get; set; }
 
     public string units { get; set; }
 
@@ -25,15 +24,6 @@ namespace Objects.BuiltElements
     {
       this.baseLine = baseLine;
     }
-
-    #region Obsolete Members
-    [JsonIgnore, Obsolete("Use " + nameof(displayValue) + " instead")]
-    public Mesh displayMesh
-    {
-      get => displayValue?.FirstOrDefault();
-      set => displayValue = new List<Mesh> { value };
-    }
-    #endregion
   }
 }
 
@@ -76,7 +66,7 @@ namespace Objects.BuiltElements.Revit
       [SchemaParamInfo("Only the lower point of this line will be used as base point.")][SchemaMainParam] ICurve baseLine,
       Level level, Level topLevel,
       double baseOffset = 0, double topOffset = 0, bool structural = false,
-      [SchemaParamInfo("Rotation angle in radians")] double rotation = 0, List<Parameter> parameters = null)
+      double rotation = 0, List<Parameter> parameters = null)
     {
       this.family = family;
       this.type = type;

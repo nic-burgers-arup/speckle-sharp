@@ -91,7 +91,7 @@ namespace ConnectorGSA
       Client = new Client(account);
     }
 
-    public async Task<bool> RefreshStream(IProgress<MessageEventArgs> loggingProgress)
+    public async Task<bool> RefreshStream()
     {
       try
       {
@@ -100,10 +100,8 @@ namespace ConnectorGSA
         Stream.description = updatedStream.description;
         Stream.isPublic = updatedStream.isPublic;
       }
-      catch (Exception ex)
+      catch (Exception)
       {
-        loggingProgress.Report(new MessageEventArgs(Speckle.GSA.API.MessageIntent.Display, Speckle.GSA.API.MessageLevel.Error, "Unable to fetch stream"));
-        loggingProgress.Report(new MessageEventArgs(Speckle.GSA.API.MessageIntent.TechnicalLog, Speckle.GSA.API.MessageLevel.Error, ex, "Unable to fetch stream"));
         return false;
       }
 

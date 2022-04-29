@@ -4,11 +4,9 @@
     {
         None,
         Dead,
-        SuperDead,
         Soil,
         Live,
         LiveRoof,
-        ReducibleLive,
         Wind,
         Snow,
         Rain,
@@ -19,8 +17,7 @@
         Accidental,
         SeismicRSA,
         SeismicAccTorsion,
-        SeismicStatic,
-        Other
+        SeismicStatic
     }
 
     public enum ActionType

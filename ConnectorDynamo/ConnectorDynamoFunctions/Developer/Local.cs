@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Autodesk.DesignScript.Runtime;
 using Speckle.Core.Api;
 using Speckle.Core.Logging;
@@ -15,7 +14,7 @@ namespace Speckle.ConnectorDynamo.Functions.Developer
     /// <returns name="localDataId">ID of the local data sent</returns>
     public static string Send([ArbitraryDimensionArrayImport] object data)
     {
-      Analytics.TrackEvent(Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Send Local" } });
+      Tracker.TrackPageview(Tracker.SEND_LOCAL);
 
       var converter = new BatchConverter();
       var @base = converter.ConvertRecursivelyToSpeckle(data);
@@ -32,7 +31,7 @@ namespace Speckle.ConnectorDynamo.Functions.Developer
     /// <returns name="data">Data received</returns>
     public static object Receive(string localDataId)
     {
-      Analytics.TrackEvent(Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Receive Local" } });
+      Tracker.TrackPageview(Tracker.RECEIVE_LOCAL);
 
       var @base = Task.Run(async () => await Operations.Receive(localDataId, disposeTransports: true)).Result;
       var converter = new BatchConverter();

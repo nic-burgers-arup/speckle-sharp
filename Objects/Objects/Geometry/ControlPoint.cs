@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
-using Objects.Other;
 using Speckle.Newtonsoft.Json;
 
 namespace Objects.Geometry
 {
-  public class ControlPoint : Point, IHasBoundingBox, ITransformable<ControlPoint>
+  public class ControlPoint : Point, IHasBoundingBox
   {
     /// <summary>
     /// OBSOLETE - This is just here for backwards compatibility.
@@ -40,21 +39,6 @@ namespace Objects.Geometry
 
     public double weight { get; set; }
 
-    public bool TransformTo(Transform transform, out ControlPoint ctrlPt)
-    {
-      var coords = transform.ApplyToPoint(new List<double> {x, y, z});
-      ctrlPt = new ControlPoint(coords[0], coords[1], coords[2], weight, units, applicationId);
-      return true;
-    }
-
     public override string ToString() => $"{{{x},{y},{z},{weight}}}";
-    
-    public void Deconstruct(out double x, out double y, out double z, out double weight) => Deconstruct(out x, out y, out z, out weight, out _);
-
-    public void Deconstruct(out double x, out double y, out double z, out double weight, out string units)
-    {
-      Deconstruct(out x, out y, out z, out units);
-      weight = this.weight;
-    }
   }
 }

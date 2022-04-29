@@ -6,12 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Objects.Other;
-using Speckle.Core.Logging;
 
 namespace Objects.Geometry
 {
-  public class Polyline : Base, ICurve, IHasArea, IHasBoundingBox, IConvertible, ITransformable
+  public class Polyline : Base, ICurve, IHasArea, IHasBoundingBox, IConvertible
   {
     [DetachProperty]
     [Chunkable(31250)]
@@ -25,39 +23,32 @@ namespace Objects.Geometry
     public Box bbox { get; set; }
     public double area { get; set; }
     public double length { get; set; }
+
     public string units { get; set; }
 
     public Polyline()
-    { }
-    
-    [Obsolete("Use list constructor instead")]
-    public Polyline(IEnumerable<double> coordinatesArray, string units = Units.Meters, string applicationId = null)
-    : this(coordinatesArray.ToList(), units, applicationId)
-    { }
-    
-    public Polyline(List<double> coordinates, string units = Units.Meters, string applicationId = null)
     {
-      this.value = coordinates;
-      this.units = units;
+
+    }
+    public Polyline(IEnumerable<double> coordinatesArray, string units = Units.Meters, string applicationId = null)
+    {
+      this.value = coordinatesArray.ToList();
       this.applicationId = applicationId;
+      this.units = units;
     }
 
-    [JsonIgnore, Obsolete("Use " + nameof(GetPoints) + " Instead")]
-    public List<Point> points => GetPoints();
-    
-    
-    /// <returns><see cref="value"/> as List of <see cref="Point"/>s</returns>
-    /// <exception cref="SpeckleException">when list is malformed</exception>
-    public List<Point> GetPoints()
+    [JsonIgnore]
+    public List<Point> points
     {
-      if (value.Count % 3 != 0) throw new SpeckleException($"{nameof(Polyline)}.{nameof(value)} list is malformed: expected length to be multiple of 3");
-      
-      var pts = new List<Point>(value.Count / 3);
-      for (int i = 2; i < value.Count; i += 3)
+      get
       {
-        pts.Add(new Point(value[i - 2], value[i - 1], value[i], units));
+        List<Point> points = new List<Point>();
+        for (int i = 0; i < value.Count; i += 3)
+        {
+          points.Add(new Point(value[i], value[i + 1], value[i + 2], units));
+        }
+        return points;
       }
-      return pts;
     }
 
     public List<double> ToList()
@@ -91,19 +82,6 @@ namespace Objects.Geometry
       if (conversionType == typeof(Polycurve))
         return (Polycurve)this;
       throw new InvalidCastException();
-    }
-
-    public bool TransformTo(Transform transform, out ITransformable polyline)
-    {
-      polyline = new Polyline
-      {
-        value = transform.ApplyToPoints(value),
-        closed = closed,
-        applicationId = applicationId,
-        units = units
-      };
-
-      return true;
     }
 
     public TypeCode GetTypeCode()

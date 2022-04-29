@@ -1,20 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using System;
 using System.Text.RegularExpressions;
-using System.Reflection;
 
 using Speckle.Core.Kits;
 
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
-using Autodesk.AutoCAD.Colors;
-using Speckle.Core.Models;
-#if (CIVIL2021 || CIVIL2022)
-using Autodesk.Aec.ApplicationServices;
-using Autodesk.Aec.PropertyData.DatabaseServices;
-#endif
+using System.Reflection;
 
 namespace Speckle.ConnectorAutocadCivil
 {
@@ -22,21 +16,17 @@ namespace Speckle.ConnectorAutocadCivil
   {
 
 #if AUTOCAD2021
-    public static string VersionedAppName = VersionedHostApplications.Autocad2021;
-    public static string AppName = HostApplications.AutoCAD.Name;
-    public static string Slug = HostApplications.AutoCAD.Slug;
+    public static string AutocadAppName = Applications.Autocad2021;
+    public static string AppName = "AutoCAD";
 #elif AUTOCAD2022
-    public static string VersionedAppName = VersionedHostApplications.Autocad2022;
-    public static string AppName = HostApplications.AutoCAD.Name;
-    public static string Slug = HostApplications.AutoCAD.Slug;
+public static string AutocadAppName = Applications.Autocad2022;
+    public static string AppName = "AutoCAD";
 #elif CIVIL2021
-    public static string VersionedAppName = VersionedHostApplications.Civil2021;
-    public static string AppName = HostApplications.Civil.Name;
-    public static string Slug = HostApplications.Civil.Slug;
+    public static string AutocadAppName = Applications.Civil2021;
+    public static string AppName = "Civil 3D";
 #elif CIVIL2022
-    public static string VersionedAppName = VersionedHostApplications.Civil2022;
-    public static string AppName = HostApplications.Civil.Name;
-    public static string Slug = HostApplications.Civil.Slug;
+    public static string AutocadAppName = Applications.Civil2022;
+    public static string AppName = "Civil 3D";
 #endif
     public static string invalidChars = @"<>/\:;""?*|=,‘";
 
@@ -84,36 +74,32 @@ namespace Speckle.ConnectorAutocadCivil
     }
 
     /// <summary>
-    /// Adds an entity to the autocad database model space record
+    /// Adds an entity to the autocad database block table
     /// </summary>
     /// <param name="entity"></param>
     /// <param name="tr"></param>
-    public static ObjectId Append(this Entity entity, string layer = null)
+    public static bool Append(this Entity entity, string layer, Transaction tr, BlockTableRecord btr)
     {
-      var db = (entity.Database == null) ? Application.DocumentManager.MdiActiveDocument.Database : entity.Database;
-      Transaction tr = db.TransactionManager.TopTransaction;
-      if (tr == null) return ObjectId.Null;
-
-      BlockTableRecord btr = db.GetModelSpace(OpenMode.ForWrite);
+      Document Doc = Application.DocumentManager.MdiActiveDocument;
+      
       if (entity.IsNewObject)
       {
-        if (layer != null)
+        try
+        {
           entity.Layer = layer;
-        var id = btr.AppendEntity(entity);
-        tr.AddNewlyCreatedDBObject(entity, true);
-        return id;
+          btr.AppendEntity(entity);
+          tr.AddNewlyCreatedDBObject(entity, true);
+        }
+        catch
+        {
+          return false;
+        }
       }
       else
       {
-        if (layer != null)
-          entity.Layer = layer;
-        return entity.Id;
+        entity.Layer = layer;
       }
-    }
-
-    public static BlockTableRecord GetModelSpace(this Database db, OpenMode mode = OpenMode.ForRead)
-    {
-      return (BlockTableRecord)SymbolUtilityServices.GetBlockModelSpaceId(db).GetObject(mode);
+      return true;
     }
 
     /// <summary>
@@ -123,7 +109,7 @@ namespace Speckle.ConnectorAutocadCivil
     /// <param name="type">Object class dxf name</param>
     /// <param name="layer">Object layer name</param>
     /// <returns></returns>
-    public static DBObject GetObject(this Handle handle, Transaction tr, out string type, out string layer)
+    public static DBObject GetObject(this Handle handle, out string type, out string layer)
     {
       Document Doc = Application.DocumentManager.MdiActiveDocument;
       DBObject obj = null;
@@ -135,12 +121,16 @@ namespace Speckle.ConnectorAutocadCivil
       if (!id.IsErased && !id.IsNull)
       {
         // get the db object from id
-        obj = tr.GetObject(id, OpenMode.ForRead);
-        if (obj != null)
+        using (Transaction tr = Doc.TransactionManager.StartTransaction())
         {
-          Entity objEntity = obj as Entity;
-          type = id.ObjectClass.DxfName;
-          layer = objEntity.Layer;
+          obj = tr.GetObject(id, OpenMode.ForRead);
+          if (obj != null)
+          {
+            Entity objEntity = obj as Entity;
+            type = id.ObjectClass.DxfName;
+            layer = objEntity.Layer;
+          }
+          tr.Commit();
         }
       }
       return obj;
@@ -154,7 +144,7 @@ namespace Speckle.ConnectorAutocadCivil
     public static bool Visible(this DBObject obj)
     {
       bool isVisible = true;
-
+      
       if (obj is Entity)
       {
         Entity ent = obj as Entity;
@@ -184,85 +174,6 @@ namespace Speckle.ConnectorAutocadCivil
       return isVisible;
     }
 
-#if CIVIL2021 || CIVIL2022
-    /// <summary>
-    /// Get the property sets of  DBObject
-    /// </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
-    public static List<Dictionary<string, object>> GetPropertySets(this DBObject obj, Transaction tr)
-    {
-      var sets = new List<Dictionary<string, object>>();
-      ObjectIdCollection propertySets = null;
-      try
-      {
-        propertySets = PropertyDataServices.GetPropertySets(obj);
-      }
-      catch (Exception e) 
-      { }
-      if (propertySets == null) return sets;
-
-      foreach (ObjectId id in propertySets)
-      {
-        var setDictionary = new Dictionary<string, object>();
-
-        PropertySet propertySet = (PropertySet)tr.GetObject(id, OpenMode.ForRead);
-        PropertySetDefinition setDef = (PropertySetDefinition)tr.GetObject(propertySet.PropertySetDefinition, OpenMode.ForRead);
-
-        PropertyDefinitionCollection propDef = setDef.Definitions;
-        var propDefs = new Dictionary<int, PropertyDefinition>();
-        foreach (PropertyDefinition def in propDef) propDefs.Add(def.Id, def);
-
-        foreach (PropertySetData data in propertySet.PropertySetData)
-        {
-          if (propDefs.ContainsKey(data.Id))
-            setDictionary.Add(propDefs[data.Id].Name, data.GetData());
-          else
-            setDictionary.Add(data.FieldBucketId, data.GetData());
-        }
-
-        if (setDictionary.Count > 0)
-          sets.Add(CleanDictionary(setDictionary));
-      }
-      return sets;
-    }
-
-    // Handles object types from property set dictionaries
-    private static Dictionary<string, object> CleanDictionary(Dictionary<string, object> dict)
-    {
-      var target = new Dictionary<string, object>();
-      foreach (var key in dict.Keys)
-      {
-        var obj = dict[key];
-        switch (obj)
-        {
-          case double _:
-          case bool _:
-          case int _:
-          case string _:
-          case IEnumerable<double> _:
-          case IEnumerable<bool> _:
-          case IEnumerable<int> _:
-          case IEnumerable<string> _:
-            target[key] = obj;
-            continue;
-
-          case long o:
-            target[key] = Convert.ToDouble(o);
-            continue;
-
-          case ObjectId o:
-            target[key] = o.ToString();
-            continue;
-
-          default:
-            continue;
-        }
-      }
-      return target;
-    }
-#endif
-
     /// <summary>
     /// Gets the handles of all visible document objects that can be converted to Speckle
     /// </summary>
@@ -286,34 +197,7 @@ namespace Speckle.ConnectorAutocadCivil
       }
       return objs;
     }
-#endregion
-
-    /// <summary>
-    /// Retrieves the document's units.
-    /// </summary>
-    /// <param name="doc"></param>
-    /// <returns></returns>
-    public static string GetUnits(Document doc)
-    {
-      var insUnits = doc.Database.Insunits;
-      string units = (insUnits == UnitsValue.Undefined) ? Units.None : Units.GetUnitsFromString(insUnits.ToString());
-
-#if (CIVIL2021 || CIVIL2022)
-      if (units == Units.None)
-      {
-        // try to get the drawing unit instead
-        using (Transaction tr = doc.Database.TransactionManager.StartTransaction())
-        {
-          var id = DrawingSetupVariables.GetInstance(doc.Database, false);
-          var setupVariables = (DrawingSetupVariables)tr.GetObject(id, OpenMode.ForRead);
-          var linearUnit = setupVariables.LinearUnit;
-          units = Units.GetUnitsFromString(linearUnit.ToString());
-          tr.Commit();
-        }
-      }
-#endif
-      return units;
-    }
+    #endregion
 
     /// <summary>
     /// Retrieves the handle from an input string
@@ -336,28 +220,6 @@ namespace Speckle.ConnectorAutocadCivil
       var weights = Enum.GetValues(typeof(LineWeight)).Cast<int>().ToList();
       int closest = weights.Aggregate((x, y) => Math.Abs(x - hundredthMM) < Math.Abs(y - hundredthMM) ? x : y);
       return (LineWeight)closest;
-    }
-
-    public static void SetStyle(Base styleBase, Entity entity, Dictionary<string, ObjectId> lineTypeDictionary)
-    {
-      var color = styleBase["color"] as int?;
-      if (color == null) color = styleBase["diffuse"] as int?; // in case this is from a rendermaterial base
-      var lineType = styleBase["linetype"] as string;
-      var lineWidth = styleBase["lineweight"] as double?;
-
-      if (color != null)
-      {
-        var systemColor = System.Drawing.Color.FromArgb((int)color);
-        entity.Color = Color.FromRgb(systemColor.R, systemColor.G, systemColor.B);
-        entity.Transparency = new Transparency(systemColor.A);
-      }
-
-      if (lineWidth != null)
-        entity.LineWeight = GetLineWeight((double)lineWidth);
-
-      if (lineType != null)
-        if (lineTypeDictionary.ContainsKey(lineType))
-          entity.LinetypeId = lineTypeDictionary[lineType];
     }
 
     /// <summary>

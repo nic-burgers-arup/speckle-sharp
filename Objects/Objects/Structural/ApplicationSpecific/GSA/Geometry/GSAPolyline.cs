@@ -3,39 +3,28 @@ using Speckle.Core.Models;
 using Speckle.Core.Kits;
 using System.Collections.Generic;
 using System.Linq;
+using Objects.Structural.GSA.Geometry;
 
-namespace Objects.Structural.GSA.Geometry
+namespace Objects.Structural.GSA.Loading
 {
-  public class GSAPolyline : Base
-  {
-    public string name { get; set; }
-    public int? nativeId { get; set; }    
-    public Polyline description { get; set; }
-    public string colour { get; set; }
-
-    [DetachProperty]
-    public GSAGridPlane gridPlane { get; set; }
-    public GSAPolyline() { }
-
-    [SchemaInfo("GSAPolyline", "Creates a Speckle structural polyline for GSA", "GSA", "Geometry")]
-    public GSAPolyline(Polyline description, string colour = "NO_RGB", GSAGridPlane gridPlane = null, string name = null, int? nativeId = null)
+    public class GSAPolyline : Polyline
     {
-      this.name = name;
-      this.nativeId = nativeId;
-      this.description = description;
-      this.colour = colour;
-      this.gridPlane = gridPlane;
-    }
+        public string name { get; set; }
+        public int nativeId { get; set; }
+        public string colour { get; set; }
 
-    [SchemaInfo("GSAPolyline (from coordinates)", "Creates a Speckle structural polyline from coordinates for GSA", "GSA", "Geometry")]
-    public GSAPolyline(List<double> coordinatesArray, string colour = "NO_RGB", GSAGridPlane gridPlane = null, string name = null, int? nativeId = null)
-    {
-      this.name = name;
-      this.nativeId = nativeId;
-      this.description = new Polyline(coordinatesArray);
-      this.colour = colour;
-      this.gridPlane = gridPlane;
+        [DetachProperty]
+        public GSAGridPlane gridPlane { get; set; }
+        public GSAPolyline() { }
 
+        [SchemaInfo("GSAPolyline", "Creates a Speckle structural polyline for GSA", "GSA", "Geometry")]
+        public GSAPolyline(string name, int nativeId, IEnumerable<double> coordinatesArray, string colour, GSAGridPlane gridPlane)
+        {
+            this.name = name;
+            this.nativeId = nativeId;
+            this.value = coordinatesArray.ToList();
+            this.colour = colour;
+            this.gridPlane = gridPlane;
+        }
     }
-  }
 }

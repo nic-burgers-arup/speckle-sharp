@@ -1,4 +1,8 @@
 ﻿using Autodesk.Revit.DB;
+using Objects.BuiltElements;
+using Objects.Geometry;
+using Speckle.Core.Models;
+using System.Collections.Generic;
 using System.Linq;
 using DB = Autodesk.Revit.DB;
 using Point = Objects.Geometry.Point;
@@ -58,9 +62,7 @@ namespace Objects.Converter.Revit
       }
 
       GetAllRevitParamsAndIds(speckleArea, revitArea);
-
-      speckleArea.displayValue = GetElementDisplayMesh(revitArea);
-      Report.Log($"Converted Area {revitArea.Id}");
+      speckleArea.displayMesh = GetElementDisplayMesh(revitArea);
 
       return speckleArea;
     }

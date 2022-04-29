@@ -38,12 +38,7 @@ namespace Speckle.Core.Kits
       _subcategory = subcategory;
     }
   }
-  
-  [AttributeUsage(AttributeTargets.Constructor)]
-  public class SchemaDeprecated : Attribute
-  {
-  }
-  
+
   [AttributeUsage(AttributeTargets.Parameter, Inherited = false, AllowMultiple = false)]
   public class SchemaParamInfo : Attribute
   {

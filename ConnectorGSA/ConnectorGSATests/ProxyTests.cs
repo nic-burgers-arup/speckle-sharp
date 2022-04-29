@@ -39,14 +39,10 @@ namespace ConnectorGSATests
       var proxy = new GsaProxy();
       proxy.OpenFile(Path.Combine(TestDataDirectory, modelWithoutResultsFile), false);
 
-      var errors = new List<string>();
-
-      var loggingProgress = new Progress<string>();
-      loggingProgress.ProgressChanged += (object s, string e) => errors.Add(e);
-      Assert.True(proxy.GetGwaData(Instance.GsaModel.StreamLayer, new Progress<string>(), out var records));
+      Assert.True(proxy.GetGwaData(out var records));
       proxy.Close();
-      Assert.Empty(errors);
-      Assert.Equal(201, records.Count());
+
+      Assert.Equal(188, records.Count());
     }
 
     [Fact]
@@ -88,14 +84,14 @@ namespace ConnectorGSATests
 
       try
       {
-        loaded = Commands.LoadDataFromFile(null, resultTypesByGroup.Keys, resultTypesByGroup.Keys.SelectMany(g => resultTypesByGroup[g]));
+        loaded = Commands.LoadDataFromFile(resultTypesByGroup.Keys, resultTypesByGroup.Keys.SelectMany(g => resultTypesByGroup[g]));
       }
       catch (Exception ex)
       {
       }
       finally
       {
-        ((GsaProxy)Instance.GsaModel.Proxy).Close();
+        Instance.GsaModel.Proxy.Close();
       }
 
       var indices = Instance.GsaModel.Cache.LookupIndices<GsaAssembly>();
@@ -143,10 +139,10 @@ namespace ConnectorGSATests
     public void TestDeserialisation()
     {
       Instance.GsaModel.Proxy = new GsaProxy();
-      ((GsaProxy)Instance.GsaModel.Proxy).OpenFile(saveAsAlternativeFilepath(modelWithoutResultsFile));
+      Instance.GsaModel.Proxy.OpenFile(saveAsAlternativeFilepath(modelWithoutResultsFile));
       try
       {
-        var sid = ((GsaProxy)Instance.GsaModel.Proxy).GetTopLevelSid();
+        var sid = Instance.GsaModel.Proxy.GetTopLevelSid();
         var ss = JsonConvert.DeserializeObject<List<StreamState>>(sid);
       }
       catch (Exception ex)
@@ -155,7 +151,7 @@ namespace ConnectorGSATests
       }
       finally
       {
-        ((GsaProxy)Instance.GsaModel.Proxy).Close();
+        Instance.GsaModel.Proxy.Close();
       }
     }
 

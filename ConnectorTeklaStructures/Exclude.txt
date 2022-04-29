@@ -1,3 +1,0 @@
-Objects.dll
-Objects.pdb
-Objects.xml

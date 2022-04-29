@@ -1,22 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using Objects.Geometry;
 using Objects.Utils;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
-using Speckle.Newtonsoft.Json;
 
 namespace Objects.BuiltElements
 {
-  public class Pipe : Base, IDisplayMesh, IDisplayValue<List<Mesh>>
+  public class Pipe : Base, IDisplayMesh
   {
     public ICurve baseCurve { get; set; }
     public double length { get; set; }
     public double diameter { get; set; }
 
-    [DetachProperty]
-    public List<Mesh> displayValue { get; set; }
+    [DetachProperty] public Mesh displayMesh { get; set; }
 
     public string units { get; set; }
 
@@ -29,14 +25,7 @@ namespace Objects.BuiltElements
       this.length = length;
       this.diameter = diameter;
     }
-    
-    #region Obsolete Members
-    [JsonIgnore, Obsolete("Use " + nameof(displayValue) + " instead")]
-    public Mesh displayMesh {
-      get => displayValue?.FirstOrDefault();
-      set => displayValue = new List<Mesh> {value};
-    }
-    #endregion
+
   }
 }
 
@@ -61,29 +50,6 @@ namespace Objects.BuiltElements.Revit
       this.type = type;
       this.baseCurve = baseCurve;
       this.diameter = diameter;
-      this.systemName = systemName;
-      this.systemType = systemType;
-      this.level = level;
-      this.parameters = parameters.ToBase();
-    }
-  }
-
-  public class RevitFlexPipe : RevitPipe
-  {
-    public Vector startTangent { get; set; }
-    public Vector endTangent { get; set; }
-
-    public RevitFlexPipe() { }
-
-    [SchemaInfo("RevitFlexPipe", "Creates a Revit flex pipe", "Revit", "MEP")]
-    public RevitFlexPipe(string family, string type, [SchemaMainParam] ICurve baseCurve, double diameter, Level level, Vector startTangent, Vector endTangent, string systemName = "", string systemType = "", List<Parameter> parameters = null)
-    {
-      this.family = family;
-      this.type = type;
-      this.baseCurve = baseCurve;
-      this.diameter = diameter;
-      this.startTangent = startTangent;
-      this.endTangent = endTangent;
       this.systemName = systemName;
       this.systemType = systemType;
       this.level = level;

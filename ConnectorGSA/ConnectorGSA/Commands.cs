@@ -14,9 +14,7 @@ using Speckle.GSA.API.GwaSchema;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Deployment.Application;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace ConnectorGSA
@@ -112,53 +110,47 @@ namespace ConnectorGSA
 
     public static bool OpenFile(string filePath, bool visible)
     {
-      Instance.GsaModel.Proxy = new GsaProxy(); //Use a real proxy
-      var opened = ((GsaProxy)Instance.GsaModel.Proxy).OpenFile(filePath, visible);
+      Instance.GsaModel.Proxy = new Speckle.ConnectorGSA.Proxy.GsaProxy(); //Use a real proxy
+      var opened = Instance.GsaModel.Proxy.OpenFile(filePath, visible);
       if (!opened)
       {
+
         return false;
       }
       return true;
     }
 
     public static bool ExtractSavedReceptionStreamInfo(bool? receive, bool? send, out List<StreamState> streamStates)
-    { 
+    {
+      var sid = Instance.GsaModel.Proxy.GetTopLevelSid();
       List<StreamState> allSaved;
       try
       {
-        var sid = ((GsaProxy)Instance.GsaModel.Proxy).GetTopLevelSid();
         allSaved = JsonConvert.DeserializeObject<List<StreamState>>(sid);
-        if (allSaved == null) {
-          allSaved = new List<StreamState>();
-        }
       }
       catch
       {
         allSaved = new List<StreamState>();
-      }      
-      
+      }
       var userId = ((GsaModel)Instance.GsaModel).Account.userInfo.id;
       var restApi = ((GsaModel)Instance.GsaModel).Account.serverInfo.url;
 
       //So currently it assumes that a new user for this file will have a new stream created for them, even if other users saved this file with their stream info
-      var accountStreamStates = allSaved.Where(ss => ((ss.UserId == userId) && ss.ServerUrl.Equals(restApi, StringComparison.InvariantCultureIgnoreCase))).ToList();
-      streamStates = new List<StreamState>();
+      streamStates = allSaved.Where(ss => ((ss.UserId == userId) && ss.ServerUrl.Equals(restApi, StringComparison.InvariantCultureIgnoreCase))).ToList();
       if (receive.HasValue)
       {
-        streamStates.AddRange(accountStreamStates.Where(ss => ss.IsReceiving == receive.Value));
+        streamStates = streamStates.Where(ss => ss.IsReceiving == receive.Value).ToList();
       }
       if (send.HasValue)
       {
-        streamStates.AddRange(accountStreamStates.Where(ss => ss.IsSending == send.Value));
+        streamStates = streamStates.Where(ss => ss.IsSending == send.Value).ToList();
       }
       return (streamStates != null && streamStates.Count > 0);
     }
 
     public static bool UpsertSavedReceptionStreamInfo(bool? receive, bool? send, params StreamState[] streamStates)
     {
-      
-      
-      var sid = ((GsaProxy)Instance.GsaModel.Proxy).GetTopLevelSid();
+      var sid = Instance.GsaModel.Proxy.GetTopLevelSid();
       List<StreamState> allSs = null;
       try
       {
@@ -199,19 +191,18 @@ namespace ConnectorGSA
       }
 
       var newSid = JsonConvert.SerializeObject(allSs);
-      return ((GsaProxy)Instance.GsaModel.Proxy).SetTopLevelSid(newSid);
+      return Instance.GsaModel.Proxy.SetTopLevelSid(newSid);
     }
 
     public static bool CloseFile(string filePath, bool visible)
     {
-      ((GsaProxy)Instance.GsaModel.Proxy).Close();
-      return ((GsaProxy)Instance.GsaModel.Proxy).Clear();
+      Instance.GsaModel.Proxy.Close();
+      return Instance.GsaModel.Proxy.Clear();
     }
 
-    public static bool LoadDataFromFile(IProgress<string> gwaLoggingProgress = null, IEnumerable<ResultGroup> resultGroups = null, IEnumerable<ResultType> resultTypes = null, List<string> cases = null, List<int> elemIds = null)
+    public static bool LoadDataFromFile(IEnumerable<ResultGroup> resultGroups = null, IEnumerable<ResultType> resultTypes = null)
     {
-      ((GsaProxy)Instance.GsaModel.Proxy).Clear();
-      var loadedCache = UpdateCache(gwaLoggingProgress);
+      var loadedCache = UpdateCache();
       int cumulativeErrorRows = 0;
 
       if (resultGroups != null && resultGroups.Any() && resultTypes != null && resultTypes.Any())
@@ -222,7 +213,7 @@ namespace ConnectorGSA
         }
         foreach (var g in resultGroups)
         {
-          if (!((GsaProxy)Instance.GsaModel.Proxy).LoadResults(g, out int numErrorRows, cases, elemIds) || numErrorRows > 0)
+          if (!Instance.GsaModel.Proxy.LoadResults(g, out int numErrorRows) || numErrorRows > 0)
           {
             return false;
           }
@@ -233,20 +224,28 @@ namespace ConnectorGSA
       return (loadedCache && (cumulativeErrorRows == 0));
     }
 
-    //public static bool ConvertToNative(List<Base> TopLevelObjects, ISpeckleConverter converter, IProgress<MessageEventArgs> loggingProgress) //Includes writing to Cache
-    public static bool ConvertToNative(List<Base> objects, ISpeckleConverter converter, IProgress<MessageEventArgs> loggingProgress) //Includes writing to Cache
+    public static bool ConvertToNative(ISpeckleConverter converter) //Includes writing to Cache
     {
-      try
-      {
-        var nativeObjects = converter.ConvertToNative(objects).Cast<GsaRecord>().ToList();
-        Instance.GsaModel.Cache.Upsert(nativeObjects);
-      }
-      catch (Exception ex)
-      {
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, 
-          "Unable to convert one or more received objects.  Refer to logs for more information"));
+      //With the attached objects in speckle objects, there is no type dependency needed on the receive side, so just convert each object
 
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ex, "Converion error"));
+      if (Instance.GsaModel.Cache.GetSpeckleObjects(out var speckleObjects))
+      {
+        foreach (var so in speckleObjects.Cast<Base>())
+        {
+          try
+          {
+            if (converter.CanConvertToNative(so))
+            {
+              var nativeObjects = converter.ConvertToNative(new List<Base> { so }).Cast<GsaRecord>().ToList();
+              var appId = string.IsNullOrEmpty(so.applicationId) ? so.id : so.applicationId;
+              Instance.GsaModel.Cache.SetNatives(so.GetType(), appId, nativeObjects);
+            }
+          }
+          catch (Exception ex)
+          {
+
+          }
+        } 
       }
 
       return true;
@@ -259,13 +258,69 @@ namespace ConnectorGSA
         return null;
       }
 
-      //This converts all the natives ONCE and THEN assigns them into the correct layer-specific Model object(s)
-      var convertedObjs = converter.ConvertToSpeckle(gsaRecords.Cast<object>().ToList());
+      return converter.ConvertToSpeckle(gsaRecords.Cast<object>().ToList());
 
-      return convertedObjs;
+      /*
+      var convertedObjectsByType = convertedObjects.GroupBy(o => o.GetType()).ToDictionary(g => g.Key, g => g.ToList());
+
+      var commit = new Base();
+
+      foreach(var t in convertedObjectsByType.Keys)
+      {
+        commit[$"{t.Name}"] = convertedObjectsByType[t];
+      }
+
+      return commit;
+      /*
+
+      /*
+      //Get send native type dependencies
+      var typeDependencyGenerations = Instance.GsaModel.Proxy.GetTxTypeDependencyGenerations(Instance.GsaModel.StreamLayer);
+
+      foreach (var gen in typeDependencyGenerations)
+      {
+        var nativeObjsByType = new Dictionary<Type, List<GsaRecord>>();
+        foreach (var t in gen)
+        {
+          if (Instance.GsaModel.Cache.GetNative(t, out var gsaRecords))
+          {
+            nativeObjsByType.Add(t, gsaRecords);
+          }
+        }
+
+        foreach (var t in nativeObjsByType.Keys)
+        {
+          var speckleObjsBucket = new List<Base>();
+          foreach (var nativeObj in nativeObjsByType[t])
+          {
+            try
+            {
+              if (converter.CanConvertToSpeckle(nativeObj))
+              {
+                var speckleObjs = converter.ConvertToSpeckle(new List<object> { nativeObj });
+                if (speckleObjs != null && speckleObjs.Count > 0)
+                {
+                  speckleObjsBucket.AddRange(speckleObjs);
+                  Instance.GsaModel.Cache.SetSpeckleObjects(nativeObj, speckleObjs.ToDictionary(so => so.applicationId, so => (object)so));
+                }
+              }
+            }
+            catch (Exception ex)
+            {
+
+            }
+          }
+          if (speckleObjsBucket.Count > 0)
+          {
+            commit[$"{t.Name}"] = speckleObjsBucket;
+          }
+        }
+      }
+      return commit;
+      */
     }
 
-    public static async Task<(bool status, string commitId)> SendCommit(Base commitObj, StreamState state, string parent, params ITransport[] transports)
+    public static async Task<bool> Send(Base commitObj, StreamState state, params ITransport[] transports)
     {
       var commitObjId = await Operations.Send(
         @object: commitObj,
@@ -273,10 +328,10 @@ namespace ConnectorGSA
         onErrorAction: (s, e) =>
         {
           state.Errors.Add(e);
-        }
+        },
+        disposeTransports: true
         );
 
-      var commitId = "";
       if (transports.Any(t => t is ServerTransport))
       {
         var actualCommit = new CommitCreateInput
@@ -284,21 +339,15 @@ namespace ConnectorGSA
           streamId = state.Stream.id,
           objectId = commitObjId,
           branchName = "main",
-          message = "Pushed data from GSA",
-          sourceApplication = VersionedHostApplications.GSA
+          message = "Pushed it real good",
+          sourceApplication = Applications.GSA
         };
-
-        if (!string.IsNullOrEmpty(parent))
-        {
-          actualCommit.parents = new List<string>() { parent };
-        }
 
         //if (state.PreviousCommitId != null) { actualCommit.parents = new List<string>() { state.PreviousCommitId }; }
 
         try
         {
-          commitId = await state.Client.CommitCreate(actualCommit);
-          ((GsaModel)Instance.GsaModel).LastCommitId = commitId;
+          var commitId = await state.Client.CommitCreate(actualCommit);
         }
         catch (Exception e)
         {
@@ -306,244 +355,52 @@ namespace ConnectorGSA
         }
       }
 
-      return (status: (state.Errors.Count == 0), commitId: commitId);
+      return (state.Errors.Count == 0);
     }
 
-    internal static async Task<bool> Receive(TabCoordinator coordinator, IProgress<MessageEventArgs> loggingProgress, IProgress<string> statusProgress, IProgress<double> percentageProgress)
+    internal static async Task<bool> Receive(TabCoordinator coordinator, IProgress<StreamState> streamCreationProgress, IProgress<MessageEventArgs> loggingProgress, IProgress<string> statusProgress, IProgress<double> percentageProgress)
     {
       var kit = KitManager.GetDefaultKit();
-      var converter = kit.LoadConverter(VersionedHostApplications.GSA);
-      if (converter == null)
-        throw new Exception("Could not find any Kit!");
-
-      var percentage = 0;
+      var converter = kit.LoadConverter(Applications.GSA);
 
       Instance.GsaModel.StreamLayer = coordinator.ReceiverTab.TargetLayer;
       Instance.GsaModel.Units = UnitEnumToString(coordinator.ReceiverTab.CoincidentNodeUnits);
-      Instance.GsaModel.LoggingMinimumLevel = (int)coordinator.LoggingMinimumLevel;
-
-      //A simplified one just for use by the proxy class
-      var proxyLoggingProgress = new Progress<string>();
-      proxyLoggingProgress.ProgressChanged += (object o, string e) =>
-      {
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, e));
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, e));
-      };
-
-      var perecentageProgressLock = new object();
-      var numToConvertProgressLock = new object();
-
+      Instance.GsaModel.CoincidentNodeAllowance = coordinator.ReceiverTab.CoincidentNodeAllowance;
       var account = ((GsaModel)Instance.GsaModel).Account;
       var client = new Client(account);
 
-      var mappingsStreamId = String.Empty;
-      if (!String.IsNullOrEmpty(coordinator.ReceiverTab.MappingStreamId))
-      {
-        mappingsStreamId = "e53a0242be"; // "e53a0242be"
-        const string mappingsBranch = "mappings";
-        const string sectionBranchPrefix = "sections";
-        var key = $"{client.Account.id}-{mappingsStreamId}";
-
-        var mappingsTransport = new ServerTransport(client.Account, mappingsStreamId);
-        var mappingsTransportLocal = new SQLiteTransport(null, "Speckle", "Mappings");
-
-        var mappingsStream = await client.StreamGet(mappingsStreamId);
-        var branches = await client.StreamGetBranches(mappingsStreamId);
-        foreach (var branch in branches)
-        {
-          if (branch.name == mappingsBranch || branch.name.StartsWith(sectionBranchPrefix))
-          {
-            var mappingsCommit = branch.commits.items.FirstOrDefault();
-            var referencedMappingsObject = mappingsCommit.referencedObject;
-
-            var mappingsCommitObject = await Operations.Receive(
-              referencedMappingsObject,
-              mappingsTransport,
-              onErrorAction: (s, e) =>
-              {
-                loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, e));
-                loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, e));
-              },
-              disposeTransports: true
-              );
-
-            var hash = $"{key}-{branch.name}";
-            var existingObjString = mappingsTransportLocal.GetObject(hash);
-            if (existingObjString != null)
-              mappingsTransportLocal.UpdateObject(hash, JsonConvert.SerializeObject(mappingsCommitObject));
-            else
-              mappingsTransportLocal.SaveObject(hash, JsonConvert.SerializeObject(mappingsCommitObject));
-          }
-        }
-
-        var settings = new Dictionary<string, string>() { { "section-mapping", key } };
-        converter.SetConverterSettings(settings);
-
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, $"Using section mapping data from: {key}"));
-      }
-
-      var startTime = DateTime.Now;
-
       statusProgress.Report("Reading GSA data into cache");
       //Load data to cause merging
-      Commands.LoadDataFromFile(proxyLoggingProgress);
-
-      double factor = 1;
-      if (Instance.GsaModel.Cache.GetNatives(typeof(GsaUnitData), out var gsaUnitDataRecords))
-      {
-        var lengthUnitData = (GsaUnitData)gsaUnitDataRecords.FirstOrDefault(r => ((GsaUnitData)r).Option == UnitDimension.Length);
-        if (lengthUnitData != null)
-        {
-          var fromStr = coordinator.ReceiverTab.CoincidentNodeUnits.GetStringValue();
-          var toStr = lengthUnitData.Name;
-          factor = (lengthUnitData == null) ? 1 : Units.GetConversionFactor(fromStr, toStr);
-        }
-      }
-      Instance.GsaModel.CoincidentNodeAllowance = coordinator.ReceiverTab.CoincidentNodeAllowance * factor;
-
-      percentage = 10;
-      percentageProgress.Report(percentage);
-
-      TimeSpan duration = DateTime.Now - startTime;
-      if (duration.Seconds > 0)
-      {
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Loaded data into cache"));
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Duration of reading GSA model into cache: " + duration.ToString(@"hh\:mm\:ss")));
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Telemetry, MessageLevel.Information, "receive", "update-cache", "duration", duration.ToString(@"hh\:mm\:ss")));
-      }
-      startTime = DateTime.Now;
+      Commands.LoadDataFromFile(); //Ensure all nodes
+      loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Loaded data into cache"));
 
       statusProgress.Report("Accessing streams");
-      var streamIds = coordinator.ReceiverTab.StreamList.StreamListItems.Select(i => i.StreamId).ToList();
-      var receiveTasks = new List<Task>();
-
-      var topLevelObjects = new List<Base>();
-
-      foreach (var streamId in streamIds)
+      foreach (var streamId in coordinator.ReceiverTab.StreamList.StreamListItems.Select(i => i.StreamId))
       {
-        var streamState = new StreamState(account.userInfo.id, account.serverInfo.url)
-        {
-          Stream = new Stream() { id = streamId },
-          IsReceiving = true
-        };
+        var streamState = new StreamState(account.userInfo.id, account.serverInfo.url) { Stream = new Stream() { id = streamId } };
+        streamState.RefreshStream().Wait();
+        streamState.Stream.branch = client.StreamGetBranches(streamId, 1).Result.First();
+        var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
         var transport = new ServerTransport(streamState.Client.Account, streamState.Stream.id);
 
-        receiveTasks.Add(streamState.RefreshStream(loggingProgress)
-          .ContinueWith(async (refreshed) =>
-          {
-            if (refreshed.Result)
-            {
-              streamState.Stream.branch = streamState.Client.StreamGetBranches(streamId, 1).Result.First();
-              if (streamState.Stream.branch.commits == null || streamState.Stream.branch.commits.totalCount == 0)
-              {
-                loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "This branch has no commits"));
-                loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, "This branch has no commits"));
-                percentageProgress.Report(0);
-                return;
-              }
-              var commitId = streamState.Stream.branch.commits.items.FirstOrDefault().referencedObject;
-
-
-              var received = await Commands.Receive(commitId, streamState, transport, topLevelObjects);
-              if (received)
-              {
-                loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Received data from " + streamId + " stream"));
-                } else
-                {
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "Failed to receive data from " + streamId + " stream"));
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, "Failed to receive data from " + streamId + " stream"));
-                  percentageProgress.Report(0);
-                  return;
-              }
-
-              if (streamState.Errors != null && streamState.Errors.Count > 0)
-              {
-                foreach (var se in streamState.Errors)
-                {
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, se.Message));
-                  loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, se, se.Message));
-                }
-              }
-
-              lock (perecentageProgressLock)
-              {
-                percentage += (50 / streamIds.Count);
-                percentageProgress.Report(percentage);
-              }
-            }
-          }));
+        var received = await Commands.Receive(commitId, streamState, transport, converter.CanConvertToNative);
+        if (received)
+        {
+          loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Received data from " + streamId + " stream"));
+        }
       }
-      await Task.WhenAll(receiveTasks.ToArray());
-
-      duration = DateTime.Now - startTime;
-      loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Duration of reception from Speckle and scaling: " + duration.ToString(@"hh\:mm\:ss")));
-      loggingProgress.Report(new MessageEventArgs(MessageIntent.Telemetry, MessageLevel.Information, "receive", "reception and scaling", "duration", duration.ToString(@"hh\:mm\:ss")));
-
-      startTime = DateTime.Now;
 
       statusProgress.Report("Converting");
-
-      var flattenedGroups = new List<List<Base>>();
-      foreach (var tlo in topLevelObjects)
-      {
-        var flattened = FlattenCommitObject(tlo, (Base o) => converter.CanConvertToNative(o));
-        flattenedGroups.Add(flattened);
-      }
-
-      int numConverted = 0;
-      int numToConvert = flattenedGroups.Sum(fg => fg.Count);
-      int totalConversionPercentage = 90 - percentage;
-      Instance.GsaModel.ConversionProgress = new Progress<bool>((bool success) =>
-      {
-        lock (perecentageProgressLock)
-        {
-          numConverted++;
-        }
-        percentageProgress.Report(percentage + Math.Round(((double)numConverted / (double)numToConvert) * totalConversionPercentage, 0));
-      });
-
-      foreach (var fg in flattenedGroups)
-      {
-        //These objects have already passed through a CanConvertToNative
-        Commands.ConvertToNative(fg, converter, loggingProgress);
-
-        if (converter.Report.ConversionErrors != null && converter.Report.ConversionErrors.Count > 0)
-        {
-          foreach (var ce in converter.Report.ConversionErrors)
-          {
-            loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, ce.Message));
-            loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ce, ce.Message));
-          }
-        }
-      }
-
+      Commands.ConvertToNative(converter);
       loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Converted Speckle to GSA objects"));
-
-      duration = DateTime.Now - startTime;
-      if (duration.Seconds > 0)
-      {
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Duration of conversion from Speckle: " + duration.ToString(@"hh\:mm\:ss")));
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Telemetry, MessageLevel.Information, "receive", "conversion", "duration", duration.ToString(@"hh\:mm\:ss")));
-      }
-      startTime = DateTime.Now;
 
       //The cache is filled with natives
       if (Instance.GsaModel.Cache.GetNatives(out var gsaRecords))
       {
-        ((GsaProxy)Instance.GsaModel.Proxy).WriteModel(gsaRecords, proxyLoggingProgress);
+        Instance.GsaModel.Proxy.WriteModel(gsaRecords, Instance.GsaModel.StreamLayer);
       }
 
-      percentageProgress.Report(100);
-
-      ((GsaProxy)Instance.GsaModel.Proxy).UpdateCasesAndTasks();
       ((GsaProxy)Instance.GsaModel.Proxy).UpdateViews();
-
-      duration = DateTime.Now - startTime;
-      if (duration.Seconds > 0)
-      {
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Duration of writing converted objects to GSA: " + duration.ToString(@"hh\:mm\:ss")));
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Telemetry, MessageLevel.Information, "receive", "write-model", "duration", duration.ToString(@"hh\:mm\:ss")));
-      }
 
       statusProgress.Report("Ready");
       Console.WriteLine("Receiving complete");
@@ -551,7 +408,7 @@ namespace ConnectorGSA
       return true;
     }
 
-    public static async Task<bool> Receive(string commitId, StreamState state, ITransport transport, List<Base> topLevelObjects)
+    public static async Task<bool> Receive(string commitId, StreamState state, ITransport transport, Func<Base, bool> IsSingleObjectFn)
     {
       var commitObject = await Operations.Receive(
           commitId,
@@ -565,63 +422,23 @@ namespace ConnectorGSA
 
       if (commitObject != null)
       {
-        if (commitObject is Base)
-        {
-          topLevelObjects.Add(commitObject);
-        }
-        else
-        {
-          var dynamicMembers = commitObject.GetDynamicMembers();
-          foreach (var item in dynamicMembers)
-          {
-            if (commitObject[item] is Base)
-            {
-              topLevelObjects.Add((Base)commitObject[item]);
-            }
-            else if (commitObject[item].GetType().IsAssignableFrom(typeof(List<object>)))
-            {
-              var drilledDownObjects = DrillDownToBase((List<object>)commitObject[item]);
-              if (drilledDownObjects != null && drilledDownObjects.Count > 0)
-              {
-                topLevelObjects.AddRange(drilledDownObjects);
-              }
-            }
-          }
-        }
+        var receivedObjects = FlattenCommitObject(commitObject, IsSingleObjectFn);
 
-        return true;
+        return (Instance.GsaModel.Cache.Upsert(receivedObjects.ToDictionary(
+            ro => string.IsNullOrEmpty(ro.applicationId) ? ro.id : ro.applicationId, 
+            ro => (object)ro))
+          && receivedObjects != null && receivedObjects.Any() && state.Errors.Count == 0);
       }
       return false;
     }
 
-    private static List<Base> DrillDownToBase(List<object> l)
-    {
-      var retList = new List<Base>();
-      foreach (var item in l)
-      {
-        if (item is Base)
-        {
-          retList.Add((Base)item);
-        }
-        else if (item is List<object>)
-        {
-          var baseObjs = DrillDownToBase((List<object>)item);
-          if (baseObjs != null && baseObjs.Count > 0)
-          {
-            retList.AddRange(baseObjs);
-          }
-        }
-      }
-      return retList;
-    }
-
-    private static bool UpdateCache(IProgress<string> gwaLoggingProgress = null, bool onlyNodesWithApplicationIds = true)
+    private static bool UpdateCache(bool onlyNodesWithApplicationIds = true)
     {
       var errored = new Dictionary<int, GsaRecord>();
 
       try
       {
-        if (((GsaProxy)Instance.GsaModel.Proxy).GetGwaData(Instance.GsaModel.StreamLayer, gwaLoggingProgress, out var records))
+        if (Instance.GsaModel.Proxy.GetGwaData(out var records))
         {
           for (int i = 0; i < records.Count(); i++)
           {
@@ -639,7 +456,7 @@ namespace ConnectorGSA
       }
     }
 
-    public static List<Base> FlattenCommitObject(object obj, Func<Base, bool> IsSingleObjectFn)
+    private static List<Base> FlattenCommitObject(object obj, Func<Base, bool> IsSingleObjectFn)
     {
       //This is needed because with GSA models, there could be a design and analysis layer with objects appearing in both, so only include the first
       //occurrence of each object (distinguished by the ID returned by the Base.GetId() method) in the list returned
@@ -657,16 +474,15 @@ namespace ConnectorGSA
         if (IsSingleObjectFn(@base))
         {
           var t = obj.GetType();
-          var id = (string.IsNullOrEmpty(@base.id)) ? @base.GetId() : @base.id;
+          var id = @base.GetId();
           if (!uniques.ContainsKey(t))
           {
-            uniques.Add(t, new HashSet<string>() { id });
-            objects.Add(@base);
+            uniques.Add(t, new HashSet<string>() { @base.GetId() });
           }
           if (!uniques[t].Contains(id))
           {
-            uniques[t].Add(id);
             objects.Add(@base);
+            uniques[t].Add(id);
           }
 
           return objects;
@@ -721,10 +537,10 @@ namespace ConnectorGSA
 
     internal static bool NewFile(TabCoordinator coordinator, IProgress<MessageEventArgs> loggingProgress)
     {
-      ((GsaProxy)Instance.GsaModel.Proxy).NewFile(true);
+      Instance.GsaModel.Proxy.NewFile(true);
 
-      coordinator.ReceiverTab.ReceiverStreamStates.Clear();
-      coordinator.SenderTab.SenderStreamStates.Clear();
+      coordinator.ReceiverTab.ReceiverSidRecords.Clear();
+      coordinator.SenderTab.SenderSidRecords.Clear();
 
       loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Created new file."));
 
@@ -736,260 +552,161 @@ namespace ConnectorGSA
       if (coordinator.FileStatus == GsaLoadedFileType.ExistingFile && coordinator.Account != null && coordinator.Account.IsValid)
       {
         var retrieved = ExtractSavedReceptionStreamInfo(true, true, out List<StreamState> steamStates);
-        if (!retrieved)
+        coordinator.ReceiverTab.ReceiverSidRecords.Clear();
+        coordinator.SenderTab.SenderSidRecords.Clear();
+        
+        if (retrieved)
         {
-          return false;
-        }
-        var receivingStreamStates = steamStates.Where(ss => ss.IsReceiving);
-        var sendingStreamStates = steamStates.Where(ss => ss.IsSending);
-        if (receivingStreamStates.Any())
-        {
-          coordinator.ReceiverTab.ReceiverStreamStates.Clear();
-          coordinator.ReceiverTab.ReceiverStreamStates.AddRange(receivingStreamStates);
-          if (coordinator.ReceiverTab.ReceiverStreamStates.Count() > 0)
+          if (coordinator.ReceiverTab.ReceiverSidRecords.Count() > 0)
           {
-            var invalidStreamStates = new List<StreamState>();
-            //Since the buckets are stored in the SID tags, but not the stream names, get the stream names
-            foreach (var r in coordinator.ReceiverTab.ReceiverStreamStates)
-            {
-              if (!(await r.RefreshStream(loggingProgress)))
-              {
-                invalidStreamStates.Add(r);
-              }
-            }
-            invalidStreamStates.ForEach(r => coordinator.ReceiverTab.RemoveStreamState(r));
-          }
-          coordinator.ReceiverTab.StreamStatesToStreamList();
+            var messenger = new ProgressMessenger(loggingProgress);
 
-          loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Found streams from the same server stored in file for receiving: "
-             + string.Join(", ", coordinator.ReceiverTab.ReceiverStreamStates.Select(r => r.StreamId))));
-        }
-        if (sendingStreamStates.Any())
-        {
-          coordinator.SenderTab.SenderStreamStates.Clear();
-          coordinator.SenderTab.SenderStreamStates.AddRange(sendingStreamStates);
-          if (coordinator.SenderTab.SenderStreamStates.Count() > 0)
+            var invalidSidRecords = new List<StreamState>();
+            //Since the buckets are stored in the SID tags, but not the stream names, get the stream names
+            foreach (var r in coordinator.ReceiverTab.ReceiverSidRecords)
+            {
+              if (!(await r.RefreshStream()))
+              {
+                invalidSidRecords.Add(r);
+              }  
+              /*
+              var basicStreamData = await SpeckleInterface.SpeckleStreamManager.GetStream(coordinator.Account.ServerUrl, coordinator.Account.Token,
+                r.StreamId, messenger);
+
+              if (basicStreamData == null)
+              {
+                invalidSidRecords.Add(r);
+              }
+              else if (!string.IsNullOrEmpty(basicStreamData.Name))
+              {
+                r.SetName(basicStreamData.Name);
+              }
+              */
+            }
+            invalidSidRecords.ForEach(r => coordinator.ReceiverTab.RemoveSidSpeckleRecord(r));
+            coordinator.ReceiverTab.SidRecordsToStreamList();
+
+            loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Found streams from the same server stored in file for receiving: "
+               + string.Join(", ", coordinator.ReceiverTab.ReceiverSidRecords.Select(r => r.StreamId))));
+          }
+          if (coordinator.SenderTab.SenderSidRecords.Count() > 0)
           {
-            var invalidStreamStates = new List<StreamState>();
+            var messenger = new ProgressMessenger(loggingProgress);
+
+            var invalidSidRecords = new List<StreamState>();
             //Since the buckets are stored in the SID tags, but not the stream names, get the stream names
-            foreach (var r in coordinator.SenderTab.SenderStreamStates)
+            foreach (var r in coordinator.SenderTab.SenderSidRecords)
             {
-              if (!(await r.RefreshStream(loggingProgress)))
+              if (!(await r.RefreshStream()))
               {
-                invalidStreamStates.Add(r);
+                invalidSidRecords.Add(r);
               }
+              /*
+              var basicStreamData = await SpeckleInterface.SpeckleStreamManager.GetStream(coordinator.Account.ServerUrl, coordinator.Account.Token,
+                r.StreamId, messenger);
+              if (basicStreamData == null)
+              {
+                invalidSidRecords.Add(r);
+              }
+              else if (!string.IsNullOrEmpty(basicStreamData.Name))
+              {
+                r.SetName(basicStreamData.Name);
+              }
+              */
             }
-            invalidStreamStates.ForEach(r => coordinator.SenderTab.RemoveStreamState(r));
+            invalidSidRecords.ForEach(r => coordinator.SenderTab.RemoveSidSpeckleRecord(r));
+            coordinator.SenderTab.SidRecordsToStreamList();
+
+            loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Found streams from the same server stored in file for sending: "
+               + string.Join(", ", coordinator.SenderTab.SenderSidRecords.Select(r => r.StreamId))));
           }
-
-          coordinator.SenderTab.StreamStatesToStreamList();
-
-          loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Found streams from the same server stored in file for sending: "
-             + string.Join(", ", coordinator.SenderTab.SenderStreamStates.Select(r => r.StreamId))));
         }
+        return retrieved;
       }
       return true;
     }
 
-    internal static bool SaveFile(TabCoordinator coordinator)
+    internal static async Task<bool> SaveFile(TabCoordinator coordinator)
     {
-      if (coordinator.FileStatus == GsaLoadedFileType.NewFile)
-      {
-        var saveFileDialog = new SaveFileDialog
-        {
-          Filter = "GSA files (*.gwb)|*.gwb",
-          DefaultExt = "gwb",
-          AddExtension = true
-        };
-        if (saveFileDialog.ShowDialog() == true)
-        {
-          ((GsaProxy)Instance.GsaModel.Proxy).SaveAs(saveFileDialog.FileName);
-          coordinator.FilePath = saveFileDialog.FileName;
-        }
-      }
-      else if (coordinator.FileStatus == GsaLoadedFileType.ExistingFile)
-      {
-        ((GsaProxy)Instance.GsaModel.Proxy).SaveAs(coordinator.FilePath);
-      }
       return true;
     }
 
     internal static async Task<bool> RenameStream(TabCoordinator coordinator, string streamId, string newStreamName, Progress<MessageEventArgs> loggingProgress)
     {
-      var messenger = new ProgressMessenger(loggingProgress);
-
-      var streamState = coordinator.SenderTab.SenderStreamStates.FirstOrDefault(ss => ss.StreamId == streamId);
-
-      if (streamState == null)
-      {
-        return false;
-      }
-
-      var changed = await streamState.Client.StreamUpdate(new StreamUpdateInput() { id = streamId, name = newStreamName });
-
-      //var changed = await SpeckleInterface.SpeckleStreamManager.UpdateStreamName(coordinator.Account.ServerUrl, coordinator.Account.Token, streamId, newStreamName, messenger);
-
-      return changed;
+      return true;
     }
 
     internal static async Task<bool> CloneStream(TabCoordinator coordinator, string streamId, Progress<MessageEventArgs> loggingProgress)
     {
-      var messenger = new ProgressMessenger(loggingProgress);
-
-      //var clonedStreamId = await SpeckleInterface.SpeckleStreamManager.CloneStream(coordinator.Account.ServerUrl, coordinator.Account.Token, streamId, messenger);
-
-      //return (!string.IsNullOrEmpty(clonedStreamId));
       return true;
     }
 
-    internal static async Task<bool> SendTriggered(TabCoordinator coordinator, IProgress<MessageEventArgs> loggingProgress, 
-      IProgress<string> statusProgress, IProgress<double> percentageProgress)
+    internal static async Task<bool> SendTriggered(object gsaSenderCoordinator)
     {
-      var result = await Send(coordinator, coordinator.SenderTab.SenderStreamStates.First(), loggingProgress, statusProgress, percentageProgress);
-      return result;
+      return true;
     }
 
-    private static async Task<bool> Send(TabCoordinator coordinator, StreamState ss, IProgress<MessageEventArgs> loggingProgress, IProgress<string> statusProgress, IProgress<double> percentageProgress)
+    internal static async Task<bool> SendInitial(TabCoordinator coordinator, IProgress<StreamState> streamCreationProgress, IProgress<StreamState> streamDeletionProgress, 
+      IProgress<MessageEventArgs> loggingProgress, IProgress<string> statusProgress, IProgress<double> percentageProgress)
     {
       var kit = KitManager.GetDefaultKit();
       var converter = kit.LoadConverter(Applications.GSA);
+
       var account = ((GsaModel)Instance.GsaModel).Account;
-      var percentage = 0;
-      var perecentageProgressLock = new object();
+      var client = new Client(account);
 
-      //A simplified one just for use by the proxy class
-      var proxyLoggingProgress = new Progress<string>();
-      proxyLoggingProgress.ProgressChanged += (object o, string e) =>
-      {
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, e));
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, e));
-      };
+      Instance.GsaModel.StreamLayer = coordinator.SenderTab.TargetLayer;
+      Instance.GsaModel.StreamSendConfig = coordinator.SenderTab.StreamContentConfig;
+      Instance.GsaModel.Result1DNumPosition = coordinator.SenderTab.AdditionalPositionsFor1dElements; //end points (2) plus additional
 
-      var startTime = DateTime.Now;
-
-      statusProgress.Report("Preparing cache");
-      var loaded = Commands.LoadDataFromFile(proxyLoggingProgress); //Ensure all nodes
-      if (loaded) loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Loaded data from file into cache"));
-      else
-      {
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Failed to load data from file into cache"));
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, "Failed to load data from file into cache"));
-        return false;
-      }
-
-      percentage += 20;
-      percentageProgress.Report(percentage);
-
+      
       var resultsToSend = coordinator.SenderTab.ResultSettings.ResultSettingItems.Where(rsi => rsi.Selected).ToList();
-      if (resultsToSend != null && resultsToSend.Count() > 0 && !string.IsNullOrEmpty(coordinator.SenderTab.LoadCaseList)
-        && (Instance.GsaModel.ResultCases == null || Instance.GsaModel.ResultCases.Count() == 0))
+      if (resultsToSend != null && resultsToSend.Count() > 0 && !string.IsNullOrEmpty(coordinator.SenderTab.LoadCaseList))
       {
-        try
+        statusProgress.Report("Preparing results");
+        var analIndices = new List<int>();
+        var comboIndices = new List<int>();
+        if (((GsaCache)Instance.GsaModel.Cache).GetNatives<GsaAnal>(out var analRecords) && analRecords != null && analRecords.Count() > 0)
         {
-          statusProgress.Report("Preparing results");
-          var analIndices = new List<int>();
-          var comboIndices = new List<int>();
-          if (((GsaCache)Instance.GsaModel.Cache).GetNatives<GsaAnal>(out var analRecords) && analRecords != null && analRecords.Count() > 0)
-          {
-            analIndices.AddRange(analRecords.Select(r => r.Index.Value));
-          }
-          if (((GsaCache)Instance.GsaModel.Cache).GetNatives<GsaCombination>(out var comboRecords) && comboRecords != null && comboRecords.Count() > 0)
-          {
-            comboIndices.AddRange(comboRecords.Select(r => r.Index.Value));
-          }
-          var expanded = ((GsaProxy)Instance.GsaModel.Proxy).ExpandLoadCasesAndCombinations(coordinator.SenderTab.LoadCaseList, analIndices, comboIndices);
-          if (expanded != null && expanded.Count() > 0)
-          {
-            loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Resolved load cases"));
-
-            Instance.GsaModel.ResultCases = expanded;
-            Instance.GsaModel.ResultTypes = resultsToSend.Select(rts => rts.ResultType).ToList();
-          }
+          analIndices.AddRange(analRecords.Select(r => r.Index.Value));
         }
-        catch
+        if (((GsaCache)Instance.GsaModel.Cache).GetNatives<GsaAnal>(out var comboRecords) && comboRecords != null && comboRecords.Count() > 0)
         {
+          comboIndices.AddRange(comboRecords.Select(r => r.Index.Value));
+        }
+        var expanded = ((GsaProxy)Instance.GsaModel.Proxy).ExpandLoadCasesAndCombinations(coordinator.SenderTab.LoadCaseList, analIndices, comboIndices);
+        if (expanded != null && expanded.Count() > 0)
+        {
+          percentageProgress.Report(5);
 
+          loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Resolved load cases"));
+
+          Instance.GsaModel.ResultCases = expanded;
+          Instance.GsaModel.ResultTypes = resultsToSend.Select(rts => rts.ResultType).ToList();
+
+          loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Extracted results"));
         }
       }
-
-      TimeSpan duration = DateTime.Now - startTime;
-      if (duration.Seconds > 0)
-      {
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Duration of reading GSA model into cache: " + duration.ToString(@"hh\:mm\:ss")));
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Telemetry, MessageLevel.Information, "send", "update-cache", "duration", duration.ToString(@"hh\:mm\:ss")));
-      }
-      startTime = DateTime.Now;
 
       if (Instance.GsaModel.SendResults)
       {
-        try
+        Instance.GsaModel.Proxy.PrepareResults(Instance.GsaModel.ResultTypes);
+        foreach (var rg in Instance.GsaModel.ResultGroups)
         {
-          Instance.GsaModel.Proxy.PrepareResults(Instance.GsaModel.ResultTypes);
-          foreach (var rg in Instance.GsaModel.ResultGroups)
-          {
-            ((GsaProxy)Instance.GsaModel.Proxy).LoadResults(rg, out int numErrorRows, Instance.GsaModel.ResultCases);
-          }
-
-          percentage += 20;
-          percentageProgress.Report(percentage);
-
-          duration = DateTime.Now - startTime;
-          if (duration.Seconds > 0)
-          {
-            loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Duration of preparing results: " + duration.ToString(@"hh\:mm\:ss")));
-            loggingProgress.Report(new MessageEventArgs(MessageIntent.Telemetry, MessageLevel.Information, "send", "prepare-results", "duration", duration.ToString(@"hh\:mm\:ss")));
-          }
-        } catch
-        {
-
-        }
-        startTime = DateTime.Now;
-      }
-
-      var numToConvert = ((GsaCache)Instance.GsaModel.Cache).NumNatives;
-      statusProgress.Report("Converting");
-      int numConverted = 0;
-      int totalConversionPercentage = 80 - percentage;
-      Instance.GsaModel.ConversionProgress = new Progress<bool>((bool success) =>
-      {
-        lock (perecentageProgressLock)
-        {
-          numConverted++;
-        }
-        percentageProgress.Report(percentage + Math.Round(((double)numConverted / (double)numToConvert) * totalConversionPercentage, 0));
-      });
-
-      List<Base> objs = null;
-      try
-      {
-        objs = Commands.ConvertToSpeckle(converter);
-      }
-      catch (Exception ex)
-      {
-
-      }
-      if (converter.Report.ConversionErrors != null && converter.Report.ConversionErrors.Count > 0)
-      {
-        foreach (var ce in converter.Report.ConversionErrors)
-        {
-          loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, ce.Message));
-          loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, ce, ce.Message));
+          Instance.GsaModel.Proxy.LoadResults(rg, out int numErrorRows);
         }
       }
+
+      statusProgress.Report("Preparing cache");
+      Commands.LoadDataFromFile(); //Ensure all nodes
+      loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Loaded data from file into cache"));
+
+      var objs = Commands.ConvertToSpeckle(converter);
 
       loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Converted cache data to Speckle"));
 
-      duration = DateTime.Now - startTime;
-      if (duration.Seconds > 0)
-      {
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Duration of conversion to Speckle: " + duration.ToString(@"hh\:mm\:ss")));
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Telemetry, MessageLevel.Information, "send", "conversion", "duration", duration.ToString(@"hh\:mm\:ss")));
-      }
-      startTime = DateTime.Now;
-
       //The converter itself can't give anything back other than Base objects, so this is the first time it can be adorned with any
       //info useful to the sending in streams
-      statusProgress.Report("Sending to Server");
 
       var commitObj = new Base();
       foreach (var obj in objs)
@@ -1012,87 +729,83 @@ namespace ConnectorGSA
           name = "Results";
         }
 
-        commitObj['@' + name] = obj;
+        commitObj[name] = obj;
       }
 
-      var serverTransport = new ServerTransport(account, ss.Stream.id);
-      var sent = await Commands.SendCommit(commitObj, ss, ((GsaModel)Instance.GsaModel).LastCommitId, serverTransport);
+      statusProgress.Report("Sending to Server");
 
-      if (sent.status)
+      var stream = NewStream(client, "GSA data", "GSA data").Result;
+      var streamState = new StreamState(account.userInfo.id, account.serverInfo.url) { Stream = stream };
+      streamCreationProgress.Report(streamState);
+
+      var serverTransport = new ServerTransport(account, streamState.Stream.id);
+      var sent = Commands.Send(commitObj, streamState, serverTransport).Result;
+
+      if (sent)
       {
         loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Successfully sent data to stream"));
-        Commands.UpsertSavedReceptionStreamInfo(true, null, ss);
+        Commands.UpsertSavedReceptionStreamInfo(true, null, streamState);
       }
       else
       {
         loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, "Unable to send data to stream"));
-      }
-
-      if (ss.Errors != null && ss.Errors.Count > 0)
-      {
-        foreach (var se in ss.Errors)
-        {
-          loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Error, se.Message));
-          loggingProgress.Report(new MessageEventArgs(MessageIntent.TechnicalLog, MessageLevel.Error, se, se.Message));
-        }
-      }
-
-      percentageProgress.Report(100);
-
-      duration = DateTime.Now - startTime;
-      if (duration.Seconds > 0)
-      {
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Duration of sending to Speckle: " + duration.ToString(@"hh\:mm\:ss")));
-        loggingProgress.Report(new MessageEventArgs(MessageIntent.Telemetry, MessageLevel.Information, "send", "sending", "duration", duration.ToString(@"hh\:mm\:ss")));
-      }
-      startTime = DateTime.Now;
+      }  
 
       Console.WriteLine("Sending complete");
 
-      percentageProgress.Report(0);
-
       return true;
-    }
+      //--
 
-    internal static async Task<bool> SendInitial(TabCoordinator coordinator, IProgress<StreamState> streamCreationProgress, IProgress<StreamState> streamDeletionProgress, 
-      IProgress<MessageEventArgs> loggingProgress, IProgress<string> statusProgress, IProgress<double> percentageProgress)
-    {
-      Instance.GsaModel.StreamLayer = coordinator.SenderTab.TargetLayer;
-      Instance.GsaModel.StreamSendConfig = coordinator.SenderTab.StreamContentConfig;
-      Instance.GsaModel.Result1DNumPosition = coordinator.SenderTab.AdditionalPositionsFor1dElements; //end points (2) plus additional
-      Instance.GsaModel.LoggingMinimumLevel = (int)coordinator.LoggingMinimumLevel;
-      Instance.GsaModel.SendOnlyMeaningfulNodes = coordinator.SenderTab.SendMeaningfulNodes;
-#if !DEBUG
-      ((GsaProxy)Instance.GsaModel.Proxy).SetAppVersionForTelemetry(getRunningVersion().ToString());
-#endif
-
-      var account = ((GsaModel)Instance.GsaModel).Account;
-      //var client = new Client(account);
-      StreamState streamState;
-      if (coordinator.SenderTab.SenderStreamStates == null || coordinator.SenderTab.SenderStreamStates.Count == 0)
+      /*
+      var resultsToSend = coordinator.SenderTab.ResultSettings.ResultSettingItems.Where(rsi => rsi.Selected).ToList();
+      if (resultsToSend != null && resultsToSend.Count() > 0 && !string.IsNullOrEmpty(coordinator.SenderTab.LoadCaseList))
       {
-        streamState = new StreamState(account.userInfo.id, account.serverInfo.url);
-        streamState.Stream = await NewStream(streamState.Client, "GSA data", "GSA data");
-        streamState.IsSending = true;
-        ((GsaModel)Instance.GsaModel).LastCommitId = "";
-      }
-      else
-      {
-        streamState = coordinator.SenderTab.SenderStreamStates.First();
-        var branches = streamState.Client.StreamGetBranches(streamState.StreamId).Result;
-        var mainBranch = branches.FirstOrDefault(b => b.name == "main");
-        if (mainBranch != null && mainBranch.commits.items.Any())
+        //Prepare the cache for the ability to parse the load case string
+        var initialData = Instance.GsaModel.Proxy.GetGwaData(GSA.App.LocalCache.KeywordsForLoadCaseExpansion, false);
+        for (int i = 0; i < initialData.Count(); i++)
         {
-          ((GsaModel)Instance.GsaModel).LastCommitId = mainBranch.commits.items[0].id;
+          var applicationId = (string.IsNullOrEmpty(initialData[i].ApplicationId)) ? null : initialData[i].ApplicationId;
+          GSA.App.Cache.Upsert(
+            initialData[i].Keyword,
+            initialData[i].Index,
+            initialData[i].GwaWithoutSet,
+            streamId: initialData[i].StreamId,
+            applicationId: applicationId,
+            gwaSetCommandType: initialData[i].GwaSetType);
+        }
+
+        var resultCases = GSA.App.LocalCache.ExpandLoadCasesAndCombinations(coordinator.SenderTab.LoadCaseList);
+        if (resultCases != null && resultCases.Count() > 0)
+        {
+          percentageProgress.Report(5);
+
+          loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Resolved load cases"));
+
+          GSA.App.Settings.ResultCases = resultCases;
+          GSA.App.Settings.ResultTypes = resultsToSend.Select(rts => rts.ResultType).ToList();
+
+          if (GSA.App.LocalSettings.SendResults && resultCases.Count() > 0)
+          {
+            GSA.App.LocalProxy.PrepareResults(GSA.App.Settings.ResultTypes, GSA.App.LocalSettings.Result1DNumPosition + 2);
+
+            loggingProgress.Report(new MessageEventArgs(MessageIntent.Display, MessageLevel.Information, "Extracted results"));
+          }
         }
       }
-      
-      streamCreationProgress.Report(streamState); //This will add it to the sender tab's streamState list
-
-      await Send(coordinator, streamState, loggingProgress, statusProgress, percentageProgress);
+      */
 
       coordinator.SenderTab.SetDocumentName(((GsaProxy)Instance.GsaModel.Proxy).GetTitle());
 
+      var messenger = new ProgressMessenger(loggingProgress);
+
+      /*
+      Func<string, string, SpeckleInterface.IStreamSender> streamSenderCreationFn = ((url, token) => new SpeckleInterface.StreamSender(url, token, messenger));
+
+      gsaSenderCoordinator.Initialize(coordinator.Account.ServerUrl, coordinator.Account.Token, coordinator.SenderTab.SenderSidRecords,
+        streamSenderCreationFn, loggingProgress, statusProgress, percentageProgress, streamCreationProgress, streamDeletionProgress);
+
+      await gsaSenderCoordinator.Trigger();
+      */
 
       coordinator.WriteStreamInfo();
 
@@ -1140,18 +853,6 @@ namespace ConnectorGSA
         case GsaUnit.Inches: return "in";
         case GsaUnit.Metres: return "m";
         default: return "mm";
-      }
-    }
-
-    private static Version getRunningVersion()
-    {
-      try
-      {
-        return ApplicationDeployment.CurrentDeployment.CurrentVersion;
-      }
-      catch (Exception)
-      {
-        return Assembly.GetExecutingAssembly().GetName().Version;
       }
     }
   }

@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
-using ConnectorGrasshopper.Objects;
 using GH_IO.Serialization;
 using Grasshopper.GUI;
 using Grasshopper.GUI.Canvas;
@@ -17,24 +16,25 @@ using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
 using GrasshopperAsyncComponent;
 using Rhino;
+using Sentry.PlatformAbstractions;
 using Speckle.Core.Api;
 using Speckle.Core.Credentials;
+using Speckle.Core.Kits;
+using Speckle.Core.Logging;
 using Speckle.Core.Models;
 using Speckle.Core.Transports;
-using Logging = Speckle.Core.Logging;
 using Utilities = ConnectorGrasshopper.Extras.Utilities;
 
 namespace ConnectorGrasshopper.Ops
 {
-  public class SendComponent : SelectKitAsyncComponentBase
+  public class SendComponent : GH_AsyncComponent
   {
     public override Guid ComponentGuid => new Guid("{5E6A5A78-9E6F-4893-8DED-7EEAB63738A5}");
 
     protected override Bitmap Icon => Properties.Resources.Sender;
-    public override bool Obsolete => true;
 
-    public override GH_Exposure Exposure => GH_Exposure.hidden;
-    public override bool CanDisableConversion => false;
+    public override GH_Exposure Exposure => GH_Exposure.primary;
+
     public bool AutoSend { get; set; } = false;
 
     public string CurrentComponentState { get; set; } = "needs_input";
@@ -49,14 +49,23 @@ namespace ConnectorGrasshopper.Ops
 
     public string BaseId { get; set; }
 
+    public ISpeckleConverter Converter;
+
+    public ISpeckleKit Kit;
+
     public SendComponent() : base("Send", "Send", "Sends data to a Speckle server (or any other provided transport).", ComponentCategories.PRIMARY_RIBBON,
       ComponentCategories.SEND_RECEIVE)
     {
       BaseWorker = new SendComponentWorker(this);
       Attributes = new SendComponentAttributes(this);
     }
-
-
+    
+    public override void AddedToDocument(GH_Document document)
+    {
+      SetDefaultKitAndConverter();
+      base.AddedToDocument(document);
+    }
+    
     public override bool Write(GH_IWriter writer)
     {
       writer.SetBoolean("UseDefaultCache", UseDefaultCache);
@@ -94,6 +103,27 @@ namespace ConnectorGrasshopper.Ops
         }
       }
 
+      var kitName = "";
+      reader.TryGetString("KitName", ref kitName);
+
+      if (kitName != "")
+      {
+        try
+        {
+          SetConverterFromKit(kitName);
+        }
+        catch (Exception)
+        {
+          AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
+            $"Could not find the {kitName} kit on this machine. Do you have it installed? \n Will fallback to the default one.");
+          SetDefaultKitAndConverter();
+        }
+      }
+      else
+      {
+        SetDefaultKitAndConverter();
+      }
+
       return base.Read(reader);
     }
 
@@ -114,8 +144,20 @@ namespace ConnectorGrasshopper.Ops
         "Stream or streams pointing to the created commit", GH_ParamAccess.list);
     }
 
-    public override void AppendAdditionalMenuItems(ToolStripDropDown menu)
+    protected override void AppendAdditionalComponentMenuItems(ToolStripDropDown menu)
     {
+      Menu_AppendSeparator(menu);
+      var menuItem = Menu_AppendItem(menu, "Select the converter you want to use:");
+      menuItem.Enabled = false;
+      menuItem.Image = Properties.Resources.speckle_logo;
+      var kits = KitManager.GetKitsWithConvertersForApp(Applications.Rhino6);
+
+      foreach (var kit in kits)
+      {
+        Menu_AppendItem(menu, $"{kit.Name} ({kit.Description})", (s, e) => { SetConverterFromKit(kit.Name); }, true,
+          kit.Name == Kit.Name);
+      }
+
       Menu_AppendSeparator(menu);
 
       var cacheMi = Menu_AppendItem(menu, "Use default cache", (s, e) => UseDefaultCache = !UseDefaultCache, true,
@@ -151,12 +193,62 @@ namespace ConnectorGrasshopper.Ops
         });
       }
 
-      base.AppendAdditionalMenuItems(menu);
+      base.AppendAdditionalComponentMenuItems(menu);
+    }
+
+    public void SetConverterFromKit(string kitName)
+    {
+      if (Kit == null)
+      {
+        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No kit found on this machine.");
+        return;
+      }
+      if (kitName == Kit.Name)
+      {
+        return;
+      }
+
+      try
+      {
+        Kit = KitManager.Kits.FirstOrDefault(k => k.Name == kitName);
+        Converter = Kit.LoadConverter(Applications.Rhino6);
+
+        Message = $"Using the {Kit.Name} Converter";
+        foundKit = true;
+        ExpireSolution(true);
+      }
+      catch (Exception e)
+      {
+        Console.WriteLine(e);
+        foundKit = false;
+      }
+    }
+
+    private bool foundKit;
+    private void SetDefaultKitAndConverter()
+    {
+      try
+      {
+        Kit = KitManager.GetDefaultKit();
+        Converter = Kit.LoadConverter(Applications.Rhino6);
+        Converter.SetContextDocument(Rhino.RhinoDoc.ActiveDoc);
+        foundKit = true;
+      }
+      catch
+      {
+        foundKit = false;
+      }
     }
 
     protected override void SolveInstance(IGH_DataAccess DA)
     {
-
+      // Fast exit if no default kit was found!
+      if (!foundKit)
+      {
+        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No kit found on this machine.");
+        return;
+      }
+      
       // Set output data in a "first run" event. Note: we are not persisting the actual "sent" object as it can be very big.
       if (JustPastedIn)
       {
@@ -203,6 +295,12 @@ namespace ConnectorGrasshopper.Ops
       Rhino.RhinoApp.InvokeOnUiThread((Action)delegate { OnDisplayExpired(true); });
     }
 
+    protected override void BeforeSolveInstance()
+    {
+      Tracker.TrackPageview("send", AutoSend ? "auto" : "manual");
+      base.BeforeSolveInstance();
+    }
+    
     public override void DocumentContextChanged(GH_Document document, GH_DocumentContext context)
     {
       switch (context)
@@ -271,8 +369,7 @@ namespace ConnectorGrasshopper.Ops
     {
       try
       {
-        var sendComponent = (SendComponent)Parent;
-        if (sendComponent.JustPastedIn)
+        if (((SendComponent)Parent).JustPastedIn)
         {
           Done();
           return;
@@ -280,43 +377,43 @@ namespace ConnectorGrasshopper.Ops
 
         if (CancellationToken.IsCancellationRequested)
         {
-          sendComponent.CurrentComponentState = "expired";
+          ((SendComponent)Parent).CurrentComponentState = "expired";
           return;
         }
 
         //the active document may have changed
-        sendComponent.Converter.SetContextDocument(RhinoDoc.ActiveDoc);
+        ((SendComponent)Parent).Converter.SetContextDocument(RhinoDoc.ActiveDoc);
 
         // Note: this method actually converts the objects to speckle too
         try
         {
           int convertedCount = 0;
-          var converted = Utilities.DataTreeToNestedLists(DataInput, sendComponent.Converter, CancellationToken, () =>
+          var converted = Utilities.DataTreeToNestedLists(DataInput, ((SendComponent)Parent).Converter, CancellationToken, () =>
           {
-            ReportProgress("Conversion", Math.Round(convertedCount++ / (double)DataInput.DataCount, 2));
+            ReportProgress("Conversion",Math.Round(convertedCount++ / (double) DataInput.DataCount, 2));
           });
-
-          if (convertedCount == 0)
+          
+          if ( convertedCount == 0 )
           {
-            RuntimeMessages.Add((GH_RuntimeMessageLevel.Error, "Zero objects converted successfully. Send stopped."));
+            RuntimeMessages.Add(( GH_RuntimeMessageLevel.Error, "Zero objects converted successfully. Send stopped." ));
             Done();
             return;
           }
-
+          
           ObjectToSend = new Base();
           ObjectToSend["@data"] = converted;
           TotalObjectCount = ObjectToSend.GetTotalChildrenCount();
         }
         catch (Exception e)
         {
-          RuntimeMessages.Add((GH_RuntimeMessageLevel.Error, e.Message));
+          RuntimeMessages.Add(( GH_RuntimeMessageLevel.Error, e.Message ));
           Done();
           return;
         }
-
+        
         if (CancellationToken.IsCancellationRequested)
         {
-          sendComponent.CurrentComponentState = "expired";
+          ((SendComponent)Parent).CurrentComponentState = "expired";
           return;
         }
 
@@ -379,8 +476,6 @@ namespace ConnectorGrasshopper.Ops
               continue;
             }
 
-            Logging.Analytics.TrackEvent(acc, Logging.Analytics.Events.Send, new Dictionary<string, object>() { { "auto", sendComponent.AutoSend } });
-
             var serverTransport = new ServerTransport(acc, sw.StreamId) { TransportName = $"T{t}" };
             transportBranches.Add(serverTransport, sw.BranchName ?? "main");
             Transports.Add(serverTransport);
@@ -429,7 +524,7 @@ namespace ConnectorGrasshopper.Ops
 
         if (CancellationToken.IsCancellationRequested)
         {
-          sendComponent.CurrentComponentState = "expired";
+          ((SendComponent)Parent).CurrentComponentState = "expired";
           return;
         }
 
@@ -439,7 +534,7 @@ namespace ConnectorGrasshopper.Ops
         {
           if (CancellationToken.IsCancellationRequested)
           {
-            sendComponent.CurrentComponentState = "expired";
+            ((SendComponent)Parent).CurrentComponentState = "expired";
             return;
           }
 
@@ -448,7 +543,7 @@ namespace ConnectorGrasshopper.Ops
             ObjectToSend,
             CancellationToken,
             Transports,
-            useDefaultCache: sendComponent.UseDefaultCache,
+            useDefaultCache: ((SendComponent)Parent).UseDefaultCache,
             onProgressAction: InternalProgressAction,
             onErrorAction: ErrorAction, disposeTransports: true);
 
@@ -460,13 +555,13 @@ namespace ConnectorGrasshopper.Ops
             message = $"Pushed {TotalObjectCount} elements from Grasshopper.";
           }
 
-          var prevCommits = sendComponent.OutputWrappers;
+          var prevCommits = ((SendComponent)Parent).OutputWrappers;
 
           foreach (var transport in Transports)
           {
             if (CancellationToken.IsCancellationRequested)
             {
-              sendComponent.CurrentComponentState = "expired";
+              ((SendComponent)Parent).CurrentComponentState = "expired";
               return;
             }
 
@@ -486,7 +581,7 @@ namespace ConnectorGrasshopper.Ops
                 message = message,
                 objectId = BaseId,
                 streamId = ((ServerTransport)transport).StreamId,
-                sourceApplication = Extras.Utilities.GetVersionedAppName()
+                sourceApplication = Applications.Grasshopper
               };
 
               // Check to see if we have a previous commit; if so set it.
@@ -510,7 +605,7 @@ namespace ConnectorGrasshopper.Ops
 
           if (CancellationToken.IsCancellationRequested)
           {
-            sendComponent.CurrentComponentState = "expired";
+            ((SendComponent)Parent).CurrentComponentState = "expired";
             Done();
           }
 
@@ -519,9 +614,9 @@ namespace ConnectorGrasshopper.Ops
       }
       catch (Exception e)
       {
-
+        
         // If we reach this, something happened that we weren't expecting...
-        Logging.Log.CaptureException(e);
+        Log.CaptureException(e);
         RuntimeMessages.Add((GH_RuntimeMessageLevel.Error, "Something went terribly wrong... " + e.Message));
         //Parent.Message = "Error";
         //((SendComponent)Parent).CurrentComponentState = "expired";

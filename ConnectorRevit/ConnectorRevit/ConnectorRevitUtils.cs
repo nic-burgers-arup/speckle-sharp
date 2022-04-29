@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Autodesk.Revit.DB;
 using Speckle.Core.Kits;
@@ -11,15 +13,15 @@ namespace Speckle.ConnectorRevit
   public static class ConnectorRevitUtils
   {
 #if REVIT2023
-    public static string RevitAppName = VersionedHostApplications.Revit2023;
+    public static string RevitAppName = Applications.Revit2023;
 #elif REVIT2022
-    public static string RevitAppName = VersionedHostApplications.Revit2022;
+    public static string RevitAppName = Applications.Revit2022;
 #elif REVIT2021
-    public static string RevitAppName = VersionedHostApplications.Revit2021;
+    public static string RevitAppName = Applications.Revit2021;
 #elif REVIT2020
-    public static string RevitAppName = VersionedHostApplications.Revit2020;
+    public static string RevitAppName = Applications.Revit2020;
 #else
-    public static string RevitAppName = VersionedHostApplications.Revit2019;
+      public static string RevitAppName = Applications.Revit2019;
 #endif
 
     private static List<string> _cachedParameters = null;
@@ -122,11 +124,6 @@ namespace Speckle.ConnectorRevit
       return GetCategories(doc).Keys.OrderBy(x => x).ToList();
     }
 
-    public static List<string> GetWorksets(Document doc)
-    {
-      return new FilteredWorksetCollector(doc).Where(x => x.Kind == WorksetKind.UserWorkset).Select(x => x.Name).ToList();
-    }
-
     private async static Task<List<string>> GetParameterNamesAsync(Document doc)
     {
       var els = new FilteredElementCollector(doc)
@@ -162,6 +159,7 @@ namespace Speckle.ConnectorRevit
         return _cachedParameters;
       }
       return GetParameterNamesAsync(doc).Result;
+
     }
 
     private async static Task<List<string>> GetViewNamesAsync(Document doc)
@@ -189,6 +187,7 @@ namespace Speckle.ConnectorRevit
         return _cachedViews;
       }
       return GetViewNamesAsync(doc).Result;
+
     }
 
     public static bool IsPhysicalElement(this Element e)
@@ -210,18 +209,10 @@ namespace Speckle.ConnectorRevit
       return false;
     }
 
-    //list of currently supported Categories (for sending only)
-    //exact copy of the one in the ConverterRevitShared.Categories
-    //until issue https://github.com/specklesystems/speckle-sharp/issues/392 is resolved
+
+    //list of currently supported Categories
     private static List<BuiltInCategory> SupportedBuiltInCategories = new List<BuiltInCategory>{
 
-      BuiltInCategory.OST_Areas,
-      BuiltInCategory.OST_AnalyticalNodes,
-      BuiltInCategory.OST_BeamAnalytical,
-      BuiltInCategory.OST_ColumnAnalytical,
-      BuiltInCategory.OST_FloorAnalytical,
-      BuiltInCategory.OST_WallAnalytical,
-      BuiltInCategory.OST_AnalyticalNodes,
       BuiltInCategory.OST_CableTray,
       BuiltInCategory.OST_Ceilings,
       BuiltInCategory.OST_Columns,
@@ -229,7 +220,6 @@ namespace Speckle.ConnectorRevit
       BuiltInCategory.OST_Conduit,
       BuiltInCategory.OST_CurtaSystem,
       BuiltInCategory.OST_DataDevices,
-      BuiltInCategory.OST_Doors,
       BuiltInCategory.OST_DuctSystem,
       BuiltInCategory.OST_DuctCurves,
       BuiltInCategory.OST_ElectricalCircuit,
@@ -258,17 +248,13 @@ namespace Speckle.ConnectorRevit
       BuiltInCategory.OST_StairsRailing,
       BuiltInCategory.OST_RailingSupport,
       BuiltInCategory.OST_RailingTermination,
-      BuiltInCategory.OST_Rebar,
       BuiltInCategory.OST_Roads,
       BuiltInCategory.OST_RoofSoffit,
       BuiltInCategory.OST_Roofs,
       BuiltInCategory.OST_Rooms,
-      BuiltInCategory.OST_RoomSeparationLines,
       BuiltInCategory.OST_SecurityDevices,
       BuiltInCategory.OST_ShaftOpening,
       BuiltInCategory.OST_Site,
-      BuiltInCategory.OST_MEPSpaces,
-      BuiltInCategory.OST_MEPSpaceSeparationLines,
       BuiltInCategory.OST_EdgeSlab,
       BuiltInCategory.OST_Stairs,
       BuiltInCategory.OST_AreaRein,

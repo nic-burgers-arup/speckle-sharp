@@ -1,20 +1,13 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Autodesk.Revit.DB;
 using Objects.BuiltElements;
 using Objects.BuiltElements.Revit;
 using Objects.Geometry;
 using Objects.Other;
-using Speckle.Core.Api;
-using Speckle.Core.Serialisation;
 using Speckle.Core.Models;
-using Speckle.Core.Transports;
-using Speckle.Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text.RegularExpressions;
 using DB = Autodesk.Revit.DB;
 using ElementType = Autodesk.Revit.DB.ElementType;
 using Floor = Objects.BuiltElements.Floor;
@@ -68,7 +61,7 @@ namespace Objects.Converter.Revit
 
       foreach (var elemId in hostedElementIds)
       {
-        var element = host.Document.GetElement(elemId);
+        var element = Doc.GetElement(elemId);
         var isSelectedInContextObjects = ContextObjects.FindIndex(x => x.applicationId == element.UniqueId);
 
         if (isSelectedInContextObjects == -1)
@@ -130,7 +123,7 @@ namespace Objects.Converter.Revit
           }
           catch (Exception e)
           {
-            throw (new Exception($"Failed to create hosted element {obj.speckle_type} in host ({host.Id}): \n{e.Message}"));
+            ConversionErrors.Add(new Exception($"Failed to create hosted element {obj.speckle_type} in host ({host.Id}): \n{e.Message}"));
           }
         }
 
@@ -180,6 +173,10 @@ namespace Objects.Converter.Revit
         }
       }
 
+
+
+
+
       if (paramBase.GetDynamicMembers().Any())
         speckleElement["parameters"] = paramBase;
       speckleElement["elementId"] = revitElement.Id.ToString();
@@ -195,7 +192,7 @@ namespace Objects.Converter.Revit
     }
     private Dictionary<string, Parameter> GetTypeParams(DB.Element element)
     {
-      var elementType = element.Document.GetElement(element.GetTypeId());
+      var elementType = Doc.GetElement(element.GetTypeId());
 
       if (elementType == null || elementType.Parameters == null)
       {
@@ -227,11 +224,8 @@ namespace Objects.Converter.Revit
       if (rp == null || !rp.HasValue)
         return default;
 
-      var value = ParameterToSpeckle(rp).value;
-      if (typeof(T) == typeof(int) && value.GetType() == typeof(bool))
-        return (T)Convert.ChangeType(value, typeof(int));
-      else
-        return (T)ParameterToSpeckle(rp).value;
+      return (T)ParameterToSpeckle(rp).value;
+
     }
 
     //rp must HaveValue
@@ -322,7 +316,9 @@ namespace Objects.Converter.Revit
       // its member names will have for Key either a BuiltInName, GUID or Name of the parameter (depending onwhere it comes from)
       // and as value the full Parameter object, that might come from Revit or SchemaBuilder
       // We only loop params we can set and that actually exist on the revit element
-      var filteredSpeckleParameters = speckleParameters.GetMembers();
+      var filteredSpeckleParameters = speckleParameters.GetMembers()
+        .Where(x => revitParameterById.ContainsKey(x.Key) || revitParameterByName.ContainsKey(x.Key));
+
 
       foreach (var spk in filteredSpeckleParameters)
       {
@@ -330,92 +326,49 @@ namespace Objects.Converter.Revit
         if (sp == null || sp.isReadOnly)
           continue;
 
-        if (revitParameterById.ContainsKey(spk.Key) || revitParameterByName.ContainsKey(spk.Key))
+        var rp = revitParameterById.ContainsKey(spk.Key) ? revitParameterById[spk.Key] : revitParameterByName[spk.Key];
+        try
         {
-          var rp = revitParameterById.ContainsKey(spk.Key) ? revitParameterById[spk.Key] : revitParameterByName[spk.Key];
-
-          if (rp != null)
+          switch (rp.StorageType)
           {
-            try
-            {
-              switch (rp.StorageType)
+            case StorageType.Double:
+              // This is meant for parameters that come from Revit
+              // as they might use a lot more unit types that Speckle doesn't currently support
+              if (!string.IsNullOrEmpty(sp.applicationUnit))
               {
-                case StorageType.Double:
-                  // This is meant for parameters that come from Revit
-                  // as they might use a lot more unit types that Speckle doesn't currently support
-                  if (!string.IsNullOrEmpty(sp.applicationUnit))
-                  {
-                    var val = RevitVersionHelper.ConvertToInternalUnits(sp);
-                    rp.Set(val);
-                  }
-                  // the following two cases are for parameters comimg form schema builder
-                  // they do not have applicationUnit but just units
-                  // units are automatically set but the user can override them 
-                  // users might set them to "none" so that we convert them by using the Revit destination parameter display units
-                  // this is needed to correctly receive non lenght based parameters (eg air flow)
-                  else if (sp.units == Speckle.Core.Kits.Units.None)
-                  {
-                    var val = RevitVersionHelper.ConvertToInternalUnits(Convert.ToDouble(sp.value), rp);
-                    rp.Set(val);
-                  }
-                  else if (Speckle.Core.Kits.Units.IsUnitSupported(sp.units))
-                  {
-                    var val = ScaleToNative(Convert.ToDouble(sp.value), sp.units);
-                    rp.Set(val);
-                  }
-                  else
-                  {
-                    rp.Set(Convert.ToDouble(sp.value));
-                  }
-                  break;
-
-                case StorageType.Integer:
-                  rp.Set(Convert.ToInt32(sp.value));
-                  break;
-
-                case StorageType.String:
-                  if (rp.Definition.Name.ToLower().Contains("name"))
-                  {
-                    var temp = Regex.Replace(Convert.ToString(sp.value), "[^0-9a-zA-Z ]+", "");
-                    Report.ConversionLog.Add($@"Invalid characters in param name '{rp.Definition.Name}': Renamed to '{temp}'");
-                    rp.Set(temp);
-                  }
-                  else
-                  {
-                    rp.Set(Convert.ToString(sp.value));
-                  }
-                  break;
-                default:
-                  break;
+                var val = RevitVersionHelper.ConvertToInternalUnits(sp);
+                rp.Set(val);
               }
-            }
-            catch (Exception ex)
-            {
-              continue;
-            }
-          }
-        }
-        else
-        {
-          switch (sp.value)
-          {
-            case int _:
-              var param = CreateInstanceParameter(sp.name, ParameterType.Integer, revitElement);
-              if (param != null) param.Set((int)sp.value);
+              // Parameter comes form schema builder,
+              // doesn't have an applicationUnit but just units
+              else if (!string.IsNullOrEmpty(sp.units))
+              {
+                var val = ScaleToNative(Convert.ToDouble(sp.value), sp.units);
+                rp.Set(val);
+              }
+              else
+              {
+                rp.Set(Convert.ToDouble(sp.value));
+              }
               break;
-            case double _:
-              param = CreateInstanceParameter(sp.name, ParameterType.Number, revitElement);
-              if (param != null) param.Set((double)sp.value);
+
+            case StorageType.Integer:
+              rp.Set(Convert.ToInt32(sp.value));
               break;
-            case string _:
-              param = CreateInstanceParameter(sp.name, ParameterType.Text, revitElement);
-              if (param != null) param.Set((string)sp.value);
+
+            case StorageType.String:
+              rp.Set(Convert.ToString(sp.value));
               break;
             default:
               break;
           }
         }
+        catch (Exception ex)
+        {
+          continue;
+        }
       }
+
     }
 
     //Shared parameters use a GUID to be uniquely identified
@@ -431,48 +384,6 @@ namespace Objects.Converter.Revit
           return def.Name;
         return def.BuiltInParameter.ToString();
       }
-    }
-
-    private DB.Parameter CreateInstanceParameter(string parameterName, ParameterType parameterType, Element revitElement)
-    {
-      // create shared parameter file
-      var modulePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-      var paramFile = modulePath + "\\SpeckleSharedParameters.txt";
-      if (File.Exists(paramFile)) File.Delete(paramFile);
-      var fs = File.Create(paramFile);
-      fs.Close();
-
-      // prepare shared parameter file
-      Doc.Application.SharedParametersFilename = paramFile;
-
-      DefinitionFile parafile = Doc.Application.OpenSharedParameterFile();
-
-      // create a group
-      DefinitionGroup apiGroup = parafile.Groups.Create("Speckle");
-
-      // create a visible "External Room ID" of text type.
-      ExternalDefinitionCreationOptions options = new ExternalDefinitionCreationOptions(parameterName, parameterType);
-      Definition definition = apiGroup.Definitions.Create(options);
-
-      Category category = revitElement.Category;
-      CategorySet categories = Doc.Application.Create.NewCategorySet();
-      categories.Insert(category);
-
-      //Create an instance of InstanceBinding
-      InstanceBinding instanceBinding = Doc.Application.Create.NewInstanceBinding(categories);
-
-      // Get the BingdingMap of current document.
-      BindingMap bindingMap = Doc.ParameterBindings;
-
-      // Bind the definitions to the document
-      bool bindInstance = bindingMap.Insert(definition, instanceBinding, BuiltInParameterGroup.INVALID); // add in "other" group
-
-      if (bindInstance)
-      {
-        var param = revitElement.get_Parameter(options.GUID);
-        return param;
-      }
-      else return null;
     }
 
     //private bool IsValid(DB.Parameter rp)
@@ -544,7 +455,7 @@ namespace Objects.Converter.Revit
       match = types.FirstOrDefault(x => x.FamilyName == family);
       if (match != null)
       {
-        Report.Log($"Missing type [{family} - {type}] was replaced with [{match.FamilyName} - {match.Name}]");
+        ConversionErrors.Add(new Exception($"Missing type: {family} {type}\nType was replace with: {match.FamilyName} - {match.Name}"));
         if (match != null)
         {
           if (match is FamilySymbol fs && !fs.IsActive)
@@ -560,7 +471,7 @@ namespace Objects.Converter.Revit
       if (types.Any())
       {
         match = types.FirstOrDefault();
-        Report.Log($"Missing family and type, the following family and type were used: {match.FamilyName} - {match.Name}");
+        ConversionErrors.Add(new Exception($"Missing family and type\nThe following family and type were used: {match.FamilyName} - {match.Name}"));
         if (match != null)
         {
           if (match is FamilySymbol fs && !fs.IsActive)
@@ -591,8 +502,7 @@ namespace Objects.Converter.Revit
 
       if (types.Count == 0)
       {
-        var name = string.IsNullOrEmpty(element["category"].ToString()) ? typeof(T).Name : element["category"].ToString();
-        throw new Speckle.Core.Logging.SpeckleException($"Could not find any family to use for category {name}.");
+        throw new Speckle.Core.Logging.SpeckleException($"Could not find any type symbol to use for family {nameof(T)}.");
       }
 
       var family = element["family"] as string;
@@ -607,20 +517,20 @@ namespace Objects.Converter.Revit
 
       if (!string.IsNullOrEmpty(family) && !string.IsNullOrEmpty(type))
       {
-        match = types.FirstOrDefault(x => x.FamilyName.ToLower() == family.ToLower() && x.Name.ToLower() == type.ToLower());
+        match = types.FirstOrDefault(x => x.FamilyName == family && x.Name == type);
       }
 
       //some elements only have one family so we didn't add such prop our schema
       if (match == null && string.IsNullOrEmpty(family) && !string.IsNullOrEmpty(type))
       {
-        match = types.FirstOrDefault(x => x.Name.ToLower() == type.ToLower());
+        match = types.FirstOrDefault(x => x.Name == type);
       }
 
       if (match == null && !string.IsNullOrEmpty(family)) // try and match the family only.
       {
-        match = types.FirstOrDefault(x => x.FamilyName.ToLower() == family.ToLower());
+        match = types.FirstOrDefault(x => x.FamilyName == family);
         if (match != null) //inform user that the type is different!
-          Report.Log($"Missing type. Family: {family} Type: {type}\nType was replaced with: {match.FamilyName}, {match.Name}");
+          ConversionErrors.Add(new Exception($"Missing type. Family: {family} Type: {type}\nType was replaced with: {match.FamilyName}, {match.Name}"));
 
       }
       if (match == null) // okay, try something!
@@ -628,8 +538,8 @@ namespace Objects.Converter.Revit
         if (element is BuiltElements.Wall) // specifies the basic wall sub type as default
           match = types.Cast<WallType>().Where(o => o.Kind == WallKind.Basic).Cast<ElementType>().FirstOrDefault();
         if (match == null)
-          match = types.Last();
-        Report.Log($"Missing type. Family: {family} Type: {type}\nType was replaced with: {match.FamilyName}, {match.Name}");
+          match = types.First();
+        ConversionErrors.Add(new Exception($"Missing type. Family: {family} Type: {type}\nType was replaced with: {match.FamilyName}, {match.Name}"));
       }
 
       if (match is FamilySymbol fs && !fs.IsActive)
@@ -642,33 +552,42 @@ namespace Objects.Converter.Revit
 
     private ElementFilter GetCategoryFilter(Base element)
     {
-      switch (element)
+      ElementFilter filter = null;
+      if (element is BuiltElements.Wall)
       {
-        case BuiltElements.Wall _:
-          return new ElementMulticategoryFilter(Categories.wallCategories);
-        case Column _:
-          return new ElementMulticategoryFilter(Categories.columnCategories);
-        case Beam _:
-        case Brace _:
-          return new ElementMulticategoryFilter(Categories.beamCategories);
-        case Duct _:
-          return new ElementMulticategoryFilter(Categories.ductCategories);
-        case Floor _:
-          return new ElementMulticategoryFilter(Categories.floorCategories);
-        case Pipe _:
-          return new ElementMulticategoryFilter(Categories.pipeCategories);
-        case Roof _:
-          return new ElementCategoryFilter(BuiltInCategory.OST_Roofs);
-        default:
-          ElementFilter filter = null;
-          if (element["category"] != null)
-          {
-            var cat = Doc.Settings.Categories.Cast<Category>().FirstOrDefault(x => x.Name == element["category"].ToString());
-            if (cat != null)
-              filter = new ElementMulticategoryFilter(new List<ElementId> { cat.Id });
-          }
-          return filter;
+        filter = new ElementMulticategoryFilter(Categories.wallCategories);
       }
+      else if (element is Column)
+      {
+        filter = new ElementMulticategoryFilter(Categories.columnCategories);
+      }
+      else if (element is Beam || element is Brace)
+      {
+        filter = new ElementMulticategoryFilter(Categories.beamCategories);
+      }
+      else if (element is Duct)
+      {
+        filter = new ElementMulticategoryFilter(Categories.ductCategories);
+      }
+      else if (element is Floor)
+      {
+        filter = new ElementMulticategoryFilter(Categories.floorCategories);
+      }
+      else if (element is Roof)
+      {
+        filter = new ElementCategoryFilter(BuiltInCategory.OST_Roofs);
+      }
+      else
+      {
+        //try get category from the parameters
+        if (element["category"] != null)
+        {
+          var cat = Doc.Settings.Categories.Cast<Category>().FirstOrDefault(x => x.Name == element["category"].ToString());
+          if (cat != null)
+            filter = new ElementMulticategoryFilter(new List<ElementId> { cat.Id });
+        }
+      }
+      return filter;
     }
 
     #endregion
@@ -699,191 +618,12 @@ namespace Objects.Converter.Revit
       return Doc.GetElement(@ref.ApplicationGeneratedId);
     }
 
-    public List<string> SubdividePropertyName(string propertyName)
-    {
-      if (String.IsNullOrEmpty(propertyName)) return new List<string> { "" };
-
-      var splitNames = propertyName.Split(':').ToList();
-
-      return splitNames.Any() ? splitNames : new List<string> { "" };
-    }
-
-    public string ParseFamilyNameFromProperty(string propertyName)
-    {
-      var splitNames = SubdividePropertyName(propertyName);
-
-      return splitNames.FirstOrDefault();
-    }
-
-    public string ParseFamilyTypeFromProperty(string propertyName)
-    {
-      var splitNames = SubdividePropertyName(propertyName);
-
-      return splitNames.LastOrDefault();
-    }
-
-    public Base AddSpeckleParameters(Base parameters, List<string> names, List<object> values)
-    {
-      if (names.Count != values.Count) return null;
-
-      if (parameters == null) parameters = new Base();
-
-      for(var i = 0; i < names.Count; i++)
-      {
-        var val = new Parameter(names[i], values[i]);
-        parameters[names[i]] = val;
-      }
-
-      return parameters;
-    }
-
-    public Base CreateSpeckleSectionParameter(string speckleColumnFamily, string speckleColumnType)
-    {
-      var param = new Base();
-
-      var key = "Section Family";
-      var val = new Objects.BuiltElements.Revit.Parameter("Section Family", speckleColumnFamily);
-      param[key] = val;
-
-      key = "Section Type";
-      val = new Objects.BuiltElements.Revit.Parameter("Section Type", speckleColumnType);
-      param[key] = val;
-
-      return param;
-    }
-
     #endregion
 
-    #region Section Mapping
-    const string MappingStreamId = "Default Section Mapping Stream";
-
-    private static SQLiteTransport MappingStorage = new SQLiteTransport(scope: "Mappings");
-
-    private bool _useMappings;
-    private bool UseMappings
+    #region Project Base Point
+    private class BetterBasePoint
     {
-      get { return Settings.ContainsKey("section-mapping") && Settings["section-mapping"] != null; }
-    }
-
-    private Base _mappingData;
-    private Base MappingData
-    {
-      get
-      {
-        if (_mappingData == null)
-        {
-          // get from settings
-          _mappingData = UseMappings ? GetMappingData() : null;
-        }
-        return _mappingData;
-      }
-    }
-
-    private string GetProfileNameFromMapping(string family, string type, bool isFraming = true, string target = "grs")
-    {
-      var targetSection = MappingData[$"{target}"] as Base;
-      var sectionList = ((List<object>)targetSection["data"]).Select(m => m as Dictionary<string, object>).ToList();
-      var sectionDict = sectionList.Select(m => m as Dictionary<string, object>).ToList();
-
-      var key = isFraming ? $"familyFraming" : "familyColumn";
-      var section = sectionDict.Where(x => (string)x[key] == family && (string)x["familyType"] == type).FirstOrDefault();
-      var profileName = section != null ? (string)section["speckleSection"] : null;
-
-      return profileName;
-    }
-
-    private Dictionary<string, string> GetMappingFromProfileName(string name, bool isFraming = true, string target = "grs")
-    {
-      Dictionary<string, string> mappingData = new Dictionary<string, string>();
-
-      var key = Settings["section-mapping"];
-      var hash = $"{key}-mappings";
-      var objString = MappingStorage.GetObject(hash);
-
-      var objBase = JsonConvert.DeserializeObject<Base>(objString);
-      var serializerV2 = new BaseObjectDeserializerV2();
-      var data = serializerV2.Deserialize(objString);
-
-      //var mappings = MappingData["mappings"];
-
-      var mappingsList = ((List<object>)data["data"]).Select(m => m as Dictionary<string, object>).ToList();
-      var mappingDict = mappingsList.Select(m => m as Dictionary<string, object>).ToList();
-      var mapping = mappingDict.Where(x => (string)x["section"] == name).FirstOrDefault();
-      if (mapping != null && mapping.ContainsKey(target))
-      {
-        var targetSection = MappingData[target] as Base;
-        var sectionList = ((List<object>)targetSection["data"]).Select(m => m as Dictionary<string, object>).ToList();
-        var sectionDict = sectionList.Select(m => m as Dictionary<string, object>).ToList();
-        var section = sectionDict.Where(x => (long)x["key"] == (long)mapping[target]).FirstOrDefault();
-
-        //var targetFamily = isFraming ? section["familyFraming"] : section["familyColumn"];
-        var targetFamilyType = section["familyType"];
-        mappingData["familyFraming"] = section["familyFraming"] as String;
-        mappingData["familyColumn"] = section["familyColumn"] as String;
-        mappingData["familyType"] = section["familyType"] as String;
-      }
-      else
-      {
-        return null;
-      }
-
-      return mappingData;
-    }
-
-    private Base GetMappingData()
-    {
-      var key = Settings["section-mapping"];
-      const string mappingsBranch = "mappings";
-      const string sectionBranchPrefix = "sections";
-
-      var mappingData = new Base();
-
-      var hashes = MappingStorage.GetAllHashes();
-      var matches = hashes.Where(h => h.Contains(key)).ToList();
-      foreach (var match in matches)
-      {
-        var objString = MappingStorage.GetObject(match);
-        var serializerV2 = new BaseObjectDeserializerV2();
-        var data = serializerV2.Deserialize(objString);
-
-        if (match.Contains($"{key}-{mappingsBranch}"))
-        {
-          mappingData[$"{mappingsBranch}"] = data;
-        }
-        else if (match.Contains(sectionBranchPrefix))
-        {
-          var name = match.Replace($"{key}-{sectionBranchPrefix}/", "");
-          mappingData[$"{name}"] = data;
-        }
-      }
-
-      Report.Log($"Using section mapping data from stream: {key}");
-
-      return mappingData;
-    }
-
-    #endregion
-
-    #region Reference Point
-
-    // CAUTION: these strings need to have the same values as in the connector bindings
-    const string InternalOrigin = "Internal Origin (default)";
-    const string ProjectBase = "Project Base";
-    const string Survey = "Survey";
-
-    private DB.Transform _transform;
-    private DB.Transform ReferencePointTransform
-    {
-      get
-      {
-        if (_transform == null)
-        {
-          // get from settings
-          var referencePointSetting = Settings.ContainsKey("reference-point") ? Settings["reference-point"] : string.Empty;
-          _transform = GetReferencePointTransform(referencePointSetting);
-        }
-        return _transform;
-      }
+      public Transform TotalTransform { get; set; } = Transform.Identity;
     }
 
     ////////////////////////////////////////////////
@@ -893,45 +633,30 @@ namespace Objects.Converter.Revit
     /// The BasePoint non-shared properties are based off of the internal origin.
     /// Also, survey point does NOT have an rotation parameter.
     ////////////////////////////////////////////////
-    private DB.Transform GetReferencePointTransform(string type)
+
+    private BetterBasePoint _basePoint;
+    private BetterBasePoint BasePoint
     {
-      // get the correct base point from settings
-      var referencePointTransform = DB.Transform.Identity;
-
-      var points = new FilteredElementCollector(Doc).OfClass(typeof(BasePoint)).Cast<BasePoint>().ToList();
-      var projectPoint = points.Where(o => o.IsShared == false).FirstOrDefault();
-      var surveyPoint = points.Where(o => o.IsShared == true).FirstOrDefault();
-
-      switch (type)
+      get
       {
-        case ProjectBase:
-          if (projectPoint != null)
+        if (_basePoint == null)
+        {
+          // try and get the project base point (is shared = false) and survey point (is shared = true)
+          BasePoint bp = new FilteredElementCollector(Doc).OfClass(typeof(BasePoint)).Cast<BasePoint>().Where(o => o.IsShared == false).FirstOrDefault();
+          if (bp == null)
+            _basePoint = new BetterBasePoint();
+          else 
           {
 #if REVIT2019
-            var point = projectPoint.get_BoundingBox(null).Min;
+            var point = bp.get_BoundingBox(null).Min;
 #else
-            var point = projectPoint.Position;
+            var point = bp.Position;
 #endif
-            referencePointTransform = DB.Transform.CreateTranslation(point); // rotation to base point is registered by survey point
+            _basePoint = new BetterBasePoint { TotalTransform = Transform.CreateTranslation(point).Inverse }; // rotation already accounted for
           }
-          break;
-        case Survey:
-          if (surveyPoint != null)
-          {
-#if REVIT2019
-            var point = surveyPoint.get_BoundingBox(null).Min;
-#else
-            var point = surveyPoint.Position;
-#endif
-            var angle = projectPoint.get_Parameter(BuiltInParameter.BASEPOINT_ANGLETON_PARAM).AsDouble(); // !! retrieve survey point angle from project base point
-            referencePointTransform = DB.Transform.CreateTranslation(point).Multiply(DB.Transform.CreateRotation(XYZ.BasisZ, angle));
-          }
-          break;
-        default:
-          break;
+        }
+        return _basePoint;
       }
-
-      return referencePointTransform;
     }
 
     /// <summary>
@@ -941,7 +666,7 @@ namespace Objects.Converter.Revit
     /// <returns></returns>
     public XYZ ToExternalCoordinates(XYZ p, bool isPoint)
     {
-      return (isPoint) ? ReferencePointTransform.Inverse.OfPoint(p) : ReferencePointTransform.Inverse.OfVector(p);
+      return (isPoint) ? BasePoint.TotalTransform.OfPoint(p) : BasePoint.TotalTransform.OfVector(p);
     }
 
     /// <summary>
@@ -951,7 +676,7 @@ namespace Objects.Converter.Revit
     /// <returns></returns>
     public XYZ ToInternalCoordinates(XYZ p, bool isPoint)
     {
-      return (isPoint) ? ReferencePointTransform.OfPoint(p) : ReferencePointTransform.OfVector(p);
+      return (isPoint) ? BasePoint.TotalTransform.Inverse.OfPoint(p) : BasePoint.TotalTransform.Inverse.OfVector(p);
     }
     #endregion
 
@@ -1007,14 +732,14 @@ namespace Objects.Converter.Revit
         //move curves to Z = 0, needed for shafts!
         curveA.MakeBound(0, 1);
         var z = curveA.GetEndPoint(0).Z;
-        var cA = curveA.CreateTransformed(DB.Transform.CreateTranslation(new XYZ(0, 0, -z)));
+        var cA = curveA.CreateTransformed(Transform.CreateTranslation(new XYZ(0, 0, -z)));
 
         foreach (var curveB in curveArrayB)
         {
           //move curves to Z = 0, needed for shafts!
           curveB.MakeBound(0, 1);
           z = curveB.GetEndPoint(0).Z;
-          var cB = curveB.CreateTransformed(DB.Transform.CreateTranslation(new XYZ(0, 0, -z)));
+          var cB = curveB.CreateTransformed(Transform.CreateTranslation(new XYZ(0, 0, -z)));
 
           var result = cA.Intersect(cB);
           if (result != SetComparisonResult.BothEmpty && result != SetComparisonResult.Disjoint)
@@ -1029,6 +754,11 @@ namespace Objects.Converter.Revit
     #endregion
 
     #region misc
+    public string Replace(string s, char[] separators, string newVal)
+    {
+      string[] _string = s.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+      return String.Join(newVal, _string);
+    }
 
     public string GetTemplatePath(string templateName)
     {
@@ -1086,125 +816,23 @@ namespace Objects.Converter.Revit
       }
     }
 
-    #region materials
     public RenderMaterial GetElementRenderMaterial(DB.Element element)
     {
+      RenderMaterial material = null;
       var matId = element.GetMaterialIds(false).FirstOrDefault();
 
       if (matId == null)
       {
         // TODO: Fallback to display color or something? 
-        return null;
-      }
-
-      var revitMaterial = element.Document.GetElement(matId) as Material;
-      return RenderMaterialToSpeckle(revitMaterial);
-    }
-
-    public static RenderMaterial RenderMaterialToSpeckle(Material revitMaterial)
-    {
-      if (revitMaterial == null)
-        return null;
-      RenderMaterial material = new RenderMaterial()
-      {
-        name = revitMaterial.Name,
-        opacity = 1 - (revitMaterial.Transparency / 100d),
-        //metalness = revitMaterial.Shininess / 128d, //Looks like these are not valid conversions
-        //roughness = 1 - (revitMaterial.Smoothness / 100d),
-        diffuse = System.Drawing.Color.FromArgb(revitMaterial.Color.Red, revitMaterial.Color.Green, revitMaterial.Color.Blue).ToArgb()
-      };
-
-      return material;
-    }
-
-    public ElementId RenderMaterialToNative(RenderMaterial speckleMaterial)
-    {
-      if (speckleMaterial == null) return ElementId.InvalidElementId;
-
-      // Try and find an existing material
-      var existing = new FilteredElementCollector(Doc)
-        .OfClass(typeof(Material))
-        .Cast<Material>()
-        .FirstOrDefault(m => string.Equals(m.Name, speckleMaterial.name, StringComparison.CurrentCultureIgnoreCase));
-
-      if (existing != null) return existing.Id;
-
-      // Create new material
-      ElementId materialId = DB.Material.Create(Doc, speckleMaterial.name);
-      Material mat = Doc.GetElement(materialId) as Material;
-
-      var sysColor = System.Drawing.Color.FromArgb(speckleMaterial.diffuse);
-      mat.Color = new DB.Color(sysColor.R, sysColor.G, sysColor.B);
-      mat.Transparency = (int)((1d - speckleMaterial.opacity) * 100d);
-
-      return materialId;
-    }
-
-    /// <summary>
-    /// Retrieves the material from assigned system type for mep elements
-    /// </summary>
-    /// <param name="e">Revit element to parse</param>
-    /// <returns></returns>
-    public static RenderMaterial GetMEPSystemMaterial(Element e)
-    {
-      ElementId idType = ElementId.InvalidElementId;
-
-      if (e is DB.MEPCurve dt)
-      {
-        var system = dt.MEPSystem;
-        if (system != null)
-        {
-          idType = system.GetTypeId();
-        }
-      }
-      else if (IsSupportedMEPCategory(e))
-      {
-        MEPModel m = ((DB.FamilyInstance)e).MEPModel;
-
-        if (m != null && m.ConnectorManager != null)
-        {
-          //retrieve the first material from first connector. Could go wrong, but better than nothing ;-)
-          foreach (Connector item in m.ConnectorManager.Connectors)
-          {
-            var system = item.MEPSystem;
-            if (system != null)
-            {
-              idType = system.GetTypeId();
-              break;
-            }
-          }
-        }
-      }
-
-      if (idType == ElementId.InvalidElementId) return null;
-
-      if (e.Document.GetElement(idType) is MEPSystemType mechType)
-      {
-        var mat = e.Document.GetElement(mechType.MaterialId) as Material;
-        RenderMaterial material = RenderMaterialToSpeckle(mat);
-
         return material;
       }
 
-      return null;
+      var revitMaterial = Doc.GetElement(matId) as Material;
+      material = new RenderMaterial();
+      material.opacity = 1 - revitMaterial.Transparency / 100f;
+      material.diffuse = System.Drawing.Color.FromArgb(revitMaterial.Color.Red, revitMaterial.Color.Green, revitMaterial.Color.Blue).ToArgb();
+
+      return material;
     }
-
-    private static bool IsSupportedMEPCategory(Element e)
-    {
-      var categories = e.Document.Settings.Categories;
-
-      var supportedCategories = new[]
-      {
-            BuiltInCategory.OST_PipeFitting,
-            BuiltInCategory.OST_DuctFitting,
-            BuiltInCategory.OST_DuctAccessory,
-            BuiltInCategory.OST_PipeAccessory,
-            //BuiltInCategory.OST_MechanicalEquipment,
-          };
-
-      return supportedCategories.Any(cat => e.Category.Id == categories.get_Item(cat).Id);
-    }
-
-    #endregion
   }
 }

@@ -10,17 +10,16 @@ namespace ConnectorGrasshopperUtils
 {
   public static class CSOUtils
   {
-    public static List<Type> ListAvailableTypes(bool includeDeprecated = true)
+    public static List<Type> ListAvailableTypes()
     {
       // exclude types that don't have any constructors with a SchemaInfo attribute
       return KitManager.Types.Where(
-        x => GetValidConstr(x, includeDeprecated).Any()).OrderBy(x => x.Name).ToList();
+        x => GetValidConstr(x).Any()).OrderBy(x => x.Name).ToList();
     }
 
-    public static IEnumerable<ConstructorInfo> GetValidConstr(Type type, bool includeDeprecated = true)
+    public static IEnumerable<ConstructorInfo> GetValidConstr(Type type)
     {
-      
-      return type.GetConstructors().Where(y => y.GetCustomAttribute<SchemaInfo>() != null && (!includeDeprecated || y.GetCustomAttribute<SchemaDeprecated>() == null));
+      return type.GetConstructors().Where(y => y.GetCustomAttribute<SchemaInfo>() != null);
     }
 
     public static ConstructorInfo FindConstructor(string ConstructorName, string TypeName)
@@ -31,6 +30,7 @@ namespace ConnectorGrasshopperUtils
 
       var constructors = GetValidConstr(type);
       var constructor = constructors.FirstOrDefault(x => MethodFullName(x) == ConstructorName);
+
       return constructor;
     }
 

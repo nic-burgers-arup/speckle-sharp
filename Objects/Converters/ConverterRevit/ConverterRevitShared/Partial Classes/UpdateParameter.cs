@@ -35,7 +35,7 @@ namespace Objects.Converter.Revit
 
       if (element == null)
       {
-        Report.LogConversionError(new System.Exception($"Could not find element to update: Element Id = {paramUpdater.elementId}"));
+        ConversionErrors.Add(new System.Exception($"Could not find element to update: Element Id = {paramUpdater.elementId}"));
         return;
       }
 

@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using ConnectorGrasshopper.Extras;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
 using Speckle.Core.Api;
 using Speckle.Core.Credentials;
-using Logging = Speckle.Core.Logging;
+using Speckle.Core.Logging;
 
 namespace ConnectorGrasshopper.Streams
 {
@@ -46,9 +47,10 @@ namespace ConnectorGrasshopper.Streams
       pManager.AddGenericParameter("Branches", "B", "List of branches for this stream", GH_ParamAccess.tree);
     }
 
+    private Stream stream;
     private Exception error;
     private Dictionary<GH_Path, Stream> streams;
-    private bool tooManyItems;
+    private bool tooManyItems = false;
     protected override void SolveInstance(IGH_DataAccess DA)
     {
       if (error != null)
@@ -56,7 +58,7 @@ namespace ConnectorGrasshopper.Streams
         Message = null;
         AddRuntimeMessage(GH_RuntimeMessageLevel.Error, error.Message);
         error = null;
-        streams = null;
+        stream = null;
       }
       else if (streams == null)
       {
@@ -66,11 +68,7 @@ namespace ConnectorGrasshopper.Streams
           Message = null;
           return;
         }
-
-
-
         Message = "Fetching";
-
         if (ghStreamTree.DataCount == 0)
         {
           AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Input S failed to collect data.");
@@ -102,19 +100,15 @@ namespace ConnectorGrasshopper.Streams
                   return;
                 }
 
-                Account account = null;
-                try
+                var idWrapper = item.Value;
+                var userId = item.Value.UserId;
+                var account = string.IsNullOrEmpty(userId) ? AccountManager.GetAccounts().FirstOrDefault(a => a.serverInfo.url == idWrapper.ServerUrl) :
+                  AccountManager.GetAccounts().FirstOrDefault(a => a.userInfo.id == userId);
+                if (account == null)
                 {
-                  account = item.Value.GetAccount().Result;
-                }
-                catch (Exception e)
-                {
-                  error = e.InnerException ?? e;
+                  AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Could not find default account in this machine. Use the Speckle Manager to add an account.");
                   return;
                 }
-
-                Logging.Analytics.TrackEvent(account, Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Stream Details" } });
-
                 var client = new Client(account);
 
                 var task = client.StreamGet(item.Value?.StreamId);
@@ -186,6 +180,12 @@ namespace ConnectorGrasshopper.Streams
         DA.SetDataTree(7, branches);
         streams = null;
       }
+    }
+
+    protected override void BeforeSolveInstance()
+    {
+      Tracker.TrackPageview(Tracker.STREAM_DETAILS);
+      base.BeforeSolveInstance();
     }
   }
 }

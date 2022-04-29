@@ -18,7 +18,7 @@
 				FontFamily="{DynamicResource MaterialDesignFont}"
 				DataContext="{StaticResource MainWindowViewModel}"
         mc:Ignorable="d" FontSize="13" WindowStartupLocation="CenterScreen"
-        Title="{Binding Title}" Height="774" Width="740" IsEnabled="{Binding MainWindowEnabled, Mode=OneWay}" Icon="/ConnectorGSA;component/icon.ico">
+        Title="{Binding Title}" Height="774" Width="700" IsEnabled="{Binding MainWindowEnabled, Mode=OneWay}" Icon="/ConnectorGSA;component/icon.ico">
 	<Window.Resources>
 		<localUtilities:EnumConverter x:Key="EnumConverter" />
 	</Window.Resources>
@@ -105,6 +105,8 @@
                 <MenuItem Header="Copy streamId" Command="{Binding CopyStreamIdCommand}" CommandParameter="Server"/>
 								<Separator />
                 <MenuItem Header="View stream" Command="{Binding ViewStreamCommand}" CommandParameter="Server"/>
+                <MenuItem Header="View stream data" Command="{Binding ViewStreamDataCommand}" CommandParameter="Server"/>
+                <MenuItem Header="View object data" Command="{Binding ViewObjectDataCommand}" CommandParameter="Server"/>
               </ContextMenu>
 						</DataGrid.ContextMenu>
 						<DataGrid.CellStyle>
@@ -139,7 +141,7 @@
 					<Button Grid.Row="0" Content="New File" Padding="10 5" Margin="5 10 5 5" Command="{Binding NewFileCommand}"/>
           <Button Grid.Row="1" Content="Open File" Padding="10 5" Margin="5 5 5 10" Command="{Binding OpenFileCommand}" />
 					<StackPanel Grid.Row="2" VerticalAlignment="Center">
-						<TextBlock Text="{Binding CurrentlyOpenFileName, Mode=OneWay}" Margin="5" />
+						<TextBlock Text="{Binding CurrentlyOpenFileName}" Margin="5" />
 						<Button Content="Save File" Padding="5" Margin="10 5" HorizontalAlignment="Left" 
 										Command="{Binding SaveFileCommand}"/>
           </StackPanel>
@@ -179,13 +181,11 @@
 												 IsChecked="{Binding Path=SendLayer, Converter={StaticResource EnumConverter}, ConverterParameter=Design}" Margin="5"/>
             <RadioButton Grid.Row="0" Grid.Column="3" GroupName="SendLayer" Content="Both" Padding="5" VerticalContentAlignment="Center"
 												 IsChecked="{Binding Path=SendLayer, Converter={StaticResource EnumConverter}, ConverterParameter=Both}" Margin="5"/>
-            <!--
             <RadioButton Grid.Row="1" Grid.Column="2" GroupName="SendStreamMethod" Content="Continuous" Padding="5" VerticalContentAlignment="Center"
 												 IsChecked="{Binding Path=SendStreamMethod, Converter={StaticResource EnumConverter}, ConverterParameter=Continuous}" Margin="5"/>
             <RadioButton Grid.Row="1" Grid.Column="3" GroupName="SendStreamMethod" Content="Single" Padding="5" VerticalContentAlignment="Center"
 												 IsChecked="{Binding Path=SendStreamMethod, Converter={StaticResource EnumConverter}, ConverterParameter=Single}" Margin="5"/>
             <TextBlock Grid.Row="1" Grid.Column="1" Text="Streaming method:" HorizontalAlignment="Right" Padding="5" Margin="5"/>
-            -->
           </Grid>
           <!-- Stream list -->
 					<DataGrid Grid.Row="1"
@@ -228,6 +228,8 @@
                 <MenuItem Header="Copy streamId" Command="{Binding CopyStreamIdCommand}" CommandParameter="Sender" />
 								<Separator />
                 <MenuItem Header="View stream" Command="{Binding ViewStreamCommand}" CommandParameter="Sender" />
+                <MenuItem Header="View stream data" Command="{Binding ViewStreamDataCommand}" CommandParameter="Sender" />
+                <MenuItem Header="View object data" Command="{Binding ViewObjectDataCommand}" CommandParameter="Sender" />
 							</ContextMenu>
 						</DataGrid.ContextMenu>
 						<DataGrid.CellStyle>
@@ -276,12 +278,12 @@
 												 IsChecked="{Binding Path=ReceiveLayer, Converter={StaticResource EnumConverter}, ConverterParameter=Design}" Margin="5"/>
 						<RadioButton Grid.Row="0" Grid.Column="3" GroupName="ReceiveLayer" Content="Analysis" Padding="5" VerticalContentAlignment="Center"
 												 IsChecked="{Binding Path=ReceiveLayer, Converter={StaticResource EnumConverter}, ConverterParameter=Analysis}" Margin="5"/>
+            -->
 						<RadioButton Grid.Row="1" Grid.Column="2" GroupName="ReceiveStreamMethod" Content="Continuous" Padding="5" VerticalContentAlignment="Center"
 												 IsChecked="{Binding Path=ReceiveStreamMethod, Converter={StaticResource EnumConverter}, ConverterParameter=Continuous}" Margin="5"/>
 						<RadioButton Grid.Row="1" Grid.Column="3" GroupName="ReceiveStreamMethod" Content="Single" Padding="5" VerticalContentAlignment="Center"
 												 IsChecked="{Binding Path=ReceiveStreamMethod, Converter={StaticResource EnumConverter}, ConverterParameter=Single}" Margin="5"/>
             <TextBlock Grid.Row="1" Grid.Column="1" Text="Streaming method:" HorizontalAlignment="Right" Padding="5" Margin="5" />
-            -->
           </Grid>
 					<Grid Grid.Row="1">
 						<Grid.ColumnDefinitions>
@@ -312,6 +314,8 @@
                 <MenuItem Header="Copy streamId" Command="{Binding CopyStreamIdCommand}" CommandParameter="Receiver" />
 								<Separator />
                 <MenuItem Header="View stream" Command="{Binding ViewStreamCommand}" CommandParameter="Receiver" />
+                <MenuItem Header="View stream data" Command="{Binding ViewStreamDataCommand}" CommandParameter="Receiver" />
+                <MenuItem Header="View object data" Command="{Binding ViewObjectDataCommand}" CommandParameter="Receiver" />
               </ContextMenu>
 						</DataGrid.ContextMenu>
 						<DataGrid.CellStyle>
@@ -361,12 +365,7 @@
                   <ComboBox ItemsSource="{Binding CoincidentNodeAllowanceUnitOptions}" SelectedValue="{Binding CoincidentNodeAllowanceUnit}" 
 														VerticalContentAlignment="Center"/>
                 </UniformGrid>
-                                <UniformGrid Columns="2">
-                                    <TextBlock Text="Mapping stream: " Margin="0 5"/>
-                                    <ComboBox ItemsSource="{Binding MappingStreamOptions}" SelectedValue="{Binding MappingStream}" 
-														VerticalContentAlignment="Center"/>
-                                </UniformGrid>
-                            </StackPanel>
+              </StackPanel>
             </GroupBox>
             <GroupBox Header="Logging" Margin="5">
               <UniformGrid Columns="2" >

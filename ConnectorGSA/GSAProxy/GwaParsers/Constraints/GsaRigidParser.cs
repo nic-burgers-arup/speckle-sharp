@@ -69,8 +69,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       }
       else
       {
-        //For now assume that an empty list means "all"
-        return "all";
+        return "";
       }
     }
     private string AddStage()
@@ -81,8 +80,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       }
       else
       {
-        //For now assume that an empty list means "all"
-        return "all";
+        return "";
       }
     }
     #endregion
@@ -149,7 +147,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       var entityItems = v.Split(' ');
       if (entityItems.Count() == 1 && entityItems.First().Equals("all", StringComparison.InvariantCultureIgnoreCase))
       {
-        record.Stage = Instance.GsaModel.Cache.LookupIndices<GsaAnalStage>().ToList();
+        record.Stage = Instance.GsaModel.LookupIndices<GsaAnalStage>().ToList();
       }
       else
       {

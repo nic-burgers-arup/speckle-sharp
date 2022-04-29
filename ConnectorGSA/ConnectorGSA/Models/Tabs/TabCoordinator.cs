@@ -65,26 +65,26 @@ namespace ConnectorGSA.Models
     /*
     internal bool RetrieveSavedSidStreamRecords()
     {
-      ReceiverTab.ReceiverStreamStates.Clear();
-      SenderTab.SenderStreamStates.Clear();
+      ReceiverTab.ReceiverSidRecords.Clear();
+      SenderTab.SenderSidRecords.Clear();
 
-      if (HelperFunctions.GetStreamStates(Account.EmailAddress, Account.ServerUrl, GSA.App.Proxy, out var receiverStreamInfo, out var senderStreamInfo))
+      if (HelperFunctions.GetSidSpeckleRecords(Account.EmailAddress, Account.ServerUrl, GSA.App.Proxy, out var receiverStreamInfo, out var senderStreamInfo))
       {
         if (receiverStreamInfo != null && receiverStreamInfo.Count > 0)
         {
           for (int i = 0; i < receiverStreamInfo.Count; i++)
           {
-            ReceiverTab.ReceiverStreamStates.Add(receiverStreamInfo[i]);
+            ReceiverTab.ReceiverSidRecords.Add(receiverStreamInfo[i]);
           }
-          ReceiverTab.StreamStatesToStreamList();
+          ReceiverTab.SidRecordsToStreamList();
         }
         if (senderStreamInfo != null && senderStreamInfo.Count > 0)
         {
           for (int i = 0; i < senderStreamInfo.Count; i++)
           {
-            SenderTab.SenderStreamStates.Add(senderStreamInfo[i]);
+            SenderTab.SenderSidRecords.Add(senderStreamInfo[i]);
           }
-          SenderTab.StreamStatesToStreamList();
+          SenderTab.SidRecordsToStreamList();
         }
       }
       return true;
@@ -104,10 +104,10 @@ namespace ConnectorGSA.Models
 
       sids.RemoveAll(S => S[0] == "SpeckleSender&" + key || S[0] == "SpeckleReceiver&" + key || string.IsNullOrEmpty(S[1]));
 
-      if (SenderTab.SenderStreamStates != null)
+      if (SenderTab.SenderSidRecords != null)
       {
         var senderList = new List<string>();
-        foreach (var si in SenderTab.SenderStreamStates)
+        foreach (var si in SenderTab.SenderSidRecords)
         {
           senderList.AddRange(new[] { si.Bucket, si.StreamId, si.ClientId });
         }
@@ -117,10 +117,10 @@ namespace ConnectorGSA.Models
         }
       }
 
-      if (ReceiverTab.ReceiverStreamStates != null)
+      if (ReceiverTab.ReceiverSidRecords != null)
       {
         var receiverList = new List<string>();
-        foreach (var si in ReceiverTab.ReceiverStreamStates)
+        foreach (var si in ReceiverTab.ReceiverSidRecords)
         {
           receiverList.AddRange(new[] { si.StreamId, si.Bucket });
         }
@@ -130,13 +130,13 @@ namespace ConnectorGSA.Models
         }
       }
 
-      string StreamState = "";
+      string sidRecord = "";
       foreach (string[] s in sids)
       {
-        StreamState += "{" + s[0] + ":" + s[1] + "}";
+        sidRecord += "{" + s[0] + ":" + s[1] + "}";
       }
 
-      return GSA.App.Proxy.SetTopLevelSid(StreamState);
+      return GSA.App.Proxy.SetTopLevelSid(sidRecord);
       */
       return true;
     }

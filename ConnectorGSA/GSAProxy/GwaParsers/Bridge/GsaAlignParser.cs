@@ -1,5 +1,4 @@
 ﻿using Speckle.GSA.API.GwaSchema;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -52,16 +51,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       //ALIGN | num | name | surface | num ( | chain | curv )
       AddItems(ref items, record.Name, record.GridSurfaceIndex, record.NumAlignmentPoints);
 
-      int alignmentPoints = 0;
-      if (record.NumAlignmentPoints.HasValue)
-      {
-        alignmentPoints = Math.Min((int)Math.Min(record.Chain.Count(), record.Curv.Count()), record.NumAlignmentPoints.Value);
-      }
-      else if (record.Chain.Any() && record.Curv.Any())
-      {
-        alignmentPoints = Math.Min(record.Chain.Count(), record.Curv.Count());
-      }
-      for (var i = 0; i < alignmentPoints; i++)
+      for (var i = 0; i < record.NumAlignmentPoints; i++)
       {
         items.Add(record.Chain[i].ToString());
         items.Add(record.Curv[i].ToString());

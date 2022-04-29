@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using Dynamo.Graph.Nodes;
@@ -22,8 +21,7 @@ namespace Speckle.ConnectorDynamo.Functions.Developer
       if (string.IsNullOrEmpty(basePath))
         basePath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\Speckle\\DiskTransportFiles\\";
 
-      Analytics.TrackEvent(Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Disk Transport" } });
-
+      Tracker.TrackPageview("transports", "disk");
       return new DiskTransport.DiskTransport(basePath);
     }
 
@@ -35,7 +33,7 @@ namespace Speckle.ConnectorDynamo.Functions.Developer
     [NodeCategory("Transports")]
     public static object MemoryTransport(string name = "Memory")
     {
-      Analytics.TrackEvent(Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Memory Transport" } });
+      Tracker.TrackPageview("transports", "memory");
       return new MemoryTransport { TransportName = name };
     }
 
@@ -47,7 +45,7 @@ namespace Speckle.ConnectorDynamo.Functions.Developer
     [NodeCategory("Transports")]
     public static object ServerTransport(StreamWrapper stream)
     {
-
+      Tracker.TrackPageview("transports", "server");
       var userId = stream.UserId;
       Core.Credentials.Account account;
 
@@ -69,9 +67,6 @@ namespace Speckle.ConnectorDynamo.Functions.Developer
 
       if (error != null) throw error;
 
-      Analytics.TrackEvent(Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Server Transport" } });
-
-
       return new ServerTransport(account, stream.StreamId);
     }
 
@@ -92,8 +87,7 @@ namespace Speckle.ConnectorDynamo.Functions.Developer
       if (string.IsNullOrEmpty(scope))
         scope = "UserLocalDefaultDb";
 
-      Analytics.TrackEvent(Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "SQLite Transport" } });
-
+      Tracker.TrackPageview("transports", "server");
       return new SQLiteTransport(basePath, applicationName, scope);
     }
   }

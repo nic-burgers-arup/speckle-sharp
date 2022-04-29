@@ -1,6 +1,4 @@
-﻿using Speckle.GSA.API.GwaSchema;
-
-namespace Speckle.GSA.API
+﻿namespace Speckle.GSA.API
 {
   public enum GSALayer
   {
@@ -37,8 +35,7 @@ namespace Speckle.GSA.API
     Node = 1,
     Element1d = 2,
     Element2d = 3,
-    Assembly = 4,
-    Global = 5
+    Assembly = 4
   }
 
   public enum ResultType
@@ -56,8 +53,6 @@ namespace Speckle.GSA.API
     Element2dProjectedStressBottom = 10,
     Element2dProjectedStressMiddle = 11,
     Element2dProjectedStressTop = 12,
-    AssemblyForcesAndMoments = 13,
-    TotalLoadsAndReactions = 14,
-    DynamicSummary = 15
+    AssemblyForcesAndMoments = 13
   }
 }

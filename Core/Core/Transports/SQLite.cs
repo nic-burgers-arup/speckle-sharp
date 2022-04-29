@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
@@ -212,8 +213,7 @@ namespace Speckle.Core.Transports
         }
       }
 
-      if (OnProgressAction != null)
-        OnProgressAction(TransportName, saved);
+      OnProgressAction(TransportName, saved);
 
       if (CancellationToken.IsCancellationRequested)
       {
@@ -335,28 +335,6 @@ namespace Speckle.Core.Transports
     }
 
     /// <summary>
-    /// Returns all the object hashes in the store.
-    /// </summary>
-    /// <returns></returns>
-    public IEnumerable<string> GetAllHashes()
-    {
-      if (CancellationToken.IsCancellationRequested) yield break; // Check for cancellation
-
-      using var c = new SQLiteConnection(ConnectionString);
-      c.Open();
-
-      using var command = new SQLiteCommand(c);
-      command.CommandText = "SELECT hash FROM objects";
-
-      using var reader = command.ExecuteReader();
-      while (reader.Read())
-      {
-        if (CancellationToken.IsCancellationRequested) yield break; // Check for cancellation
-        yield return reader.GetString(0);
-      }
-    }
-
-    /// <summary>
     /// Deletes an object. Note: do not use for any speckle object transport, as it will corrupt the database.
     /// </summary>
     /// <param name="hash"></param>
@@ -371,28 +349,6 @@ namespace Speckle.Core.Transports
         {
           command.CommandText = "DELETE FROM objects WHERE hash = @hash";
           command.Parameters.AddWithValue("@hash", hash);
-          command.ExecuteNonQuery();
-        }
-      }
-    }
-
-    /// <summary>
-    /// Updates an object.
-    /// </summary>
-    /// <param name="hash"></param>
-    /// <param name="serializedObject"></param>
-    public void UpdateObject(string hash, string serializedObject)
-    {
-      if (CancellationToken.IsCancellationRequested) return;
-
-      using (var c = new SQLiteConnection(ConnectionString))
-      {
-        c.Open();
-        using (var command = new SQLiteCommand(c))
-        {
-          command.CommandText = $"REPLACE INTO objects(hash, content) VALUES(@hash, @content)";
-          command.Parameters.AddWithValue("@hash", hash);
-          command.Parameters.AddWithValue("@content", serializedObject);
           command.ExecuteNonQuery();
         }
       }

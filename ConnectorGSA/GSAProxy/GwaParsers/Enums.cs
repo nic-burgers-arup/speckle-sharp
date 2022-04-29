@@ -84,8 +84,6 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
     TASK,
     [StringValue("ANAL_STAGE")]
     ANAL_STAGE,
-    [StringValue("ANAL_STAGE_PROP")]
-    ANAL_STAGE_PROP,
     [StringValue("COMBINATION")]
     COMBINATION,
     [StringValue("GEN_REST")]
@@ -96,8 +94,6 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
     INF_BEAM,
     [StringValue("INF_NODE")]
     INF_NODE,
-    [StringValue("LOAD_1D_THERMAL")]
-    LOAD_1D_THERMAL,
     [StringValue("LOAD_2D_FACE")]
     LOAD_2D_FACE,
     [StringValue("LOAD_2D_THERMAL")]
@@ -117,12 +113,6 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
     [StringValue("USER_VEHICLE")]
     USER_VEHICLE,
     [StringValue("UNIT_DATA")]
-    UNIT_DATA,
-    [StringValue("TOL")]
-    TOL,
-    [StringValue("SPEC_STEEL_DESIGN")]
-    SPEC_STEEL_DESIGN,
-    [StringValue("SPEC_CONC_DESIGN")]
-    SPEC_CONC_DESIGN
+    UNIT_DATA
   }
 }

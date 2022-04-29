@@ -1,20 +1,22 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Threading;
-using Dynamo.Engine;
-using Dynamo.Graph.Nodes;
-using Dynamo.Utilities;
-using Newtonsoft.Json;
+﻿using Dynamo.Graph.Nodes;
 using ProtoCore.AST.AssociativeAST;
-using ProtoCore.Mirror;
 using Speckle.ConnectorDynamo.Functions;
 using Speckle.Core.Credentials;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Speckle.Core.Logging;
+using Dynamo.Engine;
+using ProtoCore.Mirror;
+using System.Collections.Concurrent;
+using System.ComponentModel;
+using System.Threading;
+using Dynamo.Utilities;
+using Speckle.Core.Api;
 using Speckle.Core.Models;
 using Speckle.Core.Transports;
+using Newtonsoft.Json;
 
 namespace Speckle.ConnectorDynamo.SendNode
 {
@@ -45,7 +47,7 @@ namespace Speckle.ConnectorDynamo.SendNode
 
     //cached inputs
     private object _data { get; set; }
-    private List<ITransport> _transports { get; set; }
+    private List<ITransport> _streams { get; set; }
     private Dictionary<ITransport, string> _branchNames { get; set; }
     private string _commitMessage { get; set; }
 
@@ -177,6 +179,7 @@ namespace Speckle.ConnectorDynamo.SendNode
     /// </summary>
     public Send()
     {
+      Tracker.TrackPageview(Tracker.SEND_ADDED);
 
       AddInputs();
       AddOutputs();
@@ -226,6 +229,7 @@ namespace Speckle.ConnectorDynamo.SendNode
       if (Transmitting)
         CancelSend();
 
+      Tracker.TrackPageview(Tracker.SEND_MANUAL);
 
       Transmitting = true;
       Message = "Converting...";
@@ -233,8 +237,10 @@ namespace Speckle.ConnectorDynamo.SendNode
 
       try
       {
-        if (_transports == null)
+        if (_streams == null)
           throw new SpeckleException("The stream provided is invalid");
+        if (_data == null)
+          throw new SpeckleException("The data provided is invalid");
 
         long totalCount = 0;
         Base @base = null;
@@ -242,7 +248,7 @@ namespace Speckle.ConnectorDynamo.SendNode
         try
         {
           @base = converter.ConvertRecursivelyToSpeckle(_data);
-          totalCount = @base?.GetTotalChildrenCount() ?? 0;
+          totalCount = @base.GetTotalChildrenCount();
         }
         catch (Exception e)
         {
@@ -277,16 +283,9 @@ namespace Speckle.ConnectorDynamo.SendNode
         void ErrorAction(string transportName, Exception e)
         {
           hasErrors = true;
-
-          while (e != null)
-          {
-            Message += e.Message;
-            e = e.InnerException;
-          }
-
-          Message = Message.Contains("401") ? "You don't have enough permissions to send to this stream." : Message;
+          Message = e.InnerException != null ? e.InnerException.Message : e.Message;
+          Message = Message.Contains("401") ? "Not authorized" : Message;
           _cancellationToken.Cancel();
-          ResetNode();
         }
 
         var plural = (totalCount == 1) ? "" : "s";
@@ -294,7 +293,7 @@ namespace Speckle.ConnectorDynamo.SendNode
           ? $"Sent {totalCount} object{plural} from Dynamo"
           : _commitMessage;
 
-        var commitIds = Functions.Functions.Send(@base, _transports, _cancellationToken.Token, _branchNames,
+        var commitIds = Functions.Functions.Send(@base, _streams, _cancellationToken.Token, _branchNames,
           _commitMessage,
           ProgressAction, ErrorAction);
 
@@ -309,7 +308,7 @@ namespace Speckle.ConnectorDynamo.SendNode
         if (!_cancellationToken.IsCancellationRequested)
         {
           _cancellationToken.Cancel();
-          Message = e.InnerException != null ? e.InnerException.Message : e.Message;
+          Message = e.Message;
           throw new SpeckleException(e.Message, e);
         }
       }
@@ -336,7 +335,7 @@ namespace Speckle.ConnectorDynamo.SendNode
       _hasOutput = false;
       if (hardReset)
       {
-        _transports = null;
+        _streams = null;
         _branchNames = null;
         _data = null;
         _objectCount = 0;
@@ -368,14 +367,14 @@ namespace Speckle.ConnectorDynamo.SendNode
 
       try
       {
-        _transports = new List<ITransport>();
+        _streams = new List<ITransport>();
         _streamWrappers = new List<StreamWrapper>(); // populated during TryConvertInputToTransport, not ideal but I'm lazy
 
         //this port accepts:
         //a stream wrapper, a url, a list of stream wrappers or a list of urls
         var inputTransport = GetInputAs<object>(engine, 1);
         var transportsDict = TryConvertInputToTransport(inputTransport);
-        _transports = transportsDict.Keys.ToList();
+        _streams = transportsDict.Keys.ToList();
         _branchNames = transportsDict;
       }
       catch (Exception e)
@@ -387,7 +386,7 @@ namespace Speckle.ConnectorDynamo.SendNode
         return;
       }
 
-      if (_transports == null || !_transports.Any())
+      if (_streams == null || !_streams.Any())
       {
         ResetNode(true);
         Message = "Stream is invalid";

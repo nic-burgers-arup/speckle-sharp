@@ -1,5 +1,6 @@
 ﻿using Autodesk.Revit.DB;
 using Objects.BuiltElements;
+using Objects.Geometry;
 using Speckle.Core.Models;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,14 +14,13 @@ namespace Objects.Converter.Revit
     public List<ApplicationPlaceholderObject> RoomToNative(Room speckleRoom)
     {
       var revitRoom = GetExistingElementByApplicationId(speckleRoom.applicationId) as DB.Room;
-      var level = ConvertLevelToRevit(speckleRoom.level);
+      var level = LevelToNative(speckleRoom.level);
 
-      var isUpdate = true;
+
       if (revitRoom == null)
       {
         var basePoint = PointToNative(speckleRoom.basePoint);
         revitRoom = Doc.Create.NewRoom(level, new UV(basePoint.X, basePoint.Y));
-        isUpdate = false;
       }
 
 
@@ -38,7 +38,7 @@ namespace Objects.Converter.Revit
         NativeObject = revitRoom
         }
       };
-      Report.Log($"{(isUpdate ? "Updated" : "Created")} Room {revitRoom.Id}");
+
       return placeholders;
 
     }
@@ -53,8 +53,7 @@ namespace Objects.Converter.Revit
       speckleRoom.number = revitRoom.Number;
       speckleRoom.basePoint = (Point)LocationToSpeckle(revitRoom);
       speckleRoom.level = ConvertAndCacheLevel(revitRoom, BuiltInParameter.ROOM_LEVEL_ID);
-      if (profiles.Any())
-        speckleRoom.outline = profiles[0];
+      speckleRoom.outline = profiles[0];
       speckleRoom.area = GetParamValue<double>(revitRoom, BuiltInParameter.ROOM_AREA);
       if (profiles.Count > 1)
       {
@@ -62,9 +61,7 @@ namespace Objects.Converter.Revit
       }
 
       GetAllRevitParamsAndIds(speckleRoom, revitRoom);
-
-      speckleRoom.displayValue = GetElementDisplayMesh(revitRoom);
-      Report.Log($"Converted Room {revitRoom.Id}");
+      speckleRoom.displayMesh = GetElementDisplayMesh(revitRoom);
 
       return speckleRoom;
     }

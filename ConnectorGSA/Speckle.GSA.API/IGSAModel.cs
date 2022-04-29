@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Speckle.GSA.API.GwaSchema;
+using System;
 using System.Collections.Generic;
 
 namespace Speckle.GSA.API
@@ -17,7 +18,7 @@ namespace Speckle.GSA.API
     //Settings - results
     bool SendResults { get; }
     List<ResultType> ResultTypes { get; set; }
-    List<ResultGroup> ResultGroups   { get; } // Set when ResultTypes are set
+    List<ResultGroup> ResultGroups { get; }
     StreamContentConfig StreamSendConfig { get; set; }
     List<string> ResultCases { get; set; }
     bool ResultInLocalAxis { get; set; }
@@ -27,10 +28,13 @@ namespace Speckle.GSA.API
     IGSACache Cache { get; set; }
 
     IGSAProxy Proxy { get; set; }
-    //IGSAMessenger Messenger { get; set; }
-    IProgress<bool> ConversionProgress { get; set; }
+    IGSAMessenger Messenger { get; set; }
 
-    List<List<Type>> SpeckleDependencyTree();
+    //TEMP
+    GsaRecord GetNative<T>(int value);
+    List<int> LookupIndices<T>();
+    List<int> ConvertGSAList(string v, GSAEntity e);
+    string GetApplicationId<T>(int value);
   }
 
   

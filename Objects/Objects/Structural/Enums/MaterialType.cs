@@ -17,8 +17,6 @@ namespace Objects.Structural
         Glass,
         Fabric,
         Rebar,
-        Tendon,
-        ColdFormed,
         Other
     }
 }

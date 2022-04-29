@@ -23,6 +23,7 @@ namespace Speckle.ConnectorRevit.UI
   public partial class ConnectorBindingsRevit
   {
 
+
     /// <summary>
     /// Receives a stream and bakes into the existing revit file.
     /// </summary>
@@ -56,6 +57,8 @@ namespace Speckle.ConnectorRevit.UI
 
       var commit = state.Commit;
 
+
+
       var commitObject = await Operations.Receive(
           referencedObject,
           state.CancellationTokenSource.Token,
@@ -82,6 +85,8 @@ namespace Speckle.ConnectorRevit.UI
         return null;
       }
 
+
+
       // Bake the new ones.
       Queue.Add(() =>
       {
@@ -100,9 +105,9 @@ namespace Speckle.ConnectorRevit.UI
           converter.SetContextObjects(flattenedObjects.Select(x => new ApplicationPlaceholderObject { applicationId = x.applicationId, NativeObject = x }).ToList());
           var newPlaceholderObjects = ConvertReceivedObjects(flattenedObjects, converter, state);
           // receive was cancelled by user
-          if (newPlaceholderObjects == null)
+          if ( newPlaceholderObjects == null )
           {
-            converter.Report.LogConversionError(new Exception("fatal error: receive cancelled by user"));
+            converter.ConversionErrors.Add(new Exception("fatal error: receive cancelled by user"));
             t.RollBack();
             return;
           }
@@ -113,7 +118,7 @@ namespace Speckle.ConnectorRevit.UI
 
           t.Commit();
 
-          state.Errors.AddRange(converter.Report.ConversionErrors);
+          state.Errors.AddRange(converter.ConversionErrors);
         }
 
       });
@@ -125,7 +130,7 @@ namespace Speckle.ConnectorRevit.UI
         //wait to let queue finish
       }
 
-      if (converter.Report.ConversionErrorsString.Contains("fatal error"))
+      if (converter.ConversionErrors.Any(x => x.Message.Contains("fatal error")))
       {
         // the commit is being rolled back
         return null;
@@ -164,7 +169,7 @@ namespace Speckle.ConnectorRevit.UI
       }
     }
 
-    private List<ApplicationPlaceholderObject> ConvertReceivedObjects(List<Base> objects, ISpeckleConverter converter, StreamState state, string mapping = null)
+    private List<ApplicationPlaceholderObject> ConvertReceivedObjects(List<Base> objects, ISpeckleConverter converter, StreamState state)
     {
       var placeholders = new List<ApplicationPlaceholderObject>();
       var conversionProgressDict = new ConcurrentDictionary<string, int>();
@@ -172,7 +177,7 @@ namespace Speckle.ConnectorRevit.UI
 
       foreach (var @base in objects)
       {
-        if (state.CancellationTokenSource.Token.IsCancellationRequested)
+        if ( state.CancellationTokenSource.Token.IsCancellationRequested )
         {
           placeholders = null;
           break;
