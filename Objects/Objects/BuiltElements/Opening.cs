@@ -16,7 +16,7 @@ namespace Objects.BuiltElements
 
     public Opening() { }
 
-    [SchemaInfo("Arch Opening", "Creates a Speckle opening", "BIM", "Architecture")]
+    //[SchemaInfo("Opening", "Creates a Speckle opening")]
     public Opening(ICurve outline)
     {
       this.outline = outline;
@@ -45,13 +45,6 @@ namespace Objects.BuiltElements.Revit
     public RevitWall host { get; set; }
 
     public RevitWallOpening() { }
-    
-    [SchemaInfo("Revit Wall Opening", "Creates a Speckle Wall opening for revit", "BIM", "Architecture")]
-    public RevitWallOpening(ICurve outline , RevitWall host = null)
-    {
-      this.outline = outline;
-      this.host = host;
-    }
   }
 
   public class RevitShaft : RevitOpening
@@ -97,25 +90,4 @@ namespace Objects.BuiltElements.Revit
     }
     */
   }
-}
-
-namespace Objects.BuiltElements.TeklaStructures
-{
-    public class TeklaOpening : Opening
-    {
-        public string openingHostId { get; set; }
-        public TeklaOpeningTypeEnum openingType { get; set; }
-        public TeklaOpening() { }
-    }
-    public class TeklaContourOpening : TeklaOpening
-    {
-        public TeklaContourPlate cuttingPlate { get; set; }
-        public double thickness { get; set; }
-        public TeklaContourOpening() { }
-    }
-    public class TeklaBeamOpening : TeklaOpening
-    {
-        public TeklaBeam cuttingBeam { get; set; }
-        public TeklaBeamOpening() { }
-    }
 }

@@ -23,9 +23,9 @@ namespace ConnectorGrasshopper.Objects
     public ISpeckleKit Kit;
 
     public virtual bool CanDisableConversion => true;
-
+    
     public string SelectedKitName;
-
+    
     public SelectKitTaskCapableComponentBase(string name, string nickname, string description, string category,
       string subCategory) : base(name, nickname, description, category, subCategory)
     {
@@ -36,7 +36,8 @@ namespace ConnectorGrasshopper.Objects
       base.AddedToDocument(document);
       if (SelectedKitName == null)
       {
-        SelectedKitName = SpeckleGHSettings.SelectedKitName;
+        var key = "Speckle2:kit.default.name";
+        SelectedKitName = Grasshopper.Instances.Settings.GetValue(key, "Objects");
       }
 
       SetConverter();
@@ -80,24 +81,22 @@ namespace ConnectorGrasshopper.Objects
       //base.AppendAdditionalMenuItems(menu);
       try
       {
-        var kits = KitManager.GetKitsWithConvertersForApp(Extras.Utilities.GetVersionedAppName());
+        var kits = KitManager.GetKitsWithConvertersForApp(Applications.Rhino6);
 
         Menu_AppendSeparator(menu);
-        Menu_AppendItem(menu, "Select the converter you want to use:", null, false);
-        if (CanDisableConversion)
+        Menu_AppendItem(menu, "Select the converter you want to use:");
+        if(CanDisableConversion)
           Menu_AppendItem(menu, "Do Not Convert", (s, e) =>
           {
             SelectedKitName = "None";
             SetConverter();
             ExpireSolution(true);
           }, true, Kit == null);
-
+          
         foreach (var kit in kits)
         {
-          Menu_AppendItem(menu, $"{kit.Name} ({kit.Description})", (s, e) =>
-          {
-            SelectedKitName = kit.Name; SetConverter(); ExpireSolution(true);
-          }, true,
+          Menu_AppendItem(menu, $"{kit.Name} ({kit.Description})", (s, e) => { SelectedKitName=kit.Name; SetConverter(); ExpireSolution(true);
+            }, true,
             kit.Name == Kit?.Name);
         }
 
@@ -114,10 +113,7 @@ namespace ConnectorGrasshopper.Objects
       if (kitName == Kit?.Name) return;
       Kit = KitManager.Kits.FirstOrDefault(k => k.Name == kitName);
       SelectedKitName = Kit.Name;
-      Converter = Kit.LoadConverter(Extras.Utilities.GetVersionedAppName());
-      Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
-      SpeckleGHSettings.OnMeshSettingsChanged +=
-        (sender, args) => Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
+      Converter = Kit.LoadConverter(Applications.Rhino6);
       Converter.SetContextDocument(Rhino.RhinoDoc.ActiveDoc);
       Message = $"Using the {Kit.Name} Converter";
     }

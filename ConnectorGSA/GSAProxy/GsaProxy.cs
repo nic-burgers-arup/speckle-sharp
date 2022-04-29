@@ -18,18 +18,15 @@ namespace Speckle.ConnectorGSA.Proxy
 {
   public class GsaProxy : IGSAProxy
   {
+    //public List<Type> SchemaTypes { get => ParsersBySchemaType.Keys.ToList(); }
+
     private Dictionary<GSALayer, List<List<Type>>> nativeTypeDependencyGenerations; //leaves first, all the way up to roots
 
-    //This is to store data for a requirement specific to sending, and specific to nodes: being filtered out if not referenced by other objects
-    private Dictionary<GSALayer, List<Type>> nodeDependentSchemaTypesByLayer = new Dictionary<GSALayer, List<Type>>();
-
-    private Dictionary<GSALayer, List<KwTypeData>> typeInfo = new Dictionary<GSALayer, List<KwTypeData>>();
-    private Dictionary<GSALayer, Dictionary<GwaKeyword, int>> typeInfoIndicesByKeyword = new Dictionary<GSALayer, Dictionary<GwaKeyword, int>>();
-    private Dictionary<GSALayer, Dictionary<Type, int>> typeInfoIndicesBySchemaType = new Dictionary<GSALayer, Dictionary<Type, int>>();
+    private Dictionary<Type, Type> ParsersBySchemaType = new Dictionary<Type, Type>();  //Used for writing to the GSA instance
+    private IPairCollection<GwaKeyword, Type> ParsersSchemaType = new PairCollection<GwaKeyword, Type>();
     private bool initialised = false;
     private bool initialisedError = false;  //To ensure initialisation is only attempted once.
-
-    private Dictionary<GSALayer, List<KwTypeData>> kwTypeData = new Dictionary<GSALayer, List<KwTypeData>>();
+    //private GSALayer prevLayer;
 
     #region static_data
     private static readonly string SID_APPID_TAG = "speckle_app_id";
@@ -51,9 +48,7 @@ namespace Speckle.ConnectorGSA.Proxy
       { ResultType.Element2dProjectedStressBottom, "2D Element Projected Stress - Bottom" },
       { ResultType.Element2dProjectedStressMiddle, "2D Element Projected Stress - Middle" },
       { ResultType.Element2dProjectedStressTop, "2D Element Projected Stress - Top" },
-      { ResultType.AssemblyForcesAndMoments, "Assembly Forces and Moments" },
-      { ResultType.TotalLoadsAndReactions, "Total Loads and Reactions" },
-      { ResultType.DynamicSummary, "Dynamic Summary" }
+      { ResultType.AssemblyForcesAndMoments, "Assembly Forces and Moments" }
     };
 
     //These are the exceptions to the rule that, in GSA, all records that relate to each table (i.e. the set with mutually-exclusive indices) have the same keyword
@@ -65,6 +60,14 @@ namespace Speckle.ConnectorGSA.Proxy
           GwaKeyword.LOAD_BEAM_POINT, GwaKeyword.LOAD_BEAM_UDL, GwaKeyword.LOAD_BEAM_LINE, GwaKeyword.LOAD_BEAM_PATCH, GwaKeyword.LOAD_BEAM_TRILIN 
         } 
       }
+    };
+
+    //Note that When a GET_ALL is called for LOAD_BEAM, it returns LOAD_BEAM_UDL, LOAD_BEAM_LINE, LOAD_BEAM_PATCH and LOAD_BEAM_TRILIN
+    public static GwaKeyword[] SetAtKeywords = new GwaKeyword[] 
+    {
+      GwaKeyword.LOAD_NODE, GwaKeyword.LOAD_BEAM, GwaKeyword.LOAD_GRID_POINT, GwaKeyword.LOAD_GRID_LINE, GwaKeyword.LOAD_2D_FACE, 
+      GwaKeyword.LOAD_GRID_AREA, GwaKeyword.LOAD_2D_THERMAL, GwaKeyword.LOAD_GRAVITY, GwaKeyword.INF_BEAM, GwaKeyword.INF_NODE, 
+      GwaKeyword.RIGID, GwaKeyword.GEN_REST 
     };
 
     #region nodeAt_factors
@@ -228,27 +231,13 @@ namespace Speckle.ConnectorGSA.Proxy
 
         GSAObject = (IComAuto)gsaInstance ?? new ComAuto();
 
-        //Squash any exceptions from the telemetry
-        try
-        {
-          GSAObject.LogFeatureUsage("api::specklegsa::" +
-            FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location)
-              .ProductVersion + "::GSA " + GSAObject.VersionString()
-              .Split(new char[] { '\n' })[0]
-              .Split(new char[] { GwaDelimiter }, StringSplitOptions.RemoveEmptyEntries)[1]);
-        }
-        catch 
-        {
-        }
+        GSAObject.LogFeatureUsage("api::specklegsa::" +
+          FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location)
+            .ProductVersion + "::GSA " + GSAObject.VersionString()
+            .Split(new char[] { '\n' })[0]
+            .Split(new char[] { GwaDelimiter }, StringSplitOptions.RemoveEmptyEntries)[1]);
 
-        try
-        {
-          GSAObject.Open(path);
-        }
-        catch
-        {
-          return false;
-        }
+        GSAObject.Open(path);
         FilePath = path;
         GSAObject.SetLocale(Locale.LOC_EN_GB);
 
@@ -308,11 +297,6 @@ namespace Speckle.ConnectorGSA.Proxy
         index = GSAObject.Gen_NodeAt(x * factor, y * factor, z * factor, coincidenceTol * factor);
       }
       return index ?? 0;
-    }
-
-    public List<Type> GetNodeDependentTypes(GSALayer layer)
-    {
-      return nodeDependentSchemaTypesByLayer[layer];
     }
     #endregion
 
@@ -436,110 +420,36 @@ namespace Speckle.ConnectorGSA.Proxy
     #region type_dependency_tree
     private bool Initialise(GSALayer layer)
     {
-      var assembly = GetType().Assembly; //This assembly
-      var assemblyTypes = assembly.GetTypes().Where(t => t.IsClass).ToList();
-
-      var gsaBaseType = typeof(GwaParser<GsaRecord>);
-      var gsaAttributeType = typeof(GsaType);
-      var gsaChildAttributeType = typeof(GsaChildType);
-      var gwaParserInterfaceType = typeof(IGwaParser);
-
-      var tableKeywordParserTypes = assemblyTypes.Where(t => Helper.InheritsOrImplements(t, gwaParserInterfaceType)
-        && (t.CustomAttributes.Any(ca => ca.AttributeType == gsaAttributeType)
-            && Helper.IsSelfContained(t)
-            && (layer == GSALayer.Both
-              || (layer == GSALayer.Design && Helper.IsDesignLayer(t))
-              || (layer == GSALayer.Analysis && Helper.IsAnalysisLayer(t))))).ToList();
-
-      var lineKeywordParserTypes = assemblyTypes.Where(t => t.CustomAttributes.Any(ca => ca.AttributeType == gsaChildAttributeType)).ToList();
-
-      if (typeInfo.ContainsKey(layer))
+      if (!initialised && !initialisedError)
       {
-        typeInfo[layer].Clear();
-        typeInfoIndicesByKeyword[layer].Clear();
-        typeInfoIndicesBySchemaType[layer].Clear();
-      }
-      else
-      {
-        typeInfo.Add(layer, new List<KwTypeData>());
-        typeInfoIndicesByKeyword.Add(layer, new Dictionary<GwaKeyword, int>());
-        typeInfoIndicesBySchemaType.Add(layer, new Dictionary<Type, int>());
-      }
+        var assembly = GetType().Assembly; //This assembly
+        var assemblyTypes = assembly.GetTypes().ToList();
 
-      foreach (var t in tableKeywordParserTypes)
-      {
-        var newIndex = typeInfo[layer].Count();
+        var gsaBaseType = typeof(GwaParser<GsaRecord>);
+        var gsaAttributeType = typeof(GsaType);
+        var gwaParserInterfaceType = typeof(IGwaParser);
 
-        var ktd = new KwTypeData();
-        if (t.IsAbstract)
+        var parserTypes = assemblyTypes.Where(t => Helper.InheritsOrImplements(t, gwaParserInterfaceType)
+          && t.CustomAttributes.Any(ca => ca.AttributeType == gsaAttributeType)
+          && Helper.IsSelfContained(t)
+          && (layer == GSALayer.Both
+            || (layer == GSALayer.Design && Helper.IsDesignLayer(t)) 
+            || (layer == GSALayer.Analysis && Helper.IsAnalysisLayer(t)))
+          && !t.IsAbstract
+          ).ToDictionary(pt => pt, pt => Helper.GetGwaKeyword(pt));
+
+        var layerKeywords = parserTypes.Values.ToList();
+        var kwDict = new Dictionary<GwaKeyword, GwaKeyword[]>();
+        foreach (var pt in parserTypes.Keys)
         {
-          var childParserTypes = lineKeywordParserTypes.Where(lpt => lpt.InheritsOrImplements(t)).ToList();
-          foreach (var cpt in childParserTypes)
-          {
-            var childSchemaType = (Type)cpt.GetAttribute<GsaChildType>(GsaChildType.GsaSchemaTypeProperty);
-            var childKw = (GwaKeyword)cpt.GetAttribute<GsaChildType>(GsaChildType.GwaKeywordProperty);
-            ktd.LineKeywords.Add(childKw);
-            ktd.LineSchemaTypes.Add(childSchemaType);
-            ktd.LineParserTypes.Add(cpt);
-            ktd.HasDifferentatedKeywords = true;
-
-            typeInfoIndicesBySchemaType[layer].Add(childSchemaType, newIndex);
-          }
+          var allRefKw = Helper.GetReferencedKeywords(pt).Where(kw => layerKeywords.Any(k => k == kw)).ToArray();
+          kwDict.Add(parserTypes[pt], allRefKw);
         }
-        else
+
+        var retCol = new TypeTreeCollection<GwaKeyword>(kwDict.Keys);
+        foreach (var kw in kwDict.Keys)
         {
-          ktd.TableSchemaType = t.BaseType.GenericTypeArguments.First();
-          typeInfoIndicesBySchemaType[layer].Add(ktd.TableSchemaType, newIndex);
-        }
-        ktd.TableKeyword = Helper.GetGwaKeyword(t);
-        ktd.TableParserType = t;
-
-        typeInfoIndicesByKeyword[layer].Add(ktd.TableKeyword, newIndex);
-
-        typeInfo[layer].Add(ktd);
-
-      }
-
-      var layerKeywords = typeInfo[layer].Select(d => d.TableKeyword).ToList();
-
-      foreach (var ktd in typeInfo[layer])
-      {
-        ktd.RefTableKeywords = Helper.GetReferencedKeywords(ktd.TableParserType).Where(kw => layerKeywords.Any(k => k == kw)).ToList();
-
-        //Handling the special case of nodes
-        if (ktd.RefTableKeywords.Contains(GwaKeyword.NODE))
-        {
-          if (!nodeDependentSchemaTypesByLayer.ContainsKey(layer))
-          {
-            nodeDependentSchemaTypesByLayer.Add(layer, new List<Type>());
-          }
-          if (ktd.HasDifferentatedKeywords)
-          {
-            nodeDependentSchemaTypesByLayer[layer].UpsertList(ktd.LineSchemaTypes);
-          }
-          else
-          {
-            nodeDependentSchemaTypesByLayer[layer].UpsertList(ktd.TableSchemaType);
-          }
-        }
-      }
-
-      if (nativeTypeDependencyGenerations == null)
-      {
-        nativeTypeDependencyGenerations = new Dictionary<GSALayer, List<List<Type>>>();
-      }
-      if (!nativeTypeDependencyGenerations.ContainsKey(layer))
-      {
-        nativeTypeDependencyGenerations.Add(layer, new List<List<Type>>());
-      }
-
-      // If > 0, typeGens have already been collected so skip to avoid adding duplicates
-      if (nativeTypeDependencyGenerations.Any(x => x.Value.Count == 0))
-      {
-        var retCol = new TypeTreeCollection<GwaKeyword>(typeInfo[layer].Select(d => d.TableKeyword));
-        foreach (var d in typeInfo[layer])
-        {
-          retCol.Integrate(d.TableKeyword, d.RefTableKeywords.ToArray());
+          retCol.Integrate(kw, kwDict[kw]);
         }
 
         var gens = retCol.Generations();
@@ -548,51 +458,64 @@ namespace Speckle.ConnectorGSA.Proxy
           return false;
         }
 
+        foreach (var kvp in parserTypes)
+        {
+          if (!ParsersSchemaType.ContainsLeft(kvp.Value))
+          {
+            ParsersSchemaType.Add(kvp.Value, kvp.Key);
+          }
+        }
+        ParsersBySchemaType = parserTypes.Keys.ToDictionary(pt => pt.BaseType.GenericTypeArguments.First(), pt => pt);
+
+        if (nativeTypeDependencyGenerations == null)
+        {
+          nativeTypeDependencyGenerations = new Dictionary<GSALayer, List<List<Type>>>();
+        }
+        if (!nativeTypeDependencyGenerations.ContainsKey(layer))
+        {
+          nativeTypeDependencyGenerations.Add(layer, new List<List<Type>>());
+        }
+
         foreach (var gen in gens)
         {
-          var genSchemaTypes = new List<Type>();
+          var genParserTypes = new List<Type>();
 
-          foreach (var keyword in gen.Where(kw => typeInfo[layer].Any(d => d.TableKeyword == kw)))
+          foreach (var keyword in gen.Where(kw => ParsersSchemaType.ContainsLeft(kw)))
           {
-            //var ktd = typeInfo[layer].FirstOrDefault(d => d.TableKeyword == keyword);
-            var ktd = typeInfo[layer][typeInfoIndicesByKeyword[layer][keyword]];
-            if (ktd.HasDifferentatedKeywords)
+            if (ParsersSchemaType.FindRight(keyword, out Type pt))
             {
-              genSchemaTypes.AddRange(ktd.LineSchemaTypes);
-            }
-            else
-            {
-              genSchemaTypes.Add(ktd.TableSchemaType);
+              var schemaType = pt.BaseType.GenericTypeArguments.First();
+              genParserTypes.Add(schemaType);
             }
           }
-          nativeTypeDependencyGenerations[layer].Add(genSchemaTypes);
+          nativeTypeDependencyGenerations[layer].Add(genParserTypes);
         }
       }
-
       return (!initialisedError);
     }
-
     #endregion
 
     #region extract_gwa_fns
 
     public string GenerateApplicationId(Type schemaType, int gsaIndex)
     {
-      foreach (var l in typeInfo.Keys)
+      if (!ParsersBySchemaType.ContainsKey(schemaType))
       {
-        foreach (var ktd in typeInfo[l])
-        {
-          if (ktd.ContainsSchemaType(schemaType))
-          {
-            return "gsa/" + ktd.TableKeyword + "-" + gsaIndex;
-          }
-        }
+        return "";
       }
-      return "";
+      var parser = ParsersBySchemaType[schemaType];
+      if (!ParsersSchemaType.ContainsRight(parser))
+      {
+        return "";
+      }
+      ParsersSchemaType.FindLeft(parser, out GwaKeyword kw);
+
+      var appId = "gsa/" + kw + "-" + gsaIndex;
+      return appId;
     }
 
     //Tuple: keyword | index | Application ID | GWA command | Set or Set At
-    public bool GetGwaData(GSALayer layer, IProgress<string> loggingProgress, out List<GsaRecord> records, IProgress<int> incrementProgress = null)
+    public bool GetGwaData(out List<GsaRecord> records, IProgress<int> incrementProgress = null)
     {
       if (!InitialiseIfNecessary())
       {
@@ -601,368 +524,259 @@ namespace Speckle.ConnectorGSA.Proxy
       }
 
       var retRecords = new List<GsaRecord>();
+      var dataLock = new object();
+      var setKeywords = new List<GwaKeyword>();
+      var setAtKeywords = new List<GwaKeyword>();
+      var tempKeywordIndexCache = new Dictionary<GwaKeyword, List<int>>();
 
-      foreach (var gen in nativeTypeDependencyGenerations[layer])
+      //var keywords = ParsersByKeyword.Keys.ToList();
+      var keywords = ParsersSchemaType.Lefts;
+
+      foreach (var kw in keywords)
       {
-        var keywords = new List<GwaKeyword>();
-        foreach (var t in gen)
+        if (SetAtKeywords.Any(b => kw == b))
         {
-          var ti = typeInfo[layer][typeInfoIndicesBySchemaType[layer][t]];
-          keywords.Add(ti.TableKeyword);
+          setAtKeywords.Add(kw);
         }
-      
-        var dataLock = new object();
-        var setKeywords = new List<GwaKeyword>();
-        var setAtKeywords = new List<GwaKeyword>();
-        var setNoIndexKeywords = new List<GwaKeyword>();
-        var tempKeywordIndexCache = new Dictionary<GwaKeyword, List<int>>();
-
-        //var keywords = typeInfo[layer].Select(d => d.TableKeyword).ToList();
-
-        foreach (var kw in keywords)
+        else
         {
-          var tableParserType = typeInfo[layer][typeInfoIndicesByKeyword[layer][kw]].TableParserType;
-          var sct = Helper.GetGwaSetCommandType(tableParserType);
-          if (sct == GwaSetCommandType.Set)
-          {
-            setKeywords.Add(kw);
-          }
-          else if (sct == GwaSetCommandType.SetAt)
-          {
-            setAtKeywords.Add(kw);
-          }
-          else
-          {
-            setNoIndexKeywords.Add(kw);
-          }
+          setKeywords.Add(kw);
         }
+      }
 
-        for (int i = 0; i < setNoIndexKeywords.Count(); i++)
+      for (int i = 0; i < setKeywords.Count(); i++)
+      {
+        var newCommand = "GET_ALL" + GwaDelimiter + setKeywords[i];
+        var isNode = (setKeywords[i] == GwaKeyword.NODE);
+        var isElement = (setKeywords[i] == GwaKeyword.EL);
+
+        string[] gwaLines;
+
+        try
         {
-          var newCommand = "GET_ALL" + GwaDelimiter + setNoIndexKeywords[i];
-
-          string[] gwaLines;
-
-          try
-          {
-            lock (syncLock)
-            {
-              gwaLines = ((string)GSAObject.GwaCommand(newCommand)).Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
-            }
-          }
-          catch
-          {
-            gwaLines = new string[0];
-          }
-
-            foreach (var gwa in gwaLines)
-            {
-              var pieces = gwa.ListSplit(_GwaDelimiter).ToList();
-              if (pieces[0].StartsWith("set", StringComparison.InvariantCultureIgnoreCase))
-              {
-                pieces = pieces.Skip(1).ToList();
-              }
-              var keywordAndVersion = pieces.First();
-              var keywordPieces = keywordAndVersion.Split('.');
-              if (keywordPieces.Count() == 2 && keywordPieces.Last().All(c => char.IsDigit(c))
-                && int.TryParse(keywordPieces.Last(), out int ver)
-                && keywordPieces.First().TryParseStringValue(out GwaKeyword kw))
-              {
-                var ktd = typeInfo[layer][typeInfoIndicesByKeyword[layer][kw]];
-                if (ktd != null)
-                {
-                  var schemaType = ktd.GetSchemaType(kw);
-                  var parser = (IGwaParser)Activator.CreateInstance(ktd.GetParserType(schemaType));
-                  if (parser.FromGwa(gwa))
-                  {
-                    retRecords.Add(parser.Record);
-                  }
-                  else if (loggingProgress != null)
-                  {
-                    loggingProgress.Report(FormulateParsingErrorContext(parser.Record, schemaType.Name));
-                  }
-                }
-              }
-            }
-        }
-
-
-        #region read_set_keyword_records
-        for (int i = 0; i < setKeywords.Count(); i++)
-        {
-          var newCommand = "GET_ALL" + GwaDelimiter + setKeywords[i];
-          var isNode = (setKeywords[i] == GwaKeyword.NODE);
-          var isElement = (setKeywords[i] == GwaKeyword.EL);
-
-          string[] gwaLines;
-
-          try
-          {
-            lock(syncLock)
-            {
-              gwaLines = ((string)GSAObject.GwaCommand(newCommand)).Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
-            }
-          }
-          catch
-          {
-            gwaLines = new string[0];
-          }
-
-          Parallel.ForEach(gwaLines, gwa =>
-          {
-            if (ParseGeneralGwa(gwa, out GwaKeyword? keyword, out int? version, out int? index, out string streamId, out string appId, out string gwaWithoutSet, out string keywordAndVersion)
-              && keyword.HasValue)
-            {
-              var ktd = typeInfo[layer][typeInfoIndicesByKeyword[layer][keyword.Value]];
-              if (ktd != null)
-              {
-                index = index ?? 0;
-                var originalSid = "";
-                var kwStr = keyword.Value.GetStringValue();
-
-                //For some GET_ALL calls, records with other keywords are returned, too.  Example: GET_ALL TASK returns TASK, TASK_TAG and ANAL records
-                if (keyword.Value == setKeywords[i])
-                {
-                  if (string.IsNullOrEmpty(streamId))
-                  {
-                    //Slight hardcoding for optimisation here: the biggest source of GetSidTagValue calls would be from nodes, and knowing
-                    //(at least in GSA v10 build 63) that GET_ALL NODE does return SID tags, the call is avoided for NODE keyword
-                    if (!isNode && !isElement)
-                    {
-                      try
-                      {
-                        lock (syncLock) {streamId = GSAObject.GetSidTagValue(kwStr, index.Value, SID_STRID_TAG); }
-                      }
-                      catch { }
-                    }
-                  }
-                  else
-                  {
-                    originalSid += FormatStreamIdSidTag(streamId);
-                  }
-
-                  if (string.IsNullOrEmpty(appId))
-                  {
-                    //Again, the same optimisation as explained above
-                    if (!isNode && !isElement)
-                    {
-                      try
-                      {
-                        lock (syncLock)
-                        {
-                          appId = GSAObject.GetSidTagValue(kwStr, index.Value, SID_APPID_TAG);
-                        }
-                      }
-                      catch { }
-                    }
-                  }
-                  else
-                  {
-                    originalSid += FormatStreamIdSidTag(appId);
-                  }
-
-                  var newSid = FormatStreamIdSidTag(streamId) + FormatApplicationIdSidTag(appId);
-                  if (!string.IsNullOrEmpty(newSid))
-                  {
-                    if (string.IsNullOrEmpty(originalSid))
-                    {
-                      gwaWithoutSet = gwaWithoutSet.Replace(keywordAndVersion, keywordAndVersion + ":" + newSid);
-                    }
-                    else
-                    {
-                      gwaWithoutSet = gwaWithoutSet.Replace(originalSid, newSid);
-                    }
-                  }
-
-                  var schemaType = ktd.GetSchemaType(keyword.Value);
-                  var t = ktd.GetParserType(schemaType);
-                  {
-                    var parser = (IGwaParser)Activator.CreateInstance(t);
-                    if (parser.FromGwa(gwa))
-                    {
-                      if (!parser.Record.Index.HasValue && index.HasValue)
-                      {
-                        parser.Record.Index = index.Value;
-                      }
-                      parser.Record.StreamId = streamId;
-                      parser.Record.ApplicationId = appId;
-
-                      lock (dataLock)
-                      {
-                        if (!tempKeywordIndexCache.ContainsKey(keyword.Value))
-                        {
-                          tempKeywordIndexCache.Add(keyword.Value, new List<int>());
-                        }
-                        if (!tempKeywordIndexCache[keyword.Value].Contains(index.Value))
-                        {
-                          retRecords.Add(parser.Record);
-                          tempKeywordIndexCache[keyword.Value].Add(index.Value);
-                        }
-                      }
-                    }
-                    else if (loggingProgress != null)
-                    {
-                      loggingProgress.Report(FormulateParsingErrorContext(parser.Record, schemaType.Name));
-                    }
-                  }
-                }
-              }
-            }
-          });
-
-          if (incrementProgress != null)
-          {
-            incrementProgress.Report(1);
-          }
-        }
-        #endregion
-
-        #region read_set_at_keyword_records
-        for (int i = 0; i < setAtKeywords.Count(); i++)
-        {
-          int highestIndex = 0;
           lock(syncLock)
           {
-            highestIndex = GSAObject.GwaCommand("HIGHEST" + GwaDelimiter + setAtKeywords[i]);
+            gwaLines = ((string)GSAObject.GwaCommand(newCommand)).Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
           }
+        }
+        catch
+        {
+          gwaLines = new string[0];
+        }
 
-          for (int j = 1; j <= highestIndex; j++)
+        //TO DO: review if this line is even needed anymore
+        if (setKeywords[i] == GwaKeyword.UNIT_DATA)
+        {
+          continue;
+        }
+
+        Parallel.ForEach(gwaLines, gwa =>
+        {
+          if (ParseGeneralGwa(gwa, out GwaKeyword? keyword, out int? version, out int? index, out string streamId, out string appId, out string gwaWithoutSet, out string keywordAndVersion)
+            && keyword.HasValue && ParsersSchemaType.ContainsLeft(keyword.Value))
           {
-            var newCommand = string.Join(GwaDelimiter.ToString(), new[] { "GET", setAtKeywords[i].GetStringValue(), j.ToString() });
+            index = index ?? 0;
+            var originalSid = "";
+            var kwStr = keyword.Value.GetStringValue();
 
-            string gwaLine = "";
-            try
+            //For some GET_ALL calls, records with other keywords are returned, too.  Example: GET_ALL TASK returns TASK, TASK_TAG and ANAL records
+            if (keyword.Value == setKeywords[i])
             {
-              lock (syncLock)
+              if (string.IsNullOrEmpty(streamId))
               {
-                gwaLine = GSAObject.GwaCommand(newCommand);
+                //Slight hardcoding for optimisation here: the biggest source of GetSidTagValue calls would be from nodes, and knowing
+                //(at least in GSA v10 build 63) that GET_ALL NODE does return SID tags, the call is avoided for NODE keyword
+                if (!isNode && !isElement)
+                {
+                  try
+                  {
+                    lock(syncLock)
+                    {
+                      streamId = GSAObject.GetSidTagValue(kwStr, index.Value, SID_STRID_TAG);
+                    }
+                  }
+                  catch { }
+                }
               }
-            }
-            catch { }
-
-            if ((gwaLine != "") 
-              && ParseGeneralGwa(gwaLine, out GwaKeyword? keyword, out int? version, out int? index, out string streamId, out string appId, out string gwaWithoutSet,
-                out string keywordAndVersion) && keyword.HasValue)
-            {
-              var ktd = typeInfo[layer][typeInfoIndicesByKeyword[layer][keyword.Value]];
-              if (ktd != null)
+              else
               {
-                var kwStr = keyword.Value.GetStringValue();
-                var originalSid = "";
-                if (string.IsNullOrEmpty(streamId))
+                originalSid += FormatStreamIdSidTag(streamId);
+              }
+
+              if (string.IsNullOrEmpty(appId))
+              {
+                //Again, the same optimisation as explained above
+                if (!isNode && !isElement)
                 {
                   try
                   {
                     lock (syncLock)
                     {
-                      streamId = GSAObject.GetSidTagValue(kwStr, j, SID_STRID_TAG);
+                      appId = GSAObject.GetSidTagValue(kwStr, index.Value, SID_APPID_TAG);
                     }
                   }
                   catch { }
                 }
+              }
+              else
+              {
+                originalSid += FormatStreamIdSidTag(appId);
+              }
+
+              var newSid = FormatStreamIdSidTag(streamId) + FormatApplicationIdSidTag(appId);
+              if (!string.IsNullOrEmpty(newSid))
+              {
+                if (string.IsNullOrEmpty(originalSid))
+                {
+                  gwaWithoutSet = gwaWithoutSet.Replace(keywordAndVersion, keywordAndVersion + ":" + newSid);
+                }
                 else
                 {
-                  originalSid += FormatStreamIdSidTag(streamId);
+                  gwaWithoutSet = gwaWithoutSet.Replace(originalSid, newSid);
                 }
-                if (string.IsNullOrEmpty(appId))
-                {
-                  lock (syncLock)
-                  {
-                    appId = GSAObject.GetSidTagValue(kwStr, j, SID_APPID_TAG);
-                  }
-                }
-                else
-                {
-                  originalSid += FormatStreamIdSidTag(appId);
-                }
+              }
 
-                var newSid = FormatStreamIdSidTag(streamId) + FormatApplicationIdSidTag(appId);
-                if (!string.IsNullOrEmpty(originalSid) && !string.IsNullOrEmpty(newSid))
-                {
-                  gwaWithoutSet.Replace(originalSid, newSid);
-                }
-              
-                var kw = ktd.HasDifferentatedKeywords ? (GwaKeyword)Enum.Parse(typeof(GwaKeyword), keywordAndVersion.Split('.')[0]) : keyword.Value;
-
-                var schemaType = ktd.GetSchemaType(kw);
-                var t = ktd.GetParserType(schemaType);
-
+              if (ParsersSchemaType.FindRight(keyword.Value, out Type t))
+              {
                 var parser = (IGwaParser)Activator.CreateInstance(t);
-                if (parser.FromGwa(gwaLine))
+                parser.FromGwa(gwa);
+                if (!parser.Record.Index.HasValue && index.HasValue)
                 {
-                  if (!parser.Record.Index.HasValue)
-                  {
-                    parser.Record.Index = j;
-                  }
-                  parser.Record.StreamId = streamId;
-                  parser.Record.ApplicationId = appId;
-
-                  lock (dataLock)
-                  {
-                    if (!tempKeywordIndexCache.ContainsKey(setAtKeywords[i]))
-                    {
-                      tempKeywordIndexCache.Add(setAtKeywords[i], new List<int>());
-                    }
-                    if (!tempKeywordIndexCache[setAtKeywords[i]].Contains(j))
-                    {
-                      retRecords.Add(parser.Record);
-                      tempKeywordIndexCache[setAtKeywords[i]].Add(j);
-                    }
-                  }
+                  parser.Record.Index = index.Value;
                 }
-                else if (loggingProgress != null)
+                parser.Record.StreamId = streamId;
+                parser.Record.ApplicationId = appId;
+
+                lock (dataLock)
                 {
-                  loggingProgress.Report(FormulateParsingErrorContext(parser.Record, schemaType.Name));
+                  if (!tempKeywordIndexCache.ContainsKey(keyword.Value))
+                  {
+                    tempKeywordIndexCache.Add(keyword.Value, new List<int>());
+                  }
+                  if (!tempKeywordIndexCache[keyword.Value].Contains(index.Value))
+                  {
+                    retRecords.Add(parser.Record);
+                    tempKeywordIndexCache[keyword.Value].Add(index.Value);
+                  }
                 }
               }
             }
           }
-          if (incrementProgress != null)
-          {
-            incrementProgress.Report(1);
-          }
+        });
+
+        if (incrementProgress != null)
+        {
+          incrementProgress.Report(1);
         }
-        #endregion
       }
 
+      for (int i = 0; i < setAtKeywords.Count(); i++)
+      {
+        int highestIndex = 0;
+        lock(syncLock)
+        {
+          highestIndex = GSAObject.GwaCommand("HIGHEST" + GwaDelimiter + setAtKeywords[i]);
+        }
+
+        for (int j = 1; j <= highestIndex; j++)
+        {
+          var newCommand = string.Join(GwaDelimiter.ToString(), new[] { "GET", setAtKeywords[i].GetStringValue(), j.ToString() });
+
+          string gwaLine = "";
+          try
+          {
+            lock (syncLock)
+            {
+              gwaLine = GSAObject.GwaCommand(newCommand);
+            }
+          }
+          catch { }
+
+          if (gwaLine != "")
+          {
+            ParseGeneralGwa(gwaLine, out GwaKeyword? keyword, out int? version, out int? index, out string streamId, out string appId, out string gwaWithoutSet, 
+              out string keywordAndVersion);
+
+            if (keyword == setAtKeywords[i] && ParsersSchemaType.FindRight(setAtKeywords[i], out Type t))
+            {
+              var kwStr = keyword.Value.GetStringValue();
+              var originalSid = "";
+              if (string.IsNullOrEmpty(streamId))
+              {
+                try
+                {
+                  lock (syncLock)
+                  {
+                    streamId = GSAObject.GetSidTagValue(kwStr, j, SID_STRID_TAG);
+                  }
+                }
+                catch { }
+              }
+              else
+              {
+                originalSid += FormatStreamIdSidTag(streamId);
+              }
+              if (string.IsNullOrEmpty(appId))
+              {
+                lock (syncLock)
+                {
+                  appId = GSAObject.GetSidTagValue(kwStr, j, SID_APPID_TAG);
+                }
+              }
+              else
+              {
+                originalSid += FormatStreamIdSidTag(appId);
+              }
+
+              var newSid = FormatStreamIdSidTag(streamId) + FormatApplicationIdSidTag(appId);
+              if (!string.IsNullOrEmpty(originalSid) && !string.IsNullOrEmpty(newSid))
+              {
+                gwaWithoutSet.Replace(originalSid, newSid);
+              }
+
+              var parser = (IGwaParser)Activator.CreateInstance(t);
+              parser.FromGwa(gwaLine);
+              if (!parser.Record.Index.HasValue)
+              {
+                parser.Record.Index = j;
+              }
+              parser.Record.StreamId = streamId;
+              parser.Record.ApplicationId = appId;
+
+              lock (dataLock)
+              {
+                if (!tempKeywordIndexCache.ContainsKey(setAtKeywords[i]))
+                {
+                  tempKeywordIndexCache.Add(setAtKeywords[i], new List<int>());
+                }
+                if (!tempKeywordIndexCache[setAtKeywords[i]].Contains(j))
+                {
+                  retRecords.Add(parser.Record);
+                  tempKeywordIndexCache[setAtKeywords[i]].Add(j);
+                }
+              }
+            }
+          }
+        }
+        if (incrementProgress != null)
+        {
+          incrementProgress.Report(1);
+        }
+      }
       records = retRecords;
       return true; 
     }
 
-    private string FormulateParsingErrorContext(GsaRecord gsaRecord, string typeName)
-    {
-      var errorMessage = "Parsing the GWA data for: " + typeName;
-      if (gsaRecord != null)
-      {
-        if (gsaRecord.Index.HasValue)
-        {
-          errorMessage += " at index: " + gsaRecord.Index.Value.ToString();
-        }
-        if (!string.IsNullOrEmpty(gsaRecord.ApplicationId) && gsaRecord.ApplicationId.Length > 0)
-        {
-          errorMessage += " with ApplicationId = " + gsaRecord.ApplicationId;
-        }
-      }
-      return errorMessage;
-    }
-
     private bool InitialiseIfNecessary()
     {
-      if (!initialised && !initialisedError)
+      if (!Initialise(GSALayer.Design) || !Initialise(GSALayer.Analysis) || !Initialise(GSALayer.Both))
       {
-        nodeDependentSchemaTypesByLayer.Clear();
-
-        if (!Initialise(GSALayer.Design) || !Initialise(GSALayer.Analysis) || !Initialise(GSALayer.Both))
-        {
-          initialisedError = true;
-          //Already tried this layer once and it was an error, so don't try again
-          return false;
-        }
-
-        initialised = true;
+        initialisedError = true;
+        //Already tried this layer once and it was an error, so don't try again
+        return false;
       }
-     
-      return !initialisedError;
+      initialised = true;
+      return true;
     }
 
     private string FormatApplicationId(string keyword, int index, string applicationId)
@@ -1010,7 +824,7 @@ namespace Speckle.ConnectorGSA.Proxy
 
     #region writing_gwa
 
-    public void WriteModel(List<GsaRecord> gsaRecords, IProgress<string> loggingProgress, GSALayer layer = GSALayer.Both)
+    public void WriteModel(List<GsaRecord> gsaRecords, GSALayer layer = GSALayer.Both)
     {
       var parsersToUseBySchemaType = new Dictionary<Type, List<IGwaParser>>();
       foreach (var r in gsaRecords)
@@ -1020,16 +834,8 @@ namespace Speckle.ConnectorGSA.Proxy
         {
           parsersToUseBySchemaType.Add(t, new List<IGwaParser>());
         }
-        try
-        {
-          var ktd = typeInfo[layer][typeInfoIndicesBySchemaType[layer][t]];
-          var parser = (IGwaParser)Activator.CreateInstance(ktd.GetParserType(t), r);
-          parsersToUseBySchemaType[t].Add(parser);
-        }
-        catch
-        {
-
-        }
+        var parser = (IGwaParser)Activator.CreateInstance(ParsersBySchemaType[t], r);
+        parsersToUseBySchemaType[t].Add(parser);
       }
 
       var typeGens = GetTxTypeDependencyGenerations(layer);
@@ -1043,34 +849,16 @@ namespace Speckle.ConnectorGSA.Proxy
 
             foreach (var op in orderedParsers)
             {
-              try
+              if (op.Gwa(out var gwas, true))
               {
-                if (op.Gwa(out var gwas, true))
-                {
-                  gwas.ForEach(g => SetGwa(g));
-                }
-              }
-              catch (Exception ex)
-              {
-                loggingProgress.Report("Unable to generate GWA for " + t.Name 
-                  + (string.IsNullOrEmpty(op.Record.ApplicationId) ? "" : " with applicationID = " + op.Record.ApplicationId));
+                gwas.ForEach(g => SetGwa(g));
               }
             }
           }
         }
       }
 
-      try
-      {
-        Sync();
-      }
-      catch (Exception ex)
-      {
-        if (loggingProgress != null)
-        {
-          loggingProgress.Report("Unable to write to the GSA model: " + ex.Message);
-        }
-      }
+      Sync();
     }
 
     //Assumed to be the full SET or SET_AT command
@@ -1180,13 +968,13 @@ namespace Speckle.ConnectorGSA.Proxy
       return sid;
     }
 
-    public bool SetTopLevelSid(string StreamState)
+    public bool SetTopLevelSid(string sidRecord)
     {
       try
       {
         lock(syncLock)
         {
-          GSAObject.GwaCommand(string.Join(GwaDelimiter.ToString(), new[] { "SET", "SID", StreamState }));
+          GSAObject.GwaCommand(string.Join(GwaDelimiter.ToString(), new[] { "SET", "SID", sidRecord }));
         }
         return true;
       }
@@ -1315,7 +1103,7 @@ namespace Speckle.ConnectorGSA.Proxy
       return specs;
     }
 
-    public static bool ProcessLoadCaseCombinationSpec(string spec, out List<string> aParts, out List<string> cParts)
+    private bool ProcessLoadCaseCombinationSpec(string spec, out List<string> aParts, out List<string> cParts)
     {
       aParts = new List<string>();
       cParts = new List<string>();
@@ -1523,7 +1311,7 @@ namespace Speckle.ConnectorGSA.Proxy
         for (int i = 0; i < existingIndices.Count(); i++)
         {
           var testNode = new GSA.API.GwaSchema.GsaNode() { Index = existingIndices[i], Name = existingIndices[i].ToString() };
-          gsaProxyTemp.WriteModel(new List<GsaRecord> { testNode }, null, GSALayer.Both);
+          gsaProxyTemp.WriteModel(new List<GsaRecord> { testNode }, GSALayer.Both);
         }
         gsaProxyTemp.Sync();
         var tempSpec = string.Join(" ", specParts.Select(a => RemoveMarker(a)));
@@ -1631,10 +1419,6 @@ namespace Speckle.ConnectorGSA.Proxy
       else if (group == ResultGroup.Node)
       {
         resultProcessors.Add(group, new ResultsNodeProcessor(Path.Combine(resultDir, @"result_node\result_node.csv"), unitData, allResultTypes, cases, elemIds));
-      }
-      else if (group == ResultGroup.Global)
-      {
-        resultProcessors.Add(group, new ResultsGlobalProcessor(Path.Combine(resultDir, @"result_global\result_global.csv"), unitData, allResultTypes, cases));
       }
       else
       {
@@ -1767,7 +1551,6 @@ namespace Speckle.ConnectorGSA.Proxy
 
 
     #region static_fns
-    //This should only be called if the GWA is known to be either Set or SetAt, not SetNoIndex
     public static bool ParseGeneralGwa(string fullGwa, out GwaKeyword? keyword, out int? version, out int? index, out string streamId, out string applicationId,
       out string gwaWithoutSet, out string keywordAndVersion)
     {
@@ -1873,54 +1656,5 @@ namespace Speckle.ConnectorGSA.Proxy
     }
 
     #endregion
-  }
-
-  internal class KwTypeData
-  {
-    public GwaKeyword TableKeyword;
-    public Type TableParserType;
-    public Type TableSchemaType;
-    public List<GwaKeyword> RefTableKeywords;
-
-    public bool HasDifferentatedKeywords = false;
-    public List<GwaKeyword> LineKeywords = new List<GwaKeyword>();
-    public List<Type> LineParserTypes = new List<Type>();
-    public List<Type> LineSchemaTypes = new List<Type>();
-
-    internal bool ContainsKeyword(GwaKeyword kw) => (TableKeyword == kw || LineKeywords.Any(lkw => lkw == kw));
-
-    internal bool ContainsSchemaType(Type t) => (HasDifferentatedKeywords) ? LineSchemaTypes.Contains(t) : (TableSchemaType == t);
-
-    internal Type GetParserType(Type schemaType)
-    {
-      if (ContainsSchemaType(schemaType))
-      {
-        if (HasDifferentatedKeywords)
-        {
-          return LineParserTypes[LineSchemaTypes.IndexOf(schemaType)];
-        }
-        else if (TableSchemaType == schemaType)
-        {
-          return TableParserType;
-        }
-      }
-      return null;
-    }
-
-    internal Type GetSchemaType(GwaKeyword kw)
-    {
-      if (ContainsKeyword(kw))
-      {
-        if (HasDifferentatedKeywords)
-        {
-          return LineSchemaTypes[LineKeywords.IndexOf(kw)];
-        }
-        else if (TableKeyword == kw)
-        {
-          return TableSchemaType;
-        }
-      }
-      return null;
-    }
   }
 }

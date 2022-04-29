@@ -2,15 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Objects.Other;
 using Objects.Primitive;
 using Speckle.Core.Kits;
-using Speckle.Core.Logging;
 using Speckle.Core.Models;
 
 namespace Objects.Geometry
 {
-  public class Curve : Base, ICurve, IHasBoundingBox, IHasArea, ITransformable, IDisplayValue<Polyline>
+  public class Curve : Base, ICurve, IHasBoundingBox, IHasArea
   {
     public int degree { get; set; }
 
@@ -41,7 +39,6 @@ namespace Objects.Geometry
 
     public Interval domain { get; set; }
 
-    [DetachProperty]
     public Polyline displayValue { get; set; }
 
     public bool closed { get; set; }
@@ -62,18 +59,15 @@ namespace Objects.Geometry
       this.applicationId = applicationId;
       this.units = units;
     }
-    
-    /// <returns><see cref="points"/> as list of <see cref="Point"/>s</returns>
-    /// <exception cref="SpeckleException">when list is malformed</exception>
-    public List<Point> GetPoints()
+
+    public IEnumerable<Point> GetPoints()
     {
-      if (points.Count % 3 != 0) throw new SpeckleException($"{nameof(Curve)}.{nameof(points)} list is malformed: expected length to be multiple of 3");
-      
-      var pts = new List<Point>(points.Count / 3);
-      for (int i = 2; i < points.Count; i += 3)
-      {
-        pts.Add(new Point(points[i - 2], points[i - 1], points[i], units));
-      }
+      if (points.Count % 3 != 0)throw new Speckle.Core.Logging.SpeckleException("Array malformed: length%3 != 0.");
+
+      Point[ ] pts = new Point[points.Count / 3];
+      var asArray = points.ToArray();
+      for (int i = 2, k = 0; i < points.Count; i += 3)
+        pts[k++] = new Point(asArray[i - 2], asArray[i - 1], asArray[i], units);
       return pts;
     }
 
@@ -124,26 +118,6 @@ namespace Objects.Geometry
 
       curve.units = Units.GetUnitFromEncoding(list[list.Count - 1]);
       return curve;
-    }
-
-    public bool TransformTo(Transform transform, out ITransformable curve)
-    {
-      var result = displayValue.TransformTo(transform, out ITransformable polyline);
-      curve = new Curve
-      {
-        degree = degree,
-        periodic = periodic,
-        rational = rational,
-        points = transform.ApplyToPoints(points),
-        weights = weights,
-        knots = knots,
-        displayValue = ( Polyline ) polyline,
-        closed = closed,
-        units =  units,
-        applicationId = applicationId
-      };
-
-      return result;
     }
   }
 }

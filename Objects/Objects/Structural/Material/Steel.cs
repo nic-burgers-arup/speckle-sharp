@@ -19,7 +19,7 @@ namespace Objects.Structural.Materials
         {
             this.name = name;
             this.grade = grade;
-            this.materialType = MaterialType.Steel;
+            this.type = MaterialType.Steel;
             this.designCode = designCode;
             this.codeYear = codeYear;
             this.elasticModulus = elasticModulus;

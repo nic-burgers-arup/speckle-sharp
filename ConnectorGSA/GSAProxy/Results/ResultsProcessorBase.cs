@@ -68,12 +68,8 @@ namespace Speckle.ConnectorGSA.Results
       numErrorRows = 0;
 
       // [ result_type, [ [ headers ], [ row, column ] ] ]
-      var config = new CsvHelper.Configuration.CsvConfiguration(cultureInfo: CultureInfo.InvariantCulture)
-      {
-        MissingFieldFound = null
-      };
 
-      using (var csv = new CsvReader(reader, config))
+      using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
       {
         csv.Read();
         csv.ReadHeader();
@@ -103,12 +99,8 @@ namespace Speckle.ConnectorGSA.Results
             {
               foundCases.Add(record.CaseId);
             }
-            
-            // to parse combination case id when id contains min/max descriptor 
-            Proxy.GsaProxy.ProcessLoadCaseCombinationSpec(record.CaseId, out List<string> aParts, out List<string> cParts);
-            var cPartsDistinct = cParts.Distinct();
 
-            if ((elemIds == null || elemIds.Contains(record.ElemId)) && ((cases == null) || (cases.Contains(record.CaseId) || cPartsDistinct.Any(x => cases.Contains(x)))))
+            if ((elemIds == null || elemIds.Contains(record.ElemId)) && ((cases == null) || (cases.Contains(record.CaseId))))
             {
               Records.Add(rowIndex, record);
               if (!RecordIndices.ContainsKey(record.ElemId))
@@ -186,6 +178,7 @@ namespace Speckle.ConnectorGSA.Results
       records = null;
       return false;
     }
+
 
     protected float? ApplyFactors(float? val, List<double> factors)
     {

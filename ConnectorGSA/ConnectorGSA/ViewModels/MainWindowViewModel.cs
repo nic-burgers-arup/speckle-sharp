@@ -13,7 +13,6 @@ using ConnectorGSA.Models;
 using Speckle.GSA.API;
 using ConnectorGSA.Utilities;
 using Serilog;
-using Speckle.ConnectorGSA.Proxy;
 
 namespace ConnectorGSA.ViewModels
 {
@@ -26,7 +25,7 @@ namespace ConnectorGSA.ViewModels
     public TabCoordinator Coordinator { get; } = new TabCoordinator();
     public StateMachine StateMachine { get; } = new StateMachine();
 
-    public string Title { get => "SpeckleGSAV2 - " + Coordinator.RunningVersion; }
+    public string Title { get => "SpeckleGSA - " + Coordinator.RunningVersion; }
 
     public SpeckleAccountForUI Account { get => Coordinator.Account; }
 
@@ -48,10 +47,7 @@ namespace ConnectorGSA.ViewModels
     public StreamMethod SendStreamMethod { get => Coordinator.SenderTab.StreamMethod; set => Refresh(() => Coordinator.SenderTab.StreamMethod = value); }
     public string CurrentlyOpenFileName
     {
-      get => Coordinator.FileStatus == GsaLoadedFileType.None 
-        ? "No file is currently open" 
-        : Coordinator.FileStatus == GsaLoadedFileType.NewFile 
-          ? "New file" : Coordinator.FilePath;
+      get => Coordinator.FileStatus == GsaLoadedFileType.None ? "No file is currently open" : Coordinator.FileStatus == GsaLoadedFileType.NewFile ? "New file" : Coordinator.FilePath;
     }
 
     public bool MainWindowEnabled { get; private set; } = true;
@@ -136,15 +132,13 @@ namespace ConnectorGSA.ViewModels
     public StreamContentConfig StreamContentConfig { get => Coordinator.SenderTab.StreamContentConfig;
       set => Refresh(() => Coordinator.SenderTab.StreamContentConfig = value); }
 
-    public bool SendMeaningfulNodes { get => Coordinator.SenderTab.SendMeaningfulNodes; set => Coordinator.SenderTab.SendMeaningfulNodes = value; }
+    public bool SendMeaningfulNodes { get; set; } = true;
     public int Additional1DPositions { get => Coordinator.SenderTab.AdditionalPositionsFor1dElements;
       set => Coordinator.SenderTab.AdditionalPositionsFor1dElements = value; }
 
     public double CoincidentNodeAllowance { get => Coordinator.ReceiverTab.CoincidentNodeAllowance; set { Coordinator.ReceiverTab.CoincidentNodeAllowance = value; } }
     public List<GsaUnit> CoincidentNodeAllowanceUnitOptions { get => new List<GsaUnit> { GsaUnit.Millimetres, GsaUnit.Metres, GsaUnit.Inches }; }
     public GsaUnit CoincidentNodeAllowanceUnit { get => Coordinator.ReceiverTab.CoincidentNodeUnits; set { Coordinator.ReceiverTab.CoincidentNodeUnits = value; } }
-    public List<string> MappingStreamOptions { get => new List<string> { "", "Default Mapping Stream" }; }
-    public string MappingStream { get => Coordinator.ReceiverTab.MappingStreamId; set { Coordinator.ReceiverTab.MappingStreamId = value; } }
     public LoggingMinimumLevel LoggingMinimumLevel { get => Coordinator.LoggingMinimumLevel; set { Coordinator.LoggingMinimumLevel = value; } }
     public List<LoggingMinimumLevel> LoggingMinimumLevelOptions
     {
@@ -193,17 +187,12 @@ namespace ConnectorGSA.ViewModels
       //The same methods that handle messages from the kits are being used for messages originating from the commands and the SpeckleGSA library, with the 
       //sender and receiver coordinators
       loggingProgress.ProgressChanged += ProcessLogProgressUpdate;
-      loggingProgress.ProgressChanged += ProcessMessageForLog;
-#if !DEBUG
-      loggingProgress.ProgressChanged += ProcessMessageForTelemetry;
-#endif
+      loggingProgress.ProgressChanged += MainWindowViewModel.ProcessMessageForLog;
       streamCreationProgress.ProgressChanged += ProcessStreamCreationProgress;
       streamDeletionProgress.ProgressChanged += ProcessStreamDeletionProgress;
       statusProgress.ProgressChanged += ProcessStatusProgressUpdate;
       //This ensures the messages for the display log in the UI, originating from the conversion code in the kits, end up being handled
-      //((GsaMessenger)Instance.GsaModel.Messenger).MessageAdded += ProcessLogProgressUpdate;
-      //((GsaMessenger)Instance.GsaModel.Messenger).MessageAdded += ProcessMessageForTelemetry;
-
+      ((GsaMessenger)Instance.GsaModel.Messenger).MessageAdded += ProcessLogProgressUpdate;
       CreateCommands();
     }
 
@@ -222,7 +211,9 @@ namespace ConnectorGSA.ViewModels
 
          if (loaded)
          {
+           //var retrievedStreamInfoFromFile = await Task.Run(() => Commands.ReadSavedStreamInfo(Coordinator, loggingProgress));
            var retrievedStreamInfoFromFile = await Task.Run(() => Commands.ReadSavedStreamInfo(Coordinator, loggingProgress));
+
            Refresh(() => StateMachine.LoggedIn());
          }
          else
@@ -234,13 +225,50 @@ namespace ConnectorGSA.ViewModels
       ConnectToServerCommand = new DelegateCommand<object>(
         async (o) =>
         {
-
-          MainWindowEnabled = false;
+          Refresh(() => StateMachine.StartedLoggingIn());
 
           Process.Start("speckle://account");
 
+          //var signInWindow = new SpecklePopup.SignInWindow(true);
+
+          MainWindowEnabled = false;
+
+          /*
+          signInWindow.ShowDialog();
+
           MainWindowEnabled = true;
 
+          if (signInWindow.AccountListBox.SelectedIndex != -1)
+          {
+            var account = signInWindow.accounts[signInWindow.AccountListBox.SelectedIndex];
+            var newAccountForUI = new SpeckleAccountForUI(account.RestApi, account.Email, account.Token);
+
+            if (newAccountForUI != null && newAccountForUI.IsValid)
+            {
+              Refresh(() => StateMachine.StartedUpdatingStreams());
+
+              var completed = await Commands.CompleteLogin(Coordinator, newAccountForUI, loggingProgress);
+
+              if (completed)
+              {
+                Refresh(() => StateMachine.LoggedIn());
+
+                var retrievedStreamInfoFromFile = await Task.Run(() => Commands.ReadSavedStreamInfo(Coordinator, loggingProgress));
+              }
+              else
+              {
+                Refresh(() => StateMachine.CancelledLoggingIn());
+                GSA.App.Messenger.Message(MessageIntent.Display, SpeckleGSAInterfaces.MessageLevel.Error, "Failed to log in");
+              }
+
+              Refresh(() => StateMachine.StoppedUpdatingStreams());
+
+              return;
+            }
+          }
+          Refresh(() => StateMachine.CancelledLoggingIn());
+          GSA.App.Messenger.Message(MessageIntent.Display, SpeckleGSAInterfaces.MessageLevel.Error, "Failed to log in");
+          */
         },
         (o) => !StateMachine.StreamIsOccupied);
 
@@ -268,7 +296,7 @@ namespace ConnectorGSA.ViewModels
 
           Refresh(() => StateMachine.EnteredReceivingMode(ReceiveStreamMethod));
 
-          var result = await Task.Run(() => Commands.Receive(Coordinator, loggingProgress, statusProgress, percentageProgress));
+          var result = await Task.Run(() => Commands.Receive(Coordinator, streamCreationProgress, loggingProgress, statusProgress, percentageProgress));
 
           Refresh(() => StateMachine.StoppedReceiving());
         },
@@ -319,7 +347,7 @@ namespace ConnectorGSA.ViewModels
 
             Refresh(() => StateMachine.EnteredReceivingMode(ReceiveStreamMethod));
 
-            var result = await Task.Run(() => Commands.Receive(Coordinator, loggingProgress, statusProgress, percentageProgress));
+            var result = await Task.Run(() => Commands.Receive(Coordinator, streamCreationProgress, loggingProgress, statusProgress, percentageProgress));
 
             if (ReceiveStreamMethod != StreamMethod.Continuous)
             {
@@ -337,14 +365,8 @@ namespace ConnectorGSA.ViewModels
           var paste = Clipboard.GetText(TextDataFormat.Text).Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList();
           foreach (string p in paste)
           {
-            var account = ((GsaModel)Instance.GsaModel).Account;
-
             Coordinator.ReceiverTab.StreamList.StreamListItems.Add(new StreamListItem(p, null));
-            Coordinator.ReceiverTab.ReceiverStreamStates.Add(new StreamState(account.userInfo.id, account.serverInfo.url) 
-              { 
-                Stream = new Speckle.Core.Api.Stream() { id = p }, 
-                IsReceiving = true 
-              });
+            Coordinator.ReceiverTab.StreamListToSidRecords();
           }
           Refresh();
         },
@@ -354,6 +376,7 @@ namespace ConnectorGSA.ViewModels
         (o) =>
         {
           Coordinator.ReceiverTab.StreamList.StreamListItems.Clear();
+          Coordinator.ReceiverTab.StreamListToSidRecords();
           Refresh();
         },
         (o) => !StateMachine.StreamFileIsOccupied && ReceiverStreamListItems.Count() > 0);
@@ -376,11 +399,12 @@ namespace ConnectorGSA.ViewModels
           if (StateMachine.StreamState == StreamStateUI.SendingWaiting)
           {
             Refresh(() => StateMachine.StoppedSending());
-            TriggerTimer.Stop();
-            TriggerTimer.Close();
           }
           else
           {
+            //Sender coordinator is in the SpeckleGSA library, NOT the SpeckleInterface.  The sender coordinator calls the SpeckleInterface methods
+            //var gsaSenderCoordinator = new SenderCoordinator();  //Coordinates across multiple streams
+
             Refresh(() => StateMachine.EnteredSendingMode(SendStreamMethod));
             var result = await Task.Run(() => Commands.SendInitial(Coordinator, streamCreationProgress, streamDeletionProgress, 
               loggingProgress, statusProgress, percentageProgress));
@@ -390,9 +414,13 @@ namespace ConnectorGSA.ViewModels
             {
               TriggerTimer = new Timer(Coordinator.SenderTab.PollingRateMilliseconds);
               TriggerTimer.Elapsed += (sender, e) => Application.Current.Dispatcher.BeginInvoke(
-                DispatcherPriority.Background, new Action(() => ContinuousSendCommand.Execute(this)));
+                DispatcherPriority.Background, new Action(() => ContinuousSendCommand.Execute(null)));
               TriggerTimer.AutoReset = false;
               TriggerTimer.Start();
+            }
+            else
+            {
+              //gsaSenderCoordinator.Dispose();
             }
           }
         },
@@ -402,9 +430,10 @@ namespace ConnectorGSA.ViewModels
       ContinuousSendCommand = new DelegateCommand<object>(
         async (o) =>
         {
-          var vm = (MainWindowViewModel)o;
+          //var gsaSenderCoordinator = (SenderCoordinator)o;
+          var gsaSenderCoordinator = o;
           Refresh(() => StateMachine.StartedTriggeredSending());
-          var result = await Task.Run(() => Commands.SendTriggered(Coordinator, loggingProgress, statusProgress, percentageProgress));
+          var result = await Task.Run(() => Commands.SendTriggered(gsaSenderCoordinator));
           Refresh(() => StateMachine.StoppedTriggeredSending());
 
           TriggerTimer.Start();
@@ -415,10 +444,6 @@ namespace ConnectorGSA.ViewModels
         {
           Refresh(() => StateMachine.StartedSavingFile());
           var result = await Task.Run(() => Commands.SaveFile(Coordinator));
-          if (result)
-          {
-            Coordinator.FileStatus = GsaLoadedFileType.ExistingFile;
-          }
           Refresh(() => StateMachine.StoppedSavingFile());
         },
         (o) => !StateMachine.StreamFileIsOccupied && StateMachine.FileState == FileState.Loaded);
@@ -429,11 +454,11 @@ namespace ConnectorGSA.ViewModels
           var streamIdToRemove = Coordinator.SenderTab.StreamList.SeletedStreamListItem.StreamId;
           if (!string.IsNullOrEmpty(streamIdToRemove))
           {
-            var StreamStateToRemove = Coordinator.SenderTab.SenderStreamStates.FirstOrDefault(r => r.StreamId.Equals(streamIdToRemove));
-            if (StreamStateToRemove != null)
+            var sidRecordToRemove = Coordinator.SenderTab.SenderSidRecords.FirstOrDefault(r => r.StreamId.Equals(streamIdToRemove));
+            if (sidRecordToRemove != null)
             {
-              Coordinator.SenderTab.RemoveStreamState(StreamStateToRemove);
-              Coordinator.SenderTab.StreamStatesToStreamList();
+              Coordinator.SenderTab.RemoveSidSpeckleRecord(sidRecordToRemove);
+              Coordinator.SenderTab.SidRecordsToStreamList();
               Refresh();
             }
           }
@@ -447,8 +472,8 @@ namespace ConnectorGSA.ViewModels
           var newStreamName = o.ToString();
           var streamId = Coordinator.SenderTab.StreamList.SeletedStreamListItem.StreamId;
           var result = await Task.Run(() => Commands.RenameStream(Coordinator, streamId, newStreamName, loggingProgress));
-          await Coordinator.SenderTab.RefreshStream(streamId, loggingProgress);
-          Coordinator.SenderTab.StreamStatesToStreamList();
+          Coordinator.SenderTab.ChangeSidRecordStreamName(streamId, newStreamName);
+          Coordinator.SenderTab.SidRecordsToStreamList();
           Refresh(() => StateMachine.StoppedRenamingStream());
         },
         (o) => !StateMachine.StreamIsOccupied);  //There is no visual button linked to this command so the CanExecute condition can be less strict 
@@ -476,7 +501,7 @@ namespace ConnectorGSA.ViewModels
             Task.Run(() =>
             {
               string url = Coordinator.Account.ServerUrl.Split(new string[] { "api" }, StringSplitOptions.RemoveEmptyEntries)[0];
-              Process.Start(url + @"/streams/" + streamId);
+              Process.Start(url + @"#/view/" + streamId);
             });
           }
         },
@@ -546,8 +571,8 @@ namespace ConnectorGSA.ViewModels
       //This is only releveant for sending since no streams are created when receiving
       if (!Coordinator.SenderTab.StreamList.StreamListItems.Any(s => s.StreamId.Equals(r.StreamId, StringComparison.InvariantCultureIgnoreCase)))
       {
-        Coordinator.SenderTab.SenderStreamStates.Add(r);
-        Coordinator.SenderTab.StreamStatesToStreamList();
+        Coordinator.SenderTab.SenderSidRecords.Add(r);
+        Coordinator.SenderTab.SidRecordsToStreamList();
         NotifyPropertyChanged("SenderStreamListItems");
       }
     }
@@ -558,8 +583,8 @@ namespace ConnectorGSA.ViewModels
       var matching = Coordinator.SenderTab.StreamList.StreamListItems.Where(sli => sli.StreamId.Equals(r.StreamId, StringComparison.InvariantCultureIgnoreCase)).ToList();
       if (matching != null && matching.Count() > 0)
       {
-        Coordinator.SenderTab.RemoveStreamState(r);
-        Coordinator.SenderTab.StreamStatesToStreamList();
+        Coordinator.SenderTab.RemoveSidSpeckleRecord(r);
+        Coordinator.SenderTab.SidRecordsToStreamList();
         NotifyPropertyChanged("SenderStreamListItems");
       }
     }
@@ -674,16 +699,6 @@ namespace ConnectorGSA.ViewModels
       }
     }
 
-    public static void ProcessMessageForTelemetry(object sender, MessageEventArgs messageEventArgs)
-    {
-      if (messageEventArgs.Intent == MessageIntent.Telemetry)
-      {
-        ((GsaProxy)Instance.GsaModel.Proxy).SendTelemetry(messageEventArgs.MessagePortions);
-        //Also log all telemetry transmissions, although the log entries won't have any additional info (prefixes etc) that the proxy has
-        //been coded to add
-        Log.Debug("Telemetry: " + string.Join(" ", messageEventArgs.MessagePortions));
-      }
-    }
     #endregion
   }
 }

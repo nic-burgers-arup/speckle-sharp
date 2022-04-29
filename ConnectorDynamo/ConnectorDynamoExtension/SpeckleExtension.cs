@@ -32,7 +32,7 @@ namespace Speckle.ConnectorDynamo.Extension
         //sets a read-only property using reflection WatchHandler
         //typeof(DynamoViewModel).GetProperty("WatchHandler").SetValue(dynamoViewModel, speckleWatchHandler);
 
-        Setup.Init(VersionedHostApplications.DynamoRevit, HostApplications.Dynamo.Slug);
+        Setup.Init(Applications.DynamoRevit);
       }
       catch (Exception e)
       {
@@ -54,7 +54,7 @@ namespace Speckle.ConnectorDynamo.Extension
 
     public void Startup(ViewStartupParams p)
     {
-      Setup.Init(VersionedHostApplications.DynamoSandbox, HostApplications.Dynamo.Slug);
+      Setup.Init(Applications.DynamoSandbox);
     }
   }
 }

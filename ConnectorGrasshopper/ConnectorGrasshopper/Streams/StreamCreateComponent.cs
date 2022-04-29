@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,7 +8,7 @@ using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
 using Speckle.Core.Api;
 using Speckle.Core.Credentials;
-using Logging = Speckle.Core.Logging;
+using Speckle.Core.Logging;
 
 namespace ConnectorGrasshopper.Streams
 {
@@ -70,7 +69,6 @@ namespace ConnectorGrasshopper.Streams
         return;
       }
 
-
       string userId = null;
       Account account = null;
       DA.GetData(0, ref userId);
@@ -102,14 +100,12 @@ namespace ConnectorGrasshopper.Streams
         return;
       }
 
-      Logging.Analytics.TrackEvent(account, Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Stream Create" } });
-
       Task.Run(async () =>
       {
         var client = new Client(account);
         try
         {
-          var streamId = await client.StreamCreate(new StreamCreateInput { isPublic = false });
+          var streamId = await client.StreamCreate(new StreamCreateInput());
           stream = new StreamWrapper(
             streamId,
             account.userInfo.id,
@@ -131,5 +127,12 @@ namespace ConnectorGrasshopper.Streams
         }
       });
     }
+
+    protected override void BeforeSolveInstance()
+    {
+      Tracker.TrackPageview(Tracker.STREAM_CREATE);
+      base.BeforeSolveInstance();
+    }
+
   }
 }

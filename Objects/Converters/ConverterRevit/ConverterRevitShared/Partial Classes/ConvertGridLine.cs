@@ -21,8 +21,8 @@ namespace Objects.Converter.Revit
       var revitGrid = GetExistingElementByApplicationId(speckleGridline.applicationId) as Grid;
       var curve = CurveToNative(speckleGridline.baseLine).get_Item(0);
 
-      //try update the gridline
-      var isUpdate = false;
+      //delete and re-create line
+      //TODO: check if can be modified
       if (revitGrid != null)
       {
         if (revitGrid.IsCurved)
@@ -38,35 +38,27 @@ namespace Objects.Converter.Revit
           var newStart = curve.GetEndPoint(0);
           var newEnd = curve.GetEndPoint(1);
 
-          //only update if it has changed
-          if (!(oldStart.DistanceTo(newStart) < TOLERANCE && oldEnd.DistanceTo(newEnd) < TOLERANCE))
+          var translate = newStart.Subtract(oldStart);
+          ElementTransformUtils.MoveElement(Doc, revitGrid.Id, translate);
+
+          var currentDirection = revitGrid.Curve.GetEndPoint(0).Subtract(revitGrid.Curve.GetEndPoint(1)).Normalize();
+          var newDirection = newStart.Subtract(newEnd).Normalize();
+
+          var angle = newDirection.AngleTo(currentDirection);
+
+          if (angle > 0.00001)
           {
-            var translate = newStart.Subtract(oldStart);
-            ElementTransformUtils.MoveElement(Doc, revitGrid.Id, translate);
+            var crossProd = newDirection.CrossProduct(currentDirection).Z;
+            ElementTransformUtils.RotateElement(Doc, revitGrid.Id, Autodesk.Revit.DB.Line.CreateUnbound(newStart, XYZ.BasisZ), crossProd < 0 ? angle : -angle);
+          }
 
-            var currentDirection = revitGrid.Curve.GetEndPoint(0).Subtract(revitGrid.Curve.GetEndPoint(1)).Normalize();
-            var newDirection = newStart.Subtract(newEnd).Normalize();
-
-            var angle = newDirection.AngleTo(currentDirection);
-
-            if (angle > 0.00001)
-            {
-              var crossProd = newDirection.CrossProduct(currentDirection).Z;
-              ElementTransformUtils.RotateElement(Doc, revitGrid.Id, Autodesk.Revit.DB.Line.CreateUnbound(newStart, XYZ.BasisZ), crossProd < 0 ? angle : -angle);
-            }
-
-            try
-            {
-              var datumLine = revitGrid.GetCurvesInView(DatumExtentType.Model, Doc.ActiveView)[0];
-              var datumLineZ = datumLine.GetEndPoint(0).Z;
-              //note the new datum line has endpoints flipped!
-              revitGrid.SetCurveInView(DatumExtentType.Model, Doc.ActiveView, Line.CreateBound(new XYZ(newEnd.X, newEnd.Y, datumLineZ), new XYZ(newStart.X, newStart.Y, datumLineZ)));
-            }
-            catch (Exception e)
-            {
-              Report.LogConversionError(new Exception($"Error setting grid endpoints {speckleGridline.id}."));
-            }
-            isUpdate = true;
+          try
+          {
+            revitGrid.SetCurveInView(DatumExtentType.Model, Doc.ActiveView, Line.CreateBound(newStart, newEnd));
+          }
+          catch (Exception e)
+          {
+            System.Diagnostics.Debug.WriteLine("Failed to set grid endpoints.");
           }
         }
       }
@@ -79,15 +71,11 @@ namespace Objects.Converter.Revit
         else if (curve is Line l)
           revitGrid = Grid.Create(Doc, l);
         else
-          throw new Speckle.Core.Logging.SpeckleException("Failed to create GridLine, curve type not supported for Grid: " + curve.GetType().FullName);
+          throw new Speckle.Core.Logging.SpeckleException("Curve type not supported for Grid: " + curve.GetType().FullName);
       }
 
-      if (!string.IsNullOrEmpty(speckleGridline.label))
-      {
-        var names = new FilteredElementCollector(Doc).WhereElementIsElementType().OfClass(typeof(Grid)).ToElements().Cast<Grid>().ToList().Select(x => x.Name);
-        if (!names.Contains(speckleGridline.label))
-          revitGrid.Name = speckleGridline.label;
-      }
+      //name must be unique, too much faff
+      //revitGrid.Name = speckleGridline.label;
 
       var placeholders = new List<ApplicationPlaceholderObject>()
       {
@@ -99,7 +87,7 @@ namespace Objects.Converter.Revit
         }
       };
 
-      Report.Log($"{(isUpdate ? "Updated" : "Created")} GridLine {revitGrid.Id}");
+
       return placeholders;
     }
 
@@ -112,7 +100,6 @@ namespace Objects.Converter.Revit
       //speckleGridline.elementId = revitCurve.Id.ToString(); this would need a RevitGridLine element
       speckleGridline.applicationId = revitGridLine.UniqueId;
       speckleGridline.units = ModelUnits;
-      Report.Log($"Converted GridLine {revitGridLine.Id}");
       return speckleGridline;
     }
 

@@ -1,15 +1,12 @@
-﻿using System;
-using Objects.Geometry;
+﻿using Objects.Geometry;
 using Objects.Utils;
 using Speckle.Core.Kits;
 using Speckle.Core.Models;
 using System.Collections.Generic;
-using System.Linq;
-using Speckle.Newtonsoft.Json;
 
 namespace Objects.BuiltElements.Revit
 {
-  public class DirectShape : Base, IDisplayMesh, IDisplayValue<List<Base>>
+  public class DirectShape : Base , IDisplayMesh
   {
     public string name { get; set; }
     public RevitCategory category { get; set; }
@@ -18,9 +15,9 @@ namespace Objects.BuiltElements.Revit
 
     [DetachProperty]
     public List<Base> baseGeometries { get; set; }
-    
+
     [DetachProperty]
-    public List<Base> displayValue { get; set; }
+    public Mesh displayMesh { get; set; }
 
     public string units { get; set; }
 
@@ -47,13 +44,5 @@ namespace Objects.BuiltElements.Revit
       || @base is ICurve
       || @base is Mesh
       || @base is Brep;
-    
-    #region Obsolete Members
-    [JsonIgnore, Obsolete("Use " + nameof(displayValue) + " instead")]
-    public Mesh displayMesh {
-      get => displayValue?.FirstOrDefault() is Mesh m? m : null;
-      set => displayValue = new List<Base> {value};
-    }
-    #endregion
   }
 }

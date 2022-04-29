@@ -41,7 +41,7 @@ namespace Speckle.ConnectorRevit.UI
 
       if (state.Filter != null)
       {
-        selectedObjects = GetSelectionFilterObjects(state.Filter, converter);
+        selectedObjects = GetSelectionFilterObjects(state.Filter);
         state.SelectedObjectIds = selectedObjects.Select(x => x.UniqueId).ToList();
       }
       else //selection was by cursor
@@ -111,11 +111,11 @@ namespace Speckle.ConnectorRevit.UI
 
       }
 
-      if (converter.Report.ConversionErrorsCount != 0)
+      if (converter.ConversionErrors.Count != 0)
       {
         // TODO: Get rid of the custom Error class. It's not needed.
-        ConversionErrors.AddRange(converter.Report.ConversionErrors);
-        state.Errors.AddRange(converter.Report.ConversionErrors);
+        ConversionErrors.AddRange(converter.ConversionErrors);
+        state.Errors.AddRange(converter.ConversionErrors);
       }
 
       if (convertedCount == 0)

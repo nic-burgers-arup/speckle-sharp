@@ -1,9 +1,10 @@
-using System;
-using Autodesk.Revit.DB;
-using Autodesk.Revit.DB.Structure;
-using Speckle.Core.Models;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Structure;
+using Objects.BuiltElements.Revit;
+using Speckle.Core.Models;
 using DB = Autodesk.Revit.DB;
 using Point = Objects.Geometry.Point;
 
@@ -11,14 +12,14 @@ namespace Objects.Converter.Revit
 {
   public partial class ConverterRevit
   {
-    //TODO: might need to clean this up and split the ConversionLog.Addic by beam, FI, etc...
+    //TODO: might need to clean this up and split the logic by beam, FI, etc...
     public List<ApplicationPlaceholderObject> FamilyInstanceToNative(BuiltElements.Revit.FamilyInstance speckleFi)
     {
       DB.FamilySymbol familySymbol = GetElementType<FamilySymbol>(speckleFi);
       XYZ basePoint = PointToNative(speckleFi.basePoint);
-      DB.Level level = ConvertLevelToRevit(speckleFi.level);
+      DB.Level level = LevelToNative(speckleFi.level);
       DB.FamilyInstance familyInstance = null;
-      var isUpdate = false;
+
       //try update existing
       var docObj = GetExistingElementByApplicationId(speckleFi.applicationId);
       if (docObj != null)
@@ -54,7 +55,6 @@ namespace Objects.Converter.Revit
             TrySetParam(familyInstance, BuiltInParameter.FAMILY_LEVEL_PARAM, level);
             TrySetParam(familyInstance, BuiltInParameter.FAMILY_BASE_LEVEL_PARAM, level);
           }
-          isUpdate = true;
         }
         catch
         {
@@ -103,10 +103,6 @@ namespace Objects.Converter.Revit
       catch { }
 
       SetInstanceParameters(familyInstance, speckleFi);
-      if (speckleFi.mirrored)
-      {
-        Report.ConversionErrors.Add(new Exception($"Element with id {familyInstance.Id} should be mirrored, but a Revit API limitation prevented us from doing so. (speckle object id: {speckleFi.id}"));
-      }
 
       var placeholders = new List<ApplicationPlaceholderObject>()
       {
@@ -117,14 +113,14 @@ namespace Objects.Converter.Revit
         NativeObject = familyInstance
         }
       };
-      Report.Log($"{(isUpdate ? "Updated" : "Created")} FamilyInstance ({familyInstance.Category.Name}) {familyInstance.Id}");
+
       return placeholders;
     }
 
     /// <summary>
-    /// Entry point for all revit family conversions.
+    /// Entry point for all revit family conversions. TODO: Check for Beams and Columns and any other "dedicated" speckle elements and convert them as such rather than to the generic "family instance" object.
     /// </summary>
-    /// <param name="revitFi"></param>
+    /// <param name="myElement"></param>
     /// <returns></returns>
     public Base FamilyInstanceToSpeckle(DB.FamilyInstance revitFi)
     {
@@ -172,7 +168,7 @@ namespace Objects.Converter.Revit
       var lev1 = ConvertAndCacheLevel(revitFi, BuiltInParameter.FAMILY_LEVEL_PARAM);
       var lev2 = ConvertAndCacheLevel(revitFi, BuiltInParameter.FAMILY_BASE_LEVEL_PARAM);
 
-      var symbol = revitFi.Document.GetElement(revitFi.GetTypeId()) as FamilySymbol;
+      var symbol = Doc.GetElement(revitFi.GetTypeId()) as FamilySymbol;
 
       var speckleFi = new BuiltElements.Revit.FamilyInstance();
       speckleFi.basePoint = basePoint;
@@ -182,24 +178,13 @@ namespace Objects.Converter.Revit
       speckleFi.facingFlipped = revitFi.FacingFlipped;
       speckleFi.handFlipped = revitFi.HandFlipped;
       speckleFi.level = lev1 != null ? lev1 : lev2;
-      speckleFi.mirrored = revitFi.Mirrored;
 
       if (revitFi.Location is LocationPoint)
       {
         speckleFi.rotation = ((LocationPoint)revitFi.Location).Rotation;
       }
 
-      speckleFi.displayValue = GetElementMesh(revitFi, GetAllFamSubElements(revitFi));
-
-      var material = ConverterRevit.GetMEPSystemMaterial(revitFi);
-
-      if (material != null)
-      {
-        foreach (var mesh in speckleFi.displayValue)
-        {
-          mesh["renderMaterial"] = material;
-        }
-      }
+      speckleFi.displayMesh = GetElementMesh(revitFi, GetAllFamSubElements(revitFi));
 
       GetAllRevitParamsAndIds(speckleFi, revitFi);
 
@@ -210,7 +195,7 @@ namespace Objects.Converter.Revit
 
       foreach (var elemId in subElementIds)
       {
-        var subElem = revitFi.Document.GetElement(elemId);
+        var subElem = Doc.GetElement(elemId);
         if (CanConvertToSpeckle(subElem))
         {
           var obj = ConvertToSpeckle(subElem);
@@ -232,7 +217,7 @@ namespace Objects.Converter.Revit
 
       // TODO:
       // revitFi.GetSubelements();
-      Report.Log($"Converted FamilyInstance {revitFi.Id}");
+
       return speckleFi;
     }
 
@@ -246,7 +231,7 @@ namespace Objects.Converter.Revit
       var subElements = new List<DB.Element>();
       foreach (var id in familyInstance.GetSubComponentIds())
       {
-        var element = familyInstance.Document.GetElement(id);
+        var element = Doc.GetElement(id);
         subElements.Add(element);
         if (element is Autodesk.Revit.DB.FamilyInstance)
         {

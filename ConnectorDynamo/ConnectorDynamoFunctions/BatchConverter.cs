@@ -45,8 +45,6 @@ namespace Speckle.ConnectorDynamo.Functions
         throw new SpeckleException("Invalid input");
 
       var converted = RecurseTreeToSpeckle(@object);
-
-      if (converted is null) return null;
       var @base = new Base();
 
       //case 1: lists and basic types => add them to a wrapper Base object in a `data` prop
@@ -124,7 +122,7 @@ namespace Speckle.ConnectorDynamo.Functions
       }
 
 
-      if (value is Base || value is null || value.GetType().IsSimpleType())
+      if (value is Base || value.GetType().IsSimpleType())
       {
         return value;
       }

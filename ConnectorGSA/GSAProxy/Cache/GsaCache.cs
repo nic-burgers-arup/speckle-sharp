@@ -1,4 +1,5 @@
-﻿using Speckle.GSA.API;
+﻿using Speckle.ConnectorGSA.Proxy.GwaParsers;
+using Speckle.GSA.API;
 using Speckle.GSA.API.GwaSchema;
 using System;
 using System.Collections.Generic;
@@ -9,36 +10,34 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
   public class GsaCache : IGSACache
   {
     #region GsaRecord_cache
-    public int NumRecords { get => ValidRecords.Where(r => r.Latest).Count(); }
+    public int NumRecords { get => validRecords.Where(r => r.Latest).Count(); }
 
-    private readonly List<GsaCacheRecord> records = new List<GsaCacheRecord>();
-    private readonly List<string> foundStreamIds = new List<string>();  // To avoid storing stream ID strings multiple times
+    private List<GsaCacheRecord> records = new List<GsaCacheRecord>();
+    private List<string> foundStreamIds = new List<string>();  // To avoid storing stream ID strings multiple times
 
     //Performance-enhancing index tables for fast lookup
     private readonly Dictionary<Type, HashSet<int>> recordIndicesBySchemaType = new Dictionary<Type, HashSet<int>>();
     private readonly Dictionary<Type, Dictionary<int, HashSet<int>>> recordIndicesBySchemaTypeGsaId = new Dictionary<Type, Dictionary<int, HashSet<int>>>();
     private readonly Dictionary<string, HashSet<int>> recordIndicesByApplicationId = new Dictionary<string, HashSet<int>>();
     private readonly Dictionary<int, HashSet<int>> recordIndicesByStreamIdIndex = new Dictionary<int, HashSet<int>>();
+    private readonly Dictionary<Type, Dictionary<string, HashSet<int>>> recordIndicesByObjectTypeApplicationId = new Dictionary<Type, Dictionary<string, HashSet<int>>>();
 
-    //Provisional allocation of GSA record numbers - it's mainly to avoid clashing of GSA record numbers - doesn't care about streams or latest/previous states
-    // of records
-    // < GSA schema type , { < index, app_id >, < index, app_id >, ... } >
+    // < keyword , { < index, app_id >, < index, app_id >, ... } >
     private readonly Dictionary<Type, IPairCollectionComparable<int, string>> provisionals = new Dictionary<Type, IPairCollectionComparable<int, string>>();
     #endregion
 
     #region SpeckleObject_cache
-    private readonly List<object> objects = new List<object>();
-    private readonly Dictionary<GSALayer, HashSet<int>> objectIndicesByLayer = new Dictionary<GSALayer, HashSet<int>>();
+    private List<object> objects = new List<object>();
     private readonly Dictionary<Type, HashSet<int>> objectIndicesByType = new Dictionary<Type, HashSet<int>>();
     private readonly Dictionary<Type, Dictionary<string, HashSet<int>>> objectIndicesByTypeAppId = new Dictionary<Type, Dictionary<string, HashSet<int>>>();
     private readonly Dictionary<Type, Dictionary<int, HashSet<int>>> objectIndicesBySchemaTypesGsaId = new Dictionary<Type, Dictionary<int, HashSet<int>>>();
     #endregion 
 
-    private List<GsaCacheRecord> ValidRecords { get => records.Where(r => r != null).ToList(); }
+    //Hardcoded for now to use current 10.1 keywords - to be reviewed
+    private static readonly GwaKeyword analKeyword = GwaKeyword.ANAL;
+    private static readonly GwaKeyword comboKeyword = GwaKeyword.COMBINATION;
 
-    public int NumSpeckleObjects { get => objects.Count(); }
-
-    public int NumNatives { get => records.Where(r => r.Latest).Count(); }
+    private List<GsaCacheRecord> validRecords { get => records.Where(r => r != null).ToList(); }
 
     private object cacheLock = new object();
 
@@ -49,6 +48,12 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
     #region native
     //These first two Upsert methods are only called when hydrating the cache from the GSA instance
     public bool Upsert(GsaRecord gsaRecord) => UpsertInternal(gsaRecord, true, out int? _);
+    /*
+    {
+      var t = gsaRecord.GetType();
+      return Add(t, gsaRecord, out int addedIndex);
+    }
+    */
 
     public bool Upsert(IEnumerable<GsaRecord> gsaRecords)
     {
@@ -72,11 +77,19 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
 
     #region speckle
     //When receiving, this is where the speckle objects are inserted into the cache, ready to be converted
-    public bool Upsert(Dictionary<string, object> objectsByApplicationId, GSALayer layer = GSALayer.Both)
+    public bool Upsert(Dictionary<string, object> objectsByApplicationId)
     {
       foreach (var kvp in objectsByApplicationId)
       {
-        UpsertInternal(kvp.Value, kvp.Value.GetType(), kvp.Key, out int? upsertedIndex, layer);
+        UpsertInternal(kvp.Value, kvp.Value.GetType(), kvp.Key, out int? upsertedIndex);
+        /*
+        if (!objectIndicesByType.ContainsKey(t))
+        {
+          objectIndicesByType.Add(t, new HashSet<int>());
+        }
+        var newIndex = objects.Count();
+        objectIndicesByType[t].Add(newIndex);
+        */
       }
       return true;
     }
@@ -90,17 +103,32 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
         return false;
       }
 
+      lock (cacheLock)
+      {
+        if (!recordIndicesByObjectTypeApplicationId.ContainsKey(t))
+        {
+          recordIndicesByObjectTypeApplicationId.Add(t, new Dictionary<string, HashSet<int>> { { applicationId, new HashSet<int>() } });
+        }
+        else if (!recordIndicesByObjectTypeApplicationId[t].ContainsKey(applicationId))
+        {
+          recordIndicesByObjectTypeApplicationId[t].Add(applicationId, new HashSet<int>());
+        }
+      }
+
       foreach (var n in natives)
       {
-        if (!UpsertInternal(n, true, out int? upsertedIndex) && upsertedIndex.HasValue)
+        if (UpsertInternal(n, true, out int? upsertedIndex) && upsertedIndex.HasValue)
         {
-          return false;
+          lock (cacheLock)
+          {
+            recordIndicesByObjectTypeApplicationId[t][applicationId].Add(upsertedIndex.Value);
+          }
         }
       }
       return true;
     }
 
-    public bool SetSpeckleObjects(GsaRecord gsaRecord, Dictionary<string, object> speckleObjects, GSALayer layer = GSALayer.Both)
+    public bool SetSpeckleObjects(GsaRecord gsaRecord, Dictionary<string, object> speckleObjects)
     {
       var t = gsaRecord.GetType();
       if (!gsaRecord.Index.HasValue)
@@ -128,7 +156,7 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
       foreach (var appId in speckleObjects.Keys)
       {
         var speckleType = speckleObjects[appId].GetType();
-        if (UpsertInternal(speckleObjects[appId], speckleType, appId, out int? upsertedIndex, layer) && upsertedIndex.HasValue)
+        if (UpsertInternal(speckleObjects[appId], speckleType, appId, out int? upsertedIndex) && upsertedIndex.HasValue)
         {
           lock (cacheLock)
           {
@@ -140,7 +168,7 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
     }
     #endregion
 
-    private bool UpsertInternal(object speckleObject, Type speckleType, string appId, out int? upsertedIndex, GSALayer layer)
+    private bool UpsertInternal(object speckleObject, Type speckleType, string appId, out int? upsertedIndex)
     {
       int newIndex = -1;
       lock (cacheLock)
@@ -148,19 +176,25 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
         newIndex = objects.Count();
         objects.Add(speckleObject);
 
-        objectIndicesByType.UpsertDictionary(speckleType, newIndex);
-
+        if (!objectIndicesByType.ContainsKey(speckleType))
+        {
+          objectIndicesByType.Add(speckleType, new HashSet<int>());
+        }
+        if (!objectIndicesByType[speckleType].Contains(newIndex))
+        {
+          objectIndicesByType[speckleType].Add(newIndex);
+        }
         if (!objectIndicesByTypeAppId.ContainsKey(speckleType))
         {
           objectIndicesByTypeAppId.Add(speckleType, new Dictionary<string, HashSet<int>>());
         }
-        objectIndicesByTypeAppId[speckleType].UpsertDictionary(appId, newIndex);
-
-        objectIndicesByLayer.UpsertDictionary(layer, newIndex);
-        if (layer == GSALayer.Both)
+        if (!objectIndicesByTypeAppId[speckleType].ContainsKey(appId))
         {
-          objectIndicesByLayer.UpsertDictionary(GSALayer.Design, newIndex);
-          objectIndicesByLayer.UpsertDictionary(GSALayer.Analysis, newIndex);
+          objectIndicesByTypeAppId[speckleType].Add(appId, new HashSet<int>());
+        }
+        if (!objectIndicesByTypeAppId[speckleType][appId].Contains(newIndex))
+        {
+          objectIndicesByTypeAppId[speckleType][appId].Add(newIndex);
         }
       }
       upsertedIndex = newIndex;
@@ -172,50 +206,47 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
       var t = record.GetType();
       try
       {
-        if (record.Index.HasValue)
+        var matchingRecordsByIndex = new Dictionary<int, GsaCacheRecord>();
+        lock (cacheLock)
         {
-          var matchingRecordsByIndex = new Dictionary<int, GsaCacheRecord>();
-          lock (cacheLock)
+          if (GetAllRecords(t, record.Index.Value, out var foundRecordsByIndex) && foundRecordsByIndex != null && foundRecordsByIndex.Count > 0)
           {
-            if (GetAllRecords(t, record.Index.Value, out var foundRecordsByIndex) && foundRecordsByIndex != null && foundRecordsByIndex.Count > 0)
-            {
-              matchingRecordsByIndex = foundRecordsByIndex;
-            }
+            matchingRecordsByIndex = foundRecordsByIndex;
           }
+        }
 
-          if (matchingRecordsByIndex.Count() > 0)
+        if (matchingRecordsByIndex.Count() > 0)
+        {
+          var equalRecords = matchingRecordsByIndex.Where(kvp => Equals(kvp.Value.GsaRecord, record)).ToList();
+          if (equalRecords.Count() == 1)
           {
-            var equalRecords = matchingRecordsByIndex.Where(kvp => Equals(kvp.Value.GsaRecord, record)).ToList();
-            if (equalRecords.Count() == 1)
-            {
-              //There should just be one equal record
+            //There should just be one equal record
 
-              //There is no change to the record but it clearly means it's part of the latest
-              if (latest.HasValue)
-              {
-                lock (cacheLock)
-                {
-                  equalRecords.First().Value.Latest = latest.Value;
-                }
-              }
-              upsertedIndex = equalRecords.First().Key;
-              return true;
-            }
-            else if (equalRecords.Count() == 0)
+            //There is no change to the record but it clearly means it's part of the latest
+            if (latest.HasValue)
             {
               lock (cacheLock)
               {
-                //These will be return at the next call to GetToBeDeletedGwa() and removed at the next call to Snapshot()
-                foreach (var r in matchingRecordsByIndex.Values)
-                {
-                  r.Latest = false;
-                }
+                equalRecords.First().Value.Latest = latest.Value;
               }
             }
-            else if (equalRecords.Count() > 1)
+            upsertedIndex = equalRecords.First().Key;
+            return true;
+          }
+          else if (equalRecords.Count() == 0)
+          {
+            lock (cacheLock)
             {
-              throw new Exception("Unexpected multiple matches found in upsert of cache records");
+              //These will be return at the next call to GetToBeDeletedGwa() and removed at the next call to Snapshot()
+              foreach (var r in matchingRecordsByIndex.Values)
+              {
+                r.Latest = false;
+              }
             }
+          }
+          else if (equalRecords.Count() > 1)
+          {
+            throw new Exception("Unexpected multiple matches found in upsert of cache records");
           }
         }
 
@@ -237,57 +268,27 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
       {
         addedIndex = records.Count();
         records.Add(new GsaCacheRecord(record));
-
-        recordIndicesBySchemaType.UpsertDictionary(t, addedIndex);
-
-        if (record.Index.HasValue)
+        if (!UpdateIndexTables(t, record.Index.Value, record.StreamId, record.ApplicationId))
         {
-          if (!recordIndicesBySchemaTypeGsaId.ContainsKey(t))
-          {
-            recordIndicesBySchemaTypeGsaId.Add(t, new Dictionary<int, HashSet<int>>());
-          }
-          recordIndicesBySchemaTypeGsaId[t].UpsertDictionary(record.Index.Value, addedIndex);
+          return false;
         }
-
-        if (!string.IsNullOrEmpty(record.ApplicationId))
-        {
-          var trimmedAppId = record.ApplicationId.Replace(" ", "");
-          if (!string.IsNullOrEmpty(trimmedAppId))
-          {
-            recordIndicesByApplicationId.UpsertDictionary(trimmedAppId, addedIndex);
-          }
-        }
-
-        if (!string.IsNullOrEmpty(record.StreamId))
-        {
-          if (!foundStreamIds.Contains(record.StreamId))
-          {
-            foundStreamIds.Add(record.StreamId);
-          }
-          var streamIdIndex = foundStreamIds.IndexOf(record.StreamId);
-          recordIndicesByStreamIdIndex.UpsertDictionary(streamIdIndex, addedIndex);
-        }
-
         if (provisionals.ContainsKey(t))
         {
           if (!string.IsNullOrEmpty(record.ApplicationId) && provisionals[t].ContainsRight(record.ApplicationId))
           {
             provisionals[t].RemoveRight(record.ApplicationId);
           }
-          if (record.Index.HasValue)
+          //In most cases where there is an Application ID and the provisional index matches the one of the new record, the call above will have removed
+          //its index from the provisionals table.  But in the odd case where a different index is specified than the one that was assigned to the application ID,
+          //the existing one at that index needs to be moved
+          if (provisionals[t].ContainsLeft(record.Index.Value))
           {
-            //In most cases where there is an Application ID and the provisional index matches the one of the new record, the call above will have removed
-            //its index from the provisionals table.  But in the odd case where a different index is specified than the one that was assigned to the application ID,
-            //the existing one at that index needs to be moved
-            if (provisionals[t].ContainsLeft(record.Index.Value))
+            provisionals[t].RemoveLeft(record.Index.Value);
+            //Only move the reservation if there is an Application ID involved
+            if (provisionals[t].FindRight(record.Index.Value, out string right) && !string.IsNullOrEmpty(right))
             {
-              //Only move the reservation if there is an Application ID involved
-              if (provisionals[t].FindRight(record.Index.Value, out string right) && !string.IsNullOrEmpty(right))
-              {
-                provisionals[t].RemoveLeft(record.Index.Value);
-                var newIndex = FindNextFreeIndexForProvisional(t);
-                UpsertProvisional(t, newIndex, right);
-              }
+              var newIndex = FindNextFreeIndexForProvisional(t);
+              UpsertProvisional(t, newIndex, right);
             }
           }
 
@@ -306,39 +307,76 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
       return false;
     }
 
+    //Assumptions:
+    //- this is called within a lock
+    //- the record has already been added
+    private bool UpdateIndexTables(Type t, int gsaIndex, string streamId, string applicationId)
+    {
+      //Minus one because the record has already been added
+      var newColIndex = records.Count() - 1;
+      var trimmedAppId = string.IsNullOrEmpty(applicationId) ? applicationId : applicationId.Replace(" ", "");
+
+      if (!recordIndicesBySchemaType.ContainsKey(t))
+      {
+        recordIndicesBySchemaType.Add(t, new HashSet<int>());
+      }
+      recordIndicesBySchemaType[t].Add(newColIndex);
+      if (!recordIndicesBySchemaTypeGsaId.ContainsKey(t))
+      {
+        recordIndicesBySchemaTypeGsaId.Add(t, new Dictionary<int, HashSet<int>>());
+      }
+      if (!recordIndicesBySchemaTypeGsaId[t].ContainsKey(gsaIndex))
+      {
+        recordIndicesBySchemaTypeGsaId[t].Add(gsaIndex, new HashSet<int>());
+      }
+      recordIndicesBySchemaTypeGsaId[t][gsaIndex].Add(newColIndex);
+      if (!string.IsNullOrEmpty(trimmedAppId))
+      {
+        if (!recordIndicesByApplicationId.ContainsKey(trimmedAppId))
+        {
+          recordIndicesByApplicationId.Add(trimmedAppId, new HashSet<int>());
+        }
+        recordIndicesByApplicationId[trimmedAppId].Add(newColIndex);
+      }
+      if (!string.IsNullOrEmpty(streamId))
+      {
+        if (!foundStreamIds.Contains(streamId))
+        {
+          foundStreamIds.Add(streamId);
+        }
+        var streamIdIndex = foundStreamIds.IndexOf(streamId);
+        if (!recordIndicesByStreamIdIndex.ContainsKey(streamIdIndex))
+        {
+          recordIndicesByStreamIdIndex.Add(streamIdIndex, new HashSet<int>());
+        }
+        recordIndicesByStreamIdIndex[streamIdIndex].Add(newColIndex);
+      }
+      return true;
+    }
+
     private void UpsertProvisional(Type t, int index, string applicationId = null)
     {
       if (!provisionals.ContainsKey(t))
       {
         provisionals.Add(t, new PairCollectionComparable<int, string>());
       }
-      if (!provisionals[t].ContainsLeft(index))
-      {
-        provisionals[t].Add(index, string.IsNullOrEmpty(applicationId) ? null : applicationId);
-      }
+      provisionals[t].Add(index, string.IsNullOrEmpty(applicationId) ? null : applicationId);
     }
     #endregion
 
     #region lookup
     public bool GetNatives(out List<GsaRecord> gsaRecords)
-    {
-      lock (cacheLock)
-      {
-        gsaRecords = records.Where(r => r.Latest).Select(r => r.GsaRecord).ToList();
-      }
+    { 
+      gsaRecords = records.Where(r => r.Latest).Select(r => r.GsaRecord).ToList(); 
       return true;
     }
 
     public bool GetNatives(Type t, out List<GsaRecord> gsaRecords)
     {
-      lock (cacheLock)
+      if (recordIndicesBySchemaType.ContainsKey(t))
       {
-
-        if (recordIndicesBySchemaType.ContainsKey(t))
-        {
-          gsaRecords = recordIndicesBySchemaType[t].Select(i => records[i].GsaRecord).ToList();
-          return true;
-        }
+        gsaRecords = recordIndicesBySchemaType[t].Select(i => records[i].GsaRecord).ToList();
+        return true;
       }
       gsaRecords = null;
       return false;
@@ -347,13 +385,10 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
     public bool GetNatives<T>(out List<GsaRecord> gsaRecords)
     {
       var t = typeof(T);
-      lock (cacheLock)
+      if (recordIndicesBySchemaType.ContainsKey(t))
       {
-        if (recordIndicesBySchemaType.ContainsKey(t))
-        {
-          gsaRecords = recordIndicesBySchemaType[t].Select(i => records[i].GsaRecord).ToList();
-          return true;
-        }
+        gsaRecords = recordIndicesBySchemaType[t].Select(i => records[i].GsaRecord).ToList();
+        return true;
       }
       gsaRecords = null;
       return false;
@@ -363,16 +398,13 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
 
     public bool GetNative(Type t, int index, out GsaRecord gsaRecord)
     {
-      lock (cacheLock)
+      if (GetAllRecords(t, index, out var foundRecordsByIndex))
       {
-        if (GetAllRecords(t, index, out var foundRecordsByIndex))
+        var latestFound = foundRecordsByIndex.Values.Where(r => r.Latest);
+        if (latestFound.Count() > 0)
         {
-          var latestFound = foundRecordsByIndex.Values.Where(r => r.Latest);
-          if (latestFound.Count() > 0)
-          {
-            gsaRecord = latestFound.First().GsaRecord;
-            return true;
-          }
+          gsaRecord = latestFound.First().GsaRecord;
+          return true;
         }
       }
       gsaRecord = null;
@@ -385,63 +417,60 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
 
     public bool GetNative(Type t, out List<GsaRecord> gsaRecords)
     {
-      lock (cacheLock)
+      if (GetAllRecords(t, out var foundRecords))
       {
-        if (GetAllRecords(t, out var foundRecords))
+        var latestFound = foundRecords.Where(r => r.Latest);
+        if (latestFound.Count() > 0)
         {
-          var latestFound = foundRecords.Where(r => r.Latest);
-          if (latestFound.Count() > 0)
-          {
-            gsaRecords = latestFound.Select(f => f.GsaRecord).ToList();
-            return true;
-          }
+          gsaRecords = latestFound.Select(f => f.GsaRecord).ToList();
+          return true;
         }
       }
       gsaRecords = null;
       return false;
     }
 
-    public bool GetSpeckleObjects<T>(int gsaIndex, out List<object> foundObjects, GSALayer layer = GSALayer.Both)
+    public bool GetSpeckleObjects<T>(int gsaIndex, out List<object> foundObjects)
     {
-      return GetSpeckleObjects<T, object>(gsaIndex, out foundObjects, layer);
+      return GetSpeckleObjects<T, object>(gsaIndex, out foundObjects);
     }
 
-    public bool GetSpeckleObjects<T, U>(int gsaIndex, out List<U> foundObjects, GSALayer layer = GSALayer.Both)
+    public bool GetSpeckleObjects<T, U>(int gsaIndex, out List<U> foundObjects)
     {
       var t = typeof(T);
-      if (!ValidSchemaTypeGsaIndex(t, gsaIndex) || !ValidSchemaTypeGsaIndexForSpeckleObjects(t, gsaIndex) || !objectIndicesByLayer.ContainsKey(layer))
+      if (!ValidSchemaTypeGsaIndex(t, gsaIndex) || !ValidSchemaTypeGsaIndexForSpeckleObjects(t, gsaIndex))
       {
         foundObjects = null;
         return false;
       }
-      var layerIndices = objectIndicesByLayer[layer];
-      var typeIndices = objectIndicesBySchemaTypesGsaId[t][gsaIndex];
-      var indices = new List<int>();
-      foreach (var ti in typeIndices)
-      {
-        if (layerIndices.Contains(ti))
-        {
-          indices.Add(ti);
-        }
-      }
-      if (indices.Count == 0)
-      {
-        foundObjects = null;
-        return false;
-      }
+      var indices = objectIndicesBySchemaTypesGsaId[t][gsaIndex].ToList();
       foundObjects = indices.Select(i => objects[i]).Cast<U>().ToList();
       return true;
     }
 
-    public bool GetSpeckleObjects(out List<object> foundObjects, GSALayer layer = GSALayer.Both)
+    public bool GetSpeckleObjects(out List<object> foundObjects)
     {
-      if (!objectIndicesByLayer.ContainsKey(layer))
+      var relevantObjects = objects.ToList();
+
+      /*
+      if (GetAllPrevRecords(out var allPrevRecords))
       {
-        foundObjects = null;
-        return false;
+        //Remove the speckle object(s) associated with any previous record
+        foreach (var r in allPrevRecords.Where(r => r.GsaRecord != null && r.GsaRecord.Index.HasValue))
+        {
+          var t = r.Type;
+          var gsaIndex = r.GsaRecord.Index.Value;
+          if (ValidSchemaTypeGsaIndexForSpeckleObjects(t, gsaIndex))
+          {
+            var indices = objectIndicesBySchemaTypesGsaId[t][gsaIndex];
+            if (indices != null && indices.Count > 0)
+            {
+              relevantObjects.AddRange(indices.Select(i => objects[i]));
+            }
+          }
+        }
       }
-      //var relevantObjects = objects.ToList();
-      var relevantObjects = objectIndicesByLayer[layer].Select(i => objects[i]).ToList();
+      */
 
       foundObjects = relevantObjects;
       return true;
@@ -453,16 +482,16 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
       return (ValidAppId(applicationId, out string appId) ? GetRecordIndex(t, appId) : null);
     }
 
-    public List<int> LookupIndices<T>(IEnumerable<string> applicationIds)
+    public List<int?> LookupIndices<T>(IEnumerable<string> applicationIds)
     {
       var t = typeof(T);
-      return (ValidAppIds(applicationIds, out List<string> appIds) ? GetRecordIndices(t, appIds) : new List<int>());
+      return (ValidAppIds(applicationIds, out List<string> appIds) ? GetRecordIndices(t, appIds) : new List<int?>());
     }
 
     public List<int> LookupIndices<T>()
     {
       var t = typeof(T);
-      return (GetRecordIndices(t).ToList());
+      return (GetRecordIndices(t).Select(k => k).ToList());
     }
 
 
@@ -493,32 +522,25 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
     //[ keyword, index, GWA line(s) ]
     public List<GsaRecord> GetExpiredRecords()
     {
-      var matchingRecords = ValidRecords.Where(r => r.IsAlterable && r.Previous == true && r.Latest == false).ToList();
+      var matchingRecords = validRecords.Where(r => r.IsAlterable && r.Previous == true && r.Latest == false).ToList();
       return matchingRecords.Select(r => r.GsaRecord).ToList();
     }
 
     public List<GsaRecord> GetDeletableRecords()
     {
-      var matchingRecords = ValidRecords.Where(r => r.IsAlterable && r.Latest == true).ToList();
+      var matchingRecords = validRecords.Where(r => r.IsAlterable && r.Latest == true).ToList();
       return matchingRecords.Select(r => r.GsaRecord).ToList();
     }
 
     private int? GetRecordIndex(Type t, string applicationId)
     {
-      if (string.IsNullOrEmpty(applicationId))
+      if (string.IsNullOrEmpty(applicationId) || !recordIndicesByApplicationId.ContainsKey(applicationId) 
+        || !recordIndicesBySchemaType.ContainsKey(t))
       {
         return null;
       }
-      else if (recordIndicesByApplicationId.ContainsKey(applicationId) && recordIndicesBySchemaType.ContainsKey(t))
-      {
-        var indices = recordIndicesByApplicationId[applicationId].Intersect(recordIndicesBySchemaType[t]);
-        return (indices.Count() == 0) ? null : (int?)indices.Select(i => records[i].GsaRecord.Index).OrderBy(i => i).Last();
-      }
-      else if (provisionals.ContainsKey(t) && provisionals[t].ContainsRight(applicationId) && provisionals[t].FindLeft(applicationId, out int provisionalIndex))
-      {
-        return provisionalIndex;
-      }
-      return null;
+      var colIndices = recordIndicesByApplicationId[applicationId].Intersect(recordIndicesBySchemaType[t]);
+      return (colIndices.Count() == 0) ? null : (int?)colIndices.Select(i => records[i].GsaRecord.Index).OrderBy(i => i).Last();
     }
 
 
@@ -539,73 +561,70 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
       return retSet;
     }
 
-    private List<int> GetRecordIndices(Type t, IEnumerable<string> applicationIds)
+    private List<int?> GetRecordIndices(Type t, IEnumerable<string> applicationIds)
     {
-      var appIds = applicationIds.Where(aid => !string.IsNullOrEmpty(aid));
-      if (appIds.Count() == 0 || (!recordIndicesBySchemaType.ContainsKey(t) && !provisionals.ContainsKey(t)))
+      var appIds = applicationIds.Where(aid => !string.IsNullOrEmpty(aid) && recordIndicesByApplicationId.ContainsKey(aid)).ToList();
+      if (!recordIndicesBySchemaType.ContainsKey(t) || appIds.Count() == 0)
       {
-        return new List<int>();
+        return new List<int?>();
       }
-      var indicesToReturn = new List<int>();
-      var indicesHash = new HashSet<int>();
-      if (recordIndicesBySchemaType.ContainsKey(t))
+      var colIndicesHash = new HashSet<int>();
+      foreach (var colIndex in recordIndicesBySchemaType[t])
       {
-        foreach (var colIndex in recordIndicesBySchemaType[t])
-        {
-          //The appIds have already been checked and they are all present as keys in the recordIndicesByApplicationId dictionary
-          foreach (var appId in appIds)
-          {
-            var index = records[colIndex].GsaRecord.Index;
-            if (index != null && recordIndicesByApplicationId.ContainsKey(appId) && recordIndicesByApplicationId[appId].Contains(colIndex) 
-              && !indicesHash.Contains(index.Value))
-            {
-              indicesHash.Add(index.Value);
-            }
-          }
-        }
-
-      }
-      if (provisionals.ContainsKey(t))
-      {
+        //The appIds have already been checked and they are all present as keys in the recordIndicesByApplicationId dictionary
         foreach (var appId in appIds)
         {
-          if (provisionals[t].ContainsRight(appId) && provisionals[t].FindLeft(appId, out int index))
+          if (recordIndicesByApplicationId[appId].Contains(colIndex) && !colIndicesHash.Contains(colIndex))
           {
-            indicesHash.Add(index);
+            colIndicesHash.Add(colIndex);
           }
         }
       }
-      indicesToReturn = indicesHash.OrderBy(i => i).ToList();
+      var indicesToReturn = colIndicesHash.Select(i => records[i].GsaRecord.Index).Distinct().OrderBy(i => i).Select(i => (int?)i).ToList();
       return indicesToReturn;
     }
 
     private HashSet<int> GetRecordIndexHashSet(Type t)
     {
-      if (!recordIndicesBySchemaType.ContainsKey(t) && !provisionals.ContainsKey(t))
+      if (!recordIndicesBySchemaType.ContainsKey(t))
       {
         return new HashSet<int>();
       }
       //should return GSA indices, be ordered!
 
       var gsaIndexHash = new HashSet<int>();
-      if (recordIndicesBySchemaType.ContainsKey(t))
+      foreach (var i in recordIndicesBySchemaType[t])
       {
-        gsaIndexHash = new HashSet<int>(recordIndicesBySchemaType[t].Where(i => records[i].GsaRecord != null 
-          && records[i].GsaRecord.Index.HasValue)
-          .Select(i => records[i].GsaRecord.Index.Value));
-      }
-      if (provisionals.ContainsKey(t))
-      {
-        if (gsaIndexHash.Count == 0)
+        if (records[i].GsaRecord.Index.HasValue && !gsaIndexHash.Contains(records[i].GsaRecord.Index.Value))
         {
-          return new HashSet<int>(provisionals[t].Lefts);
-        }
-        else
-        {
-          gsaIndexHash.UnionWith(new HashSet<int>(provisionals[t].Lefts));
+          gsaIndexHash.Add(records[i].GsaRecord.Index.Value);
         }
       }
+
       return gsaIndexHash;
+    }
+
+    private bool GetAllPrevRecords(out List<GsaCacheRecord> foundRecords)
+    {
+      var allPrevRecords = new List<GsaCacheRecord>();
+      foreach (var t in recordIndicesBySchemaTypeGsaId.Keys)
+      {
+        foreach (var gsaIndex in recordIndicesBySchemaTypeGsaId[t].Keys)
+        {
+          var prevIndices = recordIndicesBySchemaTypeGsaId[t][gsaIndex].Where(i => !records[i].Latest);
+          if (prevIndices != null && prevIndices.Count() > 0)
+          {
+            allPrevRecords.AddRange(prevIndices.Select(i => records[i]));
+          }
+        }
+      }
+      if (allPrevRecords != null && allPrevRecords.Count() > 0)
+      {
+        foundRecords = allPrevRecords;
+        return true;
+      }
+      foundRecords = null;
+      return false;
     }
 
     private bool GetAllRecords(Type t, int gsaIndex, out Dictionary<int, GsaCacheRecord> foundRecords)
@@ -677,11 +696,11 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
 
     private bool ValidSchemaTypeGsaIndex(Type t, int gsaIndex)
     {
-            var valid = (recordIndicesBySchemaTypeGsaId.ContainsKey(t) && recordIndicesBySchemaTypeGsaId[t] != null
-              && recordIndicesBySchemaTypeGsaId[t].ContainsKey(gsaIndex) && recordIndicesBySchemaTypeGsaId[t][gsaIndex] != null
-              && recordIndicesBySchemaTypeGsaId[t][gsaIndex].Count > 0);
+      var valid = (recordIndicesBySchemaTypeGsaId.ContainsKey(t) && recordIndicesBySchemaTypeGsaId[t] != null
+        && recordIndicesBySchemaTypeGsaId[t].ContainsKey(gsaIndex) && recordIndicesBySchemaTypeGsaId[t][gsaIndex] != null
+        && recordIndicesBySchemaTypeGsaId[t][gsaIndex].Count > 0);
 
-            return valid;
+      return valid;
     }
 
     private bool ValidSpeckleObjectTypeApplicationId(Type t, string applicationId)
@@ -693,13 +712,6 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
     {
       return (objectIndicesBySchemaTypesGsaId.ContainsKey(t) && objectIndicesBySchemaTypesGsaId[t] != null
           && objectIndicesBySchemaTypesGsaId[t].ContainsKey(gsaIndex) && objectIndicesBySchemaTypesGsaId[t][gsaIndex] != null);
-    }
-    #endregion
-
-    #region scaling
-    public double GetScalingFactor(UnitDimension unitDimension, string overrideUnits = null)
-    {
-      throw new NotImplementedException();
     }
     #endregion
 
@@ -723,11 +735,6 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
     public int ResolveIndex<T>(string applicationId = "")
     {
       var t = typeof(T);
-      return ResolveIndex(t, applicationId);
-    }
-
-    public int ResolveIndex(Type t, string applicationId)
-    { 
       lock(cacheLock)
       {
         if (ValidAppId(applicationId, out string appId) && GetAllRecords(t, appId, out var matchingRecords))
@@ -754,11 +761,6 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
               : existingPrevious.First().GsaRecord.Index.Value;
           }
         }
-        else if (provisionals.ContainsKey(t) && provisionals[t] != null && appId != null
-          && provisionals[t].ContainsRight(appId) && provisionals[t].FindLeft(appId, out int provisionalIndex))
-        {
-          return provisionalIndex;
-        }
         else
         {
           //Application ID is empty, null or not found in the cache
@@ -769,12 +771,12 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
           {
             if (!indices.Contains(i) && !ProvisionalContains(t, i))
             {
-              UpsertProvisional(t, i, appId);
+              UpsertProvisional(t, i, applicationId);
               return i;
             }
           }
 
-          UpsertProvisional(t, highestIndex + 1, appId);
+          UpsertProvisional(t, highestIndex + 1, applicationId);
           return highestIndex + 1;
         }
       }
@@ -796,8 +798,10 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
       }
       return false;
     }
+
     #endregion
 
+    
     private bool ValidAppIds(IEnumerable<string> appIdIns, out List<string> appIdOuts)
     {
       appIdOuts = new List<string>();
@@ -824,11 +828,11 @@ namespace Speckle.ConnectorGSA.Proxy.Cache
       recordIndicesBySchemaType.Clear();
       recordIndicesBySchemaTypeGsaId.Clear();
       recordIndicesByStreamIdIndex.Clear();
+      recordIndicesByObjectTypeApplicationId.Clear();
       objects.Clear();
       objectIndicesByType.Clear();
       objectIndicesBySchemaTypesGsaId.Clear();
       objectIndicesByTypeAppId.Clear();
-      provisionals.Clear();
     }
   }
 }

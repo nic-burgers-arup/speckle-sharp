@@ -1,6 +1,4 @@
-﻿using Speckle.GSA.API.GwaSchema;
-
-namespace ConnectorGSA.Models
+﻿namespace ConnectorGSA.Models
 {
   public enum StreamMethod
   {
@@ -60,24 +58,19 @@ namespace ConnectorGSA.Models
 
   public enum GsaUnit
   {
-    [StringValue("m")] // default
     None,
-    [StringValue("mm")]
     Millimetres,
-    [StringValue("m")]
     Metres,
-    [StringValue("in")]
     Inches
   }
 
   public enum LoggingMinimumLevel
   {
-    None = 0,
-    Debug = 1,
-    Information = 2,
-    Warning = 3,
-    Error = 4,
-    Fatal = 5
+    None,
+    Debug,
+    Information,
+    Error,
+    Fatal
   }
 
   public enum MainTab

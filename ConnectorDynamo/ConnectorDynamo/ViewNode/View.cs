@@ -1,14 +1,14 @@
-﻿using System;
+﻿using Dynamo.Graph.Nodes;
+using ProtoCore.AST.AssociativeAST;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using Speckle.Core.Logging;
+using Dynamo.Engine;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
-using Dynamo.Engine;
-using Dynamo.Graph.Nodes;
 using Dynamo.Utilities;
 using Newtonsoft.Json;
-using ProtoCore.AST.AssociativeAST;
-using Speckle.Core.Logging;
 
 namespace Speckle.ConnectorDynamo.ViewNode
 {
@@ -74,6 +74,8 @@ namespace Speckle.ConnectorDynamo.ViewNode
     /// </summary>
     public View()
     {
+      Tracker.TrackPageview(Tracker.STREAM_VIEW);
+
       AddInputs();
 
       RegisterAllPorts();
@@ -103,8 +105,6 @@ namespace Speckle.ConnectorDynamo.ViewNode
         Url = "";
         return;
       }
-
-      Analytics.TrackEvent(Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Stream View" } });
 
       Process.Start(Url);
     }
@@ -152,7 +152,7 @@ namespace Speckle.ConnectorDynamo.ViewNode
 
       if (inputMirror == null || inputMirror.GetData() == null) return null;
 
-      var data = inputMirror.GetData().Data?.ToString();
+      var data = inputMirror.GetData().Data.ToString();
 
       return data;
     }

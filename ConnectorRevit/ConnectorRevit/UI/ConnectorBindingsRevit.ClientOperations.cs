@@ -23,13 +23,12 @@ namespace Speckle.ConnectorRevit.UI
 
     public List<StreamState> DocumentStreams { get; set; } = new List<StreamState>();
 
-    [ObsoleteAttribute("This property is obsolete. Use the Report on the progress view model", false)]
+
     public List<Exception> ConversionErrors { get; set; } = new List<Exception>();
 
     /// <summary>
     /// Keeps track of errors in the operations of send/receive.
     /// </summary>
-    [ObsoleteAttribute("This property is obsolete. Use the Report on the progress view model", false)]
     public List<Exception> OperationErrors { get; set; } = new List<Exception>();
 
     public override List<StreamState> GetStreamsInFile()
@@ -103,7 +102,7 @@ namespace Speckle.ConnectorRevit.UI
 
     #endregion
 
-    private void UpdateProgress(ConcurrentDictionary<string, int> dict, DesktopUI.Utils.ProgressReport progress)
+    private void UpdateProgress(ConcurrentDictionary<string, int> dict, ProgressReport progress)
     {
       if (progress == null)
       {

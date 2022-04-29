@@ -38,7 +38,6 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>ConnectorGSA.App</StartupObject>
@@ -49,10 +48,8 @@
   <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
-    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -70,9 +67,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Extensions.cs" />
+    <Compile Include="GsaMessenger.cs" />
     <Compile Include="GsaModel.cs" />
     <Compile Include="Headless.cs" />
+    <Compile Include="IGSALocalMessenger.cs" />
     <Compile Include="MessageEventArgs.cs" />
     <Compile Include="Models\DisplayLog.cs" />
     <Compile Include="Models\DisplayLogItem.cs" />
@@ -138,10 +136,6 @@
     <ProjectReference Include="..\..\Core\Core\Core.csproj">
       <Project>{a2c8730a-b605-483e-914e-61f3ed7954d9}</Project>
       <Name>Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Objects\Converters\StructuralUtilities\PolygonMesher\PolygonMesher.csproj">
-      <Project>{6185b1a1-0a12-44b1-8ac5-0ed48147fb21}</Project>
-      <Name>PolygonMesher</Name>
     </ProjectReference>
     <ProjectReference Include="..\GSAProxy\GSAProxy.csproj">
       <Project>{11db7d37-a6ed-4c8a-b354-d9fb3c82386c}</Project>

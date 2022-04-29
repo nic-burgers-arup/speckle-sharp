@@ -1,8 +1,6 @@
 ﻿using Speckle.GSA.API;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace ConnectorGSA.Models
 {
@@ -12,7 +10,7 @@ namespace ConnectorGSA.Models
     public StreamMethod StreamMethod { get; set; } = StreamMethod.Single;
     public StreamList StreamList { get; set; } = new StreamList();
 
-    protected List<StreamState> StreamStates = new List<StreamState>();
+    protected List<StreamState> sidSpeckleRecords = new List<StreamState>();
 
     public double PollingRateMilliseconds { get; set; } = 2000;
     public TabBase(GSALayer defaultLayer)
@@ -20,37 +18,42 @@ namespace ConnectorGSA.Models
       TargetLayer = defaultLayer;
     }
 
-    public async Task<bool> RefreshStream(string streamId, IProgress<MessageEventArgs> loggingProgress)
+    public bool ChangeSidRecordStreamName(string streamId, string streamName)
     {
-      var matching = StreamStates.FirstOrDefault(r => r.StreamId.Equals(streamId, StringComparison.InvariantCultureIgnoreCase));
+      var matching = sidSpeckleRecords.FirstOrDefault(r => r.StreamId.Equals(streamId, System.StringComparison.InvariantCultureIgnoreCase));
       if (matching == null)
       {
         return false;
       }
-      var refreshed = await matching.RefreshStream(loggingProgress);
-      return refreshed;
+      matching.SetName(streamName);
+      return true;
     }
 
-    public bool StreamStatesToStreamList()
+    public bool SidRecordsToStreamList()
     {
       StreamList.SeletedStreamListItem = null;
       StreamList.StreamListItems.Clear();
-      foreach (var sidr in StreamStates)
+      foreach (var sidr in sidSpeckleRecords)
       {
         StreamList.StreamListItems.Add(new StreamListItem(sidr.StreamId, sidr.Stream.name));
       }
       return true;
     }
 
-    public bool RemoveStreamState(StreamState r)
+    public void StreamListToSidRecords()
     {
-      var matching = StreamStates.Where(ssr => ssr.StreamId.Equals(r.StreamId, System.StringComparison.InvariantCultureIgnoreCase)).ToList();
+      sidSpeckleRecords = StreamList.StreamListItems.Select(sli => new StreamState(sli.StreamId, sli.StreamName)).ToList();
+    }
+
+    public bool RemoveSidSpeckleRecord(StreamState r)
+    {
+      var matching = sidSpeckleRecords.Where(ssr => ssr.StreamId.Equals(r.StreamId, System.StringComparison.InvariantCultureIgnoreCase)).ToList();
       if (matching.Count > 0)
       {
-        var indices = matching.Select(m => StreamStates.IndexOf(m)).OrderByDescending(i => i).ToList();
+        var indices = matching.Select(m => sidSpeckleRecords.IndexOf(m)).OrderByDescending(i => i).ToList();
         foreach (var i in indices)
         {
-          StreamStates.RemoveAt(i);
+          sidSpeckleRecords.RemoveAt(i);
         }
       }
       return true;

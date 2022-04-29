@@ -1,11 +1,13 @@
-﻿using Autodesk.Revit.DB;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Autodesk.Revit.DB;
 using Objects.BuiltElements;
+using Objects.BuiltElements.Revit;
 using Objects.BuiltElements.Revit.RevitRoof;
 using Objects.Geometry;
 using Speckle.Core.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+
 using DB = Autodesk.Revit.DB;
 using Line = Objects.Geometry.Line;
 
@@ -17,7 +19,7 @@ namespace Objects.Converter.Revit
     {
       if (speckleRoof.outline == null)
       {
-        throw new Speckle.Core.Logging.SpeckleException("Only outline based Roof are currently supported.");
+        throw new Speckle.Core.Logging.SpeckleException("Only outline based Floor are currently supported.");
       }
 
       DB.RoofBase revitRoof = null;
@@ -27,11 +29,11 @@ namespace Objects.Converter.Revit
       var speckleRevitRoof = speckleRoof as RevitRoof;
       if (speckleRevitRoof != null)
       {
-        level = ConvertLevelToRevit(speckleRevitRoof.level);
+        level = LevelToNative(speckleRevitRoof.level);
       }
       else
       {
-        level = ConvertLevelToRevit(LevelFromCurve(outline.get_Item(0)));
+        level = LevelToNative(LevelFromCurve(outline.get_Item(0)));
       }
 
       var roofType = GetElementType<RoofType>((Base)speckleRoof);
@@ -58,6 +60,7 @@ namespace Objects.Converter.Revit
             revitRoof = Doc.Create.NewExtrusionRoof(outline, plane, level, roofType, start, end);
             break;
           }
+
         case RevitFootprintRoof speckleFootprintRoof:
           {
             ModelCurveArray curveArray = new ModelCurveArray();
@@ -91,7 +94,7 @@ namespace Objects.Converter.Revit
             //this is for schema builder specifically
             //if no roof edge has a slope defined but a slope angle is defined on the roof
             //set each edge to have that slope
-            if (!hasSlopedSide && speckleFootprintRoof.slope != null && speckleFootprintRoof.slope != 0)
+            if (!hasSlopedSide && speckleFootprintRoof.slope != null && speckleFootprintRoof.slope!=0)
             {
               for (var i = 0; i < curveArray.Size; i++)
               {
@@ -102,7 +105,7 @@ namespace Objects.Converter.Revit
 
             if (speckleFootprintRoof.cutOffLevel != null)
             {
-              var cutOffLevel = ConvertLevelToRevit(speckleFootprintRoof.cutOffLevel);
+              var cutOffLevel = LevelToNative(speckleFootprintRoof.cutOffLevel);
               TrySetParam(revitFootprintRoof, BuiltInParameter.ROOF_UPTO_LEVEL_PARAM, cutOffLevel);
             }
 
@@ -110,7 +113,7 @@ namespace Objects.Converter.Revit
             break;
           }
         default:
-          Report.LogConversionError(new Exception("Roof type not supported, please try with RevitExtrusionRoof or RevitFootprintRoof"));
+          ConversionErrors.Add(new Exception("Roof type not supported, please try with RevitExtrusionRoof or RevitFootprintRoof"));
           return null;
 
       }
@@ -123,7 +126,7 @@ namespace Objects.Converter.Revit
       }
       catch (Exception ex)
       {
-        Report.LogConversionError(new Exception($"Could not create openings in roof {speckleRoof.applicationId}", ex));
+        ConversionErrors.Add(new Exception($"Could not create openings in roof {speckleRoof.applicationId}", ex));
       }
 
       if (speckleRevitRoof != null)
@@ -135,7 +138,7 @@ namespace Objects.Converter.Revit
 
       var hostedElements = SetHostedElements(speckleRoof, revitRoof);
       placeholders.AddRange(hostedElements);
-      Report.Log($"Created Roof {revitRoof.Id}");
+
       return placeholders;
     }
 
@@ -176,9 +179,8 @@ namespace Objects.Converter.Revit
             break;
           }
       }
-      var elementType = revitRoof.Document.GetElement(revitRoof.GetTypeId()) as ElementType;
-      speckleRoof.type = elementType.Name;
-      speckleRoof.family = elementType.FamilyName;
+
+      speckleRoof.type = Doc.GetElement(revitRoof.GetTypeId()).Name;
 
       // TODO handle case if not one of our supported roofs
       if (profiles.Any())
@@ -193,10 +195,10 @@ namespace Objects.Converter.Revit
       GetAllRevitParamsAndIds(speckleRoof, revitRoof,
         new List<string> { "ROOF_CONSTRAINT_LEVEL_PARAM", "ROOF_BASE_LEVEL_PARAM", "ROOF_UPTO_LEVEL_PARAM", "EXTRUSION_START_PARAM", "EXTRUSION_END_PARAM" });
 
-      speckleRoof.displayValue = GetElementDisplayMesh(revitRoof, new Options() { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false });
+      speckleRoof.displayMesh = GetElementDisplayMesh(revitRoof, new Options() { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false });
 
       GetHostedElements(speckleRoof, revitRoof);
-      Report.Log($"Converted Roof {revitRoof.Id}");
+
       return speckleRoof;
     }
 

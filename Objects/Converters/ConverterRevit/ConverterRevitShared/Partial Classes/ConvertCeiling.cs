@@ -1,12 +1,13 @@
 ﻿
 using Autodesk.Revit.DB;
 using Objects.BuiltElements.Revit;
+using Objects.Geometry;
 using Speckle.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ceiling = Objects.BuiltElements.Ceiling;
 using DB = Autodesk.Revit.DB;
+using Ceiling = Objects.BuiltElements.Ceiling;
 
 namespace Objects.Converter.Revit
 {
@@ -17,7 +18,7 @@ namespace Objects.Converter.Revit
       var profiles = GetProfiles(revitCeiling);
 
       var speckleCeiling = new RevitCeiling();
-      speckleCeiling.type = revitCeiling.Document.GetElement(revitCeiling.GetTypeId()).Name;
+      speckleCeiling.type = Doc.GetElement(revitCeiling.GetTypeId()).Name;
       speckleCeiling.outline = profiles[0];
       if (profiles.Count > 1)
       {
@@ -30,9 +31,7 @@ namespace Objects.Converter.Revit
       GetAllRevitParamsAndIds(speckleCeiling, revitCeiling, new List<string> { "LEVEL_PARAM", "CEILING_HEIGHTABOVELEVEL_PARAM" });
 
       GetHostedElements(speckleCeiling, revitCeiling);
-
-      speckleCeiling.displayValue = GetElementDisplayMesh(revitCeiling, new Options() { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false });
-      Report.Log($"Converted BuildingPad {revitCeiling.Id}");
+      speckleCeiling.displayMesh = GetElementDisplayMesh(revitCeiling, new Options() { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false });
 
       return speckleCeiling;
     }
@@ -57,13 +56,13 @@ namespace Objects.Converter.Revit
       DB.Line slopeDirection = null;
       if (speckleCeiling is RevitCeiling speckleRevitCeiling)
       {
-        level = ConvertLevelToRevit(speckleRevitCeiling.level);
+        level = LevelToNative(speckleRevitCeiling.level);
         slope = speckleRevitCeiling.slope;
         slopeDirection = (speckleRevitCeiling.slopeDirection != null) ? LineToNative(speckleRevitCeiling.slopeDirection) : null;
       }
       else
       {
-        level = ConvertLevelToRevit(LevelFromCurve(outline.get_Item(0)));
+        level = LevelToNative(LevelFromCurve(outline.get_Item(0)));
       }
 
       var ceilingType = GetElementType<CeilingType>(speckleCeiling);
@@ -93,7 +92,7 @@ namespace Objects.Converter.Revit
       }
       catch (Exception ex)
       {
-        Report.LogConversionError(new Exception($"Could not create openings in ceiling {speckleCeiling.applicationId}", ex));
+        ConversionErrors.Add(new Exception($"Could not create openings in ceiling {speckleCeiling.applicationId}", ex));
       }
 
       SetInstanceParameters(revitCeiling, speckleCeiling);
@@ -102,7 +101,7 @@ namespace Objects.Converter.Revit
 
       var hostedElements = SetHostedElements(speckleCeiling, revitCeiling);
       placeholders.AddRange(hostedElements);
-      Report.Log($"Created Ceiling {revitCeiling.Id}");
+
       return placeholders;
     }
 #endif

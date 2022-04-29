@@ -30,9 +30,7 @@ namespace TestsIntegration
 
       myClient = new Client(firstUserAccount);
       myServerTransport = new ServerTransport(firstUserAccount, null);
-      myServerTransport.Api.CompressPayloads = false;
       otherServerTransport = new ServerTransport(firstUserAccount, null);
-      otherServerTransport.Api.CompressPayloads = false;
     }
 
 
@@ -163,8 +161,7 @@ namespace TestsIntegration
       var res = await myClient.StreamGetBranches(streamId);
 
       Assert.NotNull(res);
-      // Branches are now returned in order of creation so 'main' should always go first.
-      Assert.AreEqual("main", res[0].name);
+      Assert.AreEqual("sample-branch", res[0].name);
     }
 
     #region commit
@@ -179,9 +176,7 @@ namespace TestsIntegration
 
       myObject["@Points"] = ptsList;
 
-      bool sendError = false;
-      objectId = await Operations.Send(myObject, new List<ITransport>() { myServerTransport }, false, disposeTransports: true, onErrorAction: (s, e) => { sendError = true; });
-      Assert.IsFalse(sendError);
+      objectId = await Operations.Send(myObject, new List<ITransport>() { myServerTransport }, false, disposeTransports: true);
 
       var res = await myClient.CommitCreate(new CommitCreateInput
       {
@@ -256,14 +251,6 @@ namespace TestsIntegration
     }
 
     [Test, Order(47)]
-    public async Task CommitReceived()
-    {
-      var res = await myClient.CommitReceived(new CommitReceivedInput { commitId = commitId, streamId = streamId, sourceApplication = "sharp-tests", message = "The test message" });
-
-      Assert.IsTrue(res);
-    }
-
-    [Test, Order(48)]
     public async Task CommitDelete()
     {
       var res = await myClient.CommitDelete(new CommitDeleteInput { id = commitId, streamId = streamId }
@@ -273,8 +260,7 @@ namespace TestsIntegration
 
     #endregion
 
-
-    [Test, Order(49)]
+    [Test, Order(48)]
     public async Task BranchUpdate()
     {
       var res = await myClient.BranchUpdate(new BranchUpdateInput
@@ -295,18 +281,6 @@ namespace TestsIntegration
       Assert.IsTrue(res);
     }
 
-    #endregion
-
-    #region activity
-
-    [Test, Order(51)]
-    public async Task StreamGetActivity()
-    {
-      var res = await myClient.StreamGetActivity(streamId);
-
-      Assert.NotNull(res);
-      //Assert.AreEqual(commitId, res[0].);
-    }
     #endregion
 
     #region send/receive bare

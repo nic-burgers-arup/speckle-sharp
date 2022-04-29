@@ -1,6 +1,8 @@
-﻿using Autodesk.Revit.DB;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Autodesk.Revit.DB;
 using Objects.BuiltElements.Revit;
-using System;
 
 namespace Objects.Converter.Revit
 {
@@ -9,7 +11,7 @@ namespace Objects.Converter.Revit
 
     public RevitElement RevitElementToSpeckle(Element revitElement)
     {
-      var symbol = revitElement.Document.GetElement(revitElement.GetTypeId()) as FamilySymbol;
+      var symbol = Doc.GetElement(revitElement.GetTypeId()) as FamilySymbol;
 
       RevitElement speckleElement = new RevitElement();
       if (symbol != null)
@@ -23,11 +25,11 @@ namespace Objects.Converter.Revit
       }
 
       speckleElement.category = revitElement.Category.Name;
-      speckleElement.displayValue = GetElementDisplayMesh(revitElement, new Options() { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false });
+      speckleElement.displayMesh = GetElementDisplayMesh(revitElement, new Options() { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false });
 
       //Only send elements that have a mesh, if not we should probably support them properly via direct conversions
-      if (speckleElement.displayValue == null || speckleElement.displayValue.Count == 0)
-        throw new Exception($"Skipped not supported type: {revitElement.GetType()}{GetElemInfo(revitElement)}");
+      if (speckleElement.displayMesh == null || !speckleElement.displayMesh.vertices.Any())
+        return null;
 
       GetAllRevitParamsAndIds(speckleElement, revitElement);
 

@@ -27,6 +27,29 @@ namespace Speckle.ConnectorGSA.Proxy
       return Regex.Split(list, delimiter + "(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
     }
 
+    /// <summary>
+    /// Will get the string value for a given enums value, this will
+    /// only work if you assign the StringValue attribute to
+    /// the items in your enum.
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public static string GetStringValue(this IConvertible value)
+    {
+      // Get the type
+      var type = value.GetType();
+
+      // Get fieldinfo for this type
+      var fieldInfo = type.GetField(value.ToString());
+
+      // Get the stringvalue attributes
+      var attribs = fieldInfo.GetCustomAttributes(
+          typeof(StringValue), false) as StringValue[];
+
+      // Return the first if there was a match.
+      return attribs.Length > 0 ? attribs[0].Value : null;
+    }
+
     public static double ToDouble(this object o)
     {
       try
@@ -37,37 +60,6 @@ namespace Speckle.ConnectorGSA.Proxy
       catch
       {
         return 0d;
-      }
-    }
-
-    public static void UpsertList<T>(this IList<T> l, T value)
-    {
-      if (!l.Contains(value))
-      {
-        l.Add(value);
-      }
-    }
-
-    public static void UpsertList<T>(this IList<T> l, IEnumerable<T> values)
-    {
-      foreach (var v in values)
-      {
-        if (!l.Contains(v))
-        {
-          l.Add(v);
-        }
-      }
-    }
-
-    public static void UpsertDictionary<T,U>(this Dictionary<T, HashSet<U>> d, T key, U value)
-    {
-      if (!d.ContainsKey(key))
-      {
-        d.Add(key, new HashSet<U>());
-      }
-      if (!d[key].Contains(value))
-      {
-        d[key].Add(value);
       }
     }
 

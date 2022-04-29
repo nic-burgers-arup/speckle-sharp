@@ -1,20 +1,24 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using ConnectorGrasshopper.Extras;
 using ConnectorGrasshopper.Objects;
 using ConnectorGrasshopper.Properties;
 using GH_IO.Serialization;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
+using GrasshopperAsyncComponent;
 using Rhino;
+using Rhino.Geometry;
 using Speckle.Core.Api;
 using Speckle.Core.Api.SubscriptionModels;
 using Speckle.Core.Credentials;
 using Speckle.Core.Kits;
 using Speckle.Core.Transports;
-using Logging = Speckle.Core.Logging;
 
 namespace ConnectorGrasshopper.Ops
 {
@@ -107,7 +111,7 @@ namespace ConnectorGrasshopper.Ops
     {
 
     }
-
+    
     public override void AddedToDocument(GH_Document document)
     {
       SetDefaultKitAndConverter();
@@ -116,8 +120,8 @@ namespace ConnectorGrasshopper.Ops
     protected override void AppendAdditionalComponentMenuItems(ToolStripDropDown menu)
     {
       Menu_AppendSeparator(menu);
-      Menu_AppendItem(menu, "Select the converter you want to use:", null, false);
-      var kits = KitManager.GetKitsWithConvertersForApp(Extras.Utilities.GetVersionedAppName());
+      Menu_AppendItem(menu, "Select the converter you want to use:");
+      var kits = KitManager.GetKitsWithConvertersForApp(Applications.Rhino6);
 
       foreach (var kit in kits)
         Menu_AppendItem(menu, $"{kit.Name} ({kit.Description})", (s, e) =>
@@ -207,10 +211,7 @@ namespace ConnectorGrasshopper.Ops
       try
       {
         Kit = KitManager.GetDefaultKit();
-        Converter = Kit.LoadConverter(Extras.Utilities.GetVersionedAppName());
-        Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
-        SpeckleGHSettings.OnMeshSettingsChanged +=
-          (sender, args) => Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
+        Converter = Kit.LoadConverter(Applications.Rhino6);
         Converter.SetContextDocument(RhinoDoc.ActiveDoc);
         foundKit = true;
       }
@@ -244,7 +245,7 @@ namespace ConnectorGrasshopper.Ops
     /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
     protected override void SolveInstance(IGH_DataAccess DA)
     {
-
+     
       if (RunCount == 1)
       {
         CreateCancelationToken();
@@ -254,15 +255,12 @@ namespace ConnectorGrasshopper.Ops
 
       if (InPreSolve)
       {
-
         var task = Task.Run(async () =>
         {
           var acc = await StreamWrapper?.GetAccount();
           var client = new Client(acc);
           var remoteTransport = new ServerTransport(acc, StreamWrapper?.StreamId);
           remoteTransport.TransportName = "R";
-
-          Logging.Analytics.TrackEvent(acc, Logging.Analytics.Events.Receive, new Dictionary<string, object>() { { "sync", true } });
 
           var myCommit = await ReceiveComponentWorker.GetCommit(StreamWrapper, client, (level, message) =>
           {
@@ -288,21 +286,6 @@ namespace ConnectorGrasshopper.Ops
           disposeTransports: true
           ).Result;
 
-          try
-          {
-            await client.CommitReceived(new CommitReceivedInput
-            {
-              streamId = StreamWrapper.StreamId,
-              commitId = myCommit.id,
-              message = myCommit.message,
-              sourceApplication = Extras.Utilities.GetVersionedAppName()
-            });
-          }
-          catch
-          {
-            // Do nothing!
-          }
-
           return ReceivedObject;
         }, source.Token);
         TaskList.Add(task);
@@ -325,7 +308,7 @@ namespace ConnectorGrasshopper.Ops
 
         //the active document may have changed
         Converter?.SetContextDocument(RhinoDoc.ActiveDoc);
-        var data = Extras.Utilities.ConvertToTree(Converter, @base, AddRuntimeMessage);
+        var data = Extras.Utilities.ConvertToTree(Converter, @base);
 
         DA.SetDataTree(0, data);
       }

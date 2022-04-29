@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using ConnectorGrasshopper.Extras;
 using ConnectorGrasshopper.Objects;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
@@ -10,8 +11,8 @@ using Grasshopper.Kernel.Types;
 using GrasshopperAsyncComponent;
 using Speckle.Core.Api;
 using Speckle.Core.Kits;
+using Speckle.Core.Logging;
 using Speckle.Core.Models;
-using Logging = Speckle.Core.Logging;
 using Utilities = ConnectorGrasshopper.Extras.Utilities;
 
 namespace ConnectorGrasshopper.Ops
@@ -41,11 +42,11 @@ namespace ConnectorGrasshopper.Ops
       pManager.AddGenericParameter("Data", "D", "Data to send.", GH_ParamAccess.tree);
     }
 
-    public override void AppendAdditionalMenuItems(ToolStripDropDown menu)
+    protected override void AppendAdditionalComponentMenuItems(ToolStripDropDown menu)
     {
       Menu_AppendSeparator(menu);
-      Menu_AppendItem(menu, "Select the converter you want to use:", null, null, false);
-      var kits = KitManager.GetKitsWithConvertersForApp(Extras.Utilities.GetVersionedAppName());
+      Menu_AppendItem(menu, "Select the converter you want to use:");
+      var kits = KitManager.GetKitsWithConvertersForApp(Applications.Rhino6);
 
       foreach (var kit in kits)
       {
@@ -53,24 +54,21 @@ namespace ConnectorGrasshopper.Ops
           kit.Name == Kit.Name);
       }
 
-      base.AppendAdditionalMenuItems(menu);
+      base.AppendAdditionalComponentMenuItems(menu);
     }
-
+    
     public override void AddedToDocument(GH_Document document)
     {
       SetDefaultKitAndConverter();
       base.AddedToDocument(document);
     }
-
+    
     public void SetConverterFromKit(string kitName)
     {
-      if (kitName == Kit.Name) return;
+      if (kitName == Kit.Name)return;
 
       Kit = KitManager.Kits.FirstOrDefault(k => k.Name == kitName);
-      Converter = Kit.LoadConverter(Extras.Utilities.GetVersionedAppName());
-      Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
-      SpeckleGHSettings.OnMeshSettingsChanged +=
-        (sender, args) => Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
+      Converter = Kit.LoadConverter(Applications.Rhino6);
 
       Message = $"Using the {Kit.Name} Converter";
       ExpireSolution(true);
@@ -80,12 +78,9 @@ namespace ConnectorGrasshopper.Ops
     private void SetDefaultKitAndConverter()
     {
       try
-      {
+      { 
         Kit = KitManager.GetDefaultKit();
-        Converter = Kit.LoadConverter(Extras.Utilities.GetVersionedAppName());
-        Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
-        SpeckleGHSettings.OnMeshSettingsChanged +=
-          (sender, args) => Converter.SetConverterSettings(SpeckleGHSettings.MeshSettings);
+        Converter = Kit.LoadConverter(Applications.Rhino6);
         Converter.SetContextDocument(Rhino.RhinoDoc.ActiveDoc);
         foundKit = true;
       }
@@ -105,6 +100,12 @@ namespace ConnectorGrasshopper.Ops
       }
       base.SolveInstance(DA);
     }
+
+    protected override void BeforeSolveInstance()
+    {
+      Tracker.TrackPageview(Tracker.RECEIVE_LOCAL);
+      base.BeforeSolveInstance();
+    }
   }
   public class ReceiveLocalWorker : WorkerInstance
   {
@@ -118,7 +119,6 @@ namespace ConnectorGrasshopper.Ops
     {
       try
       {
-        Logging.Analytics.TrackEvent(Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Receive Local" } });
         Parent.Message = "Receiving...";
         var Converter = (Parent as ReceiveLocalComponent).Converter;
 
@@ -135,12 +135,12 @@ namespace ConnectorGrasshopper.Ops
           return;
         }
 
-        data = Utilities.ConvertToTree(Converter, @base, Parent.AddRuntimeMessage);
+        data = Utilities.ConvertToTree(Converter, @base);
       }
       catch (Exception e)
       {
         // If we reach this, something happened that we weren't expecting...
-        Logging.Log.CaptureException(e);
+        Log.CaptureException(e);
         RuntimeMessages.Add((GH_RuntimeMessageLevel.Error, "Something went terribly wrong... " + e.Message));
         Parent.Message = "Error";
       }
@@ -151,8 +151,8 @@ namespace ConnectorGrasshopper.Ops
 
     public override void SetData(IGH_DataAccess DA)
     {
-      if (data != null) DA.SetDataTree(0, data);
-
+      if(data != null) DA.SetDataTree(0, data);
+      
       foreach (var (level, message) in RuntimeMessages)
       {
         Parent.AddRuntimeMessage(level, message);

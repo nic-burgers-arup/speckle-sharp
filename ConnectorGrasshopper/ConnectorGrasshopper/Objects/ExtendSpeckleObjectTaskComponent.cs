@@ -2,11 +2,14 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ConnectorGrasshopper.Extras;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Data;
+using Grasshopper.Kernel.Types;
+using Speckle.Core.Logging;
 using Speckle.Core.Models;
-using Logging = Speckle.Core.Logging;
 using Utilities = ConnectorGrasshopper.Extras.Utilities;
 
 namespace ConnectorGrasshopper.Objects
@@ -59,11 +62,6 @@ namespace ConnectorGrasshopper.Objects
           return;
         }
 
-        if (DA.Iteration == 0)
-        {
-          Logging.Analytics.TrackEvent(Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Expand Object" } });
-        }
-
         inputData = new Dictionary<string, object>();
         for (int i = 1; i < Params.Input.Count; i++)
         {
@@ -78,7 +76,7 @@ namespace ConnectorGrasshopper.Objects
           if (willOverwrite)
             AddRuntimeMessage(GH_RuntimeMessageLevel.Remark,
               $"Key {key} already exists in object at {path}[{targetIndex}], its value will be overwritten");
-
+          
           switch (param.Access)
           {
             case GH_ParamAccess.item:
@@ -106,6 +104,13 @@ namespace ConnectorGrasshopper.Objects
                 }
               }
 
+              if (values.Any(p => p == null))
+              {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
+                  $"List access parameter {param.NickName} cannot contain null values. Please clean your data tree.");
+                hasErrors = true;
+              }
+
               inputData[key] = values;
               break;
             case GH_ParamAccess.tree:
@@ -123,14 +128,14 @@ namespace ConnectorGrasshopper.Objects
       }
 
       // Report all conversion errors as warnings
-      if (Converter != null)
+      if(Converter != null)
       {
-        foreach (var error in Converter.Report.ConversionErrors)
+        foreach (var error in Converter.ConversionErrors)
         {
           AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
             error.Message + ": " + error.InnerException?.Message);
         }
-        Converter.Report.ConversionErrors.Clear();
+        Converter.ConversionErrors.Clear();
       }
 
       if (!GetSolveResults(DA, out Base result))
@@ -161,7 +166,6 @@ namespace ConnectorGrasshopper.Objects
       myParam.NickName = myParam.Name;
       myParam.Optional = false;
       myParam.ObjectChanged += (sender, e) => { };
-      myParam.Attributes = new GenericAccessParamAttributes(myParam, Attributes);
       return myParam;
     }
 
@@ -172,11 +176,6 @@ namespace ConnectorGrasshopper.Objects
 
     public void VariableParameterMaintenance()
     {
-      Params.Input
-        .Where(param => !(param.Attributes is GenericAccessParamAttributes))
-        .ToList()
-        .ForEach(param => param.Attributes = new GenericAccessParamAttributes(param, Attributes)
-        );
     }
 
     public Base DoWork(Base @base, Dictionary<string, object> inputData)
@@ -203,7 +202,7 @@ namespace ConnectorGrasshopper.Objects
             }
             catch (Exception e)
             {
-              Logging.Log.CaptureException(e);
+              Log.CaptureException(e);
               AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"{e.Message}");
               hasErrors = true;
             }
@@ -214,7 +213,7 @@ namespace ConnectorGrasshopper.Objects
             }
             catch (Exception e)
             {
-              Logging.Log.CaptureException(e);
+              Log.CaptureException(e);
               AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"{e.Message}");
               hasErrors = true;
             }
@@ -232,7 +231,7 @@ namespace ConnectorGrasshopper.Objects
             }
             catch (Exception e)
             {
-              Logging.Log.CaptureException(e);
+              Log.CaptureException(e);
               AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"{e.Message}");
               hasErrors = true;
             }
@@ -247,7 +246,7 @@ namespace ConnectorGrasshopper.Objects
       catch (Exception e)
       {
         // If we reach this, something happened that we weren't expecting...
-        Logging.Log.CaptureException(e);
+        Log.CaptureException(e);
         AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Something went terribly wrong... " + e.Message);
       }
 

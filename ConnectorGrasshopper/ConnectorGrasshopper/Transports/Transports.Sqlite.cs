@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using Grasshopper.Kernel;
+﻿using Grasshopper.Kernel;
+using Speckle.Core.Logging;
 using Speckle.Core.Transports;
-using Logging = Speckle.Core.Logging;
+using System;
+using System.Drawing;
 
 namespace ConnectorGrasshopper.Transports
 {
@@ -37,11 +36,6 @@ namespace ConnectorGrasshopper.Transports
         return;
       }
 
-      if (DA.Iteration == 0)
-      {
-        Logging.Analytics.TrackEvent(Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "SQLite Transport" } });
-      }
-
       string basePath = null, applicationName = null, scope = null;
 
       DA.GetData(0, ref basePath);
@@ -55,6 +49,7 @@ namespace ConnectorGrasshopper.Transports
 
     protected override void BeforeSolveInstance()
     {
+      Tracker.TrackPageview("transports", "sqlite");
       base.BeforeSolveInstance();
     }
 

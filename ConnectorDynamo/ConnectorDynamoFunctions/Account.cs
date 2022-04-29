@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using Autodesk.DesignScript.Runtime;
@@ -15,8 +16,7 @@ namespace Speckle.ConnectorDynamo.Functions
     [IsVisibleInDynamoLibrary(false)]
     public static Core.Credentials.Account GetById(string id)
     {
-      var acc = AccountManager.GetAccounts().FirstOrDefault(x => x.userInfo.id == id);
-      Analytics.TrackEvent(acc, Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Account Get" } });
+      var acc =  AccountManager.GetAccounts().FirstOrDefault(x => x.userInfo.id == id);
       return acc;
     }
 
@@ -24,19 +24,15 @@ namespace Speckle.ConnectorDynamo.Functions
     /// Get an Account details
     /// </summary>
     [NodeCategory("Query")]
-    [MultiReturn(new[] { "isDefault", "serverInfo", "userInfo" })]
+    [MultiReturn(new[] {"isDefault", "serverInfo", "userInfo"})]
     public static Dictionary<string, object> Details(Core.Credentials.Account account)
     {
-
-
-      if (account == null)
+      Tracker.TrackPageview(Tracker.ACCOUNT_DETAILS);
+      if(account == null)
       {
-
+        
         Utils.HandleApiExeption(new WarningException("Provided account was invalid."));
       }
-
-      Analytics.TrackEvent(account, Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Account Details" } });
-
       return new Dictionary<string, object>
       {
         {"isDefault", account.isDefault},

@@ -1,11 +1,14 @@
-﻿using Autodesk.Revit.DB;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Autodesk.Revit.DB;
+using Objects.BuiltElements;
+using Objects.BuiltElements.Revit;
 using Objects.BuiltElements.Revit;
 using Objects.Geometry;
 using Speckle.Core.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using DB = Autodesk.Revit.DB;
+using Opening = Objects.BuiltElements.Opening;
 
 namespace Objects.Converter.Revit
 {
@@ -26,20 +29,20 @@ namespace Objects.Converter.Revit
       DB.Line slopeDirection = null;
       if (speckleFloor is RevitFloor speckleRevitFloor)
       {
-        level = ConvertLevelToRevit(speckleRevitFloor.level);
+        level = LevelToNative(speckleRevitFloor.level);
         structural = speckleRevitFloor.structural;
         slope = speckleRevitFloor.slope;
         slopeDirection = (speckleRevitFloor.slopeDirection != null) ? LineToNative(speckleRevitFloor.slopeDirection) : null;
       }
       else
       {
-        level = ConvertLevelToRevit(LevelFromCurve(outline.get_Item(0)));
+        level = LevelToNative(LevelFromCurve(outline.get_Item(0)));
       }
 
       var floorType = GetElementType<FloorType>(speckleFloor);
 
       // NOTE: I have not found a way to edit a slab outline properly, so whenever we bake, we renew the element. The closest thing would be:
-      // https://adndevbConversionLog.Add.typepad.com/aec/2013/10/change-the-boundary-of-floorsslabs.html
+      // https://adndevblog.typepad.com/aec/2013/10/change-the-boundary-of-floorsslabs.html
       // This would only work if the floors have the same number (and type!!!) of outline curves. 
       var docObj = GetExistingElementByApplicationId(speckleFloor.applicationId);
       if (docObj != null)
@@ -71,7 +74,7 @@ namespace Objects.Converter.Revit
       }
       catch (Exception ex)
       {
-        Report.LogConversionError(new Exception($"Could not create openings in floor {speckleFloor.applicationId}", ex));
+        ConversionErrors.Add(new Exception($"Could not create openings in floor {speckleFloor.applicationId}", ex));
       }
 
       SetInstanceParameters(revitFloor, speckleFloor);
@@ -80,7 +83,7 @@ namespace Objects.Converter.Revit
 
       var hostedElements = SetHostedElements(speckleFloor, revitFloor);
       placeholders.AddRange(hostedElements);
-      Report.Log($"Created Floor {revitFloor.Id}");
+
       return placeholders;
     }
 
@@ -89,7 +92,7 @@ namespace Objects.Converter.Revit
       var profiles = GetProfiles(revitFloor);
 
       var speckleFloor = new RevitFloor();
-      speckleFloor.type = revitFloor.Document.GetElement(revitFloor.GetTypeId()).Name;
+      speckleFloor.type = Doc.GetElement(revitFloor.GetTypeId()).Name;
       speckleFloor.outline = profiles[0];
       if (profiles.Count > 1)
       {
@@ -101,10 +104,10 @@ namespace Objects.Converter.Revit
 
       GetAllRevitParamsAndIds(speckleFloor, revitFloor, new List<string> { "LEVEL_PARAM", "FLOOR_PARAM_IS_STRUCTURAL" });
 
-      speckleFloor.displayValue = GetElementDisplayMesh(revitFloor, new Options() { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false });
+      speckleFloor.displayMesh = GetElementDisplayMesh(revitFloor, new Options() { DetailLevel = ViewDetailLevel.Fine, ComputeReferences = false });
 
       GetHostedElements(speckleFloor, revitFloor);
-      Report.Log($"Converted Floor {revitFloor.Id}");
+
       return speckleFloor;
     }
 

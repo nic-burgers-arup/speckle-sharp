@@ -64,7 +64,6 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
         remainingItems = items;
         return false;
       }
-      record.Mat = (GsaMat)gsaMatParser.Record;
       return true;
     }
     #endregion

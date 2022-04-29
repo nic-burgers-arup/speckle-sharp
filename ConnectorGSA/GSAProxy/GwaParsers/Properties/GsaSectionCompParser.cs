@@ -92,9 +92,8 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       {
         return false;
       }
-      return AddItems(ref items, record.Name, record.MatAnalIndex ?? 0, record.MaterialType.ToString(), record.MaterialIndex ?? 0,
-        (record.ProfileDetails == null) ? "" : record.ProfileDetails.ToDesc(),
-        record.OffsetY ?? 0, record.OffsetZ ?? 0, record.Rotation ?? 0, record.Reflect.ToString(), record.Pool ?? 0, record.TaperType.ToString(), record.TaperPos ?? 0);
+      return AddItems(ref items, record.Name, record.MatAnalIndex ?? 0, record.MaterialType.ToString(), record.MaterialIndex ?? 0, record.ProfileDetails.ToDesc(),
+        record.OffsetY ?? 0, record.OffsetZ ?? 0, record.Rotation.ToString(), record.Reflect.ToString(), record.Pool ?? 0, record.TaperType.ToString(), record.TaperPos ?? 0);
     }
 
     #region from_gwa_fns
@@ -135,7 +134,7 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
       else
       {
         //Standard
-        if (!pieces[1].Split('(', ')')[0].TryParseStringValue(out Section1dStandardProfileType profileType))
+        if (!pieces[1].TryParseStringValue(out Section1dStandardProfileType profileType))
         {
           return false;
         }
@@ -216,4 +215,5 @@ namespace Speckle.ConnectorGSA.Proxy.GwaParsers
     }
     #endregion
   }
+
 }

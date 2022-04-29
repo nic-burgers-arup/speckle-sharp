@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Speckle.Core.Models;
 using Speckle.Core.Transports;
-using Speckle.Newtonsoft.Json;
 using Speckle.Newtonsoft.Json.Linq;
 
 namespace Speckle.Core.Serialisation
@@ -89,9 +88,6 @@ namespace Speckle.Core.Serialisation
       {
         List<(string, int)> closureList = new List<(string, int)>();
         JObject doc1 = JObject.Parse(rootObjectJson);
-
-        if (!doc1.ContainsKey("__closure"))
-          return new List<(string, int)>();
         foreach(JToken prop in doc1["__closure"])
         {
           string childId = ((JProperty)prop).Name;
@@ -119,18 +115,7 @@ namespace Speckle.Core.Serialisation
 
     public object DeserializeTransportObject(String objectJson)
     {
-      // Apparently this automatically parses DateTimes in strings if it matches the format:
-      // JObject doc1 = JObject.Parse(objectJson); 
-      
-      // This is equivalent code that doesn't parse datetimes:
-      JObject doc1;
-      using (JsonReader reader = new JsonTextReader(new System.IO.StringReader(objectJson)))
-      {
-        reader.DateParseHandling = DateParseHandling.None;
-        doc1 = JObject.Load(reader);
-      }
-
-
+      JObject doc1 = JObject.Parse(objectJson);
       object converted = ConvertJsonElement(doc1);
       lock (CallbackLock)
       {
@@ -160,8 +145,6 @@ namespace Speckle.Core.Serialisation
           return (double)doc;
         case JTokenType.String:
           return (string)doc;
-        case JTokenType.Date:
-          return (DateTime)doc;
         case JTokenType.Array:
           JArray docAsArray = (JArray)doc;
           List<object> jsonList = new List<object>(docAsArray.Count);
@@ -208,14 +191,7 @@ namespace Speckle.Core.Serialisation
             }
             if (deserialized != null && deserialized is Task<object>)
             {
-              try
-              {
-                deserialized = ((Task<object>)deserialized).Result;
-              }
-              catch (AggregateException aggregateEx)
-              {
-                throw aggregateEx.InnerException;
-              }
+              deserialized = ((Task<object>)deserialized).Result;
               lock (DeserializedObjects)
               {
                 DeserializedObjects[objId] = deserialized;
@@ -259,14 +235,6 @@ namespace Speckle.Core.Serialisation
         if (staticProperties.ContainsKey(lowerPropertyName) && staticProperties[lowerPropertyName].CanWrite)
         {
           PropertyInfo property = staticProperties[lowerPropertyName];
-          if (entry.Value == null)
-          {
-            // Check for JsonProperty(NullValueHandling = NullValueHandling.Ignore) attribute
-            JsonPropertyAttribute attr = property.GetCustomAttribute<JsonPropertyAttribute>(true);
-            if (attr != null && attr.NullValueHandling == NullValueHandling.Ignore)
-              continue;
-          }
-
           Type targetValueType = property.PropertyType;
           object convertedValue;
           bool conversionOk = ValueConverter.ConvertValue(targetValueType, entry.Value, out convertedValue);

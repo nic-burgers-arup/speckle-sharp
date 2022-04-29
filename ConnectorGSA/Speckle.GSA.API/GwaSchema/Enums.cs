@@ -3,8 +3,7 @@
   public enum GwaSetCommandType
   {
     Set = 0,
-    SetAt = 1,
-    SetNoIndex = 2
+    SetAt = 1
   }
 
   public enum GSAEntity
@@ -405,26 +404,6 @@
     Wedge6
   };
 
-  public enum ElementPropertyType
-  {
-    [StringValue("BEAM")]
-    Beam,
-    [StringValue("SPRING")]
-    Spring,
-    [StringValue("MASS")]
-    Mass,
-    [StringValue("2D")]
-    TwoD,
-    [StringValue("LINK")]
-    Link,
-    [StringValue("CABLE")]
-    Cable,
-    [StringValue("3D")]
-    ThreeD,
-    [StringValue("DAMPER")]
-    Damper
-  } 
-
   public enum Section1dType
   {
     [StringValue("1D_GENERIC")]
@@ -455,16 +434,6 @@
     TIMBER,
     GLASS,
     REBAR
-  }
-
-  public enum Load1dThermalType
-  {
-    [StringValue("CONS")]
-    Uniform,
-    [StringValue("DY")]
-    GradientInY,
-    [StringValue("DZ")]
-    GradientInZ
   }
 
   public enum Load2dThermalType
@@ -701,9 +670,7 @@
 
   public enum MatConcreteType
   {
-    [StringValue("CUBE")]
     CUBE,
-    [StringValue("CYLINDER")]
     CYLINDER
   }
 
@@ -933,53 +900,7 @@
     Snow,
     Wind,
     Earthquake,
-    EarthquakeAccTors,
-    EarthquakeRSA,
-    Thermal,
-    Accidental
-  }
-
-  public enum StructuralSolutionType
-  {
-    UNDEF,
-    STATIC,
-    MODAL,
-    RITZ,
-    BUCKLING,
-    STATIC_P_DELTA,
-    MODAL_P_DELTA,
-    RITZ_P_DELTA,
-    MASS,
-    STABILITY,
-    STABILITY_P_DELTA,
-    //STATIC_NL_P_DELTA,
-    BUCKLING_NL,
-    //INFLUENCE
-  }
-
-  public enum StructuralPruningOption
-  {
-    NONE,
-    INFL_YES
-  }
-
-  public enum StructuralGeometryChecksOption
-  {
-    FATAL, //ERROR
-    SEVERE
-  }
-
-  public enum StructuralRaftPrecisionOption
-  {    
-    RAFT_LO,
-    RAFT_HI
-  }
-
-  public enum StructuralResidualSaveOption
-  {
-    RESID_NO,
-    RESID_NOCONV,
-    RESID_YES
+    Thermal
   }
 
   public enum StructuralSpringPropertyType
@@ -995,36 +916,5 @@
     Lockup,
     Gap,
     Friction
-  }
-
-  public enum UnitDimension
-  {
-    //These are described in dimension_syntax overlapping the values of UNIT_DATA, at https://arup-group.github.io/oasys-combined/GSA_Text.html
-    [StringValue("LENGTH")]
-    Length,
-    [StringValue("SECTION")]
-    Sections,
-    [StringValue("DISP")]
-    Displacements,
-    [StringValue("STRESS")]
-    Stress,
-    [StringValue("FORCE")]
-    Force,
-    [StringValue("MASS")]
-    Mass,
-    [StringValue("TIME")]
-    Time,
-    [StringValue("TEMP")]
-    Temperature,
-    [StringValue("VEL")]
-    Velocity,
-    [StringValue("ACCEL")]
-    Acceleration,
-    [StringValue("ENERGY")]
-    Energy,
-    [StringValue("ANGLE")]
-    Angle,
-    [StringValue("STRAIN")]
-    Strain
   }
 }

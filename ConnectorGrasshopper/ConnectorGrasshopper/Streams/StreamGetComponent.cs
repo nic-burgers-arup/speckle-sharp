@@ -5,8 +5,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using ConnectorGrasshopper.Extras;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Data;
+using Speckle.Core.Api;
 using Speckle.Core.Credentials;
-using Logging = Speckle.Core.Logging;
+using Speckle.Core.Logging;
 
 namespace ConnectorGrasshopper.Streams
 {
@@ -80,7 +82,6 @@ namespace ConnectorGrasshopper.Streams
         Message = "Fetching";
         // Validation
         string errorMessage = null;
-
         if (!ValidateInput(account, idWrapper.StreamId, ref errorMessage))
         {
           AddRuntimeMessage(GH_RuntimeMessageLevel.Error, errorMessage);
@@ -92,18 +93,22 @@ namespace ConnectorGrasshopper.Streams
         {
           try
           {
-            var acc = idWrapper.GetAccount().Result;
-            stream = idWrapper;
-            Logging.Analytics.TrackEvent(acc, Logging.Analytics.Events.NodeRun, new Dictionary<string, object>() { { "name", "Stream Get" } });
+            //Exists?
+            var client = new Client(account);
+            var result = await client.StreamGet(idWrapper.StreamId);
+            stream = new StreamWrapper(result.id, account.userInfo.id, account.serverInfo.url);
+            stream.BranchName = idWrapper.BranchName;
+            stream.ObjectId = idWrapper.ObjectId;
+            stream.CommitId = idWrapper.CommitId;
           }
           catch (Exception e)
           {
             stream = null;
-            error = e.InnerException ?? e;
+            error = e;
           }
           finally
           {
-            Rhino.RhinoApp.InvokeOnUiThread((Action)delegate { ExpireSolution(true); });
+            Rhino.RhinoApp.InvokeOnUiThread((Action) delegate { ExpireSolution(true); });
           }
         });
       }
@@ -144,6 +149,12 @@ namespace ConnectorGrasshopper.Streams
     {
       // TODO: Add validation!
       return true;
+    }
+
+    protected override void BeforeSolveInstance()
+    {
+      Tracker.TrackPageview(Tracker.STREAM_GET);
+      base.BeforeSolveInstance();
     }
   }
 }

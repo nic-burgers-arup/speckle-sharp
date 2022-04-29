@@ -18,7 +18,7 @@ namespace Objects.Structural.Materials
             this.name = name;
             this.grade = grade;
             this.species = species;
-            this.materialType = MaterialType.Timber; 
+            this.type = MaterialType.Timber; 
             this.designCode = designCode;
             this.codeYear = codeYear;
             this.strength = strength;

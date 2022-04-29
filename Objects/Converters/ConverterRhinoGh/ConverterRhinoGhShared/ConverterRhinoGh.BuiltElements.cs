@@ -10,7 +10,6 @@ using Speckle.Core.Kits;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Alignment = Objects.BuiltElements.Alignment; 
 using Column = Objects.BuiltElements.Column;
 using Beam = Objects.BuiltElements.Beam;
 using Wall = Objects.BuiltElements.Wall;
@@ -268,54 +267,5 @@ namespace Objects.Converter.RhinoGh
         outCurves = (brpCurves.Count() == 1) ? new List<ICurve>() { (ICurve)ConvertToSpeckle(brpCurves[0]) } : RH.Curve.JoinCurves(brpCurves, tol).Select(o => (ICurve)ConvertToSpeckle(o)).ToList();
       return outCurves;
     }
-    
-    public List<object> DirectShapeToNative(RV.DirectShape directShape)
-    {
-      if (directShape.displayValue == null)
-      {
-        Report.Log($"Skipping DirectShape {directShape.id} because it has no {nameof(directShape.displayValue)}");
-        return null;
-      }
-
-      if (directShape.displayValue.Count == 0)
-      {
-        Report.Log($"Skipping DirectShape {directShape.id} because {nameof(directShape.displayValue)} was empty");
-        return null;
-      }
-
-      IEnumerable<object> subObjects = directShape.displayValue.Select(ConvertToNative)
-        .Where(e => e != null);
-          
-      var nativeObjects = subObjects.ToList(); 
-      
-      if (nativeObjects.Count == 0)
-      {
-        Report.Log($"Skipping DirectShape {directShape.id} because {nameof(directShape.displayValue)} contained no convertable elements");
-        return null;
-      }
-
-      return nativeObjects;
-    } 
-
-    #region CIVIL
-
-    // alignment
-    public RH.Curve AlignmentToNative(Alignment alignment)
-    {
-      var curves = new List<RH.Curve>();
-      foreach (var entity in alignment.curves)
-      {
-        var converted = CurveToNative(entity);
-        if (converted != null)
-          curves.Add(converted);
-      }
-      if (curves.Count == 0) return null;
-
-      // try to join entity curves
-      var joined = RH.Curve.JoinCurves(curves);
-      return joined.First();
-    }
-
-    #endregion
   }
 }
